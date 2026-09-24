@@ -2,7 +2,7 @@
 
 DocuCheck 是一个正在开发的本地采购资料初审 Agent 工作台。目标交互是上传资料后提问，由单 Agent 调用受控工具并返回带来源的答复；八字段正式结论由规则引擎计算。阶段 0 的环境验证、模拟文档基线和基础容器服务已完成；阶段 1 已开始实现 PDF/XLSX 解析与证据位置。Linux worker 已有启动与健康检查骨架；Agent、模型调用、API、审核规则和前端尚未实现。
 
-AI 协作上下文见 [CLAUDE.md](CLAUDE.md)；Codex 的入口文件为 [AGENTS.md](AGENTS.md)。
+AI 协作上下文见 [CLAUDE.md](CLAUDE.md)；Codex 的入口文件为 [AGENTS.md](AGENTS.md)。Agent 的 [Provider、上下文和 RAG 设计](docs/superpowers/specs/2026-09-24-agent-context-and-rag-design.md)目前是实现契约，尚未编码。
 
 ## 当前范围
 
