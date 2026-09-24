@@ -2,6 +2,8 @@
 
 DocuCheck 是一个正在开发的本地采购资料初审工作台。阶段 0 的环境验证、模拟文档基线和基础容器服务已完成。Linux worker 已有启动与健康检查骨架；API、实际文档处理任务和前端尚未实现。
 
+AI 协作上下文见 [CLAUDE.md](CLAUDE.md)；Codex 的入口文件为 [AGENTS.md](AGENTS.md)。
+
 ## 当前范围
 
 首版处理一份办公笔记本采购需求及最多三家供应商的报价和规格书，比较八个字段，并保留可以回到原件的证据。设计与阶段计划见 [开发路线](docs/development-roadmap.md) 和 [阶段 0 设计](docs/superpowers/specs/2026-09-24-phase-0-foundation-design.md)。
