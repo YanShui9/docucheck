@@ -29,18 +29,18 @@
 
 ## 第一步：环境可行性与样例基线
 
-现在先完成阶段 0 的环境盘点和最小验证。初始盘点结果：`E:\PycharmProjects\docucheck` 为空且不是 Git 仓库；Git、Node、Conda、Docker CLI 可用；base Python 为 3.14.7；E 盘剩余约 468.7 GB。现已建立 `docucheck` conda 环境，验证 Python 3.12.14。未发现现成的模拟 PDF/XLSX 文档包。Docker Desktop 尝试启动后 Linux Engine 仍不可连接；后台日志显示无法重命名 `sailor-ingest.sock`，随后错误处理记录了 `Reset to factory defaults` 并退出。只读检查确认 Docker 数据盘文件仍存在，但其中数据与配置的实际状态尚未核实。对旧 socket 的可逆重命名也被系统拒绝，暂不继续修改 Docker 状态。
+阶段 0 已建立 Git 仓库、`docucheck` Python 3.12.14 Conda 环境和模拟 PDF/XLSX 文档包。Docker Desktop 曾因旧 socket 无法启动，用户重新启动后 Linux Engine 可用；E 盘挂载、MySQL 8.4、Redis 7.4 和 Linux Celery worker 均已通过本机健康检查。细节和初次故障见 [环境记录](environment/2026-09-24.md)。
 
 下一批具体动作：
 
 - [x] 核对交接文档、需求和架构版本，并盘点仓库与本机工具。
 - [x] 尝试启动 Docker Desktop 并检查 Linux Engine；已定位启动退出日志，需先核实重置后的 Docker 本地状态。
 - [x] 确认 Docker Linux Engine 可用；验证 E 盘目录挂载到容器 `/data` 后读写一致。
-- [ ] 拉取项目 MySQL/Redis 镜像并验证 3307 端口与 Linux worker 健康检查；当前 Docker Hub token 请求返回 EOF。
+- [x] 拉取项目 MySQL/Redis 镜像并验证 3307 端口与 Linux worker 健康检查；初次 token EOF 重试后恢复。
 - [x] 建立并验证 Python 3.12 项目专用 conda 环境。
 - [ ] 验证安装基础依赖；分别锁定 Windows API 与 Linux worker 依赖。
 - [x] 用模拟内容制作一套可提取文本的 PDF/XLSX 文档包和逐字段标准答案；开发样例测试 2/2 通过。
 - [x] 在这套开发样例上试跑 MinerU 4.0.7 Basic：12/12 个 PDF 证据片段可定位到原文块与 bbox；首跑含下载、后续单文件耗时均已记录。这不代表正式质量或性能验收。
-- [ ] 上述验证通过后，再初始化 Git 和最小应用骨架、Compose 与数据库迁移。
+- [x] 初始化 Git、Compose 与最小 Linux worker 骨架；数据库迁移留待阶段 3。
 
-阶段 0 的关键风险是 Docker Engine 目前无法连接。若本机无法恢复，先保留环境日志和复现命令，再决定是否在 WSL/Linux 环境完成 worker 验证；不因环境故障改写 Celery 或数据库架构。
+下一步进入阶段 1：实现 PDF/XLSX 解析输入与证据位置契约，先用现有模拟文档包做一条可运行的端到端解析路径。`pyproject.toml` 的 Python 版本已与 Conda 3.12 环境对齐；完整应用依赖锁定和数据库迁移仍待后续阶段处理。

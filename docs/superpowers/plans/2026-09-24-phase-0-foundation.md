@@ -42,13 +42,13 @@
 - [x] Author the XLSX with `@oai/artifact-tool`, using one `报价` sheet and literal values.
 - [x] Add `labels.json` with eight results, precise evidence and processed-document prerequisite for the missing warranty.
 - [x] Re-run the test: 2 passed. Render both PDF pages and the workbook; inspect legibility and source coordinates.
-- [ ] Commit the tested development pack and its builders.
+- [x] Commit the tested development pack and its builders (`11de584`).
 
 ## Task 3: Docker and MinerU feasibility
 
 - [x] Preserve Docker diagnostics first. Record the current `sailor-ingest.sock` error and verify existing Docker data paths read-only.
 - [x] Docker Engine is available. `docker info` reports Linux Engine 29.8.0; a temporary container wrote to the E-drive bind mount and Windows read the same contents back.
-- [ ] Pull project images and check MySQL 3307/Redis/worker health. Pulling `alpine:3.22` failed while requesting a Docker Hub token (`EOF`), so registry access is not yet verified.
+- [x] Pull project images and check MySQL 3307/Redis/worker health. An initial Docker Hub token request returned `EOF`; retry succeeded. Compose reports all three services healthy; the Linux worker responds to Celery ping and writes to the E-drive bind mount.
 - [x] Install MinerU 4.0.7 in `docucheck-mineru` after a successful dependency dry run. Run Basic on both synthetic PDFs and compare twelve evidence fragments, page indices and bboxes with originals; 12/12 located.
 - [x] Publish the current measurements and Docker blocker in `docs/environment/2026-09-24.md` and update `docs/development-roadmap.md`.
 
