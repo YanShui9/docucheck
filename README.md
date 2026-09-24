@@ -1,6 +1,6 @@
 # DocuCheck
 
-DocuCheck 是一个正在开发的本地采购资料初审 Agent 工作台。目标交互是上传资料后提问，由单 Agent 调用受控工具并返回带来源的答复；八字段正式结论由规则引擎计算。阶段 0 的环境验证、模拟文档基线和基础容器服务已完成。Linux worker 已有启动与健康检查骨架；Agent、模型调用、API、实际文档处理任务和前端尚未实现。
+DocuCheck 是一个正在开发的本地采购资料初审 Agent 工作台。目标交互是上传资料后提问，由单 Agent 调用受控工具并返回带来源的答复；八字段正式结论由规则引擎计算。阶段 0 的环境验证、模拟文档基线和基础容器服务已完成；阶段 1 已开始实现 PDF/XLSX 解析与证据位置。Linux worker 已有启动与健康检查骨架；Agent、模型调用、API、审核规则和前端尚未实现。
 
 AI 协作上下文见 [CLAUDE.md](CLAUDE.md)；Codex 的入口文件为 [AGENTS.md](AGENTS.md)。
 
@@ -29,6 +29,14 @@ python -m pytest backend/tests/test_dev_pack.py -q
 ```
 
 环境文件现固定了样例构建和检查所用的 Python 包版本。应用运行依赖及 Windows/Linux 的完整锁定文件仍待兼容性验证。
+
+阶段 1 的解析代码位于 `backend/app/parsing.py`。在已有的 `docucheck` Conda 环境中，可调用独立 MinerU 环境的可执行文件生成模拟包证据索引：
+
+```powershell
+python -m backend.app.parse_dev_pack --mineru-executable "E:\developTools\miniconda3\envs\docucheck-mineru\Scripts\mineru-kit.exe" --output data/dev-pack-evidence.json
+```
+
+当前这是本机开发命令；Linux worker 中的解析依赖和正式任务接线尚未完成。输出在被 Git 忽略的 `data/` 中，每条 PDF 证据包含页码与 bbox，每条 XLSX 证据包含工作表与单元格。
 
 ## 数据与状态
 

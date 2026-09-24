@@ -46,3 +46,5 @@
 - [x] 初始化 Git、Compose 与最小 Linux worker 骨架；数据库迁移留待阶段 3。
 
 下一步进入阶段 1：实现 PDF/XLSX 解析输入与证据位置契约，先用现有模拟文档包为 Agent 提供可追溯的工具输入。随后阶段 2 将接通用户问题、大模型 API 和工具调用。`pyproject.toml` 的 Python 版本已与 Conda 3.12 环境对齐；完整应用依赖锁定和数据库迁移仍待后续阶段处理。
+
+阶段 1 首个代码切片已实现 `backend/app/parsing.py` 和开发包命令：使用 MinerU Basic 的 middle JSON 保留 PDF 零基页码、页面尺寸和 bbox，使用 openpyxl 保留 XLSX 工作表/单元格；校验部分输入上限，拒绝公式单元格。实际调用 MinerU 后，三份模拟文档均返回 complete，生成 35 个证据块，16/16 处人工标注证据可定位；`backend/tests` 8 个测试通过。尚未接入 Linux worker、MySQL 索引、Agent 工具或模型 API，也未完成复杂文件的解析质量验收。

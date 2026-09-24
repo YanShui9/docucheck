@@ -38,7 +38,7 @@ Windows 上运行 API 和 Vite；Docker Compose 运行 MySQL、Redis 和 Linux C
 
 ## 目录现状与目标
 
-当前已存在：根目录 `compose.yaml`、`pyproject.toml`；`backend/environment.yml`、`backend/app/`（仅 Celery 启动与健康检查）、`backend/tests/`；`examples/dev-pack-001/`；`docs/`；`scripts/`。`frontend/`、正式 API、数据库迁移、解析器、规则引擎尚未建立。
+当前已存在：根目录 `compose.yaml`、`pyproject.toml`；`backend/environment.yml`、`backend/app/`（Celery 启动/健康检查及阶段 1 的 PDF/XLSX 证据解析）、`backend/tests/`；`examples/dev-pack-001/`；`docs/`；`scripts/`。`frontend/`、正式 API、数据库迁移、Agent、模型 Provider 和规则引擎尚未建立。
 
 目标逐步形成 `backend/src/docucheck/{api,services,schemas,tasks,workflows,parsers,extraction,rules,repositories,storage,reporting}`、`backend/migrations/`、`frontend/`、`evals/`、`.github/workflows/`。迁移现有 `backend/app/` 前先检查导入路径与 Dockerfile；不要仅为匹配目标树而移动文件。
 
