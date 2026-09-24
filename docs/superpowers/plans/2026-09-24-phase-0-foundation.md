@@ -46,11 +46,11 @@
 
 ## Task 3: Docker and MinerU feasibility
 
-- [ ] Preserve Docker diagnostics first. Record the current `sailor-ingest.sock` error and verify existing Docker data paths read-only.
+- [x] Preserve Docker diagnostics first. Record the current `sailor-ingest.sock` error and verify existing Docker data paths read-only.
 - [ ] If Docker Engine can be restored without deleting existing data, run `docker info`, then a small container with an E-drive bind mount and check round-trip content. Only then create Compose services and check MySQL 3307/Redis/worker health.
-- [ ] If Engine remains unavailable, record a failed stage 0 Docker gate and continue the independent fixture and Python work. Do not report container validation as passed.
-- [ ] Install a pinned MinerU 4.x candidate in the isolated environment only after dependency compatibility is checked. Run Basic against the synthetic PDF files; record command, version, runtime, text extraction and page positions. Compare with the original PDFs.
-- [ ] Publish the measurements and remaining blockers in `docs/environment/2026-09-24.md` and update `docs/development-roadmap.md` checkboxes.
+- [x] Engine remains unavailable. Record a failed stage 0 Docker gate and continue the independent fixture and Python work.
+- [x] Install MinerU 4.0.7 in `docucheck-mineru` after a successful dependency dry run. Run Basic on both synthetic PDFs and compare twelve evidence fragments, page indices and bboxes with originals; 12/12 located.
+- [x] Publish the current measurements and Docker blocker in `docs/environment/2026-09-24.md` and update `docs/development-roadmap.md`.
 
 ## Verification
 
