@@ -47,8 +47,8 @@
 ## Task 3: Docker and MinerU feasibility
 
 - [x] Preserve Docker diagnostics first. Record the current `sailor-ingest.sock` error and verify existing Docker data paths read-only.
-- [ ] If Docker Engine can be restored without deleting existing data, run `docker info`, then a small container with an E-drive bind mount and check round-trip content. Only then create Compose services and check MySQL 3307/Redis/worker health.
-- [x] Engine remains unavailable. Record a failed stage 0 Docker gate and continue the independent fixture and Python work.
+- [x] Docker Engine is available. `docker info` reports Linux Engine 29.8.0; a temporary container wrote to the E-drive bind mount and Windows read the same contents back.
+- [ ] Pull project images and check MySQL 3307/Redis/worker health. Pulling `alpine:3.22` failed while requesting a Docker Hub token (`EOF`), so registry access is not yet verified.
 - [x] Install MinerU 4.0.7 in `docucheck-mineru` after a successful dependency dry run. Run Basic on both synthetic PDFs and compare twelve evidence fragments, page indices and bboxes with originals; 12/12 located.
 - [x] Publish the current measurements and Docker blocker in `docs/environment/2026-09-24.md` and update `docs/development-roadmap.md`.
 

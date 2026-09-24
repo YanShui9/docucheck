@@ -35,7 +35,8 @@
 
 - [x] 核对交接文档、需求和架构版本，并盘点仓库与本机工具。
 - [x] 尝试启动 Docker Desktop 并检查 Linux Engine；已定位启动退出日志，需先核实重置后的 Docker 本地状态。
-- [ ] 确认 Docker Linux Engine 可用；验证 E 盘目录挂载到容器 `/data` 后读写一致。
+- [x] 确认 Docker Linux Engine 可用；验证 E 盘目录挂载到容器 `/data` 后读写一致。
+- [ ] 拉取项目 MySQL/Redis 镜像并验证 3307 端口与 Linux worker 健康检查；当前 Docker Hub token 请求返回 EOF。
 - [x] 建立并验证 Python 3.12 项目专用 conda 环境。
 - [ ] 验证安装基础依赖；分别锁定 Windows API 与 Linux worker 依赖。
 - [x] 用模拟内容制作一套可提取文本的 PDF/XLSX 文档包和逐字段标准答案；开发样例测试 2/2 通过。
