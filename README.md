@@ -1,12 +1,14 @@
 # DocuCheck
 
-DocuCheck 是一个正在开发的本地采购资料初审 Agent 工作台。目标交互是上传资料后提问，由单 Agent 调用受控工具并返回带来源的答复；八字段正式结论由规则引擎计算。阶段 0 的环境验证、模拟文档基线和基础容器服务已完成；阶段 1 已开始实现 PDF/XLSX 解析与证据位置。Linux worker 已有启动与健康检查骨架；Agent、模型调用、API、审核规则和前端尚未实现。
+DocuCheck 是一个正在开发的本地采购资料初审 Agent 工作台。目标交互是上传资料后提问，由单 Agent 调用受控工具并返回带来源的答复；八字段正式结论由规则引擎计算。现有资产包括基础环境验证、模拟文档、基础容器服务和 PDF/XLSX 证据解析代码。Linux worker 已有启动与健康检查骨架；Agent、模型调用、API、审核规则和前端尚未实现。
 
-AI 协作上下文见 [CLAUDE.md](CLAUDE.md)；Codex 的入口文件为 [AGENTS.md](AGENTS.md)。Agent 的 [Provider、上下文和 RAG 设计](docs/superpowers/specs/2026-09-24-agent-context-and-rag-design.md)目前是实现契约，尚未编码。
+AI 协作上下文见 [CLAUDE.md](CLAUDE.md)；Codex 入口为 [AGENTS.md](AGENTS.md)。当前设计基线是 [Agent 架构 v1.0](docs/superpowers/specs/2026-09-24-agent-first-design.md)，涵盖模型、状态、工具、上下文、RAG、恢复和评测，尚未编码。
+
+2026-09-24 已按 Agent 为中心重排计划。下一阶段是 [M1 最小真实 Agent](docs/superpowers/plans/2026-09-24-agent-mvp.md)：用现有模拟包，真实模型调用工具回答内存核验问题并支持来源追问。M1 尚未开始实现；本次改动仅为设计文档，历史阶段 0/1 名称不再代表新的里程碑进度。
 
 ## 当前范围
 
-首版处理一份办公笔记本采购需求及最多三家供应商的报价和规格书，比较八个字段，并保留可以回到原件的证据。设计与阶段计划见 [开发路线](docs/development-roadmap.md)、[单 Agent 设计](docs/superpowers/specs/2026-09-24-single-agent-review-design.md)和 [阶段 0 设计](docs/superpowers/specs/2026-09-24-phase-0-foundation-design.md)。
+首版处理一份办公笔记本采购需求及最多三家供应商的报价和规格书，比较八个字段，并保留可以回到原件的证据。实施顺序见 [开发路线 v2.0](docs/development-roadmap.md)；历史基础环境设计见 [阶段 0 设计](docs/superpowers/specs/2026-09-24-phase-0-foundation-design.md)。
 
 ## 本地 Python 环境
 
@@ -30,7 +32,7 @@ python -m pytest backend/tests/test_dev_pack.py -q
 
 环境文件现固定了样例构建和检查所用的 Python 包版本。应用运行依赖及 Windows/Linux 的完整锁定文件仍待兼容性验证。
 
-阶段 1 的解析代码位于 `backend/app/parsing.py`。在已有的 `docucheck` Conda 环境中，可调用独立 MinerU 环境的可执行文件生成模拟包证据索引：
+现有解析代码位于 `backend/app/parsing.py`。在已有的 `docucheck` Conda 环境中，可调用独立 MinerU 环境的可执行文件生成模拟包证据索引：
 
 ```powershell
 python -m backend.app.parse_dev_pack --mineru-executable "E:\developTools\miniconda3\envs\docucheck-mineru\Scripts\mineru-kit.exe" --output data/dev-pack-evidence.json

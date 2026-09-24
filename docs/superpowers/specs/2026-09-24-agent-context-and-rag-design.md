@@ -1,5 +1,7 @@
 # DocuCheck Agent 上下文、思考流程与 RAG 设计 v0.1
 
+> 历史设计，已被 [Agent 架构 v1.0](2026-09-24-agent-first-design.md) 取代。当前 Provider、上下文、RAG、预算和恢复以新架构为准。
+
 日期：2026-09-24。本文补充[单 Agent 设计](2026-09-24-single-agent-review-design.md)，说明模型 Provider、上下文装配、Agent 决策循环和检索增强生成的实现契约。它是设计，尚未实现或测量。
 
 ## 1. 真实模型 Provider
