@@ -16,10 +16,18 @@ conda activate docucheck
 python --version
 ```
 
-已在开发机核对 Python 3.12.14。当前 `environment.yml` 只固定 Python 主次版本；应用依赖和 Windows/Linux 锁定文件将在安装兼容性验证后补充。
+已在开发机核对 Python 3.12.14。`environment.yml` 固定 Python 主次版本和样例所需的 Python 包版本。
+
+运行开发样例检查：
+
+```powershell
+python -m pytest backend/tests/test_dev_pack.py -q
+```
+
+环境文件现固定了样例构建和检查所用的 Python 包版本。应用运行依赖及 Windows/Linux 的完整锁定文件仍待兼容性验证。
 
 ## 数据与状态
 
-`examples/` 将保存完全模拟的开发样例。独立验收集尚未建立，文档中的质量与性能数值均为目标，尚无实测结论。真实资料必须由资料持有人明确授权后使用。
+[`examples/dev-pack-001/`](examples/dev-pack-001/README.md) 保存完全模拟的开发样例和八条标准答案。独立验收集尚未建立，文档中的质量与性能数值均为目标，尚无实测结论。真实资料必须由资料持有人明确授权后使用。
 
 Docker Desktop Linux Engine 当前无法启动，见 [环境记录](docs/environment/2026-09-24.md)。项目不会因为此故障改为原生 Windows Celery worker。

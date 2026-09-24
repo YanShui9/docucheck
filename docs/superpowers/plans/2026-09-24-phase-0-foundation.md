@@ -30,18 +30,18 @@
 - [x] Create the project Git repository and commit the approved phase 0 design on `main`.
 - [x] Switch to `phase-0-foundation` for implementation.
 - [x] Create the `docucheck` conda environment; `conda run -n docucheck python --version` returned `Python 3.12.14`.
-- [ ] Add `.gitignore`, `backend/environment.yml` and `README.md`. The environment spec must request `python=3.12` without claiming that dependency locks are complete.
-- [ ] Run `conda env export -n docucheck --from-history` and compare it with `backend/environment.yml`; expected: Python 3.12 is listed.
-- [ ] Run `git diff --check` and commit the verified baseline.
+- [x] Add `.gitignore`, `backend/environment.yml` and `README.md`. The environment spec requests `python=3.12`; fixture dependencies are pinned, while application locks are still pending.
+- [x] Run `conda env export -n docucheck --from-history` and compare it with `backend/environment.yml`; Python 3.12 was listed.
+- [x] Run `git diff --check` and commit the verified baseline.
 
 ## Task 2: Synthetic source pack
 
-- [ ] Write `backend/tests/test_dev_pack.py` first. It must assert that the two PDFs each have one page with extractable Chinese text, that the workbook has a `报价` sheet with fixed model, memory, quantity, price and delivery cells, and that `labels.json` has exactly the eight named fields and the expected state distribution (4 满足, 1 不满足, 1 资料冲突, 1 证据不足, 1 待人工确认).
-- [ ] Run `conda run -n docucheck python -m pytest backend/tests/test_dev_pack.py -q`; expected: tests fail because the pack does not exist.
-- [ ] Author the two PDF files from the fixed content in the phase 0 spec. Embed a Chinese font, keep each source statement on its own line, and print a visible page number.
-- [ ] Author the XLSX with `@oai/artifact-tool`, using one `报价` sheet and literal values. Save exact cell coordinates in `labels.json`.
-- [ ] Add `labels.json` with one result per field, the requirement and supplier evidence locators, reason, and processed-document prerequisite for the missing warranty.
-- [ ] Re-run the test; expected: all fixture assertions pass. Render both PDF pages and the workbook, inspect legibility, and verify source strings/coordinates manually.
+- [x] Write `backend/tests/test_dev_pack.py` first. It checks one-page extractable PDFs, fixed workbook cells, eight fields, all five states, source locators and missing-warranty prerequisites.
+- [x] Run `conda run -n docucheck python -m pytest backend/tests/test_dev_pack.py -q`; both tests failed because the pack did not exist.
+- [x] Author the two PDF files from the fixed content in the phase 0 spec with embedded Chinese font and visible page numbers.
+- [x] Author the XLSX with `@oai/artifact-tool`, using one `报价` sheet and literal values.
+- [x] Add `labels.json` with eight results, precise evidence and processed-document prerequisite for the missing warranty.
+- [x] Re-run the test: 2 passed. Render both PDF pages and the workbook; inspect legibility and source coordinates.
 - [ ] Commit the tested development pack and its builders.
 
 ## Task 3: Docker and MinerU feasibility

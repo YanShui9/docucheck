@@ -1,0 +1,68 @@
+{
+  "pack_id": "dev-pack-001",
+  "dataset_kind": "synthetic_development",
+  "supplier_id": "vendor-a",
+  "model": "DC-14-A",
+  "results": [
+    {
+      "field_key": "memory",
+      "status": "资料冲突",
+      "reason": "同一型号的报价和规格书分别写明已装内存 16 GB 与 32 GB。",
+      "requirement_evidence": [{"document": "requirements.pdf", "page": 1, "text": "已装内存至少 16 GB"}],
+      "supplier_evidence": [
+        {"document": "vendor-a-quote.xlsx", "sheet": "报价", "cell": "B6", "text": "已装内存 16 GB"},
+        {"document": "vendor-a-spec.pdf", "page": 1, "text": "已装内存 32 GB"}
+      ]
+    },
+    {
+      "field_key": "storage",
+      "status": "满足",
+      "reason": "同型号规格书标称 SSD 1 TB，按十进制为 1000 GB，达到至少 512 GB。",
+      "requirement_evidence": [{"document": "requirements.pdf", "page": 1, "text": "标称存储至少 512 GB"}],
+      "supplier_evidence": [{"document": "vendor-a-spec.pdf", "page": 1, "text": "标称 SSD 1 TB"}]
+    },
+    {
+      "field_key": "screen_size",
+      "status": "满足",
+      "reason": "同型号规格书写明 14 英寸，等于最低要求。",
+      "requirement_evidence": [{"document": "requirements.pdf", "page": 1, "text": "屏幕尺寸至少 14 英寸"}],
+      "supplier_evidence": [{"document": "vendor-a-spec.pdf", "page": 1, "text": "屏幕尺寸 14 英寸"}]
+    },
+    {
+      "field_key": "weight",
+      "status": "不满足",
+      "reason": "同型号主机重量 1.8 kg，高于上限 1.6 kg。",
+      "requirement_evidence": [{"document": "requirements.pdf", "page": 1, "text": "主机重量不超过 1.6 kg"}],
+      "supplier_evidence": [{"document": "vendor-a-spec.pdf", "page": 1, "text": "主机重量 1.8 kg"}]
+    },
+    {
+      "field_key": "warranty",
+      "status": "证据不足",
+      "reason": "报价和规格书均已处理，但没有质保期限证据。",
+      "requirement_evidence": [{"document": "requirements.pdf", "page": 1, "text": "质保期限至少 24 个月"}],
+      "supplier_evidence": [],
+      "processed_supplier_documents": ["vendor-a-quote.xlsx", "vendor-a-spec.pdf"]
+    },
+    {
+      "field_key": "quantity",
+      "status": "满足",
+      "reason": "报价数量 10 台，等于要求。",
+      "requirement_evidence": [{"document": "requirements.pdf", "page": 1, "text": "采购数量 10 台"}],
+      "supplier_evidence": [{"document": "vendor-a-quote.xlsx", "sheet": "报价", "cell": "B7", "text": "10 台"}]
+    },
+    {
+      "field_key": "unit_price",
+      "status": "满足",
+      "reason": "含税单价 5800 元/台，不高于含税上限 6000 元/台。",
+      "requirement_evidence": [{"document": "requirements.pdf", "page": 1, "text": "含税单价不超过 6000 元/台"}],
+      "supplier_evidence": [{"document": "vendor-a-quote.xlsx", "sheet": "报价", "cell": "B8", "text": "含税单价 5800 元/台"}]
+    },
+    {
+      "field_key": "delivery_days",
+      "status": "待人工确认",
+      "reason": "需求以订单确认为起点且使用自然日；报价以合同签订为起点且使用工作日，不能直接比较。",
+      "requirement_evidence": [{"document": "requirements.pdf", "page": 1, "text": "订单确认后 14 个自然日内交付"}],
+      "supplier_evidence": [{"document": "vendor-a-quote.xlsx", "sheet": "报价", "cell": "B9", "text": "合同签订后 10 个工作日"}]
+    }
+  ]
+}
