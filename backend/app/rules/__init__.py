@@ -1,0 +1,1 @@
+"""Deterministic procurement checks."""

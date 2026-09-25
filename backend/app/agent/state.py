@@ -1,0 +1,37 @@
+"""Server-owned context and typed graph state."""
+from dataclasses import dataclass
+from typing import TypedDict
+
+from langchain_core.messages import BaseMessage
+
+
+@dataclass(frozen=True)
+class RunContext:
+    case_id: str
+    snapshot_id: str
+    revision: int
+    conversation_id: str
+    run_id: str
+    attempt_id: str
+    model_id: str | None
+    prompt_version: str = "agent-memory-v1"
+    rule_version: str = "memory-v1"
+
+
+class AgentState(TypedDict):
+    messages: list[BaseMessage]
+    status: str
+    answer: str
+    error: str | None
+    repairs: int
+    next_node: str
+
+
+@dataclass(frozen=True)
+class RunResult:
+    context: RunContext
+    status: str
+    answer: str
+    error: str | None
+    usage: dict
+    events: tuple[dict, ...]

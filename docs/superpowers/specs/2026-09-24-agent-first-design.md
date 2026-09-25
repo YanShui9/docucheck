@@ -100,7 +100,7 @@ flowchart TD
 | --- | --- | --- |
 | `list_case_sources` | 无 | 文件角色、供应商句柄、版本、解析状态和覆盖摘要 |
 | `search_evidence` | query、可选供应商/字段、limit≤12 | 有排序的证据候选及命中原因；不证明全量覆盖 |
-| `read_source` | evidence_ids≤12、邻接范围≤1 | 真实原文及位置；补充 PDF 相邻块或 XLSX 行/表头，截断必须标记 |
+| `read_source` | evidence_ids≤12、邻接范围≤1、可选 `start_char` 续读单一证据 | 真实原文及位置；补充 PDF 相邻块或 XLSX 行/表头，截断必须标记并返回可续读的 `next_char` |
 | `extract_facts` | 供应商句柄、字段集、scope=selected/full、可选 evidence_ids | 带限定语的候选事实、引用验证结果、覆盖记录；full 由服务端枚举全部适用证据 |
 | `evaluate_checks` | supplier_handles、field_keys、fact_set_id | 规则版本、每项结果、理由码及全部必要来源；完整性不足则处理未完成 |
 | `get_check_results` | supplier_handles、field_keys | 当前快照已有的核验结果；失效缓存不能当当前结果 |

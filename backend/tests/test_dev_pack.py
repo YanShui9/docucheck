@@ -7,7 +7,6 @@ from pathlib import Path
 from openpyxl import load_workbook
 from pypdf import PdfReader
 
-
 PACK = Path(__file__).resolve().parents[2] / "examples" / "dev-pack-001"
 FIELDS = {
     "memory",

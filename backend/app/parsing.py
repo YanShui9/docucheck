@@ -5,15 +5,15 @@ from __future__ import annotations
 import json
 import subprocess
 import tempfile
+from collections.abc import Sequence
 from dataclasses import dataclass
 from hashlib import sha256
 from pathlib import Path
-from typing import Literal, Sequence
+from typing import Literal
 from zipfile import BadZipFile, ZipFile
 
 from openpyxl import load_workbook
 from pypdf import PdfReader
-
 
 MAX_FILE_BYTES = 10 * 1024 * 1024
 MAX_XLSX_UNCOMPRESSED_BYTES = 50 * 1024 * 1024
@@ -55,10 +55,11 @@ class ParseResult:
     processed_pages: tuple[int, ...] = ()
     total_sheets: int | None = None
     processed_sheets: tuple[str, ...] = ()
+    coverage_issues: tuple[str, ...] = ()
 
 
 def _evidence_id(document_id: str, locator: str, text: str) -> str:
-    return sha256(f"{document_id}\0{locator}\0{text}".encode("utf-8")).hexdigest()[:24]
+    return sha256(f"{document_id}\0{locator}\0{text}".encode()).hexdigest()[:24]
 
 
 def parse_mineru_middle(path: Path, *, document_id: str) -> ParseResult:
@@ -80,6 +81,7 @@ def parse_mineru_middle(path: Path, *, document_id: str) -> ParseResult:
     }
     blocks: list[EvidenceBlock] = []
     processed_pages: list[int] = []
+    coverage_issues: list[str] = []
     for page in pages:
         page_idx = page.get("page_idx")
         if not isinstance(page_idx, int) or page_idx < 0 or page_idx >= total_pages:
@@ -90,7 +92,19 @@ def parse_mineru_middle(path: Path, *, document_id: str) -> ParseResult:
         if layout is None or layout.get("width_pt", 0) <= 0 or layout.get("height_pt", 0) <= 0:
             raise UnsupportedContentError("PDF page dimensions are missing")
         processed_pages.append(page_idx)
-        for block_index, block in enumerate(page.get("blocks", [])):
+        page_blocks = page.get("blocks")
+        if not isinstance(page_blocks, list):
+            raise UnsupportedContentError("PDF page blocks are missing or malformed")
+        body_text_found = False
+        for block_index, block in enumerate(page_blocks):
+            if not isinstance(block, dict):
+                raise UnsupportedContentError("PDF block is malformed")
+            content = block.get("content", [])
+            if not isinstance(content, list) or any(not isinstance(item, dict) for item in content):
+                raise UnsupportedContentError("PDF block content is malformed")
+            if (block.get("type") not in {"text", "doc_title", "page_number"}
+                    or not content or any(item.get("type") != "text" for item in content)):
+                coverage_issues.append(f"page:{page_idx}:block:{block_index}:unsupported_content")
             text = " ".join(
                 str(item["content"]).strip()
                 for item in block.get("content", [])
@@ -98,6 +112,8 @@ def parse_mineru_middle(path: Path, *, document_id: str) -> ParseResult:
             ).strip()
             if not text:
                 continue
+            if block.get("type") != "page_number":
+                body_text_found = True
             raw_bbox = block.get("bbox")
             if (
                 not isinstance(raw_bbox, list)
@@ -119,12 +135,16 @@ def parse_mineru_middle(path: Path, *, document_id: str) -> ParseResult:
                     page_height_pt=float(layout["height_pt"]),
                 )
             )
+        if not body_text_found:
+            coverage_issues.append(f"page:{page_idx}:no_body_text")
 
-    complete = source.get("is_full_document") is True and sorted(processed_pages) == list(
+    complete = not coverage_issues and source.get("is_full_document") is True and sorted(processed_pages) == list(
         range(total_pages)
     )
     producer = metadata.get("producer", {})
-    parser_version = f"{producer.get('name', 'mineru')}:{producer.get('version', 'unknown')}/middle:2.0"
+    parser_config = source.get("extensions", {}).get("mineru", {})
+    config_hash = sha256(json.dumps(parser_config, sort_keys=True).encode()).hexdigest()[:16]
+    parser_version = f"{producer.get('name', 'mineru')}:{producer.get('version', 'unknown')}/middle:2.0/config:{config_hash}"
     return ParseResult(
         document_id=document_id,
         parser_version=parser_version,
@@ -132,6 +152,7 @@ def parse_mineru_middle(path: Path, *, document_id: str) -> ParseResult:
         blocks=tuple(blocks),
         total_pages=total_pages,
         processed_pages=tuple(sorted(processed_pages)),
+        coverage_issues=tuple(coverage_issues),
     )
 
 
