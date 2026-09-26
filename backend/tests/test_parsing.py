@@ -6,11 +6,15 @@ import shutil
 import sys
 from hashlib import sha256
 from importlib import import_module
+from io import BytesIO
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile
 
 import pytest
 from openpyxl import Workbook
+from PIL import Image, ImageDraw
+from reportlab.lib.utils import ImageReader
+from reportlab.pdfgen import canvas
 
 PACK = Path(__file__).resolve().parents[2] / "examples" / "dev-pack-001"
 
@@ -220,6 +224,48 @@ def test_pdf_entrypoint_marks_silently_omitted_source_text_partial(tmp_path: Pat
     assert any(issue.startswith("page:0:source_line:") for issue in result.coverage_issues)
 
 
+def test_mixed_pdf_with_omitted_image_cannot_claim_complete(tmp_path: Path) -> None:
+    from backend.app.evidence.repository import bind_document
+
+    image = Image.new("RGB", (220, 60), "white")
+    ImageDraw.Draw(image).text((8, 20), "Installed RAM 32 GB", fill="black")
+    image_bytes = BytesIO()
+    image.save(image_bytes, format="PNG")
+    image_bytes.seek(0)
+    pdf_path = tmp_path / "mixed.pdf"
+    pdf = canvas.Canvas(str(pdf_path), pagesize=(612, 792))
+    pdf.drawString(72, 720, "Supplier specification")
+    pdf.drawImage(ImageReader(image_bytes), 72, 600, width=220, height=60)
+    pdf.save()
+
+    middle = json.loads((PACK / "parsed" / "requirements.middle.json").read_text(encoding="utf-8"))
+    middle["pages"][0]["blocks"] = [{
+        "type": "text", "index": 0, "bbox": [0.1, 0.1, 0.5, 0.2],
+        "content": [{"type": "text", "content": "Supplier specification"}],
+    }]
+    middle_path = tmp_path / "mixed.middle.json"
+    middle_path.write_text(json.dumps(middle), encoding="utf-8")
+    fake_mineru = tmp_path / "fake_mineru.py"
+    fake_mineru.write_text(
+        "import shutil, sys\n"
+        "from pathlib import Path\n"
+        f"source = Path({str(middle_path)!r})\n"
+        "shutil.copyfile(source, sys.argv[sys.argv.index('-o') + 1])\n",
+        encoding="utf-8",
+    )
+
+    parsed = parsing().parse_pdf(
+        pdf_path, document_id="mixed", mineru_command=[sys.executable, str(fake_mineru)]
+    )
+    cached = parsing().parse_mineru_middle(middle_path, document_id="mixed")
+    bound = bind_document(cached, source_path=pdf_path, role="spec", supplier="vendor-a")
+
+    assert parsed.status == "partial"
+    assert "page:0:embedded_image_unverified" in parsed.coverage_issues
+    assert bound.parsed.status == "partial"
+    assert "page:0:embedded_image_unverified" in bound.parsed.coverage_issues
+
+
 def test_pdf_source_coverage_does_not_reuse_one_match_for_repeated_lines(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -228,6 +274,8 @@ def test_pdf_source_coverage_does_not_reuse_one_match_for_repeated_lines(
     )
 
     class FakePage:
+        images: tuple[()] = ()
+
         def extract_text(self) -> str:
             return "已装内存至少 16 GB\n已装内存至少 16 GB\n"
 

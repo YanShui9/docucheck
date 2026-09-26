@@ -163,13 +163,15 @@ def parse_mineru_middle(path: Path, *, document_id: str) -> ParseResult:
 
 
 def verify_pdf_source_coverage(parsed: ParseResult, source_pdf: Path) -> ParseResult:
-    """Mark source text omitted from a MinerU result as incomplete coverage."""
+    """Mark omitted source text and unverified embedded images as incomplete."""
     try:
         pdf = PdfReader(source_pdf)
         if len(pdf.pages) != parsed.total_pages:
             raise DocumentParsingError("MinerU page count differs from the source PDF")
         issues = list(parsed.coverage_issues)
         for page_idx, page in enumerate(pdf.pages):
+            if len(page.images):
+                issues.append(f"page:{page_idx}:embedded_image_unverified")
             try:
                 source_text = page.extract_text()
             except (PdfReadError, UnicodeError, ValueError):
@@ -194,10 +196,12 @@ def verify_pdf_source_coverage(parsed: ParseResult, source_pdf: Path) -> ParseRe
     except DocumentParsingError:
         raise
     except Exception as exc:
-        raise UnsupportedContentError("PDF source text could not be checked") from exc
+        raise UnsupportedContentError("PDF source coverage could not be checked") from exc
     version = parsed.parser_version
     if "/source-text:1" not in version:
         version += "/source-text:1"
+    if "/embedded-image:1" not in version:
+        version += "/embedded-image:1"
     issues = list(dict.fromkeys(issues))
     return replace(parsed, parser_version=version,
                    status="partial" if issues else parsed.status,
