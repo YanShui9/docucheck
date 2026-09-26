@@ -12,6 +12,8 @@ from zipfile import ZIP_DEFLATED, ZipFile
 
 import pytest
 from openpyxl import Workbook
+from openpyxl.chart import BarChart, Reference
+from openpyxl.drawing.image import Image as XlsxImage
 from PIL import Image, ImageDraw
 from pypdf import PdfReader, PdfWriter
 from pypdf.generic import (
@@ -178,6 +180,39 @@ def test_merged_xlsx_worksheet_at_relocated_part_is_still_partial(tmp_path: Path
     result = parsing().parse_xlsx(relocated, document_id="relocated")
     assert result.status == "partial"
     assert any("merged_cell" in issue for issue in result.coverage_issues)
+
+
+@pytest.mark.parametrize("kind", ["image", "chart"])
+def test_xlsx_drawing_cannot_claim_complete(tmp_path: Path, kind: str) -> None:
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "报价"
+    sheet["A1"] = "已装内存"
+    sheet["B1"] = "16 GB"
+    if kind == "image":
+        image = Image.new("RGB", (220, 60), "white")
+        ImageDraw.Draw(image).text((8, 20), "Installed RAM 32 GB", fill="black")
+        image_bytes = BytesIO()
+        image.save(image_bytes, format="PNG")
+        image_bytes.seek(0)
+        sheet.add_image(XlsxImage(image_bytes), "D4")
+    else:
+        sheet["C1"] = 16
+        sheet["C2"] = 32
+        chart = BarChart()
+        chart.title = "Installed RAM"
+        chart.add_data(Reference(sheet, min_col=3, min_row=1, max_row=2))
+        sheet.add_chart(chart, "D4")
+    path = tmp_path / f"{kind}.xlsx"
+    workbook.save(path)
+
+    result = parsing().parse_xlsx(path, document_id=kind)
+
+    cells = {(block.sheet, block.cell): block.text for block in result.blocks}
+    assert cells[("报价", "A1")] == "已装内存"
+    assert cells[("报价", "B1")] == "16 GB"
+    assert result.status == "partial"
+    assert "sheet:报价:drawing_unverified:rId1" in result.coverage_issues
 
 
 def test_pdf_entrypoint_checks_source_and_runs_mineru(tmp_path: Path) -> None:

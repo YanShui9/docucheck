@@ -12,6 +12,8 @@
 
 > 2026-09-26：[M2-2d PDF 矢量绘制与注释覆盖检查](docs/m2-2d-pdf-vector-and-annotation-coverage-2026-09-26.md)已通过离线回归（当前 125 项测试）。可见线框、实际调用的 Form 绘图及注释不会仅凭正文判为完整。下一小步拟处理 XLSX 其他结构；无框表格语义和任务级限额仍待解决，M2-2 尚未验收。
 
+> 2026-09-26：[M2-2e XLSX 图片与图表覆盖检查](docs/m2-2e-xlsx-drawing-coverage-2026-09-26.md)已通过离线回归（当前 127 项测试）。工作表实际引用的绘图被忽略时会标为 `partial`，并保留已读单元格。下一小步拟处理批注及旧式绘图；整个 M2-2 仍未完成。
+
 DocuCheck 是一个正在开发的本地采购资料初审 Agent 工作台。目标交互是上传资料后提问，由单 Agent 调用受控工具并返回带来源的答复；八字段正式结论由规则引擎计算。现有资产包括基础环境、模拟文档、PDF/XLSX 解析、快照证据、词法检索和 DeepSeek Provider；单次真实模型工具调用及三批模拟资料抽取均已有用户反馈。内存抽取、证据校验和规则已完成模拟包复核；Agent 循环与 CLI 已通过离线测试及一次完整的模拟包真实两轮对话。Linux worker 只有启动与健康检查骨架；正式 API、数据库迁移和前端尚未实现。
 
 AI 协作上下文见 [CLAUDE.md](CLAUDE.md)；Codex 入口为 [AGENTS.md](AGENTS.md)。当前设计基线是 [Agent 架构 v1.0](docs/superpowers/specs/2026-09-24-agent-first-design.md)，涵盖模型、状态、工具、上下文、RAG、恢复和评测；M1 以外的正式业务能力仍按路线图实施。

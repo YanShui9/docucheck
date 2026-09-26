@@ -29,6 +29,7 @@ MAX_ROWS = 1000
 MAX_COLUMNS = 30
 MAX_NONEMPTY_CELLS = 20_000
 MAX_CELL_CHARACTERS = 2000
+XLSX_RELATIONSHIP_ID = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id"
 PDF_VECTOR_PAINT_OPERATORS = frozenset({
     b"S", b"s", b"f", b"F", b"f*", b"B", b"B*", b"b", b"b*", b"sh",
 })
@@ -387,7 +388,14 @@ def parse_xlsx(path: Path, *, document_id: str) -> ParseResult:
                             element.clear()
                             continue
                         tag = element.tag.rsplit("}", 1)[-1]
-                        if tag == "mergeCell":
+                        if tag == "drawing":
+                            drawing_ref = element.attrib.get(XLSX_RELATIONSHIP_ID, "unknown")
+                            if len(drawing_ref) > 80:
+                                drawing_ref = "unknown"
+                            coverage_issues.append(
+                                f"sheet:{sheet.title}:drawing_unverified:{drawing_ref}"
+                            )
+                        elif tag == "mergeCell":
                             coverage_issues.append(
                                 f"sheet:{sheet.title}:merged_cell:{element.attrib.get('ref', 'unknown')}"
                             )
@@ -465,7 +473,7 @@ def parse_xlsx(path: Path, *, document_id: str) -> ParseResult:
                     )
         return ParseResult(
             document_id=document_id,
-            parser_version="openpyxl:3.1.5/merged-coverage:1/dimension:1",
+            parser_version="openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1",
             status="partial" if coverage_issues else "complete",
             blocks=tuple(blocks),
             total_sheets=len(workbook.sheetnames),

@@ -16,6 +16,8 @@
 
 > 2026-09-26：M2-2d 已加入 [PDF 矢量绘制与注释覆盖检查](m2-2d-pdf-vector-and-annotation-coverage-2026-09-26.md)，后端 125 项离线测试通过。实际绘制的表格线框、嵌套 Form 和注释均保守标为 `partial`；无框表格语义无法由此证明，下一小步拟处理 XLSX 其他结构，任务级限额仍待完成。
 
+> 2026-09-26：M2-2e 已加入 [XLSX 图片与图表覆盖检查](m2-2e-xlsx-drawing-coverage-2026-09-26.md)，后端 127 项离线测试通过。实际引用的绘图不再仅凭单元格判为完整；下一小步拟检查批注及旧式绘图，隐藏行列与任务级限额仍待处理，M2-2 尚未验收。
+
 ## 当前实际进度
 
 - 已有：Git、Conda Python 3.12、模拟 PDF/XLSX 与标注、MinerU 开发验证、MySQL/Redis/Linux worker 健康检查、基础解析代码。
