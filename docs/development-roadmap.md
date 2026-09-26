@@ -14,6 +14,8 @@
 
 > 2026-09-26：M2-2c 已加入 [PDF 嵌入图片覆盖检查](m2-2c-pdf-embedded-images-2026-09-26.md)，后端 118 项离线测试通过。下一小步 M2-2d 处理矢量绘制与表格结构；XLSX 其他结构和任务级限额仍待完成，M2-2 尚未验收。
 
+> 2026-09-26：M2-2d 已加入 [PDF 矢量绘制与注释覆盖检查](m2-2d-pdf-vector-and-annotation-coverage-2026-09-26.md)，后端 125 项离线测试通过。实际绘制的表格线框、嵌套 Form 和注释均保守标为 `partial`；无框表格语义无法由此证明，下一小步拟处理 XLSX 其他结构，任务级限额仍待完成。
+
 ## 当前实际进度
 
 - 已有：Git、Conda Python 3.12、模拟 PDF/XLSX 与标注、MinerU 开发验证、MySQL/Redis/Linux worker 健康检查、基础解析代码。

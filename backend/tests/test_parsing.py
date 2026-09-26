@@ -13,6 +13,15 @@ from zipfile import ZIP_DEFLATED, ZipFile
 import pytest
 from openpyxl import Workbook
 from PIL import Image, ImageDraw
+from pypdf import PdfReader, PdfWriter
+from pypdf.generic import (
+    ArrayObject,
+    DecodedStreamObject,
+    DictionaryObject,
+    NameObject,
+    NumberObject,
+    TextStringObject,
+)
 from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen import canvas
 
@@ -266,6 +275,151 @@ def test_mixed_pdf_with_omitted_image_cannot_claim_complete(tmp_path: Path) -> N
     assert "page:0:embedded_image_unverified" in bound.parsed.coverage_issues
 
 
+@pytest.mark.parametrize("mode", ["direct", "form", "nested_form"])
+def test_pdf_vector_table_lines_cannot_claim_complete(
+    tmp_path: Path, mode: str,
+) -> None:
+    pdf_path = tmp_path / "vector-table.pdf"
+    pdf = canvas.Canvas(str(pdf_path), pagesize=(612, 792))
+    pdf.drawString(72, 720, "Supplier specification")
+    if mode in {"form", "nested_form"}:
+        pdf.beginForm("table_lines")
+        pdf.rect(0, 0, 220, 60, stroke=1, fill=0)
+        pdf.line(0, 30, 220, 30)
+        pdf.endForm()
+        form_to_draw = "table_lines"
+        if mode == "nested_form":
+            pdf.beginForm("outer")
+            pdf.doForm("table_lines")
+            pdf.endForm()
+            form_to_draw = "outer"
+        pdf.saveState()
+        pdf.translate(72, 600)
+        pdf.doForm(form_to_draw)
+        pdf.restoreState()
+    else:
+        pdf.rect(72, 600, 220, 60, stroke=1, fill=0)
+        pdf.line(72, 630, 292, 630)
+    pdf.save()
+
+    middle = json.loads((PACK / "parsed" / "requirements.middle.json").read_text(encoding="utf-8"))
+    middle["pages"][0]["blocks"] = [{
+        "type": "text", "index": 0, "bbox": [0.1, 0.1, 0.5, 0.2],
+        "content": [{"type": "text", "content": "Supplier specification"}],
+    }]
+    middle_path = tmp_path / "vector.middle.json"
+    middle_path.write_text(json.dumps(middle), encoding="utf-8")
+
+    parsed = parsing().parse_mineru_middle(middle_path, document_id="vector")
+    result = parsing().verify_pdf_source_coverage(parsed, pdf_path)
+
+    assert result.status == "partial"
+    assert "page:0:vector_graphics_unverified" in result.coverage_issues
+
+
+def test_pdf_text_only_form_remains_complete(tmp_path: Path) -> None:
+    pdf_path = tmp_path / "text-form.pdf"
+    pdf = canvas.Canvas(str(pdf_path), pagesize=(612, 792))
+    pdf.drawString(72, 720, "Supplier specification")
+    pdf.beginForm("text_only")
+    pdf.drawString(0, 0, "Additional details")
+    pdf.endForm()
+    pdf.saveState()
+    pdf.translate(72, 600)
+    pdf.doForm("text_only")
+    pdf.restoreState()
+    pdf.save()
+
+    middle = json.loads((PACK / "parsed" / "requirements.middle.json").read_text(encoding="utf-8"))
+    middle["pages"][0]["blocks"] = [
+        {"type": "text", "index": index, "bbox": [0.1, 0.1, 0.5, 0.2],
+         "content": [{"type": "text", "content": value}]}
+        for index, value in enumerate(("Supplier specification", "Additional details"))
+    ]
+    middle_path = tmp_path / "text-form.middle.json"
+    middle_path.write_text(json.dumps(middle), encoding="utf-8")
+
+    parsed = parsing().parse_mineru_middle(middle_path, document_id="text-form")
+    result = parsing().verify_pdf_source_coverage(parsed, pdf_path)
+
+    assert result.status == "complete"
+    assert result.coverage_issues == ()
+
+
+def test_unused_pdf_vector_form_does_not_change_coverage(tmp_path: Path) -> None:
+    pdf_path = tmp_path / "unused-form.pdf"
+    pdf = canvas.Canvas(str(pdf_path), pagesize=(612, 792))
+    pdf.drawString(72, 720, "Supplier specification")
+    pdf.beginForm("unused_lines")
+    pdf.rect(0, 0, 220, 60, stroke=1, fill=0)
+    pdf.endForm()
+    pdf.save()
+
+    middle = json.loads((PACK / "parsed" / "requirements.middle.json").read_text(encoding="utf-8"))
+    middle["pages"][0]["blocks"] = [{
+        "type": "text", "index": 0, "bbox": [0.1, 0.1, 0.5, 0.2],
+        "content": [{"type": "text", "content": "Supplier specification"}],
+    }]
+    middle_path = tmp_path / "unused-form.middle.json"
+    middle_path.write_text(json.dumps(middle), encoding="utf-8")
+
+    parsed = parsing().parse_mineru_middle(middle_path, document_id="unused-form")
+    result = parsing().verify_pdf_source_coverage(parsed, pdf_path)
+
+    assert result.status == "complete"
+    assert result.coverage_issues == ()
+
+
+@pytest.mark.parametrize("appearance", [True, False])
+def test_pdf_annotation_cannot_claim_complete(tmp_path: Path, appearance: bool) -> None:
+    source = BytesIO()
+    pdf = canvas.Canvas(source, pagesize=(612, 792))
+    pdf.drawString(72, 720, "Supplier specification")
+    pdf.save()
+
+    writer = PdfWriter()
+    writer.append_pages_from_reader(PdfReader(BytesIO(source.getvalue())))
+    annotation = DictionaryObject({
+        NameObject("/Type"): NameObject("/Annot"),
+        NameObject("/Subtype"): NameObject("/Stamp" if appearance else "/Text"),
+        NameObject("/Rect"): ArrayObject([
+            NumberObject(72), NumberObject(600), NumberObject(222), NumberObject(630),
+        ]),
+        NameObject("/F"): NumberObject(4),
+    })
+    if appearance:
+        drawing = DecodedStreamObject()
+        drawing.set_data(b"0 0 m 150 0 l S")
+        drawing[NameObject("/Type")] = NameObject("/XObject")
+        drawing[NameObject("/Subtype")] = NameObject("/Form")
+        drawing[NameObject("/BBox")] = ArrayObject([
+            NumberObject(0), NumberObject(0), NumberObject(150), NumberObject(30),
+        ])
+        annotation[NameObject("/AP")] = DictionaryObject({
+            NameObject("/N"): writer._add_object(drawing),
+        })
+    else:
+        annotation[NameObject("/Contents")] = TextStringObject("Installed RAM 32 GB")
+    writer.pages[0][NameObject("/Annots")] = ArrayObject([writer._add_object(annotation)])
+    pdf_path = tmp_path / "annotated.pdf"
+    with pdf_path.open("wb") as output:
+        writer.write(output)
+
+    middle = json.loads((PACK / "parsed" / "requirements.middle.json").read_text(encoding="utf-8"))
+    middle["pages"][0]["blocks"] = [{
+        "type": "text", "index": 0, "bbox": [0.1, 0.1, 0.5, 0.2],
+        "content": [{"type": "text", "content": "Supplier specification"}],
+    }]
+    middle_path = tmp_path / "annotated.middle.json"
+    middle_path.write_text(json.dumps(middle), encoding="utf-8")
+
+    parsed = parsing().parse_mineru_middle(middle_path, document_id="annotated")
+    result = parsing().verify_pdf_source_coverage(parsed, pdf_path)
+
+    assert result.status == "partial"
+    assert "page:0:annotation:0:unverified" in result.coverage_issues
+
+
 def test_pdf_source_coverage_does_not_reuse_one_match_for_repeated_lines(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -275,6 +429,12 @@ def test_pdf_source_coverage_does_not_reuse_one_match_for_repeated_lines(
 
     class FakePage:
         images: tuple[()] = ()
+
+        def get(self, key: str) -> None:
+            return None
+
+        def get_contents(self) -> None:
+            return None
 
         def extract_text(self) -> str:
             return "已装内存至少 16 GB\n已装内存至少 16 GB\n"

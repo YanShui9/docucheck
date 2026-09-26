@@ -18,8 +18,9 @@ from defusedxml.common import DefusedXmlException
 from defusedxml.ElementTree import iterparse
 from openpyxl import load_workbook
 from openpyxl.utils.cell import coordinate_to_tuple, get_column_letter
-from pypdf import PdfReader
+from pypdf import PageObject, PdfReader
 from pypdf.errors import PdfReadError
+from pypdf.generic import ArrayObject, ContentStream, DictionaryObject, StreamObject
 
 MAX_FILE_BYTES = 10 * 1024 * 1024
 MAX_XLSX_UNCOMPRESSED_BYTES = 50 * 1024 * 1024
@@ -28,6 +29,9 @@ MAX_ROWS = 1000
 MAX_COLUMNS = 30
 MAX_NONEMPTY_CELLS = 20_000
 MAX_CELL_CHARACTERS = 2000
+PDF_VECTOR_PAINT_OPERATORS = frozenset({
+    b"S", b"s", b"f", b"F", b"f*", b"B", b"B*", b"b", b"b*", b"sh",
+})
 
 
 class UnsupportedContentError(ValueError):
@@ -163,7 +167,7 @@ def parse_mineru_middle(path: Path, *, document_id: str) -> ParseResult:
 
 
 def verify_pdf_source_coverage(parsed: ParseResult, source_pdf: Path) -> ParseResult:
-    """Mark omitted source text and unverified embedded images as incomplete."""
+    """Mark omitted source text and unverified page content as incomplete."""
     try:
         pdf = PdfReader(source_pdf)
         if len(pdf.pages) != parsed.total_pages:
@@ -172,6 +176,19 @@ def verify_pdf_source_coverage(parsed: ParseResult, source_pdf: Path) -> ParseRe
         for page_idx, page in enumerate(pdf.pages):
             if len(page.images):
                 issues.append(f"page:{page_idx}:embedded_image_unverified")
+            annotation_ref = page.get("/Annots")
+            if annotation_ref is not None:
+                annotations = annotation_ref.get_object()
+                if not isinstance(annotations, ArrayObject):
+                    issues.append(f"page:{page_idx}:annotations_unverified")
+                else:
+                    issues.extend(
+                        f"page:{page_idx}:annotation:{index}:unverified"
+                        for index in range(len(annotations))
+                    )
+            issues.extend(
+                f"page:{page_idx}:{issue}" for issue in sorted(_pdf_graphics_issues(page, pdf))
+            )
             try:
                 source_text = page.extract_text()
             except (PdfReadError, UnicodeError, ValueError):
@@ -202,6 +219,10 @@ def verify_pdf_source_coverage(parsed: ParseResult, source_pdf: Path) -> ParseRe
         version += "/source-text:1"
     if "/embedded-image:1" not in version:
         version += "/embedded-image:1"
+    if "/vector-graphics:1" not in version:
+        version += "/vector-graphics:1"
+    if "/annotations:1" not in version:
+        version += "/annotations:1"
     issues = list(dict.fromkeys(issues))
     return replace(parsed, parser_version=version,
                    status="partial" if issues else parsed.status,
@@ -211,6 +232,62 @@ def verify_pdf_source_coverage(parsed: ParseResult, source_pdf: Path) -> ParseRe
 def _normalize_pdf_text(text: str) -> str:
     return "".join(character for character in unicodedata.normalize("NFKC", text)
                    if not character.isspace())
+
+
+def _pdf_graphics_issues(page: PageObject, pdf: PdfReader) -> set[str]:
+    """Inspect painted vectors in the page and forms it actually invokes."""
+    content = page.get_contents()
+    if content is None:
+        return set()
+    root_resource_ref = page.get("/Resources")
+    root_resources = root_resource_ref.get_object() if root_resource_ref is not None else DictionaryObject()
+    if not isinstance(root_resources, DictionaryObject):
+        root_resources = DictionaryObject()
+    issues: set[str] = set()
+    active_forms: set[int] = set()
+
+    def scan(stream: StreamObject | ArrayObject, resources: DictionaryObject, depth: int) -> None:
+        if depth > 20:
+            issues.add("xobject_unverified")
+            return
+        for operands, operator in ContentStream(stream, pdf).operations:
+            if operator in PDF_VECTOR_PAINT_OPERATORS:
+                issues.add("vector_graphics_unverified")
+            if operator != b"Do":
+                continue
+            xobject_ref = resources.get("/XObject")
+            xobjects = xobject_ref.get_object() if xobject_ref else None
+            if not operands or not isinstance(xobjects, DictionaryObject):
+                issues.add("xobject_unverified")
+                continue
+            target_ref = xobjects.get(operands[0])
+            target = target_ref.get_object() if target_ref else None
+            if not isinstance(target, StreamObject):
+                issues.add("xobject_unverified")
+                continue
+            subtype = target.get("/Subtype")
+            if subtype == "/Image":
+                continue  # page.images checks images, including nested and inline images.
+            if subtype != "/Form":
+                issues.add("xobject_unverified")
+                continue
+            form_id = id(target)
+            if form_id in active_forms:
+                issues.add("xobject_unverified")
+                continue
+            form_resource_ref = target.get("/Resources")
+            form_resources = form_resource_ref.get_object() if form_resource_ref is not None else resources
+            if not isinstance(form_resources, DictionaryObject):
+                issues.add("xobject_unverified")
+                continue
+            active_forms.add(form_id)
+            try:
+                scan(target, form_resources, depth + 1)
+            finally:
+                active_forms.remove(form_id)
+
+    scan(content, root_resources, 0)
+    return issues
 
 
 def parse_pdf(
