@@ -38,7 +38,7 @@ class Evaluate(Supplier):
 
 class AnswerDraft(Empty):
     kind: Literal["check", "evidence"]
-    check_result_ids: list[str] = Field(default_factory=list, max_length=3)
+    check_result_ids: list[str] = Field(default_factory=list, max_length=1)
     evidence_ids: list[str] = Field(default_factory=list, max_length=12)
 
 
@@ -57,7 +57,7 @@ DEFINITIONS = {
     "extract_facts": (Supplier, "Extract ALL memory facts across requirement and supplier documents; records coverage."),
     "evaluate_checks": (Evaluate, "Evaluate memory with deterministic rules on the returned fact_set_id."),
     "get_check_results": (Supplier, "Read cached verified memory result in this snapshot for follow-up questions."),
-    "submit_answer": (AnswerDraft, "Finish using verified check_result_ids or evidence_ids; never invent IDs."),
+    "submit_answer": (AnswerDraft, "Use one verified check result. Extra evidence IDs must belong to it."),
     "request_clarification": (Clarification, "Ask for missing user information or explain supported scope."),
 }
 

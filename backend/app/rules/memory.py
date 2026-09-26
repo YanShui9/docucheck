@@ -17,6 +17,7 @@ class CheckResult:
     business_status: str | None
     reason_code: str
     evidence_refs: tuple[str, ...]
+    reason_evidence_refs: tuple[str, ...]
     fact_ids: tuple[str, ...]
     rule_version: str = RULE_VERSION
 
@@ -52,5 +53,7 @@ def evaluate_memory(repo: EvidenceRepository, supplier: str, facts: list[Verifie
                       "eq": actual == requirement.value}[requirement.comparator]
             status, reason = ("满足", "threshold_met") if passes else ("不满足", "threshold_failed")
     identity = digest([repo.snapshot_id, supplier, RULE_VERSION, [f.fact_id for f in facts], status, reason])
+    reason_refs = (tuple(dict.fromkeys(ref for f in offered for ref in f.evidence_refs))
+                   if reason == "contradicting_installed_capacity" else refs)
     return CheckResult(identity, repo.snapshot_id, supplier, "memory", processing, status, reason,
-                       refs, tuple(f.fact_id for f in facts))
+                       refs, reason_refs, tuple(f.fact_id for f in facts))

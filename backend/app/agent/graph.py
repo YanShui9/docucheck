@@ -98,7 +98,7 @@ class AgentSession:
                         return {"repairs": state["repairs"] + 1, "next_node": "decide",
                                 "messages": [*state["messages"], ToolMessage(tool_call_id=call["id"],
                                     content=json.dumps({"status": "error", "error": "answer_invalid",
-                                                        "instruction": "Use verified result and evidence IDs."}))]}
+                                                        "instruction": "Use one verified result; extra evidence IDs must belong to it."}))]}
                     event.update(status="completed")
                     return {"answer": answer, "status": status, "next_node": "end"}
                 if name == "request_clarification":

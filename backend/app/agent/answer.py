@@ -16,20 +16,38 @@ REASONS = {
 
 
 def render_answer(draft: AnswerDraft, tools: ToolExecutor, question: str) -> tuple[str, str]:
+    if len(draft.check_result_ids) > 1:
+        raise ValueError("answer_invalid")
     if draft.kind == "check" and not draft.check_result_ids:
         raise ValueError("answer_invalid")
-    if not draft.check_result_ids and re.search(r"达标|符合|满足|合格", question):
+    conflict_sources = (re.search(r"冲突|矛盾", question) is not None
+                        and re.search(r"哪|来源|证据|根据|依据|为什么", question) is not None)
+    conflict_sources |= (re.search(r"哪\s*(?:两|二|2)\s*处", question) is not None
+                         and re.search(r"判断|根据|依据|来源|证据", question) is not None)
+    if not draft.check_result_ids and (re.search(r"达标|符合|满足|合格", question)
+                                       or conflict_sources):
         raise ValueError("answer_invalid")
-    lines, refs, status = [], list(draft.evidence_ids), "completed"
+    lines: list[str] = []
+    refs: list[str] = []
+    result_refs: set[str] = set()
+    status = "completed"
     for key in draft.check_result_ids:
         result = tools.results.get(key)
-        if result is None or result.snapshot_id != tools.repo.snapshot_id:
+        if (result is None or result.snapshot_id != tools.repo.snapshot_id
+                or result.field_key != "memory"):
             raise ValueError("answer_invalid")
-        refs.extend(result.evidence_refs)
+        result_refs.update(result.evidence_refs)
+        refs.extend(result.reason_evidence_refs if conflict_sources
+                    and result.reason_code == "contradicting_installed_capacity"
+                    else result.evidence_refs)
         lines.append(f"{result.supplier} · 内存：{result.business_status or '处理未完成'}。"
                      f"{REASONS[result.reason_code]}")
         if result.processing_status != "complete":
             status = "partial"
+    if draft.check_result_ids and not set(draft.evidence_ids) <= result_refs:
+        raise ValueError("answer_invalid")
+    if not conflict_sources or not draft.check_result_ids:
+        refs.extend(draft.evidence_ids)
     refs = list(dict.fromkeys(refs))
     if (not refs and not draft.check_result_ids) or not set(refs) <= tools.seen:
         raise ValueError("answer_invalid")
