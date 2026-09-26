@@ -4,7 +4,13 @@ from dataclasses import asdict
 from hashlib import sha256
 from pathlib import Path
 
-from ..parsing import MAX_FILE_BYTES, ParseResult, parse_mineru_middle, parse_xlsx
+from ..parsing import (
+    MAX_FILE_BYTES,
+    ParseResult,
+    parse_mineru_middle,
+    parse_xlsx,
+    verify_pdf_source_coverage,
+)
 from .models import Document, ScopedEvidence
 
 
@@ -20,6 +26,8 @@ def bind_document(parsed: ParseResult, *, source_path: Path, role: str,
         raise ValueError("invalid_supplier_binding")
     if source_path.stat().st_size > MAX_FILE_BYTES:
         raise ValueError("file_limit")
+    if source_path.suffix.lower() == ".pdf":
+        parsed = verify_pdf_source_coverage(parsed, source_path)
     return Document(parsed.document_id, sha256(source_path.read_bytes()).hexdigest(),
                     role, supplier, model, parsed)
 

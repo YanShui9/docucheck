@@ -4,6 +4,8 @@
 
 > 2026-09-26：[M2-0 XLSX 内存分列证据修正](docs/m2-0-acceptance-2026-09-26.md)和 [M2-1 答复引用范围修正](docs/m2-1-acceptance-2026-09-26.md)已通过离线回归（当前 110 项测试）。下一小步为 M2-2 解析覆盖；M2 完整采购审查尚未完成。
 
+> 2026-09-26：[M2-2a PDF 源文字覆盖校验](docs/m2-2a-pdf-source-coverage-2026-09-26.md)已通过离线回归（当前 113 项测试），能发现原 PDF 可提取文字在 MinerU 结果中静默漏抽。下一小步为 M2-2b XLSX 范围声明校验；整个 M2-2 与完整采购审查仍未完成。
+
 DocuCheck 是一个正在开发的本地采购资料初审 Agent 工作台。目标交互是上传资料后提问，由单 Agent 调用受控工具并返回带来源的答复；八字段正式结论由规则引擎计算。现有资产包括基础环境、模拟文档、PDF/XLSX 解析、快照证据、词法检索和 DeepSeek Provider；单次真实模型工具调用及三批模拟资料抽取均已有用户反馈。内存抽取、证据校验和规则已完成模拟包复核；Agent 循环与 CLI 已通过离线测试及一次完整的模拟包真实两轮对话。Linux worker 只有启动与健康检查骨架；正式 API、数据库迁移和前端尚未实现。
 
 AI 协作上下文见 [CLAUDE.md](CLAUDE.md)；Codex 入口为 [AGENTS.md](AGENTS.md)。当前设计基线是 [Agent 架构 v1.0](docs/superpowers/specs/2026-09-24-agent-first-design.md)，涵盖模型、状态、工具、上下文、RAG、恢复和评测；M1 以外的正式业务能力仍按路线图实施。

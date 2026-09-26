@@ -5,8 +5,9 @@ from __future__ import annotations
 import json
 import subprocess
 import tempfile
+import unicodedata
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from hashlib import sha256
 from pathlib import Path
 from typing import Literal
@@ -17,6 +18,7 @@ from defusedxml.common import DefusedXmlException
 from defusedxml.ElementTree import iterparse
 from openpyxl import load_workbook
 from pypdf import PdfReader
+from pypdf.errors import PdfReadError
 
 MAX_FILE_BYTES = 10 * 1024 * 1024
 MAX_XLSX_UNCOMPRESSED_BYTES = 50 * 1024 * 1024
@@ -66,7 +68,7 @@ def _evidence_id(document_id: str, locator: str, text: str) -> str:
 
 
 def parse_mineru_middle(path: Path, *, document_id: str) -> ParseResult:
-    """Read MinerU 4 middle JSON, preserving normalized PDF page coordinates."""
+    """Read MinerU 4 middle JSON; source PDF coverage is checked separately."""
     source = json.loads(Path(path).read_text(encoding="utf-8"))
     if source.get("schema") != "docvortex.middle" or source.get("schema_version") != "2.0":
         raise UnsupportedContentError("unsupported MinerU middle JSON schema")
@@ -159,6 +161,53 @@ def parse_mineru_middle(path: Path, *, document_id: str) -> ParseResult:
     )
 
 
+def verify_pdf_source_coverage(parsed: ParseResult, source_pdf: Path) -> ParseResult:
+    """Mark source text omitted from a MinerU result as incomplete coverage."""
+    try:
+        pdf = PdfReader(source_pdf)
+        if len(pdf.pages) != parsed.total_pages:
+            raise DocumentParsingError("MinerU page count differs from the source PDF")
+        issues = list(parsed.coverage_issues)
+        for page_idx, page in enumerate(pdf.pages):
+            try:
+                source_text = page.extract_text()
+            except (PdfReadError, UnicodeError, ValueError):
+                source_text = None
+            if not source_text or not source_text.strip():
+                issues.append(f"page:{page_idx}:source_text_unavailable")
+                continue
+            parsed_text = "".join(block.text for block in parsed.blocks if block.page_idx == page_idx)
+            normalized_parsed = _normalize_pdf_text(parsed_text)
+            used_positions = bytearray(len(normalized_parsed))
+            for line_idx, line in enumerate(source_text.splitlines(), start=1):
+                normalized_line = _normalize_pdf_text(line)
+                if not normalized_line:
+                    continue
+                match_at = normalized_parsed.find(normalized_line)
+                while match_at >= 0 and any(used_positions[match_at:match_at + len(normalized_line)]):
+                    match_at = normalized_parsed.find(normalized_line, match_at + 1)
+                if match_at < 0:
+                    issues.append(f"page:{page_idx}:source_line:{line_idx}:not_extracted")
+                else:
+                    used_positions[match_at:match_at + len(normalized_line)] = b"\x01" * len(normalized_line)
+    except DocumentParsingError:
+        raise
+    except Exception as exc:
+        raise UnsupportedContentError("PDF source text could not be checked") from exc
+    version = parsed.parser_version
+    if "/source-text:1" not in version:
+        version += "/source-text:1"
+    issues = list(dict.fromkeys(issues))
+    return replace(parsed, parser_version=version,
+                   status="partial" if issues else parsed.status,
+                   coverage_issues=tuple(issues))
+
+
+def _normalize_pdf_text(text: str) -> str:
+    return "".join(character for character in unicodedata.normalize("NFKC", text)
+                   if not character.isspace())
+
+
 def parse_pdf(
     path: Path,
     *,
@@ -216,9 +265,7 @@ def parse_pdf(
         if completed.returncode != 0 or not output_path.is_file():
             raise DocumentParsingError(f"MinerU failed with exit code {completed.returncode}")
         result = parse_mineru_middle(output_path, document_id=document_id)
-    if result.total_pages != page_count:
-        raise DocumentParsingError("MinerU page count differs from the source PDF")
-    return result
+    return verify_pdf_source_coverage(result, source)
 
 
 def parse_xlsx(path: Path, *, document_id: str) -> ParseResult:

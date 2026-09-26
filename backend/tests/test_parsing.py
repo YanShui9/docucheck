@@ -1,7 +1,9 @@
 """Source-backed parsing checks for the synthetic development pack."""
 
 import json
+import shutil
 import sys
+from hashlib import sha256
 from importlib import import_module
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile
@@ -127,6 +129,82 @@ def test_pdf_entrypoint_checks_source_and_runs_mineru(tmp_path: Path) -> None:
 
     assert result.status == "complete"
     assert any("采购数量 10 台" in block.text for block in result.blocks)
+
+
+def _middle_without_memory(path: Path) -> None:
+    source = json.loads((PACK / "parsed" / "requirements.middle.json").read_text(encoding="utf-8"))
+    source["pages"][0]["blocks"] = [
+        block for block in source["pages"][0]["blocks"]
+        if not any("已装内存至少 16 GB" in item.get("content", "") for item in block["content"])
+    ]
+    path.write_text(json.dumps(source, ensure_ascii=False), encoding="utf-8")
+
+
+def test_pdf_entrypoint_marks_silently_omitted_source_text_partial(tmp_path: Path) -> None:
+    incomplete_middle = tmp_path / "omitted.middle.json"
+    _middle_without_memory(incomplete_middle)
+    fake_mineru = tmp_path / "fake_mineru.py"
+    fake_mineru.write_text(
+        "import shutil, sys\n"
+        "from pathlib import Path\n"
+        f"source = Path({str(incomplete_middle)!r})\n"
+        "shutil.copyfile(source, sys.argv[sys.argv.index('-o') + 1])\n",
+        encoding="utf-8",
+    )
+
+    result = parsing().parse_pdf(
+        PACK / "requirements.pdf", document_id="requirements",
+        mineru_command=[sys.executable, str(fake_mineru)],
+    )
+
+    assert result.status == "partial"
+    assert any(issue.startswith("page:0:source_line:") for issue in result.coverage_issues)
+
+
+def test_pdf_source_coverage_does_not_reuse_one_match_for_repeated_lines(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    parsed = parsing().parse_mineru_middle(
+        PACK / "parsed" / "requirements.middle.json", document_id="requirements"
+    )
+
+    class FakePage:
+        def extract_text(self) -> str:
+            return "已装内存至少 16 GB\n已装内存至少 16 GB\n"
+
+    class FakeReader:
+        def __init__(self, _source: Path) -> None:
+            self.pages = [FakePage()]
+
+    monkeypatch.setattr(parsing(), "PdfReader", FakeReader)
+    result = parsing().verify_pdf_source_coverage(parsed, PACK / "requirements.pdf")
+
+    assert result.status == "partial"
+    assert "page:0:source_line:2:not_extracted" in result.coverage_issues
+
+
+def test_dev_pack_cache_is_checked_against_original_pdf(tmp_path: Path) -> None:
+    from backend.app.evidence.repository import load_case
+    from backend.app.rules.memory import evaluate_memory
+
+    case_dir = tmp_path / "case"
+    shutil.copytree(PACK, case_dir)
+    cached = case_dir / "parsed" / "requirements.middle.json"
+    _middle_without_memory(cached)
+    manifest_path = case_dir / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["documents"][0]["parsed_sha256"] = sha256(cached.read_bytes()).hexdigest()
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    repo = load_case(case_dir)
+    assert not repo.coverage("vendor-a")["complete"]
+    requirement = next(document for document in repo.documents if document.role == "requirement")
+    assert requirement.parsed.status == "partial"
+    assert "/source-text:1" in requirement.parsed.parser_version
+    assert any(issue.startswith("page:0:source_line:")
+               for issue in requirement.parsed.coverage_issues)
+    check = evaluate_memory(repo, "vendor-a", [], scan_complete=True)
+    assert check.processing_status == "partial" and check.business_status is None
 
 
 def test_all_labeled_evidence_can_be_located_in_parsed_sources() -> None:
