@@ -10,8 +10,11 @@ from dataclasses import dataclass
 from hashlib import sha256
 from pathlib import Path
 from typing import Literal
+from xml.etree.ElementTree import ParseError
 from zipfile import BadZipFile, ZipFile
 
+from defusedxml.common import DefusedXmlException
+from defusedxml.ElementTree import iterparse
 from openpyxl import load_workbook
 from pypdf import PdfReader
 
@@ -223,6 +226,7 @@ def parse_xlsx(path: Path, *, document_id: str) -> ParseResult:
     source = Path(path)
     if source.suffix.lower() != ".xlsx" or source.stat().st_size > MAX_FILE_BYTES:
         raise UnsupportedContentError("expected an XLSX file of at most 10 MiB")
+    coverage_issues: list[str] = []
     try:
         with ZipFile(source) as archive:
             uncompressed_bytes = sum(item.file_size for item in archive.infolist())
@@ -242,6 +246,18 @@ def parse_xlsx(path: Path, *, document_id: str) -> ParseResult:
                 sheet.max_column is not None and sheet.max_column > MAX_COLUMNS
             ):
                 raise UnsupportedContentError("XLSX sheet dimensions exceed 1000 rows or 30 columns")
+            try:
+                # Read the worksheet part resolved by openpyxl's workbook relationships.
+                with workbook._archive.open(sheet._worksheet_path) as stream:
+                    for _, element in iterparse(stream, events=("end",)):
+                        if element.tag.rsplit("}", 1)[-1] == "mergeCell":
+                            coverage_issues.append(
+                                f"sheet:{sheet.title}:merged_cell:{element.attrib.get('ref', 'unknown')}"
+                            )
+                            break
+                        element.clear()
+            except (DefusedXmlException, ParseError) as exc:
+                raise UnsupportedContentError("XLSX worksheet XML is malformed") from exc
             for row in sheet.iter_rows():
                 for cell in row:
                     if cell.value is None:
@@ -270,11 +286,12 @@ def parse_xlsx(path: Path, *, document_id: str) -> ParseResult:
                     )
         return ParseResult(
             document_id=document_id,
-            parser_version="openpyxl:3.1.5",
-            status="complete",
+            parser_version="openpyxl:3.1.5/merged-coverage:1",
+            status="partial" if coverage_issues else "complete",
             blocks=tuple(blocks),
             total_sheets=len(workbook.sheetnames),
             processed_sheets=tuple(workbook.sheetnames),
+            coverage_issues=tuple(coverage_issues),
         )
     finally:
         workbook.close()

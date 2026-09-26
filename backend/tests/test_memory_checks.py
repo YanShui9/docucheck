@@ -148,3 +148,165 @@ def test_omitted_memory_source_keeps_processing_incomplete():
     check = evaluate_memory(repo, "vendor-a", list(fact_set.facts), scan_complete=fact_set.complete)
     assert check.processing_status == "partial"
     assert check.business_status is None
+
+
+def _split_quote_repo(value_text="16 GB"):
+    repo = load_case(PACK)
+    documents = list(repo.documents)
+    for index, document in enumerate(documents):
+        if document.role != "quote":
+            continue
+        blocks = tuple(replace(block, text=value_text) if block.cell == "B6" else block
+                       for block in document.parsed.blocks)
+        documents[index] = replace(document, parsed=replace(document.parsed, blocks=blocks))
+    return EvidenceRepository(repo.case_id, repo.revision + 1, documents)
+
+
+def _split_quote_extractor(repo, *, include_pair):
+    import json
+
+    from langchain_core.messages import AIMessage
+
+    by_id = {block.evidence_id: block for block in repo.blocks}
+    label = next(block for block in repo.blocks if block.role == "quote" and block.cell == "A6")
+    value = next(block for block in repo.blocks if block.role == "quote" and block.cell == "B6")
+
+    def model_call(operation, messages, schema):
+        assert operation == "extract"
+        items = json.loads(messages[-1].content)["evidence"]
+        facts = []
+        for item in items:
+            block = by_id[item["evidence_id"]]
+            if "已装内存" not in block.text or "GB" not in block.text:
+                continue
+            facts.append({"raw_value": "32" if "32" in block.text else "16",
+                          "raw_unit": "GB", "qualifier": "installed",
+                          "comparator": "gte" if block.role == "requirement" else "eq",
+                          "evidence_refs": [block.evidence_id]})
+        if include_pair and {label.evidence_id, value.evidence_id} <= {
+            item["evidence_id"] for item in items
+        }:
+            assert {item["cell"] for item in items if item["evidence_id"] in {
+                label.evidence_id, value.evidence_id
+            }} == {"A6", "B6"}
+            facts.append({"raw_value": "16", "raw_unit": "GB", "qualifier": "installed",
+                          "comparator": "eq", "evidence_refs": [label.evidence_id, value.evidence_id]})
+        return AIMessage(content="", tool_calls=[
+            {"name": "MemoryCandidates", "args": {"facts": facts}, "id": "batch"}
+        ])
+
+    return model_call
+
+
+def test_split_xlsx_memory_value_requires_both_original_cells():
+    from backend.app.extraction.validation import validate_memory
+
+    repo = _split_quote_repo()
+    label = next(block for block in repo.blocks if block.role == "quote" and block.cell == "A6")
+    value = next(block for block in repo.blocks if block.role == "quote" and block.cell == "B6")
+    fact = validate_memory({"raw_value": "16", "raw_unit": "GB", "qualifier": "installed",
+                            "comparator": "eq", "evidence_refs": [label.evidence_id, value.evidence_id]},
+                           repo, "vendor-a")
+    assert fact.evidence_refs == (label.evidence_id, value.evidence_id)
+    assert fact.role == "quote" and str(fact.value) == "16"
+
+
+def test_split_xlsx_memory_quote_conflicts_with_specification():
+    from backend.app.extraction.memory import extract_memory
+    from backend.app.rules.memory import evaluate_memory
+
+    repo = _split_quote_repo()
+    fact_set = extract_memory(repo, "vendor-a", _split_quote_extractor(repo, include_pair=True))
+    assert fact_set.complete
+    assert len(fact_set.facts) == 3
+    check = evaluate_memory(repo, "vendor-a", list(fact_set.facts), scan_complete=fact_set.complete)
+    assert check.business_status == "资料冲突"
+    assert {block.cell for block in repo.read(list(check.evidence_refs)) if block.role == "quote"} == {
+        "A6", "B6"
+    }
+
+
+def test_omitted_split_xlsx_memory_quote_does_not_claim_complete_coverage():
+    from backend.app.extraction.memory import extract_memory
+    from backend.app.rules.memory import evaluate_memory
+
+    repo = _split_quote_repo()
+    fact_set = extract_memory(repo, "vendor-a", _split_quote_extractor(repo, include_pair=False))
+    assert not fact_set.complete
+    check = evaluate_memory(repo, "vendor-a", list(fact_set.facts), scan_complete=fact_set.complete)
+    assert check.processing_status == "partial"
+    assert check.business_status is None
+
+
+def test_xlsx_memory_label_cannot_borrow_storage_capacity():
+    from backend.app.extraction.validation import validate_memory
+
+    repo = _split_quote_repo("已装存储 512 GB")
+    label = next(block for block in repo.blocks if block.role == "quote" and block.cell == "A6")
+    storage = next(block for block in repo.blocks if block.role == "quote" and block.cell == "B6")
+    with pytest.raises(ValueError, match="fact_field"):
+        validate_memory({"raw_value": "512", "raw_unit": "GB", "qualifier": "installed",
+                         "comparator": "eq", "evidence_refs": [label.evidence_id, storage.evidence_id]},
+                        repo, "vendor-a")
+
+
+def _split_quote_with_extra_cells(extra_cells):
+    repo = _split_quote_repo()
+    documents = list(repo.documents)
+    for index, document in enumerate(documents):
+        if document.role != "quote":
+            continue
+        template = next(block for block in document.parsed.blocks if block.cell == "B6")
+        extras = tuple(replace(template, evidence_id=f"extra-{cell}", cell=cell, text=text)
+                       for cell, text in extra_cells.items())
+        documents[index] = replace(document, parsed=replace(
+            document.parsed, blocks=(*document.parsed.blocks, *extras)))
+    return EvidenceRepository(repo.case_id, repo.revision + 1, documents)
+
+
+@pytest.mark.parametrize("extra_cells", [
+    {"B5": "最大支持"},
+    {"C6": "8 GB"},
+])
+def test_xlsx_memory_pair_rejects_conflicting_table_context(extra_cells):
+    from backend.app.extraction.validation import validate_memory
+
+    repo = _split_quote_with_extra_cells(extra_cells)
+    label = next(block for block in repo.blocks if block.role == "quote" and block.cell == "A6")
+    value = next(block for block in repo.blocks if block.role == "quote" and block.cell == "B6")
+    with pytest.raises(ValueError, match="fact_field"):
+        validate_memory({"raw_value": "16", "raw_unit": "GB", "qualifier": "installed",
+                         "comparator": "eq", "evidence_refs": [label.evidence_id, value.evidence_id]},
+                        repo, "vendor-a")
+
+
+@pytest.mark.parametrize("label_text", ["已装内存卡", "已装虚拟内存"])
+def test_xlsx_other_memory_label_is_not_installed_ram(label_text):
+    from backend.app.extraction.validation import validate_memory
+
+    repo = _split_quote_repo()
+    documents = list(repo.documents)
+    for index, document in enumerate(documents):
+        if document.role == "quote":
+            blocks = tuple(replace(block, text=label_text) if block.cell == "A6" else block
+                           for block in document.parsed.blocks)
+            documents[index] = replace(document, parsed=replace(document.parsed, blocks=blocks))
+    repo = EvidenceRepository(repo.case_id, repo.revision + 1, documents)
+    label = next(block for block in repo.blocks if block.role == "quote" and block.cell == "A6")
+    value = next(block for block in repo.blocks if block.role == "quote" and block.cell == "B6")
+    with pytest.raises(ValueError, match="fact_field"):
+        validate_memory({"raw_value": "16", "raw_unit": "GB", "qualifier": "installed",
+                         "comparator": "eq", "evidence_refs": [label.evidence_id, value.evidence_id]},
+                        repo, "vendor-a")
+
+
+@pytest.mark.parametrize("cell_text", ["已装内存卡 16 GB", "已装虚拟内存 16 GB"])
+def test_xlsx_other_memory_cell_is_not_installed_ram(cell_text):
+    from backend.app.extraction.validation import validate_memory
+
+    repo = _split_quote_repo(cell_text)
+    card = next(block for block in repo.blocks if block.role == "quote" and block.cell == "B6")
+    with pytest.raises(ValueError, match="fact_field"):
+        validate_memory({"raw_value": "16", "raw_unit": "GB", "qualifier": "installed",
+                         "comparator": "eq", "evidence_refs": [card.evidence_id]},
+                        repo, "vendor-a")

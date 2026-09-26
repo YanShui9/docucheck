@@ -4,6 +4,7 @@ import json
 import sys
 from importlib import import_module
 from pathlib import Path
+from zipfile import ZIP_DEFLATED, ZipFile
 
 import pytest
 from openpyxl import Workbook
@@ -63,6 +64,46 @@ def test_formula_cells_are_rejected_instead_of_treated_as_values(tmp_path: Path)
 
     with pytest.raises(parsing().UnsupportedContentError, match="formula"):
         parsing().parse_xlsx(path, document_id="formula")
+
+
+def test_merged_xlsx_cells_do_not_claim_complete_coverage(tmp_path: Path) -> None:
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet["A6"] = "已装内存"
+    sheet.merge_cells("A6:A7")
+    sheet["B6"] = "16 GB"
+    sheet["B7"] = "32 GB"
+    path = tmp_path / "merged.xlsx"
+    workbook.save(path)
+
+    result = parsing().parse_xlsx(path, document_id="merged")
+    assert result.status == "partial"
+    assert any("merged_cell" in issue for issue in result.coverage_issues)
+
+
+def test_merged_xlsx_worksheet_at_relocated_part_is_still_partial(tmp_path: Path) -> None:
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet["A6"] = "已装内存"
+    sheet.merge_cells("A6:A7")
+    sheet["B6"] = "16 GB"
+    sheet["B7"] = "32 GB"
+    original = tmp_path / "original.xlsx"
+    relocated = tmp_path / "relocated.xlsx"
+    workbook.save(original)
+    old_part = b"/xl/worksheets/sheet1.xml"
+    new_part = b"/xl/custom/sheet1.xml"
+    with ZipFile(original) as source, ZipFile(relocated, "w", compression=ZIP_DEFLATED) as target:
+        for item in source.infolist():
+            data = source.read(item.filename)
+            if item.filename in {"xl/_rels/workbook.xml.rels", "[Content_Types].xml"}:
+                data = data.replace(old_part, new_part)
+            name = item.filename.replace("xl/worksheets/sheet1.xml", "xl/custom/sheet1.xml")
+            target.writestr(name, data)
+
+    result = parsing().parse_xlsx(relocated, document_id="relocated")
+    assert result.status == "partial"
+    assert any("merged_cell" in issue for issue in result.coverage_issues)
 
 
 def test_pdf_entrypoint_checks_source_and_runs_mineru(tmp_path: Path) -> None:
