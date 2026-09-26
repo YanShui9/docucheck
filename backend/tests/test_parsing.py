@@ -1,6 +1,7 @@
 """Source-backed parsing checks for the synthetic development pack."""
 
 import json
+import re
 import shutil
 import sys
 from hashlib import sha256
@@ -44,6 +45,64 @@ def test_xlsx_cells_keep_sheet_and_cell_coordinates() -> None:
     assert cells[("报价", "B6")].text == "已装内存 16 GB"
     assert cells[("报价", "B9")].text == "合同签订后 10 个工作日"
     assert len({block.evidence_id for block in result.blocks}) == len(result.blocks)
+
+
+def _with_declared_xlsx_dimension(source: Path, target: Path, dimension: str) -> None:
+    with ZipFile(source) as original, ZipFile(target, "w", compression=ZIP_DEFLATED) as changed:
+        for item in original.infolist():
+            content = original.read(item.filename)
+            if item.filename == "xl/worksheets/sheet1.xml":
+                content, replacements = re.subn(
+                    rb'(<dimension ref=")[^"]+("\s*/>)',
+                    lambda match: match.group(1) + dimension.encode("ascii") + match.group(2),
+                    content,
+                    count=1,
+                )
+                assert replacements == 1
+            changed.writestr(item, content)
+
+
+@pytest.mark.parametrize(
+    ("declared_dimension", "first_missing_cell"),
+    [("A1", "A6"), ("B6", "A1")],
+)
+def test_xlsx_underreported_dimension_recovers_cells_and_marks_partial(
+    tmp_path: Path, declared_dimension: str, first_missing_cell: str,
+) -> None:
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet["A1"] = "报价"
+    sheet["A6"] = "已装内存"
+    sheet["B6"] = "16 GB"
+    original = tmp_path / "original.xlsx"
+    incorrect = tmp_path / "incorrect.xlsx"
+    workbook.save(original)
+    _with_declared_xlsx_dimension(original, incorrect, declared_dimension)
+
+    result = parsing().parse_xlsx(incorrect, document_id="incorrect")
+
+    cells = {(block.sheet, block.cell): block.text for block in result.blocks}
+    assert cells[(sheet.title, "A6")] == "已装内存"
+    assert cells[(sheet.title, "B6")] == "16 GB"
+    assert result.status == "partial"
+    assert any(f"dimension_mismatch:{first_missing_cell}" in issue
+               for issue in result.coverage_issues)
+
+
+@pytest.mark.parametrize("hidden_cell", ["AE1", "A1001"])
+def test_xlsx_underreported_dimension_cannot_hide_out_of_limit_cells(
+    tmp_path: Path, hidden_cell: str,
+) -> None:
+    workbook = Workbook()
+    workbook.active["A1"] = "报价"
+    workbook.active[hidden_cell] = "超出首版范围"
+    original = tmp_path / "original.xlsx"
+    incorrect = tmp_path / "incorrect.xlsx"
+    workbook.save(original)
+    _with_declared_xlsx_dimension(original, incorrect, "A1")
+
+    with pytest.raises(parsing().UnsupportedContentError, match="dimensions exceed"):
+        parsing().parse_xlsx(incorrect, document_id="incorrect")
 
 
 def test_mineru_partial_flag_is_not_reported_as_complete(tmp_path: Path) -> None:

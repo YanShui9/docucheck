@@ -17,6 +17,7 @@ from zipfile import BadZipFile, ZipFile
 from defusedxml.common import DefusedXmlException
 from defusedxml.ElementTree import iterparse
 from openpyxl import load_workbook
+from openpyxl.utils.cell import coordinate_to_tuple, get_column_letter
 from pypdf import PdfReader
 from pypdf.errors import PdfReadError
 
@@ -293,19 +294,69 @@ def parse_xlsx(path: Path, *, document_id: str) -> ParseResult:
                 sheet.max_column is not None and sheet.max_column > MAX_COLUMNS
             ):
                 raise UnsupportedContentError("XLSX sheet dimensions exceed 1000 rows or 30 columns")
+            declared_bounds = (sheet.min_row, sheet.min_column, sheet.max_row, sheet.max_column)
+            dimension_mismatch = False
+            row_index = 0
+            column_index = 0
             try:
                 # Read the worksheet part resolved by openpyxl's workbook relationships.
                 with workbook._archive.open(sheet._worksheet_path) as stream:
-                    for _, element in iterparse(stream, events=("end",)):
-                        if element.tag.rsplit("}", 1)[-1] == "mergeCell":
+                    for event, element in iterparse(stream, events=("start", "end")):
+                        if event == "end":
+                            element.clear()
+                            continue
+                        tag = element.tag.rsplit("}", 1)[-1]
+                        if tag == "mergeCell":
                             coverage_issues.append(
                                 f"sheet:{sheet.title}:merged_cell:{element.attrib.get('ref', 'unknown')}"
                             )
-                            break
-                        element.clear()
+                        elif tag == "row":
+                            row_ref = element.get("r")
+                            try:
+                                row_index = int(row_ref) if row_ref is not None else row_index + 1
+                            except ValueError as exc:
+                                raise UnsupportedContentError("XLSX row coordinate is invalid") from exc
+                            if row_index < 1 or row_index > MAX_ROWS:
+                                raise UnsupportedContentError(
+                                    "XLSX sheet dimensions exceed 1000 rows or 30 columns"
+                                )
+                            column_index = 0
+                        elif tag == "c":
+                            cell_ref = element.get("r")
+                            if cell_ref:
+                                try:
+                                    cell_row, cell_column = coordinate_to_tuple(cell_ref)
+                                except ValueError as exc:
+                                    raise UnsupportedContentError(
+                                        "XLSX cell coordinate is invalid"
+                                    ) from exc
+                                column_index = cell_column
+                            else:
+                                column_index += 1
+                                cell_row, cell_column = row_index, column_index
+                                cell_ref = f"{get_column_letter(cell_column)}{cell_row}"
+                            if cell_row != row_index or cell_column < 1:
+                                raise UnsupportedContentError("XLSX cell coordinate differs from row")
+                            if cell_row > MAX_ROWS or cell_column > MAX_COLUMNS:
+                                raise UnsupportedContentError(
+                                    "XLSX sheet dimensions exceed 1000 rows or 30 columns"
+                                )
+                            min_row, min_col, max_row, max_col = declared_bounds
+                            if not dimension_mismatch and (
+                                (min_row is not None and cell_row < min_row)
+                                or (min_col is not None and cell_column < min_col)
+                                or (max_row is not None and cell_row > max_row)
+                                or (max_col is not None and cell_column > max_col)
+                            ):
+                                coverage_issues.append(
+                                    f"sheet:{sheet.title}:dimension_mismatch:{cell_ref}"
+                                )
+                                dimension_mismatch = True
             except (DefusedXmlException, ParseError) as exc:
                 raise UnsupportedContentError("XLSX worksheet XML is malformed") from exc
-            for row in sheet.iter_rows():
+            if dimension_mismatch:
+                sheet.reset_dimensions()
+            for row in sheet.iter_rows(min_row=1, min_col=1):
                 for cell in row:
                     if cell.value is None:
                         continue
@@ -333,7 +384,7 @@ def parse_xlsx(path: Path, *, document_id: str) -> ParseResult:
                     )
         return ParseResult(
             document_id=document_id,
-            parser_version="openpyxl:3.1.5/merged-coverage:1",
+            parser_version="openpyxl:3.1.5/merged-coverage:1/dimension:1",
             status="partial" if coverage_issues else "complete",
             blocks=tuple(blocks),
             total_sheets=len(workbook.sheetnames),
