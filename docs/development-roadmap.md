@@ -18,6 +18,8 @@
 
 > 2026-09-26：M2-2e 已加入 [XLSX 图片与图表覆盖检查](m2-2e-xlsx-drawing-coverage-2026-09-26.md)，后端 127 项离线测试通过。实际引用的绘图不再仅凭单元格判为完整；下一小步拟检查批注及旧式绘图，隐藏行列与任务级限额仍待处理，M2-2 尚未验收。
 
+> 2026-09-27：M2-2f 已加入 [XLSX 常规批注与旧式绘图覆盖检查](m2-2f-xlsx-comments-legacy-drawings-2026-09-27.md)，后端 131 项离线测试通过。常规批注关系、旧式 VML 和页眉绘图会保守标为 `partial`；下一小步拟检查隐藏行列，M2-2 尚未验收。
+
 ## 当前实际进度
 
 - 已有：Git、Conda Python 3.12、模拟 PDF/XLSX 与标注、MinerU 开发验证、MySQL/Redis/Linux worker 健康检查、基础解析代码。

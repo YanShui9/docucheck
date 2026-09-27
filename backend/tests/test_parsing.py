@@ -11,8 +11,9 @@ from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile
 
 import pytest
-from openpyxl import Workbook
+from openpyxl import Workbook, load_workbook
 from openpyxl.chart import BarChart, Reference
+from openpyxl.comments import Comment
 from openpyxl.drawing.image import Image as XlsxImage
 from PIL import Image, ImageDraw
 from pypdf import PdfReader, PdfWriter
@@ -213,6 +214,135 @@ def test_xlsx_drawing_cannot_claim_complete(tmp_path: Path, kind: str) -> None:
     assert cells[("报价", "B1")] == "16 GB"
     assert result.status == "partial"
     assert "sheet:报价:drawing_unverified:rId1" in result.coverage_issues
+
+
+def test_xlsx_comment_cannot_claim_complete(tmp_path: Path) -> None:
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "报价"
+    sheet["A1"] = "已装内存"
+    sheet["B1"] = "16 GB"
+    sheet["B1"].comment = Comment("已装内存 32 GB", "供应商")
+    path = tmp_path / "comment.xlsx"
+    workbook.save(path)
+
+    result = parsing().parse_xlsx(path, document_id="comment")
+
+    cells = {(block.sheet, block.cell): block.text for block in result.blocks}
+    assert cells[("报价", "A1")] == "已装内存"
+    assert cells[("报价", "B1")] == "16 GB"
+    assert result.status == "partial"
+    assert "sheet:报价:legacy_drawing_unverified:anysvml" in result.coverage_issues
+
+
+@pytest.mark.parametrize("relocated", [False, True])
+def test_xlsx_comment_relationship_without_vml_cannot_claim_complete(
+    tmp_path: Path, relocated: bool,
+) -> None:
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "报价"
+    sheet["A1"] = "已装内存 16 GB"
+    sheet["A1"].comment = Comment("已装内存 32 GB", "供应商")
+    original = tmp_path / "comment-original.xlsx"
+    modified = tmp_path / "comment-only.xlsx"
+    workbook.save(original)
+
+    with ZipFile(original) as source, ZipFile(modified, "w", compression=ZIP_DEFLATED) as target:
+        for entry in source.infolist():
+            if entry.filename == "xl/drawings/commentsDrawing1.vml":
+                continue
+            content = source.read(entry.filename)
+            name = entry.filename
+            if entry.filename == "xl/worksheets/sheet1.xml":
+                content, removed = re.subn(rb"<legacyDrawing\b[^>]*/>", b"", content)
+                assert removed == 1
+            elif entry.filename == "xl/worksheets/_rels/sheet1.xml.rels":
+                content, removed = re.subn(
+                    rb"<Relationship\b[^>]*vmlDrawing[^>]*/>", b"", content,
+                )
+                assert removed == 1
+            if relocated:
+                if entry.filename in {"xl/_rels/workbook.xml.rels", "[Content_Types].xml"}:
+                    content = content.replace(
+                        b"/xl/worksheets/sheet1.xml", b"/xl/custom/sheet1.xml",
+                    )
+                name = name.replace(
+                    "xl/worksheets/_rels/sheet1.xml.rels",
+                    "xl/custom/_rels/sheet1.xml.rels",
+                ).replace("xl/worksheets/sheet1.xml", "xl/custom/sheet1.xml")
+            target.writestr(name, content)
+
+    readable = load_workbook(modified, read_only=False)
+    try:
+        assert readable["报价"]["A1"].comment.text == "已装内存 32 GB"
+    finally:
+        readable.close()
+    result = parsing().parse_xlsx(modified, document_id="comment-only")
+
+    assert result.status == "partial"
+    assert "sheet:报价:comment_unverified:comments" in result.coverage_issues
+    assert any(block.cell == "A1" and block.text == "已装内存 16 GB" for block in result.blocks)
+
+
+def test_xlsx_header_image_cannot_claim_complete(tmp_path: Path) -> None:
+    workbook = Workbook()
+    workbook.active["A1"] = "已装内存 16 GB"
+    original = tmp_path / "plain.xlsx"
+    annotated = tmp_path / "header-image.xlsx"
+    workbook.save(original)
+
+    image = Image.new("RGB", (220, 60), "white")
+    ImageDraw.Draw(image).text((8, 20), "Installed RAM 32 GB", fill="black")
+    picture = BytesIO()
+    image.save(picture, format="PNG")
+    sheet_rels = (
+        '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+        '<Relationship Id="rIdHF1" '
+        'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/vmlDrawing" '
+        'Target="/xl/drawings/vmlDrawing1.vml"/></Relationships>'
+    )
+    vml = (
+        '<xml xmlns:v="urn:schemas-microsoft-com:vml" '
+        'xmlns:o="urn:schemas-microsoft-com:office:office">'
+        '<v:shapetype id="_x0000_t75" coordsize="21600,21600" o:spt="75"/>'
+        '<v:shape id="LH" type="#_x0000_t75" style="width:220pt;height:60pt">'
+        '<v:imagedata o:relid="rId1"/></v:shape></xml>'
+    )
+    vml_rels = (
+        '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+        '<Relationship Id="rId1" '
+        'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" '
+        'Target="../media/image1.png"/></Relationships>'
+    )
+    with ZipFile(original) as source, ZipFile(annotated, "w", compression=ZIP_DEFLATED) as target:
+        for entry in source.infolist():
+            content = source.read(entry.filename)
+            if entry.filename == "xl/worksheets/sheet1.xml":
+                addition = (
+                    b'<headerFooter><oddHeader>&amp;L&amp;G</oddHeader></headerFooter>'
+                    b'<legacyDrawingHF xmlns:r="http://schemas.openxmlformats.org/'
+                    b'officeDocument/2006/relationships" r:id="rIdHF1"/></worksheet>'
+                )
+                content = content.replace(b"</worksheet>", addition)
+            elif entry.filename == "[Content_Types].xml":
+                addition = (
+                    b'<Default Extension="vml" ContentType="application/'
+                    b'vnd.openxmlformats-officedocument.vmlDrawing"/>'
+                    b'<Default Extension="png" ContentType="image/png"/></Types>'
+                )
+                content = content.replace(b"</Types>", addition)
+            target.writestr(entry, content)
+        target.writestr("xl/worksheets/_rels/sheet1.xml.rels", sheet_rels)
+        target.writestr("xl/drawings/vmlDrawing1.vml", vml)
+        target.writestr("xl/drawings/_rels/vmlDrawing1.vml.rels", vml_rels)
+        target.writestr("xl/media/image1.png", picture.getvalue())
+
+    result = parsing().parse_xlsx(annotated, document_id="header-image")
+
+    assert result.status == "partial"
+    assert "sheet:Sheet:legacy_drawing_unverified:rIdHF1" in result.coverage_issues
+    assert any(block.cell == "A1" and block.text == "已装内存 16 GB" for block in result.blocks)
 
 
 def test_pdf_entrypoint_checks_source_and_runs_mineru(tmp_path: Path) -> None:

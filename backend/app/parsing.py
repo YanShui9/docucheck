@@ -9,7 +9,7 @@ import unicodedata
 from collections.abc import Sequence
 from dataclasses import dataclass, replace
 from hashlib import sha256
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Literal
 from xml.etree.ElementTree import ParseError
 from zipfile import BadZipFile, ZipFile
@@ -30,6 +30,9 @@ MAX_COLUMNS = 30
 MAX_NONEMPTY_CELLS = 20_000
 MAX_CELL_CHARACTERS = 2000
 XLSX_RELATIONSHIP_ID = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id"
+XLSX_COMMENTS_RELATIONSHIP = (
+    "http://schemas.openxmlformats.org/officeDocument/2006/relationships/comments"
+)
 PDF_VECTOR_PAINT_OPERATORS = frozenset({
     b"S", b"s", b"f", b"F", b"f*", b"B", b"B*", b"b", b"b*", b"sh",
 })
@@ -382,18 +385,20 @@ def parse_xlsx(path: Path, *, document_id: str) -> ParseResult:
             column_index = 0
             try:
                 # Read the worksheet part resolved by openpyxl's workbook relationships.
-                with workbook._archive.open(sheet._worksheet_path) as stream:
+                worksheet_part = PurePosixPath(sheet._worksheet_path.lstrip("/"))
+                with workbook._archive.open(str(worksheet_part)) as stream:
                     for event, element in iterparse(stream, events=("start", "end")):
                         if event == "end":
                             element.clear()
                             continue
                         tag = element.tag.rsplit("}", 1)[-1]
-                        if tag == "drawing":
+                        if tag in {"drawing", "legacyDrawing", "legacyDrawingHF"}:
                             drawing_ref = element.attrib.get(XLSX_RELATIONSHIP_ID, "unknown")
                             if len(drawing_ref) > 80:
                                 drawing_ref = "unknown"
+                            kind = "drawing" if tag == "drawing" else "legacy_drawing"
                             coverage_issues.append(
-                                f"sheet:{sheet.title}:drawing_unverified:{drawing_ref}"
+                                f"sheet:{sheet.title}:{kind}_unverified:{drawing_ref}"
                             )
                         elif tag == "mergeCell":
                             coverage_issues.append(
@@ -441,8 +446,29 @@ def parse_xlsx(path: Path, *, document_id: str) -> ParseResult:
                                     f"sheet:{sheet.title}:dimension_mismatch:{cell_ref}"
                                 )
                                 dimension_mismatch = True
+                relationship_part = str(
+                    worksheet_part.parent / "_rels" / f"{worksheet_part.name}.rels"
+                )
+                try:
+                    relationship_info = workbook._archive.getinfo(relationship_part)
+                except KeyError:
+                    pass
+                else:
+                    with workbook._archive.open(relationship_info) as stream:
+                        for event, element in iterparse(stream, events=("start", "end")):
+                            if event == "end":
+                                element.clear()
+                                continue
+                            if (element.tag.rsplit("}", 1)[-1] == "Relationship"
+                                    and element.attrib.get("Type") == XLSX_COMMENTS_RELATIONSHIP):
+                                comment_ref = element.attrib.get("Id", "unknown")
+                                if len(comment_ref) > 80:
+                                    comment_ref = "unknown"
+                                coverage_issues.append(
+                                    f"sheet:{sheet.title}:comment_unverified:{comment_ref}"
+                                )
             except (DefusedXmlException, ParseError) as exc:
-                raise UnsupportedContentError("XLSX worksheet XML is malformed") from exc
+                raise UnsupportedContentError("XLSX worksheet or relationship XML is malformed") from exc
             if dimension_mismatch:
                 sheet.reset_dimensions()
             for row in sheet.iter_rows(min_row=1, min_col=1):
@@ -473,7 +499,10 @@ def parse_xlsx(path: Path, *, document_id: str) -> ParseResult:
                     )
         return ParseResult(
             document_id=document_id,
-            parser_version="openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1",
+            parser_version=(
+                "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1"
+                "/legacy-drawing:1/comments-rel:1"
+            ),
             status="partial" if coverage_issues else "complete",
             blocks=tuple(blocks),
             total_sheets=len(workbook.sheetnames),
