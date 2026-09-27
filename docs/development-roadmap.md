@@ -20,6 +20,8 @@
 
 > 2026-09-27：M2-2f 已加入 [XLSX 常规批注与旧式绘图覆盖检查](m2-2f-xlsx-comments-legacy-drawings-2026-09-27.md)，后端 131 项离线测试通过。常规批注关系、旧式 VML 和页眉绘图会保守标为 `partial`；下一小步拟检查隐藏行列，M2-2 尚未验收。
 
+> 2026-09-27：M2-2g 已加入 [XLSX 隐藏行列覆盖检查](m2-2g-xlsx-hidden-rows-columns-2026-09-27.md)，后端 144 项离线测试通过。隐藏、分组隐藏及零尺寸行列会保守标为 `partial`；下一小步拟检查隐藏工作表，M2-2 尚未验收。
+
 ## 当前实际进度
 
 - 已有：Git、Conda Python 3.12、模拟 PDF/XLSX 与标注、MinerU 开发验证、MySQL/Redis/Linux worker 健康检查、基础解析代码。

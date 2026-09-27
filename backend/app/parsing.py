@@ -8,6 +8,7 @@ import tempfile
 import unicodedata
 from collections.abc import Sequence
 from dataclasses import dataclass, replace
+from decimal import Decimal, InvalidOperation
 from hashlib import sha256
 from pathlib import Path, PurePosixPath
 from typing import Literal
@@ -74,6 +75,24 @@ class ParseResult:
 
 def _evidence_id(document_id: str, locator: str, text: str) -> str:
     return sha256(f"{document_id}\0{locator}\0{text}".encode()).hexdigest()[:24]
+
+
+def _xlsx_visibility_flag(value: str | None) -> bool:
+    return value is not None and value.strip().casefold() not in {"0", "false"}
+
+
+def _xlsx_zero_size(value: str | None) -> bool:
+    if value is None:
+        return False
+    try:
+        size = Decimal(value)
+    except InvalidOperation as exc:
+        raise UnsupportedContentError("XLSX row or column size is invalid") from exc
+    if not size.is_finite():
+        raise UnsupportedContentError("XLSX row or column size is invalid")
+    if size < 0:
+        raise UnsupportedContentError("XLSX row or column size is invalid")
+    return size == 0
 
 
 def parse_mineru_middle(path: Path, *, document_id: str) -> ParseResult:
@@ -404,6 +423,36 @@ def parse_xlsx(path: Path, *, document_id: str) -> ParseResult:
                             coverage_issues.append(
                                 f"sheet:{sheet.title}:merged_cell:{element.attrib.get('ref', 'unknown')}"
                             )
+                        elif tag == "sheetFormatPr":
+                            hidden_default_rows = _xlsx_visibility_flag(element.get("zeroHeight"))
+                            zero_default_row_height = _xlsx_zero_size(
+                                element.get("defaultRowHeight")
+                            )
+                            if hidden_default_rows or zero_default_row_height:
+                                coverage_issues.append(
+                                    f"sheet:{sheet.title}:hidden_default_rows"
+                                )
+                            if _xlsx_zero_size(element.get("defaultColWidth")):
+                                coverage_issues.append(
+                                    f"sheet:{sheet.title}:hidden_default_columns"
+                                )
+                        elif tag == "col":
+                            hidden_columns = _xlsx_visibility_flag(element.get("hidden"))
+                            zero_column_width = _xlsx_zero_size(element.get("width"))
+                            if hidden_columns or zero_column_width:
+                                try:
+                                    first_column = int(element.get("min", ""))
+                                    last_column = int(element.get("max", ""))
+                                except ValueError as exc:
+                                    raise UnsupportedContentError(
+                                        "XLSX column range is invalid"
+                                    ) from exc
+                                if first_column < 1 or last_column < first_column:
+                                    raise UnsupportedContentError("XLSX column range is invalid")
+                                coverage_issues.append(
+                                    f"sheet:{sheet.title}:hidden_columns:"
+                                    f"{first_column}-{last_column}"
+                                )
                         elif tag == "row":
                             row_ref = element.get("r")
                             try:
@@ -413,6 +462,12 @@ def parse_xlsx(path: Path, *, document_id: str) -> ParseResult:
                             if row_index < 1 or row_index > MAX_ROWS:
                                 raise UnsupportedContentError(
                                     "XLSX sheet dimensions exceed 1000 rows or 30 columns"
+                                )
+                            hidden_row = _xlsx_visibility_flag(element.get("hidden"))
+                            zero_row_height = _xlsx_zero_size(element.get("ht"))
+                            if hidden_row or zero_row_height:
+                                coverage_issues.append(
+                                    f"sheet:{sheet.title}:hidden_row:{row_index}"
                                 )
                             column_index = 0
                         elif tag == "c":
@@ -501,7 +556,7 @@ def parse_xlsx(path: Path, *, document_id: str) -> ParseResult:
             document_id=document_id,
             parser_version=(
                 "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1"
-                "/legacy-drawing:1/comments-rel:1"
+                "/legacy-drawing:1/comments-rel:1/visibility:1"
             ),
             status="partial" if coverage_issues else "complete",
             blocks=tuple(blocks),

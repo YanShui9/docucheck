@@ -345,6 +345,163 @@ def test_xlsx_header_image_cannot_claim_complete(tmp_path: Path) -> None:
     assert any(block.cell == "A1" and block.text == "已装内存 16 GB" for block in result.blocks)
 
 
+@pytest.mark.parametrize(
+    ("kind", "expected_issue"),
+    [
+        ("row", "sheet:报价:hidden_row:2"),
+        ("column", "sheet:报价:hidden_columns:2-2"),
+        ("column_range", "sheet:报价:hidden_columns:2-4"),
+    ],
+)
+def test_xlsx_hidden_row_or_column_cannot_claim_complete(
+    tmp_path: Path, kind: str, expected_issue: str,
+) -> None:
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "报价"
+    sheet["A1"] = "已装内存"
+    sheet["B2"] = "32 GB"
+    if kind == "row":
+        sheet.row_dimensions[2].hidden = True
+    elif kind == "column":
+        sheet.column_dimensions["B"].hidden = True
+    else:
+        sheet.column_dimensions.group("B", "D", hidden=True)
+    path = tmp_path / f"hidden-{kind}.xlsx"
+    workbook.save(path)
+
+    result = parsing().parse_xlsx(path, document_id=kind)
+
+    cells = {(block.sheet, block.cell): block.text for block in result.blocks}
+    assert cells[("报价", "A1")] == "已装内存"
+    assert cells[("报价", "B2")] == "32 GB"
+    assert result.status == "partial"
+    assert expected_issue in result.coverage_issues
+
+
+def test_xlsx_default_hidden_rows_cannot_claim_complete(tmp_path: Path) -> None:
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "报价"
+    sheet["A1"] = "已装内存"
+    sheet.sheet_format.zeroHeight = True
+    path = tmp_path / "default-hidden-rows.xlsx"
+    workbook.save(path)
+
+    result = parsing().parse_xlsx(path, document_id="default-hidden-rows")
+
+    assert result.blocks[0].text == "已装内存"
+    assert result.status == "partial"
+    assert "sheet:报价:hidden_default_rows" in result.coverage_issues
+
+
+@pytest.mark.parametrize(
+    ("kind", "expected_issue"),
+    [
+        ("zero_height_row", "sheet:报价:hidden_row:2"),
+        ("zero_width_column", "sheet:报价:hidden_columns:2-2"),
+        ("zero_height_default_rows", "sheet:报价:hidden_default_rows"),
+        ("zero_width_default_columns", "sheet:报价:hidden_default_columns"),
+    ],
+)
+def test_xlsx_zero_sized_rows_or_columns_cannot_claim_complete(
+    tmp_path: Path, kind: str, expected_issue: str,
+) -> None:
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "报价"
+    sheet["A1"] = "已装内存"
+    sheet["B2"] = "32 GB"
+    original = tmp_path / "original.xlsx"
+    changed = tmp_path / f"{kind}.xlsx"
+    workbook.save(original)
+    with ZipFile(original) as source, ZipFile(changed, "w", compression=ZIP_DEFLATED) as target:
+        for entry in source.infolist():
+            content = source.read(entry.filename)
+            if entry.filename == "xl/worksheets/sheet1.xml":
+                if kind == "zero_height_row":
+                    content, count = re.subn(rb'(<row r="2")', rb'\1 ht="0"', content, count=1)
+                elif kind == "zero_width_column":
+                    content, count = re.subn(
+                        rb"<sheetData>",
+                        b'<cols><col min="2" max="2" width="0"/></cols><sheetData>',
+                        content,
+                        count=1,
+                    )
+                elif kind == "zero_height_default_rows":
+                    content, count = re.subn(
+                        rb'defaultRowHeight="[^"]+"', b'defaultRowHeight="0"',
+                        content, count=1,
+                    )
+                else:
+                    content, count = re.subn(
+                        rb"<sheetFormatPr", b'<sheetFormatPr defaultColWidth="0"',
+                        content, count=1,
+                    )
+                assert count == 1
+            target.writestr(entry, content)
+
+    result = parsing().parse_xlsx(changed, document_id=kind)
+
+    cells = {(block.sheet, block.cell): block.text for block in result.blocks}
+    assert cells[("报价", "B2")] == "32 GB"
+    assert result.status == "partial"
+    assert expected_issue in result.coverage_issues
+
+
+@pytest.mark.parametrize("kind", ["row", "column"])
+@pytest.mark.parametrize("hidden", [False, True])
+def test_xlsx_negative_row_or_column_size_is_rejected(
+    tmp_path: Path, kind: str, hidden: bool,
+) -> None:
+    workbook = Workbook()
+    workbook.active["B2"] = "32 GB"
+    original = tmp_path / "original.xlsx"
+    changed = tmp_path / f"negative-{kind}-{hidden}.xlsx"
+    workbook.save(original)
+    with ZipFile(original) as source, ZipFile(changed, "w", compression=ZIP_DEFLATED) as target:
+        for entry in source.infolist():
+            content = source.read(entry.filename)
+            if entry.filename == "xl/worksheets/sheet1.xml":
+                if kind == "row":
+                    replacement = rb'\1 ht="-1" hidden="1"' if hidden else rb'\1 ht="-1"'
+                    content, count = re.subn(rb'(<row r="2")', replacement, content, count=1)
+                else:
+                    hidden_attribute = b' hidden="1"' if hidden else b""
+                    content, count = re.subn(
+                        rb"<sheetData>",
+                        b'<cols><col min="2" max="2" width="-1"'
+                        + hidden_attribute + b"/></cols><sheetData>",
+                        content,
+                        count=1,
+                    )
+                assert count == 1
+            target.writestr(entry, content)
+
+    with pytest.raises(parsing().UnsupportedContentError, match="size is invalid"):
+        parsing().parse_xlsx(changed, document_id=kind)
+
+
+def test_xlsx_visible_row_and_column_remain_complete(tmp_path: Path) -> None:
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet["B2"] = "32 GB"
+    sheet.row_dimensions[2].hidden = False
+    sheet.row_dimensions[2].height = 20
+    sheet.column_dimensions["B"].hidden = False
+    sheet.column_dimensions["B"].width = 12
+    sheet.sheet_format.zeroHeight = False
+    sheet.sheet_format.defaultColWidth = 10
+    path = tmp_path / "visible.xlsx"
+    workbook.save(path)
+
+    result = parsing().parse_xlsx(path, document_id="visible")
+
+    assert result.status == "complete"
+    assert result.coverage_issues == ()
+    assert any(block.cell == "B2" and block.text == "32 GB" for block in result.blocks)
+
+
 def test_pdf_entrypoint_checks_source_and_runs_mineru(tmp_path: Path) -> None:
     source_json = PACK / "parsed" / "requirements.middle.json"
     fake_mineru = tmp_path / "fake_mineru.py"
