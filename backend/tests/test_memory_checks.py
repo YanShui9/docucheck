@@ -289,6 +289,57 @@ def test_split_xlsx_memory_value_requires_both_original_cells():
     assert fact.role == "quote" and str(fact.value) == "16"
 
 
+def test_repeated_label_in_adjacent_value_cell_can_be_cited_as_a_pair():
+    from backend.app.extraction.validation import validate_memory
+
+    repo = load_case(PACK)
+    label = next(block for block in repo.blocks if block.role == "quote" and block.cell == "A6")
+    value = next(block for block in repo.blocks if block.role == "quote" and block.cell == "B6")
+    assert label.text == "已装内存"
+    assert value.text == "已装内存 16 GB"
+
+    fact = validate_memory(
+        {"raw_value": "16", "raw_unit": "GB", "qualifier": "installed",
+         "comparator": "eq", "evidence_refs": [label.evidence_id, value.evidence_id]},
+        repo, "vendor-a",
+    )
+    assert fact.evidence_refs == (label.evidence_id, value.evidence_id)
+    assert fact.value == 16
+
+
+def test_full_memory_extraction_accepts_original_quote_label_and_value_pair():
+    import json
+
+    from langchain_core.messages import AIMessage
+
+    from backend.app.extraction.memory import extract_memory
+    from backend.app.rules.memory import evaluate_memory
+
+    repo = load_case(PACK)
+    base = _scripted_extractor(repo)
+    label = next(block for block in repo.blocks if block.role == "quote" and block.cell == "A6")
+    value = next(block for block in repo.blocks if block.role == "quote" and block.cell == "B6")
+
+    def pair_extract(operation, messages, schema):
+        reply = base(operation, messages, schema)
+        batch_ids = {item["evidence_id"] for item in json.loads(messages[-1].content)["evidence"]}
+        if {label.evidence_id, value.evidence_id} <= batch_ids:
+            facts = reply.tool_calls[0]["args"]["facts"]
+            for fact in facts:
+                if fact["evidence_refs"] == [value.evidence_id]:
+                    fact["evidence_refs"] = [label.evidence_id, value.evidence_id]
+            return AIMessage(content="", tool_calls=[
+                {"name": "MemoryCandidates", "args": {"facts": facts}, "id": "quote-pair"}
+            ])
+        return reply
+
+    fact_set = extract_memory(repo, "vendor-a", pair_extract)
+    assert fact_set.complete
+    check = evaluate_memory(repo, "vendor-a", list(fact_set.facts), scan_complete=True)
+    assert check.business_status == "资料冲突"
+    assert {label.evidence_id, value.evidence_id} <= set(check.evidence_refs)
+
+
 def test_split_xlsx_memory_quote_conflicts_with_specification():
     from backend.app.extraction.memory import extract_memory
     from backend.app.rules.memory import evaluate_memory

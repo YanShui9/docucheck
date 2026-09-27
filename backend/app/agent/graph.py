@@ -20,6 +20,12 @@ from .policy import MODE_LIMITS, Budget, RunStopped
 from .state import AgentState, RunContext, RunResult
 from .tools import AnswerDraft, Clarification, ToolExecutor, tool_schemas
 
+SAFE_VALIDATION_DETAILS = frozenset({
+    "fact_field", "fact_value", "fact_qualifier", "fact_comparator",
+    "candidate_scope", "candidate_pair", "candidate_field", "candidate_value",
+    "extraction_schema", "extraction_block_too_large",
+})
+
 
 class AgentSession:
     """One CLI conversation pinned to an immutable repository snapshot."""
@@ -171,7 +177,11 @@ class AgentSession:
                 return stop(exc)
             except (ValueError, ValidationError) as exc:
                 code = str(exc) if str(exc) in {"evidence_scope", "supplier_scope", "fact_set_scope", "unknown_tool"} else "invalid_tool_result"
-                event.update(status="failed", error=code)
+                detail = "schema_validation" if isinstance(exc, ValidationError) else "other_validation"
+                if (len(exc.args) == 1 and isinstance(exc.args[0], str)
+                        and exc.args[0] in SAFE_VALIDATION_DETAILS):
+                    detail = exc.args[0]
+                event.update(status="failed", error=code, failure_detail=detail)
                 return {"status": "failed", "error": code, "next_node": "end"}
 
         builder = StateGraph(AgentState)

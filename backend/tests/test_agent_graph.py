@@ -181,6 +181,47 @@ def test_document_instruction_cannot_grant_shell_tool():
     assert result.error == "unknown_tool"
 
 
+def test_invalid_extract_records_safe_validation_category_without_source_text():
+    module = import_module("backend.app.agent.graph")
+
+    class WrongComparator(ScenarioProvider):
+        def extract(self, messages, schema, **kwargs):
+            reply = super().extract(messages, schema, **kwargs)
+            if "已装内存 16 GB" in messages[-1].content:
+                for fact in reply.tool_calls[0]["args"]["facts"]:
+                    fact["comparator"] = "gte"
+            return reply
+
+    result = module.AgentSession(load_case(PACK), WrongComparator()).ask(
+        "供应商 A 的内存是否达标？")
+    assert result.status == "failed"
+    assert result.error == "invalid_tool_result"
+    failed = next(event for event in result.events if event.get("error") == "invalid_tool_result")
+    assert failed["failure_detail"] == "fact_comparator"
+    assert "已装内存" not in str(failed)
+
+
+def test_graph_accepts_quote_value_citing_both_repeated_label_cells():
+    module = import_module("backend.app.agent.graph")
+    repo = load_case(PACK)
+    label = next(block for block in repo.blocks if block.role == "quote" and block.cell == "A6")
+    value = next(block for block in repo.blocks if block.role == "quote" and block.cell == "B6")
+
+    class QuotePair(ScenarioProvider):
+        def extract(self, messages, schema, **kwargs):
+            reply = super().extract(messages, schema, **kwargs)
+            for fact in reply.tool_calls[0]["args"]["facts"]:
+                if fact["evidence_refs"] == [value.evidence_id]:
+                    fact["evidence_refs"] = [label.evidence_id, value.evidence_id]
+            return reply
+
+    result = module.AgentSession(repo, QuotePair()).ask("供应商 A 的内存是否达标？")
+    assert result.status == "completed"
+    assert result.error is None
+    assert "资料冲突" in result.answer
+    assert not any(event.get("error") == "invalid_tool_result" for event in result.events)
+
+
 def test_unknown_token_usage_is_not_reported_as_zero_total():
     module = import_module("backend.app.agent.graph")
     class UnknownUsage(ScenarioProvider):

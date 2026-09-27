@@ -88,6 +88,13 @@ def _memory_pair(label: ScopedEvidence, value: ScopedEvidence,
                  context: MemoryCellContext) -> bool:
     left = context.positions.get(label.evidence_id)
     right = context.positions.get(value.evidence_id)
+    repeated_label_value = bool(
+        re.fullmatch(
+            rf"\s*{re.escape(label.text.strip())}\s*{CAPACITY.pattern}\s*",
+            value.text,
+            re.IGNORECASE,
+        )
+    )
     if not (left is not None and right is not None and left[1] == right[1]
             and right[0] == left[0] + 1 and label.document_id == value.document_id
             and label.sheet == value.sheet and label.role == value.role
@@ -95,7 +102,7 @@ def _memory_pair(label: ScopedEvidence, value: ScopedEvidence,
             and PAIR_LABEL.fullmatch(label.text) is not None
             and OTHER_CAPACITY.search(label.text) is None
             and CAPACITY.search(label.text) is None
-            and NUMERIC_CELL.fullmatch(value.text) is not None):
+            and (NUMERIC_CELL.fullmatch(value.text) is not None or repeated_label_value)):
         return False
     other_capacities = context.row_capacities.get((label.document_id, label.sheet, right[1]), set())
     header_row = context.first_column_header.get((label.document_id, label.sheet, right[0]))
@@ -117,7 +124,8 @@ def xlsx_memory_relationships(
             unresolved.add(label.evidence_id)
             continue
         right = context.locations.get((label.document_id, label.sheet, position[0] + 1, position[1]))
-        if right is not None and _memory_pair(label, right, context):
+        if (right is not None and NUMERIC_CELL.fullmatch(right.text) is not None
+                and _memory_pair(label, right, context)):
             pairs[label.evidence_id] = right.evidence_id
         elif right is None or not (MEMORY_LABEL.search(right.text) and CAPACITY.search(right.text)):
             unresolved.add(label.evidence_id)
