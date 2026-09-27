@@ -201,6 +201,25 @@ def test_invalid_extract_records_safe_validation_category_without_source_text():
     assert "已装内存" not in str(failed)
 
 
+def test_provider_invalid_output_records_safe_detail_in_model_and_tool_events():
+    from backend.app.providers import ProviderError
+
+    module = import_module("backend.app.agent.graph")
+
+    class Truncated(ScenarioProvider):
+        def extract(self, messages, schema, **kwargs):
+            raise ProviderError("invalid_output", detail="output_limit")
+
+    result = module.AgentSession(load_case(PACK), Truncated()).ask(
+        "供应商 A 的内存是否达标？")
+    assert result.status == "failed"
+    assert result.error == "invalid_output"
+    failed = [event for event in result.events if event.get("error") == "invalid_output"]
+    assert {event["kind"] for event in failed} == {"model", "tool"}
+    assert all(event["failure_detail"] == "output_limit" for event in failed)
+    assert "已装内存" not in str(failed)
+
+
 def test_graph_accepts_quote_value_citing_both_repeated_label_cells():
     module = import_module("backend.app.agent.graph")
     repo = load_case(PACK)

@@ -70,10 +70,16 @@ def _reject_remote_refs(value: object) -> None:
 def validate_response(
     response: AIMessage, tools: list[dict], *, extraction: bool
 ) -> AIMessage:
-    if not isinstance(response, AIMessage) or response.invalid_tool_calls:
-        raise ProviderError("invalid_output")
+    if not isinstance(response, AIMessage):
+        raise ProviderError("invalid_output", detail="message_type")
+    if response.response_metadata.get("finish_reason") in ("length", "max_tokens"):
+        raise ProviderError("invalid_output", detail="output_limit")
+    if response.invalid_tool_calls:
+        raise ProviderError("invalid_output", detail="malformed_tool_args")
+    if extraction and not response.tool_calls:
+        raise ProviderError("invalid_output", detail="missing_tool_call")
     if extraction and len(response.tool_calls) != 1:
-        raise ProviderError("invalid_output")
+        raise ProviderError("invalid_output", detail="multiple_tool_calls")
     schemas = {
         tool["function"]["name"]: tool["function"]["parameters"] for tool in tools
     }
@@ -85,7 +91,7 @@ def validate_response(
             ids.add(call["id"])
             Draft202012Validator(schemas[call["name"]]).validate(call["args"])
     except Exception:  # noqa: BLE001 - sanitize all malformed provider payloads
-        raise ProviderError("invalid_output") from None
+        raise ProviderError("invalid_output", detail="tool_schema") from None
     return response
 
 

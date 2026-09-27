@@ -68,11 +68,12 @@ class Budget:
             raise RunStopped("tool_budget")
         self.tools += 1
 
-    def reserve(self, messages: list[BaseMessage], schemas: list[dict]) -> tuple[dict, int]:
+    def reserve(self, messages: list[BaseMessage], schemas: list[dict],
+                *, output_cap: int = 512) -> tuple[dict, int]:
         self.check()
         if self.model_calls >= self.max_calls:
             raise RunStopped("model_budget")
-        output = min(512, self.max_output - self.output_reserved)
+        output = min(output_cap, self.max_output - self.output_reserved)
         size = input_bound(messages, schemas)
         if output < 128 or self.input_reserved + size > self.max_input:
             raise RunStopped("token_budget")

@@ -151,6 +151,39 @@ def test_extract_rejects_unstructured_invalid_or_multiple_results(response):
         )
 
 
+@pytest.mark.parametrize(("response", "detail"), [
+    (AIMessage(content="", invalid_tool_calls=[
+        {"name": "MemoryFacts", "args": "{sk-secret", "id": "c1", "error": "bad JSON"}
+    ], response_metadata={"finish_reason": "length"}), "output_limit"),
+    (AIMessage(content="sk-secret"), "missing_tool_call"),
+    (tool_response("MemoryFacts", {"memory_gb": "sk-secret"}), "tool_schema"),
+])
+def test_extract_invalid_output_exposes_only_safe_category(response, detail):
+    from backend.app.providers import ChatModelProvider, ProviderError
+
+    model = RecordingChatModel(responses=[response])
+    with pytest.raises(ProviderError) as caught:
+        ChatModelProvider(model).extract(
+            MESSAGES, SCHEMA, timeout=1, max_output_tokens=50
+        )
+    assert caught.value.code == "invalid_output"
+    assert caught.value.detail == detail
+    assert "sk-secret" not in repr(caught.value)
+
+
+def test_unexpected_finish_reason_type_cannot_escape_provider_error_boundary():
+    from backend.app.providers import ChatModelProvider, ProviderError
+
+    response = AIMessage(content="", invalid_tool_calls=[
+        {"name": "MemoryFacts", "args": "{sk-secret", "id": "c1", "error": "bad JSON"}
+    ], response_metadata={"finish_reason": []})
+    model = RecordingChatModel(responses=[response])
+    with pytest.raises(ProviderError) as caught:
+        ChatModelProvider(model).extract(MESSAGES, SCHEMA, timeout=1, max_output_tokens=50)
+    assert caught.value.code == "invalid_output"
+    assert caught.value.detail == "malformed_tool_args"
+
+
 def test_timeout_is_sanitized_unknown_and_never_replayed():
     from backend.app.providers import ChatModelProvider, ProviderError
 

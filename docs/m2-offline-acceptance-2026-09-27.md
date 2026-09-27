@@ -12,7 +12,7 @@
 | M2-6 | 离线完成 | 单家八格和三家 24 格均经规则、工具、LangGraph、答复渲染跑通；不同供应商证据不会混入同一结果。三家合成包为数值相同的隔离样例，不是多报价质量验收。 |
 | M2-7 | 离线完成 | `standard`/`thorough` 有独立预算；已验证结果 ID 在工具上下文压缩后保留；短追问继承供应商并由服务端约束工具范围；澄清问题进入下一轮上下文。真实模型的自然语言指代质量仍待探针。 |
 | M2-8 | 开发集初测 | 词法召回必要来源 17/17，供应商检索隔离 9/9；脚本化 Agent 任务 2/2、状态 32/32、引用错误 0/76，调用数分别为 9、23。开发集小且脚本预设行动和候选，不能外推真实模型成功率或正式准确率。真实 token、费用和延迟待 M2-9；M5 另需独立封存集。 |
-| M2-9 | 离线通过；真实调用待复测 | 后端 221 项测试通过，`ruff check backend evals` 通过，`git diff --check` 无错误。用户首次单家 DeepSeek 探针返回 `invalid_tool_result`；修复后仍需用户本机复测，三家尚未运行。 |
+| M2-9 | 离线通过；真实调用待复测 | 后端 227 项测试通过，`ruff check backend evals` 通过，`git diff --check` 无错误。用户两次单家 DeepSeek 探针分别返回 `invalid_tool_result` 和 `invalid_output`；针对性修复后仍需用户本机复测，三家尚未运行。 |
 
 ## 本机离线复现
 
@@ -43,5 +43,11 @@ python.exe -m backend.app.agent_demo --case-dir examples/dev-pack-003 --provider
 用户首次运行单家 `thorough` 命令，返回 `failed / invalid_tool_result`，模型调用 3 次，记录为 `data/m2-agent-demo/0a4ec469142b426cb02bcbfa1a208ed1.json`。记录显示 Agent 进入 `extract_facts`，两次抽取模型调用完成，工具在校验阶段失败；旧记录不保存候选事实参数，因此不能据此断定模型具体输出。
 
 本地使用原始模拟包复现了一条相符的失败路径：报价表 A6 为“已装内存”，相邻 B6 为自带标签的“已装内存 16 GB”；当模型同时引用 A6/B6 时，旧校验器将其拒为 `fact_field`。现允许这一严格匹配的相邻两格引用，同时保留 B6 单格已足够时的完整覆盖判断；真实 Agent 脚本回归通过。工具失败事件增加固定类别 `failure_detail`，不记录原文或模型参数，便于复测时进一步定位。修复后尚未调用真实模型，需用户只重跑单家探针一次；若再次失败，先查看该工具事件的 `failure_detail` 再决定下一步。
+
+## 第二次真实单家探针与输出预算修复
+
+用户复测返回 `failed / invalid_output`，模型调用 6 次，记录为 `data/m2-agent-demo/c34aad4700324f94a9c9c9fd5da91890.json`。Agent 完成三批内存事实抽取后，在首次七字段批量抽取的模型响应处失败；旧记录没有保存响应的截断标记或原文，不能断言唯一原因。原实现对所有模型调用都只给 512 个输出 token。本地同一模拟包的首批七字段标准结构化结果包含 9 条事实，用 `cl100k_base` 作近似估算为 683 token，因此 512 的上限不足以容纳该批完整结果。
+
+现只将 `FieldCandidates` 抽取上限提高到 1536 token；内存抽取和 Agent 决策仍为 512，`thorough` 的累计输出预算仍为 12000。三供应商离线回归包含未报告 token 用量的保守计账，仍能完成。Provider 遇到 `invalid_output` 时，会在事件中记录经过白名单约束的 `failure_detail`，例如 `output_limit`、`malformed_tool_args`、`missing_tool_call` 或 `tool_schema`；不会记录模型响应或密钥。修复后没有再调用 DeepSeek，下一步只复测单家探针一次，再根据结果决定是否运行三家。
 
 正式上传、持久化会话、API/worker 接线属于 M3；前端属于 M4，开始前按用户要求先讨论设计规范与样式。

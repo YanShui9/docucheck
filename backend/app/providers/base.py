@@ -22,10 +22,16 @@ class ProviderError(Exception):
             "fake_exhausted",
         }
     )
+    _DETAILS = frozenset({
+        "output_limit", "malformed_tool_args", "missing_tool_call",
+        "multiple_tool_calls", "tool_schema", "message_type",
+    })
 
-    def __init__(self, code: str, outcome_unknown: bool = False) -> None:
+    def __init__(self, code: str, outcome_unknown: bool = False,
+                 detail: str | None = None) -> None:
         self.code = code if code in self._CODES else "provider_error"
         self.outcome_unknown = outcome_unknown
+        self.detail = detail if isinstance(detail, str) and detail in self._DETAILS else None
         super().__init__(self.code)
 
 

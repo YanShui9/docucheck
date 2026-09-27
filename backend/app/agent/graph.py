@@ -77,7 +77,9 @@ class AgentSession:
 
         def model_call(operation, messages, schema):
             schemas = schema if operation == "decide" else [schema]
-            options, reserved_input = budget.reserve(messages, schemas)
+            output_cap = (1536 if operation == "extract"
+                          and schema["function"]["name"] == "FieldCandidates" else 512)
+            options, reserved_input = budget.reserve(messages, schemas, output_cap=output_cap)
             event = {"kind": "model", "operation": operation, "sequence": len(events) + 1,
                      "status": "started"}
             events.append(event)
@@ -93,6 +95,8 @@ class AgentSession:
             except ProviderError as exc:
                 budget.unknown_usage_calls += 1
                 event.update(status="failed", error=exc.code, outcome_unknown=exc.outcome_unknown)
+                if exc.detail:
+                    event["failure_detail"] = exc.detail
                 raise
 
         def stop(exc):
@@ -174,6 +178,8 @@ class AgentSession:
                             content=json.dumps(observation, ensure_ascii=False))], "next_node": "decide"}
             except (RunStopped, ProviderError) as exc:
                 event.update(status="failed", error=exc.code)
+                if isinstance(exc, ProviderError) and exc.detail:
+                    event["failure_detail"] = exc.detail
                 return stop(exc)
             except (ValueError, ValidationError) as exc:
                 code = str(exc) if str(exc) in {"evidence_scope", "supplier_scope", "fact_set_scope", "unknown_tool"} else "invalid_tool_result"
