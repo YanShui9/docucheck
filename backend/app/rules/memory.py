@@ -1,5 +1,5 @@
 """Memory checks never promote incomplete processing into a business conclusion."""
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 
 from ..evidence.repository import EvidenceRepository, digest
 from ..extraction.validation import VerifiedFact
@@ -50,9 +50,12 @@ def evaluate_memory(repo: EvidenceRepository, supplier: str, facts: list[Verifie
         else:
             requirement, actual = requirements[0], offered[0].value
             passes = {"gte": actual >= requirement.value, "lte": actual <= requirement.value,
+                      "gt": actual > requirement.value, "lt": actual < requirement.value,
                       "eq": actual == requirement.value}[requirement.comparator]
             status, reason = ("满足", "threshold_met") if passes else ("不满足", "threshold_failed")
-    identity = digest([repo.snapshot_id, supplier, RULE_VERSION, [f.fact_id for f in facts], status, reason])
+    identity = digest([repo.snapshot_id, supplier, RULE_VERSION,
+                       [asdict(fact) | {"value": str(fact.value)} for fact in facts],
+                       processing, status, reason, refs])
     reason_refs = (tuple(dict.fromkeys(ref for f in offered for ref in f.evidence_refs))
                    if reason == "contradicting_installed_capacity" else refs)
     return CheckResult(identity, repo.snapshot_id, supplier, "memory", processing, status, reason,

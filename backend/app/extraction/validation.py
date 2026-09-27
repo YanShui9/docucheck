@@ -9,11 +9,12 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from ..evidence.models import ScopedEvidence
 from ..evidence.repository import EvidenceRepository, digest
+from ..rules.fields import normalize_field_value
 
 MEMORY_LABEL = re.compile(r"内存|\bRAM\b", re.IGNORECASE)
 PAIR_LABEL = re.compile(r"\s*(?:已装|安装|标配)?\s*(?:内存|RAM)(?:容量)?\s*", re.IGNORECASE)
-CAPACITY = re.compile(r"\d+(?:\.\d+)?\s*(?:GiB|GB)\b", re.IGNORECASE)
-NUMERIC_CELL = re.compile(r"\s*\d+(?:\.\d+)?\s*(?:GiB|GB)\s*", re.IGNORECASE)
+CAPACITY = re.compile(r"\d+(?:\.\d+)?\s*(?:MiB|GiB|GB)\b", re.IGNORECASE)
+NUMERIC_CELL = re.compile(r"\s*\d+(?:\.\d+)?\s*(?:MiB|GiB|GB)\s*", re.IGNORECASE)
 OTHER_CAPACITY = re.compile(r"内存卡|虚拟内存|共享内存|存储|SSD|硬盘|显存|缓存", re.IGNORECASE)
 HEADER_HINT = re.compile(r"内存|RAM|容量|最大|最高|支持|标配|选配|可选|已装|存储|SSD|硬盘", re.IGNORECASE)
 
@@ -21,9 +22,9 @@ HEADER_HINT = re.compile(r"内存|RAM|容量|最大|最高|支持|标配|选配|
 class Candidate(BaseModel):
     model_config = ConfigDict(extra="forbid")
     raw_value: str = Field(pattern=r"^\d+(\.\d+)?$", max_length=20)
-    raw_unit: Literal["GB", "GiB"]
+    raw_unit: Literal["GB", "GiB", "MiB"]
     qualifier: Literal["installed", "maximum", "unknown"]
-    comparator: Literal["gte", "lte", "eq", "unknown"]
+    comparator: Literal["gte", "lte", "gt", "lt", "eq", "unknown"]
     evidence_refs: list[str] = Field(min_length=1, max_length=2)
 
 
@@ -141,11 +142,11 @@ def validate_memory(candidate: dict | Candidate, repo: EvidenceRepository, suppl
     clauses = re.split(r"[;；。\n]", text)
     candidates = [clause for clause in clauses if MEMORY_LABEL.search(clause)
                   and not OTHER_CAPACITY.search(clause)
-                  and re.search(r"\d\s*(?:GiB|GB)\b", clause, re.IGNORECASE)]
+                  and re.search(r"\d\s*(?:MiB|GiB|GB)\b", clause, re.IGNORECASE)]
     if len(candidates) != 1:
         raise ValueError("fact_field")
     text = candidates[0]
-    values = re.findall(r"(?<![\d.])(\d+(?:\.\d+)?)\s*(GiB|GB)\b", text, re.IGNORECASE)
+    values = re.findall(r"(?<![\d.])(\d+(?:\.\d+)?)\s*(MiB|GiB|GB)\b", text, re.IGNORECASE)
     value = Decimal(item.raw_value)
     if value <= 0 or not any(Decimal(v) == value and u.casefold() == item.raw_unit.casefold() for v, u in values):
         raise ValueError("fact_value")
@@ -155,13 +156,16 @@ def validate_memory(candidate: dict | Candidate, repo: EvidenceRepository, suppl
                           else "installed" if re.search(r"已装|installed", text, re.IGNORECASE) else "unknown")
     if item.qualifier != "unknown" and item.qualifier != observed_qualifier:
         raise ValueError("fact_qualifier")
-    observed_comparator = ("gte" if re.search(r"至少|不低于|>=|≥", text) else
-                           "lte" if re.search(r"不超过|至多|<=|≤", text) else "eq")
-    if re.search(r"(?<![<>])[<>](?!=)|大于|小于|多于|少于|超过|低于", text) and not re.search(r"不超过|不低于", text):
-        observed_comparator = "unknown"
+    observed_comparator = (
+        "gte" if re.search(r"至少|不低于|>=|≥", text) else
+        "lte" if re.search(r"不超过|不高于|至多|<=|≤", text) else
+        "gt" if re.search(r"(?<![<>])>(?!=)|大于|多于|超过|高于", text) else
+        "lt" if re.search(r"(?<![<>])<(?!=)|小于|少于|低于", text) else "eq"
+    )
     if item.comparator != "unknown" and item.comparator != observed_comparator:
         raise ValueError("fact_comparator")
     qualifier = "unknown" if ambiguous else item.qualifier
-    return VerifiedFact(digest([repo.snapshot_id, item.model_dump()]), value, item.raw_unit,
+    normalized_value, normalized_unit = normalize_field_value("memory", item.raw_value, item.raw_unit)
+    return VerifiedFact(digest([repo.snapshot_id, item.model_dump()]), normalized_value, normalized_unit,
                         qualifier, item.comparator, block.role, block.supplier, block.model,
                         tuple(item.evidence_refs))

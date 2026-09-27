@@ -6,6 +6,13 @@ from dataclasses import dataclass, field
 
 from langchain_core.messages import AIMessage, BaseMessage
 
+MODE_LIMITS = {
+    "standard": {"max_decisions": 8, "max_tools": 16, "max_calls": 16,
+                 "max_input": 48000, "max_output": 6000, "max_prompt": 16000},
+    "thorough": {"max_decisions": 12, "max_tools": 24, "max_calls": 32,
+                 "max_input": 96000, "max_output": 12000, "max_prompt": 24000},
+}
+
 
 class RunStopped(Exception):
     def __init__(self, code: str):
@@ -29,6 +36,7 @@ class Budget:
     cancelled: Callable[[], bool] = lambda: False
     max_input: int = 48000
     max_output: int = 6000
+    max_prompt: int = 16000
     max_calls: int = 16
     max_tools: int = 16
     seconds: float = 120
@@ -68,7 +76,7 @@ class Budget:
         size = input_bound(messages, schemas)
         if output < 128 or self.input_reserved + size > self.max_input:
             raise RunStopped("token_budget")
-        if size > min(16000, self.context_window - output):
+        if size > min(self.max_prompt, self.context_window - output):
             raise RunStopped("context_budget")
         self.input_reserved += size
         self.output_reserved += output

@@ -1,11 +1,15 @@
 """Evidence identity and completeness at the Agent trust boundary."""
 import json
 from dataclasses import replace
+from hashlib import sha256
 from importlib import import_module
 from pathlib import Path
 
 import pytest
+from openpyxl import Workbook
+from reportlab.pdfgen import canvas
 
+from backend.app.evidence.models import Document
 from backend.app.parsing import parse_mineru_middle, parse_xlsx
 
 PACK = Path(__file__).resolve().parents[2] / "examples/dev-pack-001"
@@ -91,3 +95,103 @@ def test_pdf_page_without_extracted_body_is_partial_even_if_full_document_flag_i
     result = parse_mineru_middle(path, document_id="requirements")
     assert result.status == "partial"
     assert "page:0:no_body_text" in result.coverage_issues
+
+
+def test_case_rejects_eighth_file_before_opening_sources(tmp_path: Path) -> None:
+    module = import_module("backend.app.evidence.repository")
+    manifest = {
+        "case_id": "too-many", "revision": 1,
+        "documents": [{"file": f"missing-{index}.pdf"} for index in range(8)],
+    }
+    (tmp_path / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="case_file_limit"):
+        module.load_case(tmp_path)
+
+
+def test_case_rejects_total_pdf_pages_before_loading_parse_cache(tmp_path: Path) -> None:
+    module = import_module("backend.app.evidence.repository")
+    documents = []
+    for name, pages in (("requirements.pdf", 16), ("supplier-spec.pdf", 15)):
+        source = tmp_path / name
+        pdf = canvas.Canvas(str(source))
+        for _ in range(pages):
+            pdf.drawString(72, 720, "Procurement source")
+            pdf.showPage()
+        pdf.save()
+        documents.append({
+            "file": name,
+            "sha256": sha256(source.read_bytes()).hexdigest(),
+            "parsed_file": "missing-cache.json",
+        })
+    (tmp_path / "manifest.json").write_text(
+        json.dumps({"case_id": "too-long", "revision": 1, "documents": documents}),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="case_page_limit"):
+        module.load_case(tmp_path)
+
+
+def test_case_accepts_seven_files_with_thirty_pdf_pages(tmp_path: Path) -> None:
+    module = import_module("backend.app.evidence.repository")
+    source = tmp_path / "requirements.pdf"
+    pdf = canvas.Canvas(str(source))
+    for index in range(30):
+        pdf.drawString(72, 720, f"Requirement page {index + 1}")
+        pdf.showPage()
+    pdf.save()
+    middle = json.loads((PACK / "parsed/requirements.middle.json").read_text(encoding="utf-8"))
+    middle["metadata"]["document"]["page_count"] = 30
+    middle["pages"] = [
+        {"page_idx": index, "blocks": [{
+            "type": "text", "index": 0, "bbox": [0.1, 0.1, 0.5, 0.2],
+            "content": [{"type": "text", "content": f"Requirement page {index + 1}"}],
+        }]}
+        for index in range(30)
+    ]
+    middle["extensions"]["docvortex_layout"]["pages"] = [
+        {"page_idx": index, "width_pt": 612, "height_pt": 792}
+        for index in range(30)
+    ]
+    cache = tmp_path / "requirements.middle.json"
+    cache.write_text(json.dumps(middle), encoding="utf-8")
+    documents = [{
+        "file": source.name, "sha256": sha256(source.read_bytes()).hexdigest(),
+        "parsed_file": cache.name, "parsed_sha256": sha256(cache.read_bytes()).hexdigest(),
+        "role": "requirement",
+    }]
+    for supplier in ("vendor-a", "vendor-b", "vendor-c"):
+        for role in ("quote", "spec"):
+            workbook = Workbook()
+            workbook.active["A1"] = "已装内存 16 GB"
+            path = tmp_path / f"{supplier}-{role}.xlsx"
+            workbook.save(path)
+            documents.append({
+                "file": path.name, "sha256": sha256(path.read_bytes()).hexdigest(),
+                "role": role, "supplier": supplier,
+            })
+    (tmp_path / "manifest.json").write_text(
+        json.dumps({"case_id": "boundary", "revision": 1, "documents": documents}),
+        encoding="utf-8",
+    )
+
+    repo = module.load_case(tmp_path)
+
+    assert len(repo.documents) == 7
+    assert sum(document.parsed.total_pages or 0 for document in repo.documents) == 30
+    assert repo.coverage("vendor-c")["complete"]
+
+
+def test_pdf_without_reported_page_count_cannot_enter_repository() -> None:
+    module = import_module("backend.app.evidence.repository")
+    parsed = parse_mineru_middle(
+        PACK / "parsed/requirements.middle.json", document_id="requirements.pdf",
+    )
+    unknown_pages = replace(parsed, total_pages=None)
+    document = Document(
+        "requirements.pdf", "source-hash", "requirement", None, None, unknown_pages,
+    )
+
+    with pytest.raises(ValueError, match="missing_pdf_page_count"):
+        module.EvidenceRepository("missing-pages", 1, [document])

@@ -15,7 +15,14 @@ from .repository import EvidenceRepository
 MAX_TEXT_BYTES = 800
 MAX_NEIGHBOR_BYTES = 100
 MAX_SOURCE_BLOCKS = 36
-ALIASES = {"ram": "内存", "memory": "内存"}
+ALIASES = {
+    "ram": "内存",
+    "memory": "内存",
+    "显示屏": "屏幕",
+    "保修": "质保",
+    "保修期": "质保",
+    "交货": "交付",
+}
 
 
 def _tokens(text: str) -> list[str]:

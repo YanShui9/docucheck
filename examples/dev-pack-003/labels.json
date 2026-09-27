@@ -1,0 +1,8 @@
+{
+  "dataset_kind": "synthetic_development",
+  "expected_status_by_supplier": {
+    "vendor-a": {"memory": "资料冲突", "storage": "满足", "screen_size": "满足", "weight": "不满足", "warranty": "证据不足", "quantity": "满足", "unit_price": "满足", "delivery_days": "待人工确认"},
+    "vendor-b": {"memory": "资料冲突", "storage": "满足", "screen_size": "满足", "weight": "不满足", "warranty": "证据不足", "quantity": "满足", "unit_price": "满足", "delivery_days": "待人工确认"},
+    "vendor-c": {"memory": "资料冲突", "storage": "满足", "screen_size": "满足", "weight": "不满足", "warranty": "证据不足", "quantity": "满足", "unit_price": "满足", "delivery_days": "待人工确认"}
+  }
+}

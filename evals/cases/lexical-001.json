@@ -1,0 +1,87 @@
+{
+  "dataset_kind": "synthetic_development",
+  "case_id": "m2-lexical-001",
+  "revision": 1,
+  "documents": [
+    {
+      "document_id": "requirements.pdf",
+      "role": "requirement",
+      "status": "complete",
+      "blocks": [
+        {"locator": "memory", "page_idx": 0, "text": "运行内存不少于 24 GB"},
+        {"locator": "storage", "page_idx": 0, "text": "固态存储容量至少 1 TB"},
+        {"locator": "screen", "page_idx": 0, "text": "屏幕尺寸至少 15.6 英寸"},
+        {"locator": "weight", "page_idx": 0, "text": "整机重量不超过 2 kg"},
+        {"locator": "warranty", "page_idx": 0, "text": "质保期限至少 36 个月"},
+        {"locator": "quantity", "page_idx": 0, "text": "采购数量 8 台"},
+        {"locator": "unit_price", "page_idx": 0, "text": "含税单价不超过 7000 元/台"},
+        {"locator": "delivery", "page_idx": 0, "text": "订单确认后 14 个自然日内交付"}
+      ]
+    },
+    {
+      "document_id": "vendor-a-quote.xlsx",
+      "role": "quote",
+      "supplier": "vendor-a",
+      "model": "M2-A",
+      "status": "complete",
+      "blocks": [
+        {"locator": "memory", "sheet": "报价", "cell": "B2", "text": "出厂已装内存 24 GB"},
+        {"locator": "quantity", "sheet": "报价", "cell": "B3", "text": "报价数量 8 台"},
+        {"locator": "unit_price", "sheet": "报价", "cell": "B4", "text": "含税单价 6800 元/台"},
+        {"locator": "delivery", "sheet": "报价", "cell": "B5", "text": "订单确认后 12 个自然日交货"}
+      ]
+    },
+    {
+      "document_id": "vendor-a-spec.pdf",
+      "role": "spec",
+      "supplier": "vendor-a",
+      "model": "M2-A",
+      "status": "complete",
+      "blocks": [
+        {"locator": "memory", "page_idx": 0, "text": "已装 RAM 32 GB"},
+        {"locator": "storage", "page_idx": 0, "text": "标称 SSD 容量 1 TB"},
+        {"locator": "screen", "page_idx": 0, "text": "显示屏对角线 15.6 英寸"},
+        {"locator": "warranty", "page_idx": 0, "text": "保修期 36 个月"}
+      ]
+    },
+    {
+      "document_id": "vendor-b-quote.xlsx",
+      "role": "quote",
+      "supplier": "vendor-b",
+      "model": "M2-B",
+      "status": "complete",
+      "blocks": [
+        {"locator": "quantity", "sheet": "报价", "cell": "B2", "text": "报价数量 8 台"},
+        {"locator": "unit_price", "sheet": "报价", "cell": "B3", "text": "含税单价 7100 元/台"},
+        {"locator": "delivery", "sheet": "报价", "cell": "B4", "text": "订单确认后 15 个自然日交货"}
+      ]
+    },
+    {
+      "document_id": "vendor-b-spec.pdf",
+      "role": "spec",
+      "supplier": "vendor-b",
+      "model": "M2-B",
+      "status": "partial",
+      "blocks": [
+        {"locator": "memory", "page_idx": 0, "text": "已装内存 24 GB"},
+        {"locator": "weight", "page_idx": 0, "text": "裸机重量 1.7 kg"}
+      ]
+    }
+  ],
+  "queries": [
+    {"id": "memory_a", "query": "内存", "supplier": "vendor-a", "relevant": ["requirements.pdf#memory", "vendor-a-quote.xlsx#memory", "vendor-a-spec.pdf#memory"]},
+    {"id": "storage_a", "query": "存储容量", "supplier": "vendor-a", "relevant": ["requirements.pdf#storage", "vendor-a-spec.pdf#storage"]},
+    {"id": "screen_a", "query": "屏幕尺寸", "supplier": "vendor-a", "relevant": ["requirements.pdf#screen", "vendor-a-spec.pdf#screen"]},
+    {"id": "warranty_alias", "query": "保修期", "supplier": "vendor-a", "relevant": ["requirements.pdf#warranty", "vendor-a-spec.pdf#warranty"]},
+    {"id": "weight_b", "query": "重量", "supplier": "vendor-b", "relevant": ["requirements.pdf#weight", "vendor-b-spec.pdf#weight"]},
+    {"id": "unit_price_a", "query": "含税单价", "supplier": "vendor-a", "relevant": ["requirements.pdf#unit_price", "vendor-a-quote.xlsx#unit_price"]},
+    {"id": "quantity_a", "query": "采购数量", "supplier": "vendor-a", "relevant": ["requirements.pdf#quantity", "vendor-a-quote.xlsx#quantity"]},
+    {"id": "delivery_a", "query": "交付期限", "supplier": "vendor-a", "relevant": ["requirements.pdf#delivery", "vendor-a-quote.xlsx#delivery"]},
+    {"id": "no_hit", "query": "量子引擎X9", "supplier": "vendor-a", "relevant": []}
+  ],
+  "guardrail_probes": {
+    "partial_supplier": "vendor-b",
+    "complete_supplier": "vendor-a",
+    "no_hit_query": "量子引擎X9"
+  }
+}

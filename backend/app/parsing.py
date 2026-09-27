@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import tempfile
 import unicodedata
@@ -34,6 +35,12 @@ XLSX_RELATIONSHIP_ID = "{http://schemas.openxmlformats.org/officeDocument/2006/r
 XLSX_COMMENTS_RELATIONSHIP = (
     "http://schemas.openxmlformats.org/officeDocument/2006/relationships/comments"
 )
+XLSX_THREADED_COMMENTS_RELATIONSHIP = (
+    "http://schemas.microsoft.com/office/2017/10/relationships/threadedComment"
+)
+XLSX_HEADER_FOOTER_TAGS = frozenset({
+    "oddHeader", "oddFooter", "evenHeader", "evenFooter", "firstHeader", "firstFooter",
+})
 PDF_VECTOR_PAINT_OPERATORS = frozenset({
     b"S", b"s", b"f", b"F", b"f*", b"B", b"B*", b"b", b"b*", b"sh",
 })
@@ -212,6 +219,9 @@ def verify_pdf_source_coverage(parsed: ParseResult, source_pdf: Path) -> ParseRe
             issues.extend(
                 f"page:{page_idx}:{issue}" for issue in sorted(_pdf_graphics_issues(page, pdf))
             )
+            layout_issue = _pdf_layout_issue(page)
+            if layout_issue is not None:
+                issues.append(f"page:{page_idx}:{layout_issue}")
             try:
                 source_text = page.extract_text()
             except (PdfReadError, UnicodeError, ValueError):
@@ -246,6 +256,8 @@ def verify_pdf_source_coverage(parsed: ParseResult, source_pdf: Path) -> ParseRe
         version += "/vector-graphics:1"
     if "/annotations:1" not in version:
         version += "/annotations:1"
+    if "/layout-columns:1" not in version:
+        version += "/layout-columns:1"
     issues = list(dict.fromkeys(issues))
     return replace(parsed, parser_version=version,
                    status="partial" if issues else parsed.status,
@@ -255,6 +267,21 @@ def verify_pdf_source_coverage(parsed: ParseResult, source_pdf: Path) -> ParseRe
 def _normalize_pdf_text(text: str) -> str:
     return "".join(character for character in unicodedata.normalize("NFKC", text)
                    if not character.isspace())
+
+
+def _pdf_layout_issue(page: PageObject) -> str | None:
+    """Conservatively flag aligned text columns whose row meaning is unchecked."""
+    try:
+        layout = page.extract_text(extraction_mode="layout")
+    except (PdfReadError, TypeError, UnicodeError, ValueError):
+        return "layout_unverified"
+    if not layout:
+        return "layout_unverified"
+    column_rows = sum(
+        len(re.split(r" {3,}", line.strip())) >= 2
+        for line in layout.splitlines()
+    )
+    return "layout_columns_unverified" if column_rows else None
 
 
 def _pdf_graphics_issues(page: PageObject, pdf: PdfReader) -> set[str]:
@@ -394,6 +421,10 @@ def parse_xlsx(path: Path, *, document_id: str) -> ParseResult:
         blocks: list[EvidenceBlock] = []
         nonempty = 0
         for sheet in workbook:
+            if sheet.sheet_state != "visible":
+                coverage_issues.append(
+                    f"sheet:{sheet.title}:hidden_sheet:{sheet.sheet_state}"
+                )
             if (sheet.max_row is not None and sheet.max_row > MAX_ROWS) or (
                 sheet.max_column is not None and sheet.max_column > MAX_COLUMNS
             ):
@@ -407,10 +438,24 @@ def parse_xlsx(path: Path, *, document_id: str) -> ParseResult:
                 worksheet_part = PurePosixPath(sheet._worksheet_path.lstrip("/"))
                 with workbook._archive.open(str(worksheet_part)) as stream:
                     for event, element in iterparse(stream, events=("start", "end")):
+                        tag = element.tag.rsplit("}", 1)[-1]
                         if event == "end":
+                            if tag in XLSX_HEADER_FOOTER_TAGS and (element.text or "").strip():
+                                coverage_issues.append(
+                                    f"sheet:{sheet.title}:header_footer_unverified:{tag}"
+                                )
                             element.clear()
                             continue
-                        tag = element.tag.rsplit("}", 1)[-1]
+                        relationship_ref = element.attrib.get(XLSX_RELATIONSHIP_ID)
+                        if relationship_ref and tag not in {
+                            "drawing", "legacyDrawing", "legacyDrawingHF", "hyperlink",
+                        }:
+                            if len(relationship_ref) > 80:
+                                relationship_ref = "unknown"
+                            coverage_issues.append(
+                                f"sheet:{sheet.title}:relationship_unverified:"
+                                f"{tag}:{relationship_ref}"
+                            )
                         if tag in {"drawing", "legacyDrawing", "legacyDrawingHF"}:
                             drawing_ref = element.attrib.get(XLSX_RELATIONSHIP_ID, "unknown")
                             if len(drawing_ref) > 80:
@@ -423,6 +468,16 @@ def parse_xlsx(path: Path, *, document_id: str) -> ParseResult:
                             coverage_issues.append(
                                 f"sheet:{sheet.title}:merged_cell:{element.attrib.get('ref', 'unknown')}"
                             )
+                        elif tag == "hyperlink":
+                            if any(element.attrib.get(key) for key in (
+                                XLSX_RELATIONSHIP_ID, "location", "display", "tooltip",
+                            )):
+                                cell_ref = element.get("ref", "unknown")
+                                if len(cell_ref) > 80:
+                                    cell_ref = "unknown"
+                                coverage_issues.append(
+                                    f"sheet:{sheet.title}:hyperlink_unverified:{cell_ref}"
+                                )
                         elif tag == "sheetFormatPr":
                             hidden_default_rows = _xlsx_visibility_flag(element.get("zeroHeight"))
                             zero_default_row_height = _xlsx_zero_size(
@@ -514,13 +569,23 @@ def parse_xlsx(path: Path, *, document_id: str) -> ParseResult:
                             if event == "end":
                                 element.clear()
                                 continue
-                            if (element.tag.rsplit("}", 1)[-1] == "Relationship"
-                                    and element.attrib.get("Type") == XLSX_COMMENTS_RELATIONSHIP):
+                            if element.tag.rsplit("}", 1)[-1] == "Relationship":
+                                relationship_type = element.attrib.get("Type")
+                                if relationship_type not in {
+                                    XLSX_COMMENTS_RELATIONSHIP,
+                                    XLSX_THREADED_COMMENTS_RELATIONSHIP,
+                                }:
+                                    continue
                                 comment_ref = element.attrib.get("Id", "unknown")
                                 if len(comment_ref) > 80:
                                     comment_ref = "unknown"
+                                kind = (
+                                    "threaded_comment_unverified"
+                                    if relationship_type == XLSX_THREADED_COMMENTS_RELATIONSHIP
+                                    else "comment_unverified"
+                                )
                                 coverage_issues.append(
-                                    f"sheet:{sheet.title}:comment_unverified:{comment_ref}"
+                                    f"sheet:{sheet.title}:{kind}:{comment_ref}"
                                 )
             except (DefusedXmlException, ParseError) as exc:
                 raise UnsupportedContentError("XLSX worksheet or relationship XML is malformed") from exc
@@ -556,7 +621,9 @@ def parse_xlsx(path: Path, *, document_id: str) -> ParseResult:
             document_id=document_id,
             parser_version=(
                 "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1"
-                "/legacy-drawing:1/comments-rel:1/visibility:1"
+                "/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1"
+                "/threaded-comment-rel:1/header-footer:1/hyperlink:1"
+                "/relationship-ref:1"
             ),
             status="partial" if coverage_issues else "complete",
             blocks=tuple(blocks),

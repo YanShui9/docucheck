@@ -11,6 +11,7 @@ from backend.app.agent.tools import AnswerDraft, ToolExecutor
 from backend.app.evidence.repository import EvidenceRepository, load_case
 from backend.app.extraction.validation import validate_memory
 from backend.app.rules.memory import evaluate_memory
+from backend.tests.test_field_extraction import StorageCandidates
 
 PACK = Path(__file__).resolve().parents[2] / "examples/dev-pack-001"
 
@@ -89,9 +90,31 @@ def test_one_supplier_check_answer_rejects_old_and_new_result_together():
         render_answer(draft, tools, "供应商 A 的内存是否达标？")
 
 
-def test_answer_tool_contract_allows_only_one_check_result():
+def test_answer_tool_contract_allows_bounded_matrix_results():
+    draft = AnswerDraft(kind="check", check_result_ids=["memory", "storage"])
+    assert len(draft.check_result_ids) == 2
     with pytest.raises(ValidationError):
-        AnswerDraft(kind="check", check_result_ids=["older-partial", "newer-complete"])
+        AnswerDraft(kind="check", check_result_ids=[str(i) for i in range(25)])
+
+
+def test_full_review_can_render_two_verified_fields_for_one_supplier():
+    repo = load_case(PACK)
+    tools, memory_id = _checked_tools(repo)
+    fact_set = tools.execute("extract_facts", {"supplier": "vendor-a",
+                                              "field_keys": ["storage"]}, StorageCandidates())
+    storage_set_id = fact_set["data"]["fact_sets"][0]["fact_set_id"]
+    checked = tools.execute("evaluate_checks", {"supplier": "vendor-a",
+                                               "fact_set_ids": [storage_set_id]}, None)
+    storage_id = checked["data"]["check_result_ids"][0]
+
+    answer, status = render_answer(
+        AnswerDraft(kind="check", check_result_ids=[memory_id, storage_id]),
+        tools, "完整审查供应商 A",
+    )
+
+    assert status == "completed"
+    assert "内存：资料冲突" in answer
+    assert "存储：满足" in answer
 
 
 @pytest.mark.parametrize("question", ["你根据哪两处判断冲突？", "根据哪两处判断？"])

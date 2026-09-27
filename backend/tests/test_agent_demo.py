@@ -45,3 +45,16 @@ def test_plain_exit_ends_interactive_session_without_model_call(tmp_path, monkey
     assert demo.main(["--interactive", "--output", str(tmp_path)]) == 0
     assert provider.steps == 0
     assert list(tmp_path.iterdir()) == []
+
+
+def test_cli_thorough_mode_is_recorded_in_run_context(tmp_path, monkeypatch):
+    demo = import_module("backend.app.agent_demo")
+    monkeypatch.setattr(demo, "configured_provider", ScenarioProvider)
+
+    code = demo.main(["--case-dir", str(PACK), "--question", "供应商 A 的内存是否达标？",
+                      "--mode", "thorough", "--output", str(tmp_path)])
+
+    assert code == 0
+    traces = list(tmp_path.glob("*.json"))
+    assert len(traces) == 1
+    assert json.loads(traces[0].read_text(encoding="utf-8"))["context"]["mode"] == "thorough"

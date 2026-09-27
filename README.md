@@ -1,5 +1,7 @@
 # DocuCheck
 
+> 最新进度（2026-09-27）：M2 八字段采购审查的**离线代码链路**已接通，并在合成资料上完成单家 8 格、三家 24 格的脚本化 Agent 验证；后端 217 项测试与 `ruff check backend evals` 通过。真实 DeepSeek 八字段与三家验收仍待用户本机运行，因此 M2 暂记“离线实现完成、真实模型未验收”。详情和两条探针命令见 [M2 离线验收记录](docs/m2-offline-acceptance-2026-09-27.md)。M3 的正式 API/worker 和 M4 前端尚未开始；前端开始前先讨论设计规范与样式。下方按日期保留历史过程记录。
+
 > 最新协作状态（2026-09-25）：[M1 最小真实 Agent](docs/m1-acceptance-2026-09-25.md)在模拟包与内存字段范围内完成验收；真实模型连续两问通过，后端离线测试 90/90、全目录 Ruff 与依赖检查通过。正式上传、其他七字段和独立质量评测尚未完成。后续仍按[分步协作计划](docs/step-by-step-plan.md)一次做一个小步骤。任何前端工作开始前须先暂停并讨论设计规范与样式。
 
 > 2026-09-26：[M2-0 XLSX 内存分列证据修正](docs/m2-0-acceptance-2026-09-26.md)和 [M2-1 答复引用范围修正](docs/m2-1-acceptance-2026-09-26.md)已通过离线回归（当前 110 项测试）。下一小步为 M2-2 解析覆盖；M2 完整采购审查尚未完成。
@@ -18,11 +20,11 @@
 
 > 2026-09-27：[M2-2g XLSX 隐藏行列覆盖检查](docs/m2-2g-xlsx-hidden-rows-columns-2026-09-27.md)已通过离线回归（当前 144 项测试）。隐藏与零尺寸行列不再仅凭已读单元格判为完整。下一小步拟检查隐藏工作表；M2-2 尚未验收。
 
-DocuCheck 是一个正在开发的本地采购资料初审 Agent 工作台。目标交互是上传资料后提问，由单 Agent 调用受控工具并返回带来源的答复；八字段正式结论由规则引擎计算。现有资产包括基础环境、模拟文档、PDF/XLSX 解析、快照证据、词法检索和 DeepSeek Provider；单次真实模型工具调用及三批模拟资料抽取均已有用户反馈。内存抽取、证据校验和规则已完成模拟包复核；Agent 循环与 CLI 已通过离线测试及一次完整的模拟包真实两轮对话。Linux worker 只有启动与健康检查骨架；正式 API、数据库迁移和前端尚未实现。
+DocuCheck 是一个正在开发的本地采购资料初审 Agent 工作台。目标交互是上传资料后提问，由单 Agent 调用受控工具并返回带来源的答复；八字段正式结论由规则引擎计算。现有资产包括基础环境、单家与三家模拟文档、PDF/XLSX 解析、快照证据、词法检索、DeepSeek Provider，以及八字段抽取/规则/Agent 离线链路。真实模型曾在 M1 的内存问题和追问上运行；M2 的真实八字段与三家探针待用户执行。Linux worker 只有启动与健康检查骨架；正式 API、数据库迁移和前端尚未实现。
 
-AI 协作上下文见 [CLAUDE.md](CLAUDE.md)；Codex 入口为 [AGENTS.md](AGENTS.md)。当前设计基线是 [Agent 架构 v1.0](docs/superpowers/specs/2026-09-24-agent-first-design.md)，涵盖模型、状态、工具、上下文、RAG、恢复和评测；M1 以外的正式业务能力仍按路线图实施。
+AI 协作上下文见 [CLAUDE.md](CLAUDE.md)；Codex 入口为 [AGENTS.md](AGENTS.md)。当前设计基线是 [Agent 架构 v1.0](docs/superpowers/specs/2026-09-24-agent-first-design.md)，涵盖模型、状态、工具、上下文、RAG、恢复和评测；阶段条件见 [路线图](docs/development-roadmap.md)。
 
-2026-09-24 已按 Agent 为中心重排计划。[M1 实施计划](docs/superpowers/plans/2026-09-24-agent-mvp.md)中的模拟包内存链路已完成验收；M2 继续按确认的小步骤推进。历史阶段 0/1 名称不代表新的里程碑进度。
+2026-09-24 已按 Agent 为中心重排计划。[M1 实施计划](docs/superpowers/plans/2026-09-24-agent-mvp.md)中的模拟包内存链路已完成验收；M2 离线链路与待执行的真实探针见 [最新记录](docs/m2-offline-acceptance-2026-09-27.md)。历史阶段 0/1 名称不代表新的里程碑进度。
 
 ## 当前范围
 

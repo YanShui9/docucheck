@@ -1,0 +1,61 @@
+{
+  "case_id": "dev-pack-003",
+  "revision": 1,
+  "documents": [
+    {
+      "file": "requirements.pdf",
+      "role": "requirement",
+      "sha256": "d18fa7c4cfc616592224f2bb8338af8459b63807d7ec888e6832831b792c3253",
+      "parsed_file": "parsed/requirements.middle.json",
+      "parsed_sha256": "e3d74e9227f8dd9ff864642aa145bb3d3ba07404e04c6bd3580f2d71be2a078e"
+    },
+    {
+      "file": "vendor-a-quote.xlsx",
+      "role": "quote",
+      "sha256": "1e9f7f9979476fd5f7ece166b3c107d5be8f72d333f492976b1098b234511c68",
+      "supplier": "vendor-a",
+      "model": "DC-14-A"
+    },
+    {
+      "file": "vendor-a-spec.pdf",
+      "role": "spec",
+      "sha256": "7632bc5e0e95fef5c0f5054a4648d587ede4eb045eceb8f183fb16fcac38c546",
+      "supplier": "vendor-a",
+      "model": "DC-14-A",
+      "parsed_file": "parsed/spec.middle.json",
+      "parsed_sha256": "eca76a3a4f835ccf16219ccfb490e87f255ecfe51940892cd597058f4b0c3636"
+    },
+    {
+      "file": "vendor-b-quote.xlsx",
+      "role": "quote",
+      "sha256": "1e9f7f9979476fd5f7ece166b3c107d5be8f72d333f492976b1098b234511c68",
+      "supplier": "vendor-b",
+      "model": "DC-14-B"
+    },
+    {
+      "file": "vendor-b-spec.pdf",
+      "role": "spec",
+      "sha256": "7632bc5e0e95fef5c0f5054a4648d587ede4eb045eceb8f183fb16fcac38c546",
+      "supplier": "vendor-b",
+      "model": "DC-14-B",
+      "parsed_file": "parsed/spec.middle.json",
+      "parsed_sha256": "eca76a3a4f835ccf16219ccfb490e87f255ecfe51940892cd597058f4b0c3636"
+    },
+    {
+      "file": "vendor-c-quote.xlsx",
+      "role": "quote",
+      "sha256": "1e9f7f9979476fd5f7ece166b3c107d5be8f72d333f492976b1098b234511c68",
+      "supplier": "vendor-c",
+      "model": "DC-14-C"
+    },
+    {
+      "file": "vendor-c-spec.pdf",
+      "role": "spec",
+      "sha256": "7632bc5e0e95fef5c0f5054a4648d587ede4eb045eceb8f183fb16fcac38c546",
+      "supplier": "vendor-c",
+      "model": "DC-14-C",
+      "parsed_file": "parsed/spec.middle.json",
+      "parsed_sha256": "eca76a3a4f835ccf16219ccfb490e87f255ecfe51940892cd597058f4b0c3636"
+    }
+  ]
+}

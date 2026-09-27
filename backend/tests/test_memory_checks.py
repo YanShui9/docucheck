@@ -50,6 +50,84 @@ def test_incomplete_processing_never_becomes_missing_or_satisfied():
     assert rules.evaluate_memory(partial, "vendor-a", [], scan_complete=True).business_status is None
 
 
+def test_memory_result_identity_changes_with_processing_state():
+    repo, facts = inputs()
+    rules = import_module("backend.app.rules.memory")
+    incomplete = rules.evaluate_memory(repo, "vendor-a", facts, scan_complete=False)
+    complete = rules.evaluate_memory(repo, "vendor-a", facts, scan_complete=True)
+    assert incomplete.processing_status == "partial"
+    assert complete.processing_status == "complete"
+    assert incomplete.check_result_id != complete.check_result_id
+
+
+def test_memory_result_identity_changes_when_fact_content_changes():
+    from decimal import Decimal
+
+    repo, facts = inputs()
+    rules = import_module("backend.app.rules.memory")
+    offered = [fact for fact in facts if fact.role != "requirement"]
+    requirement = [fact for fact in facts if fact.role == "requirement"]
+    first = rules.evaluate_memory(repo, "vendor-a", [*requirement, offered[0]],
+                                  scan_complete=True)
+    changed = replace(offered[0], value=Decimal(17))
+    second = rules.evaluate_memory(repo, "vendor-a", [*requirement, changed],
+                                   scan_complete=True)
+    assert first.business_status == second.business_status == "满足"
+    assert first.check_result_id != second.check_result_id
+
+
+def test_memory_mib_normalizes_to_gib_without_mixing_gb():
+    validation = import_module("backend.app.extraction.validation")
+    repo, _ = inputs()
+    original = next(block for block in repo.blocks if block.role == "spec"
+                    and "已装内存" in block.text)
+    documents = []
+    for document in repo.documents:
+        if document.role == "spec":
+            blocks = tuple(replace(block, text="已装内存 16384 MiB")
+                           if block.text == original.text else block
+                           for block in document.parsed.blocks)
+            documents.append(replace(document, parsed=replace(document.parsed, blocks=blocks)))
+        else:
+            documents.append(document)
+    changed_repo = EvidenceRepository(repo.case_id, repo.revision + 1, documents)
+    source = next(block for block in changed_repo.blocks if block.role == "spec"
+                  and "16384 MiB" in block.text)
+    fact = validation.validate_memory(
+        {"raw_value": "16384", "raw_unit": "MiB", "qualifier": "installed",
+         "comparator": "eq", "evidence_refs": [source.evidence_id]},
+        changed_repo, "vendor-a",
+    )
+    assert fact.value == 16
+    assert fact.unit == "GiB"
+
+
+@pytest.mark.parametrize(("text", "comparator"), [
+    ("已装内存大于 16 GB", "gt"),
+    ("已装内存小于 16 GB", "lt"),
+])
+def test_memory_strict_comparator_is_preserved(text, comparator):
+    validation = import_module("backend.app.extraction.validation")
+    repo, _ = inputs()
+    documents = []
+    for document in repo.documents:
+        if document.role == "requirement":
+            blocks = tuple(replace(block, text=text) if "已装内存" in block.text
+                           else block for block in document.parsed.blocks)
+            documents.append(replace(document, parsed=replace(document.parsed, blocks=blocks)))
+        else:
+            documents.append(document)
+    changed_repo = EvidenceRepository(repo.case_id, repo.revision + 1, documents)
+    source = next(block for block in changed_repo.blocks if block.role == "requirement"
+                  and text in block.text)
+    fact = validation.validate_memory(
+        {"raw_value": "16", "raw_unit": "GB", "qualifier": "installed",
+         "comparator": comparator, "evidence_refs": [source.evidence_id]},
+        changed_repo, "vendor-a",
+    )
+    assert fact.comparator == comparator
+
+
 def test_missing_and_ambiguous_are_distinct():
     repo, facts = inputs()
     rules = import_module("backend.app.rules.memory")

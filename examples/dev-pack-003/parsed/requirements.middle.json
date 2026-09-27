@@ -1,0 +1,241 @@
+{
+  "metadata": {
+    "file_suffix": "pdf",
+    "producer": {
+      "name": "mineru",
+      "version": "4.0.7"
+    },
+    "document": {
+      "title": "模拟办公笔记本采购需求",
+      "authors": [
+        "DocuCheck synthetic development fixture"
+      ],
+      "subject": "unspecified",
+      "created_at": "2026-09-24T20:49:40+08:00",
+      "modified_at": "2026-09-24T20:49:40+08:00",
+      "creator_application": "anonymous",
+      "producer_application": "ReportLab PDF Library - (opensource)",
+      "page_count": 1,
+      "page_count_kind": "physical"
+    }
+  },
+  "extensions": {
+    "mineru": {
+      "tier": "basic",
+      "parse_mode": "txt"
+    },
+    "docvortex_layout": {
+      "version": 1,
+      "pages": [
+        {
+          "page_idx": 0,
+          "width_pt": 595.2755737304688,
+          "height_pt": 841.8897705078125
+        }
+      ]
+    }
+  },
+  "pages": [
+    {
+      "page_idx": 0,
+      "blocks": [
+        {
+          "type": "doc_title",
+          "index": 0,
+          "bbox": [
+            0.09,
+            0.064,
+            0.41,
+            0.087
+          ],
+          "content": [
+            {
+              "type": "text",
+              "content": "模拟办公笔记本采购需求"
+            }
+          ],
+          "level": 1
+        },
+        {
+          "type": "text",
+          "index": 1,
+          "bbox": [
+            0.089,
+            0.106,
+            0.374,
+            0.122
+          ],
+          "content": [
+            {
+              "type": "text",
+              "content": "完全模拟资料 · 仅供开发与测试"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "index": 2,
+          "bbox": [
+            0.09,
+            0.166,
+            0.298,
+            0.181
+          ],
+          "content": [
+            {
+              "type": "text",
+              "content": "采购任务:开发样例 001"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "index": 3,
+          "bbox": [
+            0.091,
+            0.201,
+            0.264,
+            0.216
+          ],
+          "content": [
+            {
+              "type": "text",
+              "content": "已装内存至少 16 GB"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "index": 4,
+          "bbox": [
+            0.09,
+            0.237,
+            0.272,
+            0.251
+          ],
+          "content": [
+            {
+              "type": "text",
+              "content": "标称存储至少 512 GB"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "index": 5,
+          "bbox": [
+            0.091,
+            0.273,
+            0.281,
+            0.287
+          ],
+          "content": [
+            {
+              "type": "text",
+              "content": "屏幕尺寸至少 14 英寸"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "index": 6,
+          "bbox": [
+            0.091,
+            0.308,
+            0.29,
+            0.323
+          ],
+          "content": [
+            {
+              "type": "text",
+              "content": "主机重量不超过 1.6 kg"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "index": 7,
+          "bbox": [
+            0.091,
+            0.344,
+            0.279,
+            0.359
+          ],
+          "content": [
+            {
+              "type": "text",
+              "content": "质保期限至少 24 个月"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "index": 8,
+          "bbox": [
+            0.091,
+            0.38,
+            0.225,
+            0.395
+          ],
+          "content": [
+            {
+              "type": "text",
+              "content": "采购数量 10 台"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "index": 9,
+          "bbox": [
+            0.091,
+            0.415,
+            0.326,
+            0.43
+          ],
+          "content": [
+            {
+              "type": "text",
+              "content": "含税单价不超过 6000 元/台"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "index": 10,
+          "bbox": [
+            0.091,
+            0.451,
+            0.355,
+            0.466
+          ],
+          "content": [
+            {
+              "type": "text",
+              "content": "订单确认后 14 个自然日内交付"
+            }
+          ]
+        },
+        {
+          "type": "page_number",
+          "index": 11,
+          "bbox": [
+            0.774,
+            0.939,
+            0.907,
+            0.953
+          ],
+          "content": [
+            {
+              "type": "text",
+              "content": "第 1 页 / 共 1 页"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "is_full_document": true,
+  "schema": "docvortex.middle",
+  "schema_version": "2.0"
+}

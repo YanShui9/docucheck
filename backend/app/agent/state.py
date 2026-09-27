@@ -14,8 +14,9 @@ class RunContext:
     run_id: str
     attempt_id: str
     model_id: str | None
-    prompt_version: str = "agent-memory-v1"
-    rule_version: str = "memory-v1"
+    mode: str = "standard"
+    prompt_version: str = "agent-m2-v1"
+    rule_version: str = "fields-v1+memory-v1"
 
 
 class AgentState(TypedDict):

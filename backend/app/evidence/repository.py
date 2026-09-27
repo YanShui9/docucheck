@@ -4,6 +4,8 @@ from dataclasses import asdict
 from hashlib import sha256
 from pathlib import Path
 
+from pypdf import PdfReader
+
 from ..parsing import (
     MAX_FILE_BYTES,
     ParseResult,
@@ -38,6 +40,12 @@ class EvidenceRepository:
             raise ValueError("invalid_snapshot")
         if len({d.document_id for d in documents}) != len(documents):
             raise ValueError("duplicate_document")
+        if any(
+            d.document_id.lower().endswith(".pdf")
+            and (type(d.parsed.total_pages) is not int or d.parsed.total_pages < 1)
+            for d in documents
+        ):
+            raise ValueError("missing_pdf_page_count")
         if sum(d.parsed.total_pages or 0 for d in documents) > 30:
             raise ValueError("case_page_limit")
         self.case_id, self.revision = case_id, revision
@@ -98,17 +106,38 @@ def load_case(case_dir: Path) -> EvidenceRepository:
     the trusted local manifest. This is not the production upload API.
     """
     manifest = json.loads((case_dir / "manifest.json").read_text(encoding="utf-8"))
-    documents = []
-    for item in manifest["documents"]:
+    items = manifest["documents"]
+    if not isinstance(items, list) or not 1 <= len(items) <= 7:
+        raise ValueError("case_file_limit")
+    source_items = []
+    total_pdf_pages = 0
+    for item in items:
         source = _within(case_dir, item["file"])
+        if source.stat().st_size > MAX_FILE_BYTES:
+            raise ValueError("file_limit")
         if sha256(source.read_bytes()).hexdigest() != item["sha256"]:
             raise ValueError("source_hash_mismatch")
-        if source.suffix == ".pdf":
+        if source.suffix.lower() == ".pdf":
+            try:
+                page_count = len(PdfReader(source).pages)
+            except Exception as exc:
+                raise ValueError("source_pdf_invalid") from exc
+            if page_count < 1:
+                raise ValueError("source_pdf_invalid")
+            total_pdf_pages += page_count
+            if total_pdf_pages > 30:
+                raise ValueError("case_page_limit")
+        elif source.suffix.lower() != ".xlsx":
+            raise ValueError("unsupported_file")
+        source_items.append((item, source))
+    documents = []
+    for item, source in source_items:
+        if source.suffix.lower() == ".pdf":
             cached = _within(case_dir, item["parsed_file"])
             if sha256(cached.read_bytes()).hexdigest() != item["parsed_sha256"]:
                 raise ValueError("parser_cache_hash_mismatch")
             parsed = parse_mineru_middle(cached, document_id=item["file"])
-        elif source.suffix == ".xlsx":
+        elif source.suffix.lower() == ".xlsx":
             parsed = parse_xlsx(source, document_id=item["file"])
         else:
             raise ValueError("unsupported_file")

@@ -16,6 +16,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--case-dir", type=Path, default=Path("examples/dev-pack-001"))
     parser.add_argument("--provider", choices=["configured"], default="configured")
+    parser.add_argument("--mode", choices=["standard", "thorough"], default="standard")
     parser.add_argument("--interactive", action="store_true")
     parser.add_argument("--question")
     parser.add_argument("--output", type=Path, default=Path("data/agent-demo"))
@@ -33,8 +34,8 @@ def main(argv: list[str] | None = None) -> int:
     except (OSError, ValueError, KeyError):
         print("Case input invalid: check manifest, hashes and supported files.", file=sys.stderr)
         return 2
-    session = AgentSession(repo, provider)
-    print("DocuCheck M1：内存核验与来源追问。当前读取经哈希核验的模拟包解析缓存。")
+    session = AgentSession(repo, provider, mode=args.mode)
+    print("DocuCheck M2：八字段采购核验与来源追问。当前读取经哈希核验的模拟包解析缓存。")
     print("问题及必要资料片段会发送到已配置模型服务。输入 /exit 或 exit 结束。")
     exit_code = 0
     while True:

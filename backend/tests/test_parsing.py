@@ -15,6 +15,7 @@ from openpyxl import Workbook, load_workbook
 from openpyxl.chart import BarChart, Reference
 from openpyxl.comments import Comment
 from openpyxl.drawing.image import Image as XlsxImage
+from openpyxl.worksheet.table import Table
 from PIL import Image, ImageDraw
 from pypdf import PdfReader, PdfWriter
 from pypdf.generic import (
@@ -285,6 +286,127 @@ def test_xlsx_comment_relationship_without_vml_cannot_claim_complete(
     assert any(block.cell == "A1" and block.text == "已装内存 16 GB" for block in result.blocks)
 
 
+def test_xlsx_threaded_comment_relationship_cannot_claim_complete(tmp_path: Path) -> None:
+    workbook = Workbook()
+    workbook.active.title = "报价"
+    workbook.active["A1"] = "已装内存 16 GB"
+    original = tmp_path / "plain.xlsx"
+    commented = tmp_path / "threaded-comment.xlsx"
+    workbook.save(original)
+    relation = (
+        '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+        '<Relationship Id="rIdThread1" '
+        'Type="http://schemas.microsoft.com/office/2017/10/relationships/threadedComment" '
+        'Target="../threadedComments/threadedComment1.xml"/>'
+        '</Relationships>'
+    )
+    threaded_comments = (
+        '<ThreadedComments '
+        'xmlns="http://schemas.microsoft.com/office/spreadsheetml/2018/threadedcomments">'
+        '<threadedComment ref="A1" id="{12345678-1234-1234-1234-123456789012}" '
+        'personId="{12345678-1234-1234-1234-123456789013}">'
+        '<text>已装内存 32 GB</text></threadedComment></ThreadedComments>'
+    )
+    with ZipFile(original) as source, ZipFile(commented, "w", compression=ZIP_DEFLATED) as target:
+        for entry in source.infolist():
+            content = source.read(entry.filename)
+            if entry.filename == "[Content_Types].xml":
+                content = content.replace(
+                    b"</Types>",
+                    b'<Override PartName="/xl/threadedComments/threadedComment1.xml" '
+                    b'ContentType="application/vnd.ms-excel.threadedcomments+xml"/></Types>',
+                )
+            target.writestr(entry, content)
+        target.writestr("xl/worksheets/_rels/sheet1.xml.rels", relation)
+        target.writestr(
+            "xl/threadedComments/threadedComment1.xml", threaded_comments,
+        )
+
+    result = parsing().parse_xlsx(commented, document_id="threaded-comment")
+
+    assert any(block.cell == "A1" and block.text == "已装内存 16 GB" for block in result.blocks)
+    assert result.status == "partial"
+    assert "sheet:报价:threaded_comment_unverified:rIdThread1" in result.coverage_issues
+
+
+def test_xlsx_header_text_cannot_claim_complete(tmp_path: Path) -> None:
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "报价"
+    sheet["A1"] = "已装内存 16 GB"
+    sheet.oddHeader.center.text = "补充：已装内存 32 GB"
+    path = tmp_path / "header-text.xlsx"
+    workbook.save(path)
+
+    result = parsing().parse_xlsx(path, document_id="header-text")
+
+    assert any(block.cell == "A1" and block.text == "已装内存 16 GB" for block in result.blocks)
+    assert result.status == "partial"
+    assert "sheet:报价:header_footer_unverified:oddHeader" in result.coverage_issues
+
+
+def test_xlsx_hyperlink_target_and_tooltip_cannot_claim_complete(tmp_path: Path) -> None:
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "报价"
+    sheet["A1"] = "规格详情"
+    sheet["A1"].hyperlink = "https://example.invalid/spec?memory=32GB"
+    sheet["A1"].hyperlink.tooltip = "实际已装内存 32 GB"
+    path = tmp_path / "hyperlink.xlsx"
+    workbook.save(path)
+
+    result = parsing().parse_xlsx(path, document_id="hyperlink")
+
+    assert any(block.cell == "A1" and block.text == "规格详情" for block in result.blocks)
+    assert result.status == "partial"
+    assert "sheet:报价:hyperlink_unverified:A1" in result.coverage_issues
+
+
+def test_xlsx_referenced_table_relationship_cannot_claim_complete(tmp_path: Path) -> None:
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "报价"
+    sheet["A1"] = "参数"
+    sheet["B1"] = "数值"
+    sheet["A2"] = "已装内存"
+    sheet["B2"] = "32 GB"
+    sheet.add_table(Table(displayName="SupplementalDetails", ref="A1:B2"))
+    path = tmp_path / "table-part.xlsx"
+    workbook.save(path)
+
+    result = parsing().parse_xlsx(path, document_id="table-part")
+
+    assert any(block.cell == "B2" and block.text == "32 GB" for block in result.blocks)
+    assert result.status == "partial"
+    assert "sheet:报价:relationship_unverified:tablePart:rId1" in result.coverage_issues
+
+
+def test_xlsx_unreferenced_table_part_does_not_change_coverage(tmp_path: Path) -> None:
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet["A1"] = "参数"
+    sheet["B1"] = "数值"
+    sheet["A2"] = "已装内存"
+    sheet["B2"] = "32 GB"
+    sheet.add_table(Table(displayName="DetachedDetails", ref="A1:B2"))
+    original = tmp_path / "table-original.xlsx"
+    detached = tmp_path / "table-detached.xlsx"
+    workbook.save(original)
+    with ZipFile(original) as source, ZipFile(detached, "w", compression=ZIP_DEFLATED) as target:
+        for entry in source.infolist():
+            content = source.read(entry.filename)
+            if entry.filename == "xl/worksheets/sheet1.xml":
+                content, removed = re.subn(rb"<tableParts\b[^>]*>.*?</tableParts>", b"", content)
+                assert removed == 1
+            target.writestr(entry, content)
+
+    result = parsing().parse_xlsx(detached, document_id="detached")
+
+    assert result.status == "complete"
+    assert result.coverage_issues == ()
+    assert any(block.cell == "B2" and block.text == "32 GB" for block in result.blocks)
+
+
 def test_xlsx_header_image_cannot_claim_complete(tmp_path: Path) -> None:
     workbook = Workbook()
     workbook.active["A1"] = "已装内存 16 GB"
@@ -502,6 +624,28 @@ def test_xlsx_visible_row_and_column_remain_complete(tmp_path: Path) -> None:
     assert any(block.cell == "B2" and block.text == "32 GB" for block in result.blocks)
 
 
+@pytest.mark.parametrize("sheet_state", ["hidden", "veryHidden"])
+def test_xlsx_hidden_worksheet_cannot_claim_complete(
+    tmp_path: Path, sheet_state: str,
+) -> None:
+    workbook = Workbook()
+    workbook.active["A1"] = "报价首页"
+    secret = workbook.create_sheet("补充参数")
+    secret["B2"] = "已装内存 32 GB"
+    secret.sheet_state = sheet_state
+    path = tmp_path / f"{sheet_state}.xlsx"
+    workbook.save(path)
+
+    result = parsing().parse_xlsx(path, document_id=sheet_state)
+
+    assert any(
+        block.sheet == "补充参数" and block.cell == "B2" and block.text == "已装内存 32 GB"
+        for block in result.blocks
+    )
+    assert result.status == "partial"
+    assert f"sheet:补充参数:hidden_sheet:{sheet_state}" in result.coverage_issues
+
+
 def test_pdf_entrypoint_checks_source_and_runs_mineru(tmp_path: Path) -> None:
     source_json = PACK / "parsed" / "requirements.middle.json"
     fake_mineru = tmp_path / "fake_mineru.py"
@@ -637,6 +781,64 @@ def test_pdf_vector_table_lines_cannot_claim_complete(
 
     assert result.status == "partial"
     assert "page:0:vector_graphics_unverified" in result.coverage_issues
+
+
+def test_pdf_borderless_text_columns_cannot_claim_complete(tmp_path: Path) -> None:
+    pdf_path = tmp_path / "borderless-table.pdf"
+    pdf = canvas.Canvas(str(pdf_path), pagesize=(612, 792))
+    for y, label, value in (
+        (720, "Parameter", "Value"),
+        (700, "Installed RAM", "32 GB"),
+        (680, "Storage", "1 TB"),
+    ):
+        pdf.drawString(72, y, label)
+        pdf.drawString(250, y, value)
+    pdf.save()
+
+    middle = json.loads((PACK / "parsed" / "requirements.middle.json").read_text(encoding="utf-8"))
+    source_lines = PdfReader(pdf_path).pages[0].extract_text().splitlines()
+    middle["pages"][0]["blocks"] = [
+        {
+            "type": "text", "index": index, "bbox": [0.1, 0.1, 0.8, 0.9],
+            "content": [{"type": "text", "content": line}],
+        }
+        for index, line in enumerate(source_lines)
+    ]
+    middle_path = tmp_path / "borderless.middle.json"
+    middle_path.write_text(json.dumps(middle), encoding="utf-8")
+
+    parsed = parsing().parse_mineru_middle(middle_path, document_id="borderless")
+    result = parsing().verify_pdf_source_coverage(parsed, pdf_path)
+
+    assert result.status == "partial"
+    assert "page:0:layout_columns_unverified" in result.coverage_issues
+    assert not any("not_extracted" in issue for issue in result.coverage_issues)
+
+
+def test_pdf_single_borderless_label_value_row_is_unverified(tmp_path: Path) -> None:
+    pdf_path = tmp_path / "single-row.pdf"
+    pdf = canvas.Canvas(str(pdf_path), pagesize=(612, 792))
+    pdf.drawString(72, 720, "Installed RAM")
+    pdf.drawString(250, 720, "32 GB")
+    pdf.save()
+
+    middle = json.loads((PACK / "parsed" / "requirements.middle.json").read_text(encoding="utf-8"))
+    middle["pages"][0]["blocks"] = [
+        {
+            "type": "text", "index": index, "bbox": [0.1, 0.1, 0.8, 0.9],
+            "content": [{"type": "text", "content": line}],
+        }
+        for index, line in enumerate(PdfReader(pdf_path).pages[0].extract_text().splitlines())
+    ]
+    middle_path = tmp_path / "single-row.middle.json"
+    middle_path.write_text(json.dumps(middle), encoding="utf-8")
+
+    result = parsing().verify_pdf_source_coverage(
+        parsing().parse_mineru_middle(middle_path, document_id="single-row"), pdf_path,
+    )
+
+    assert result.status == "partial"
+    assert "page:0:layout_columns_unverified" in result.coverage_issues
 
 
 def test_pdf_text_only_form_remains_complete(tmp_path: Path) -> None:
