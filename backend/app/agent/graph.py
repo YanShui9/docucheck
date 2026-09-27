@@ -25,6 +25,10 @@ SAFE_VALIDATION_DETAILS = frozenset({
     "candidate_scope", "candidate_pair", "candidate_field", "candidate_value",
     "extraction_schema", "extraction_block_too_large",
 })
+SAFE_COVERAGE_TYPES = frozenset({
+    "batch_too_large", "batch_schema", "unexpected_field", "candidate_invalid",
+    "unverified_source", "unverified_value", "memory_coverage_incomplete",
+})
 
 
 class AgentSession:
@@ -173,6 +177,17 @@ class AgentSession:
                 result = self.tools.execute(name, args, model_call)
                 budget.check()
                 event.update(status="completed", evidence_refs=result["evidence_refs"])
+                if name == "extract_facts" and "fact_sets" in result["data"]:
+                    coverage = []
+                    for item in result["data"]["fact_sets"]:
+                        issue_types = set()
+                        for issue in item["coverage_issues"]:
+                            kind = issue.partition(":")[0]
+                            issue_types.add(kind if kind in SAFE_COVERAGE_TYPES else "other")
+                        coverage.append({"field_key": item["field_key"],
+                                         "complete": item["complete"],
+                                         "issue_types": sorted(issue_types)})
+                    event["field_coverage"] = coverage
                 observation = compact_observation(name, result)
                 return {"messages": [*state["messages"], ToolMessage(tool_call_id=call["id"],
                             content=json.dumps(observation, ensure_ascii=False))], "next_node": "decide"}

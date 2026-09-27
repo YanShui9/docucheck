@@ -15,6 +15,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from ..evidence.repository import EvidenceRepository, digest
 from ..field_contract import FieldFact, FieldFactSet, FieldKey
+from ..providers import ProviderError
 from ..rules.fields import normalize_field_value
 from .memory import extract_memory
 
@@ -27,6 +28,15 @@ FIELD_HINTS = {
     FieldKey.QUANTITY: re.compile(r"采购数量|报价数量|数量"),
     FieldKey.UNIT_PRICE: re.compile(r"单价|元[/／]|美元[/／]|CNY[/／]|USD[/／]", re.IGNORECASE),
     FieldKey.DELIVERY_DAYS: re.compile(r"交付|交货|交期|工作日|自然日|\d+\s*周"),
+}
+EXPLICIT_LABELS = {
+    FieldKey.STORAGE: re.compile(r"存储|SSD|硬盘", re.IGNORECASE),
+    FieldKey.SCREEN_SIZE: re.compile(r"屏幕|显示屏|对角线"),
+    FieldKey.WEIGHT: re.compile(r"重量|裸机|主机"),
+    FieldKey.WARRANTY: re.compile(r"质保|保修"),
+    FieldKey.QUANTITY: re.compile(r"数量"),
+    FieldKey.UNIT_PRICE: re.compile(r"单价"),
+    FieldKey.DELIVERY_DAYS: re.compile(r"交付|交货|交期"),
 }
 VALUE_PATTERNS = {
     FieldKey.STORAGE: re.compile(
@@ -256,6 +266,15 @@ def extract_fields(
     if not generic:
         return result
     blocks = repo.supplier_blocks(supplier)
+    cells = {(block.document_id, block.sheet, *coordinate_to_tuple(block.cell)): block
+             for block in blocks if block.sheet and block.cell}
+
+    def right_cell(block):
+        if not block.sheet or not block.cell:
+            return None
+        row, column = coordinate_to_tuple(block.cell)
+        return cells.get((block.document_id, block.sheet, row, column + 1))
+
     batches, batch_issues = _batches(blocks)
     facts: dict[FieldKey, list[FieldFact]] = {field: [] for field in generic}
     issues: dict[FieldKey, list[str]] = {field: list(batch_issues) for field in generic}
@@ -300,6 +319,64 @@ def extract_fields(
                 facts[candidate.field_key].append(_validate_candidate(candidate, repo, supplier))
             except ValueError:
                 issues[candidate.field_key].append(f"candidate_invalid:{batch_number}")
+
+    unresolved_pairs = []
+    for field in generic:
+        referenced = {ref for fact in facts[field] for ref in fact.evidence_refs}
+        for block in blocks:
+            if (not block.cell or not FIELD_HINTS[field].search(block.text)
+                    or VALUE_PATTERNS[field].search(block.text)):
+                continue
+            right = right_cell(block)
+            if right is None or VALUE_PATTERNS[field].search(right.text) is None:
+                continue
+            if {block.evidence_id, right.evidence_id} <= referenced:
+                continue
+            if right.evidence_id in referenced and EXPLICIT_LABELS[field].search(right.text):
+                continue
+            unresolved_pairs.append((field, block, right))
+
+    if unresolved_pairs:
+        focus = unresolved_pairs[:4]
+        selected = {block.evidence_id: block for _, left, right in focus
+                    for block in (left, right)}
+        messages = [
+            SystemMessage(content=(
+                "只补查给定的相邻 XLSX 标题和值单元格。按 pairs 指定的字段抽取数值；"
+                "每条事实必须同时引用该 pair 的两个 evidence_id。"
+                "只返回 FieldCandidates 工具调用；不能确认时返回 facts=[]。"
+            )),
+            HumanMessage(content=json.dumps({
+                "fields": list(dict.fromkeys(field.value for field, _, _ in focus)),
+                "pairs": [{"field_key": field.value, "label_id": left.evidence_id,
+                           "value_id": right.evidence_id} for field, left, right in focus],
+                "evidence": [{"evidence_id": block.evidence_id, "text": block.text,
+                              "document_id": block.document_id, "role": block.role,
+                              "sheet": block.sheet, "cell": block.cell}
+                             for block in selected.values()],
+            }, ensure_ascii=False)),
+        ]
+        try:
+            reply = model_call("extract", messages, schema)
+        except ProviderError as exc:
+            if exc.code != "invalid_output":
+                raise
+            reply = None
+        if reply is not None and len(reply.tool_calls) == 1 and reply.tool_calls[0]["name"] == "FieldCandidates":
+            try:
+                candidates = FieldCandidates.model_validate(reply.tool_calls[0]["args"]).facts
+            except ValidationError:
+                candidates = []
+            allowed = {(field, frozenset((left.evidence_id, right.evidence_id)))
+                       for field, left, right in focus}
+            for candidate in candidates:
+                if (candidate.field_key, frozenset(candidate.evidence_refs)) not in allowed:
+                    continue
+                try:
+                    facts[candidate.field_key].append(_validate_candidate(candidate, repo, supplier))
+                except ValueError:
+                    continue
+
     for field in generic:
         unique = {fact.fact_id: fact for fact in facts[field]}
         fact_refs = {ref for fact in unique.values() for ref in fact.evidence_refs}
@@ -308,6 +385,12 @@ def extract_fields(
             if not clauses:
                 continue
             if block.evidence_id not in fact_refs:
+                right = right_cell(block)
+                if (right is not None and VALUE_PATTERNS[field].search(block.text) is None
+                        and right.evidence_id in fact_refs
+                        and EXPLICIT_LABELS[field].search(right.text)
+                        and VALUE_PATTERNS[field].search(right.text)):
+                    continue
                 issues[field].append(f"unverified_source:{block.evidence_id}")
                 continue
             source_values = Counter(

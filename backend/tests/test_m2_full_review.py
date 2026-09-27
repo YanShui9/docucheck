@@ -73,3 +73,90 @@ def test_one_supplier_seven_new_fields_match_synthetic_gold() -> None:
         "delivery_days": "待人工确认",
     }
     assert all(result.processing_status == "complete" for result in results.values())
+
+
+def test_self_describing_price_cell_does_not_require_redundant_label_reference() -> None:
+    repo = load_case(PACK)
+    price = next(block for block in repo.blocks if block.role == "quote" and block.cell == "B8")
+
+    class PriceCellOnly(SevenFieldCandidates):
+        def __call__(self, operation, messages, schema):
+            reply = super().__call__(operation, messages, schema)
+            for fact in reply.tool_calls[0]["args"]["facts"]:
+                if fact["field_key"] == "unit_price" and len(fact["evidence_refs"]) == 2:
+                    fact["evidence_refs"] = [price.evidence_id]
+            return reply
+
+    model = PriceCellOnly()
+    extracted = extract_fields(repo, "vendor-a", list(FieldKey)[1:], model)
+
+    assert extracted[FieldKey.UNIT_PRICE].complete
+    assert model.calls == 2
+
+
+def test_focused_split_cell_retry_recovers_missing_delivery_fact() -> None:
+    repo = load_case(PACK)
+    label = next(block for block in repo.blocks if block.role == "quote" and block.cell == "A9")
+    value = next(block for block in repo.blocks if block.role == "quote" and block.cell == "B9")
+
+    class LateDelivery(SevenFieldCandidates):
+        def __init__(self):
+            super().__init__()
+            self.focus_calls = 0
+
+        def __call__(self, operation, messages, schema):
+            batch = json.loads(messages[-1].content)["evidence"]
+            if {item["evidence_id"] for item in batch} == {label.evidence_id, value.evidence_id}:
+                self.focus_calls += 1
+                return AIMessage(content="", tool_calls=[{"id": "focused-delivery",
+                    "name": "FieldCandidates", "args": {"facts": [{
+                        "field_key": "delivery_days", "raw_value": "10", "raw_unit": "工作日",
+                        "evidence_refs": [label.evidence_id, value.evidence_id],
+                    }]}}])
+            reply = super().__call__(operation, messages, schema)
+            reply.tool_calls[0]["args"]["facts"] = [
+                fact for fact in reply.tool_calls[0]["args"]["facts"]
+                if set(fact["evidence_refs"]) != {label.evidence_id, value.evidence_id}
+            ]
+            return reply
+
+    model = LateDelivery()
+    extracted = extract_fields(repo, "vendor-a", list(FieldKey)[1:], model)
+    result = evaluate_field(repo, "vendor-a", FieldKey.DELIVERY_DAYS,
+                            extracted[FieldKey.DELIVERY_DAYS].facts,
+                            scan_complete=extracted[FieldKey.DELIVERY_DAYS].complete)
+
+    assert model.focus_calls == 1
+    assert extracted[FieldKey.DELIVERY_DAYS].complete
+    assert result.business_status == "待人工确认"
+    assert {label.evidence_id, value.evidence_id} <= set(result.evidence_refs)
+
+
+def test_empty_focused_retry_keeps_delivery_incomplete() -> None:
+    repo = load_case(PACK)
+    pair = {block.evidence_id for block in repo.blocks
+            if block.role == "quote" and block.cell in {"A9", "B9"}}
+
+    class EmptyDelivery(SevenFieldCandidates):
+        def __init__(self):
+            super().__init__()
+            self.focus_calls = 0
+
+        def __call__(self, operation, messages, schema):
+            batch = json.loads(messages[-1].content)["evidence"]
+            if {item["evidence_id"] for item in batch} == pair:
+                self.focus_calls += 1
+                return AIMessage(content="", tool_calls=[{"id": "focused-empty",
+                    "name": "FieldCandidates", "args": {"facts": []}}])
+            reply = super().__call__(operation, messages, schema)
+            reply.tool_calls[0]["args"]["facts"] = [
+                fact for fact in reply.tool_calls[0]["args"]["facts"]
+                if set(fact["evidence_refs"]) != pair
+            ]
+            return reply
+
+    model = EmptyDelivery()
+    extracted = extract_fields(repo, "vendor-a", list(FieldKey)[1:], model)
+
+    assert model.focus_calls == 1
+    assert not extracted[FieldKey.DELIVERY_DAYS].complete

@@ -15,6 +15,7 @@ from backend.app.field_contract import FieldKey
 from backend.tests.test_agent_graph import ScenarioProvider
 from backend.tests.test_field_extraction import StorageCandidates
 from backend.tests.test_m2_full_review import SevenFieldCandidates
+from evals.m2_agent import ScriptedProvider
 
 PACK = Path(__file__).resolve().parents[2] / "examples" / "dev-pack-001"
 
@@ -213,3 +214,30 @@ def test_graph_preserves_all_three_supplier_result_handles_after_compaction() ->
         "完整审查全部供应商的所有字段")
     assert result.status == "completed", (result.error, result.usage)
     assert len(re.findall(r"^vendor-[abc] · ", result.answer, re.MULTILINE)) == 24
+
+
+def test_partial_full_review_trace_records_only_safe_field_coverage_categories() -> None:
+    repo = load_case(PACK)
+    delivery_pair = {block.evidence_id for block in repo.blocks
+                     if block.role == "quote" and block.cell in {"A9", "B9"}}
+
+    class MissingDelivery(ScriptedProvider):
+        def extract(self, messages, schema, **kwargs):
+            reply = super().extract(messages, schema, **kwargs)
+            if schema["function"]["name"] == "FieldCandidates":
+                reply.tool_calls[0]["args"]["facts"] = [
+                    fact for fact in reply.tool_calls[0]["args"]["facts"]
+                    if set(fact["evidence_refs"]) != delivery_pair
+                ]
+            return reply
+
+    result = AgentSession(repo, MissingDelivery(("vendor-a",)), mode="thorough").ask(
+        "完整审查供应商 A 的八项指标")
+    assert result.status == "partial"
+    extraction = next(event for event in result.events if event.get("tool") == "extract_facts")
+    coverage = {item["field_key"]: item for item in extraction["field_coverage"]}
+    assert coverage["unit_price"] == {"field_key": "unit_price", "complete": True,
+                                      "issue_types": []}
+    assert coverage["delivery_days"]["complete"] is False
+    assert "unverified_source" in coverage["delivery_days"]["issue_types"]
+    assert "合同签订" not in str(coverage)
