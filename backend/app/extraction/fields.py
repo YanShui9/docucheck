@@ -20,6 +20,7 @@ from ..rules.fields import normalize_field_value
 from .memory import extract_memory
 
 MAX_BATCH_BYTES = 5000
+MAX_FOCUSED_TARGETS = 4
 FIELD_HINTS = {
     FieldKey.STORAGE: re.compile(r"存储|SSD|硬盘", re.IGNORECASE),
     FieldKey.SCREEN_SIZE: re.compile(r"屏幕|显示屏|对角线|英寸", re.IGNORECASE),
@@ -202,6 +203,12 @@ def _validate_candidate(candidate: FieldCandidate, repo: EvidenceRepository,
     field = candidate.field_key
     if field not in FIELD_HINTS:
         raise ValueError("candidate_field")
+    if field == FieldKey.DELIVERY_DAYS and re.fullmatch(
+        r"个\s*(?:自然日|工作日|自然周)", candidate.raw_unit,
+    ):
+        candidate = candidate.model_copy(update={
+            "raw_unit": re.sub(r"^个\s*", "", candidate.raw_unit),
+        })
     blocks = _source_blocks(candidate, repo, supplier)
     text = " ".join(block.text for block in blocks)
     clauses = _relevant_clauses(field, text)
@@ -278,6 +285,9 @@ def extract_fields(
     batches, batch_issues = _batches(blocks)
     facts: dict[FieldKey, list[FieldFact]] = {field: [] for field in generic}
     issues: dict[FieldKey, list[str]] = {field: list(batch_issues) for field in generic}
+    invalid_candidates: dict[FieldKey, list[tuple[int, tuple[str, ...]]]] = {
+        field: [] for field in generic
+    }
     scanned: list[str] = []
     schema = {"type": "function", "function": {
         "name": "FieldCandidates",
@@ -318,14 +328,36 @@ def extract_fields(
                     raise ValueError("candidate_scope")
                 facts[candidate.field_key].append(_validate_candidate(candidate, repo, supplier))
             except ValueError:
-                issues[candidate.field_key].append(f"candidate_invalid:{batch_number}")
+                invalid_candidates[candidate.field_key].append(
+                    (batch_number, tuple(candidate.evidence_refs))
+                )
 
-    unresolved_pairs = []
+    unresolved_targets: list[tuple[FieldKey, tuple]] = []
     for field in generic:
         referenced = {ref for fact in facts[field] for ref in fact.evidence_refs}
         for block in blocks:
-            if (not block.cell or not FIELD_HINTS[field].search(block.text)
-                    or VALUE_PATTERNS[field].search(block.text)):
+            clauses = _relevant_clauses(field, block.text)
+            if not clauses:
+                continue
+            source_values = Counter(
+                (Decimal(match.group("value")), match.group("unit").casefold())
+                for clause in clauses for match in VALUE_PATTERNS[field].finditer(clause)
+            )
+            if source_values:
+                verified_values = Counter(
+                    (Decimal(fact.raw_value), fact.raw_unit.casefold())
+                    for fact in facts[field] if block.evidence_id in fact.evidence_refs
+                )
+                if any(count > verified_values[value] for value, count in source_values.items()):
+                    if block.cell and block.sheet:
+                        row, column = coordinate_to_tuple(block.cell)
+                        left = cells.get((block.document_id, block.sheet, row, column - 1))
+                        if (left is not None and EXPLICIT_LABELS[field].search(left.text)
+                                and not EXPLICIT_LABELS[field].search(block.text)):
+                            continue
+                    unresolved_targets.append((field, (block,)))
+                continue
+            if not block.cell:
                 continue
             right = right_cell(block)
             if right is None or VALUE_PATTERNS[field].search(right.text) is None:
@@ -334,22 +366,24 @@ def extract_fields(
                 continue
             if right.evidence_id in referenced and EXPLICIT_LABELS[field].search(right.text):
                 continue
-            unresolved_pairs.append((field, block, right))
+            unresolved_targets.append((field, (block, right)))
 
-    if unresolved_pairs:
-        focus = unresolved_pairs[:4]
-        selected = {block.evidence_id: block for _, left, right in focus
-                    for block in (left, right)}
+    if unresolved_targets:
+        focus = unresolved_targets[:MAX_FOCUSED_TARGETS]
+        selected = {block.evidence_id: block for _, target in focus for block in target}
         messages = [
             SystemMessage(content=(
-                "只补查给定的相邻 XLSX 标题和值单元格。按 pairs 指定的字段抽取数值；"
-                "每条事实必须同时引用该 pair 的两个 evidence_id。"
+                "只补查 targets 中给定的字段与证据。逐个目标抽取所有数值事实；"
+                "evidence_refs 必须与该目标完全一致，单块目标引用一个 ID，"
+                "相邻 XLSX 标题和值单元格引用两个 ID。"
+                "单位只写自然日或工作日，不包含量词“个”。"
                 "只返回 FieldCandidates 工具调用；不能确认时返回 facts=[]。"
             )),
             HumanMessage(content=json.dumps({
-                "fields": list(dict.fromkeys(field.value for field, _, _ in focus)),
-                "pairs": [{"field_key": field.value, "label_id": left.evidence_id,
-                           "value_id": right.evidence_id} for field, left, right in focus],
+                "fields": list(dict.fromkeys(field.value for field, _ in focus)),
+                "targets": [{"field_key": field.value,
+                             "evidence_refs": [block.evidence_id for block in target]}
+                            for field, target in focus],
                 "evidence": [{"evidence_id": block.evidence_id, "text": block.text,
                               "document_id": block.document_id, "role": block.role,
                               "sheet": block.sheet, "cell": block.cell}
@@ -367,8 +401,8 @@ def extract_fields(
                 candidates = FieldCandidates.model_validate(reply.tool_calls[0]["args"]).facts
             except ValidationError:
                 candidates = []
-            allowed = {(field, frozenset((left.evidence_id, right.evidence_id)))
-                       for field, left, right in focus}
+            allowed = {(field, frozenset(block.evidence_id for block in target))
+                       for field, target in focus}
             for candidate in candidates:
                 if (candidate.field_key, frozenset(candidate.evidence_refs)) not in allowed:
                     continue
@@ -379,6 +413,11 @@ def extract_fields(
 
     for field in generic:
         unique = {fact.fact_id: fact for fact in facts[field]}
+        for batch_number, refs in invalid_candidates[field]:
+            if not any(len(set(refs)) == len(refs)
+                       and set(refs) <= set(fact.evidence_refs)
+                       for fact in unique.values()):
+                issues[field].append(f"candidate_invalid:{batch_number}")
         fact_refs = {ref for fact in unique.values() for ref in fact.evidence_refs}
         for block in blocks:
             clauses = _relevant_clauses(field, block.text)

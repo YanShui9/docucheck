@@ -160,3 +160,77 @@ def test_empty_focused_retry_keeps_delivery_incomplete() -> None:
 
     assert model.focus_calls == 1
     assert not extracted[FieldKey.DELIVERY_DAYS].complete
+
+
+def test_focused_retry_recovers_omitted_requirements_and_invalid_quote_candidates() -> None:
+    repo = load_case(PACK)
+    quantity_requirement = next(block for block in repo.blocks
+                                if block.role == "requirement" and "采购数量 10 台" in block.text)
+    delivery_requirement = next(block for block in repo.blocks
+                                if block.role == "requirement" and "14 个自然日" in block.text)
+    quantity_label = next(block for block in repo.blocks
+                          if block.role == "quote" and block.cell == "A7")
+    quantity_value = next(block for block in repo.blocks
+                          if block.role == "quote" and block.cell == "B7")
+    delivery_label = next(block for block in repo.blocks
+                          if block.role == "quote" and block.cell == "A9")
+    delivery_value = next(block for block in repo.blocks
+                          if block.role == "quote" and block.cell == "B9")
+
+    class IncompleteFirstPass(SevenFieldCandidates):
+        def __init__(self) -> None:
+            super().__init__()
+            self.focus_calls = 0
+
+        def __call__(self, operation, messages, schema):
+            payload = json.loads(messages[-1].content)
+            if "targets" in payload:
+                self.focus_calls += 1
+                expected = {
+                    ("quantity", (quantity_requirement.evidence_id,)):
+                        ("10", "台"),
+                    ("quantity", (quantity_label.evidence_id, quantity_value.evidence_id)):
+                        ("10", "台"),
+                    ("delivery_days", (delivery_requirement.evidence_id,)):
+                        ("14", "个自然日"),
+                    ("delivery_days", (delivery_label.evidence_id, delivery_value.evidence_id)):
+                        ("10", "个工作日"),
+                }
+                facts = [{"field_key": field, "raw_value": expected[(field, tuple(refs))][0],
+                          "raw_unit": expected[(field, tuple(refs))][1],
+                          "evidence_refs": refs}
+                         for target in payload["targets"]
+                         for field, refs in [(target["field_key"], target["evidence_refs"])]
+                         if (field, tuple(refs)) in expected]
+                return AIMessage(content="", tool_calls=[{"id": "focused-recovery",
+                    "name": "FieldCandidates", "args": {"facts": facts}}])
+            reply = super().__call__(operation, messages, schema)
+            facts = reply.tool_calls[0]["args"]["facts"]
+            facts[:] = [fact for fact in facts if fact["evidence_refs"] not in (
+                [quantity_requirement.evidence_id], [delivery_requirement.evidence_id])]
+            for fact in facts:
+                if fact["field_key"] == "quantity" and set(fact["evidence_refs"]) == {
+                    quantity_label.evidence_id, quantity_value.evidence_id,
+                }:
+                    fact["raw_unit"] = "台数"
+                if fact["field_key"] == "delivery_days" and set(fact["evidence_refs"]) == {
+                    delivery_label.evidence_id, delivery_value.evidence_id,
+                }:
+                    fact["raw_value"] = "11"
+                    facts.append({"field_key": "delivery_days", "raw_value": "11",
+                                  "raw_unit": "工作日",
+                                  "evidence_refs": [delivery_value.evidence_id]})
+            return reply
+
+    model = IncompleteFirstPass()
+    extracted = extract_fields(repo, "vendor-a", list(FieldKey)[1:], model)
+    quantity = extracted[FieldKey.QUANTITY]
+    delivery = extracted[FieldKey.DELIVERY_DAYS]
+
+    assert model.focus_calls == 1
+    assert quantity.complete
+    assert delivery.complete
+    assert evaluate_field(repo, "vendor-a", FieldKey.QUANTITY, quantity.facts,
+                          scan_complete=quantity.complete).business_status == "满足"
+    assert evaluate_field(repo, "vendor-a", FieldKey.DELIVERY_DAYS, delivery.facts,
+                          scan_complete=delivery.complete).business_status == "待人工确认"
