@@ -234,3 +234,51 @@ def test_focused_retry_recovers_omitted_requirements_and_invalid_quote_candidate
                           scan_complete=quantity.complete).business_status == "满足"
     assert evaluate_field(repo, "vendor-a", FieldKey.DELIVERY_DAYS, delivery.facts,
                           scan_complete=delivery.complete).business_status == "待人工确认"
+
+
+def test_rejected_unrelated_quantity_candidate_does_not_poison_complete_sources() -> None:
+    repo = load_case(PACK)
+    price = next(block for block in repo.blocks
+                 if block.role == "quote" and block.cell == "B8")
+
+    class WrongExtraCandidate(SevenFieldCandidates):
+        def __call__(self, operation, messages, schema):
+            reply = super().__call__(operation, messages, schema)
+            batch = json.loads(messages[-1].content)["evidence"]
+            if price.evidence_id in {item["evidence_id"] for item in batch}:
+                reply.tool_calls[0]["args"]["facts"].append({
+                    "field_key": "quantity", "raw_value": "5800", "raw_unit": "台",
+                    "evidence_refs": [price.evidence_id],
+                })
+            return reply
+
+    extracted = extract_fields(repo, "vendor-a", list(FieldKey)[1:],
+                               WrongExtraCandidate())
+    quantity = extracted[FieldKey.QUANTITY]
+
+    assert quantity.complete
+    assert evaluate_field(repo, "vendor-a", FieldKey.QUANTITY, quantity.facts,
+                          scan_complete=quantity.complete).business_status == "满足"
+
+
+def test_out_of_batch_candidate_still_blocks_a_formal_result() -> None:
+    repo = load_case(PACK)
+
+    class OutOfBatchCandidate(SevenFieldCandidates):
+        def __call__(self, operation, messages, schema):
+            reply = super().__call__(operation, messages, schema)
+            batch = json.loads(messages[-1].content)["evidence"]
+            batch_ids = {item["evidence_id"] for item in batch}
+            outside = next(block.evidence_id for block in repo.supplier_blocks("vendor-a")
+                           if block.evidence_id not in batch_ids)
+            reply.tool_calls[0]["args"]["facts"].append({
+                "field_key": "quantity", "raw_value": "10", "raw_unit": "台",
+                "evidence_refs": [outside],
+            })
+            return reply
+
+    quantity = extract_fields(repo, "vendor-a", list(FieldKey)[1:],
+                              OutOfBatchCandidate())[FieldKey.QUANTITY]
+
+    assert not quantity.complete
+    assert any("candidate_invalid_scope" in issue for issue in quantity.coverage_issues)

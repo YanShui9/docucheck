@@ -139,7 +139,7 @@ def test_value_from_other_field_in_same_source_is_rejected() -> None:
     result = extract_fields(repo, "vendor-a", [FieldKey.STORAGE], wrong_candidate)[FieldKey.STORAGE]
     assert not result.complete
     assert not result.facts
-    assert any("candidate_invalid" in issue for issue in result.coverage_issues)
+    assert any("candidate_invalid_uncovered" in issue for issue in result.coverage_issues)
 
 
 def test_repeated_same_number_with_distinct_qualifiers_needs_more_coverage() -> None:

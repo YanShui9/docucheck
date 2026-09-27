@@ -283,6 +283,8 @@ def extract_fields(
         return cells.get((block.document_id, block.sheet, row, column + 1))
 
     batches, batch_issues = _batches(blocks)
+    batch_ids = [{item["evidence_id"] for item in batch} for batch in batches]
+    block_by_id = {block.evidence_id: block for block in blocks}
     facts: dict[FieldKey, list[FieldFact]] = {field: [] for field in generic}
     issues: dict[FieldKey, list[str]] = {field: list(batch_issues) for field in generic}
     invalid_candidates: dict[FieldKey, list[tuple[int, tuple[str, ...]]]] = {
@@ -316,7 +318,7 @@ def extract_fields(
             for field in generic:
                 issues[field].append(f"batch_schema:{batch_number}")
             continue
-        batch_ids = {item["evidence_id"] for item in batch}
+        current_batch_ids = batch_ids[batch_number]
         scanned.extend(item["evidence_id"] for item in batch)
         for candidate in candidates:
             if candidate.field_key not in generic:
@@ -324,7 +326,7 @@ def extract_fields(
                     issues[field].append(f"unexpected_field:{batch_number}")
                 continue
             try:
-                if not set(candidate.evidence_refs) <= batch_ids:
+                if not set(candidate.evidence_refs) <= current_batch_ids:
                     raise ValueError("candidate_scope")
                 facts[candidate.field_key].append(_validate_candidate(candidate, repo, supplier))
             except ValueError:
@@ -413,12 +415,16 @@ def extract_fields(
 
     for field in generic:
         unique = {fact.fact_id: fact for fact in facts[field]}
-        for batch_number, refs in invalid_candidates[field]:
-            if not any(len(set(refs)) == len(refs)
-                       and set(refs) <= set(fact.evidence_refs)
-                       for fact in unique.values()):
-                issues[field].append(f"candidate_invalid:{batch_number}")
         fact_refs = {ref for fact in unique.values() for ref in fact.evidence_refs}
+        for batch_number, refs in invalid_candidates[field]:
+            if (len(set(refs)) != len(refs)
+                    or not set(refs) <= batch_ids[batch_number]):
+                issues[field].append(f"candidate_invalid_scope:{batch_number}")
+            elif any(ref not in fact_refs
+                     and (FIELD_HINTS[field].search(block_by_id[ref].text)
+                          or VALUE_PATTERNS[field].search(block_by_id[ref].text))
+                     for ref in refs):
+                issues[field].append(f"candidate_invalid_uncovered:{batch_number}")
         for block in blocks:
             clauses = _relevant_clauses(field, block.text)
             if not clauses:

@@ -26,7 +26,8 @@ SAFE_VALIDATION_DETAILS = frozenset({
     "extraction_schema", "extraction_block_too_large",
 })
 SAFE_COVERAGE_TYPES = frozenset({
-    "batch_too_large", "batch_schema", "unexpected_field", "candidate_invalid",
+    "batch_too_large", "batch_schema", "unexpected_field",
+    "candidate_invalid_scope", "candidate_invalid_uncovered",
     "unverified_source", "unverified_value", "memory_coverage_incomplete",
 })
 
