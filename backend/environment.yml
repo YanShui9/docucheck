@@ -8,6 +8,8 @@ dependencies:
       - SQLAlchemy==2.0.54
       - alembic==1.20.0
       - PyMySQL==1.2.3
+      - FastAPI==0.141.1
+      - uvicorn==0.53.0
       - pytest==9.1.1
       - pypdf==6.19.0
       - openpyxl==3.1.5
