@@ -25,6 +25,7 @@ from sqlalchemy import Engine, create_engine, select
 from ..db.api_queries import ApiQueries, ApiQueryError
 from ..db.connection import ROOT, database_url
 from ..db.document_repository import DocumentError, DocumentRepository, UploadCommand
+from ..db.ingestion import DocumentIngestion, IngestionError
 from ..db.run_repository import RepositoryError, RunRepository, SubmitRun
 from ..parsing import MAX_FILE_BYTES
 from .schemas import (
@@ -32,8 +33,10 @@ from .schemas import (
     CaseOut,
     ConversationOut,
     DocumentAccepted,
+    DocumentEvidenceOut,
     DocumentsOut,
     EventsOut,
+    EvidenceOut,
     MessageAccepted,
     MessageIn,
     RetryIn,
@@ -74,6 +77,7 @@ def create_app(engine: Engine | None = None) -> FastAPI:
                                hide_parameters=True)
     queries, runs, documents = ApiQueries(engine), RunRepository(engine), DocumentRepository(engine)
     storage = UploadStorage(Path(os.getenv("DOCUCHECK_DATA_DIR", str(ROOT / "data"))))
+    ingestion = DocumentIngestion(engine, storage.root)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
@@ -104,7 +108,8 @@ def create_app(engine: Engine | None = None) -> FastAPI:
     @app.exception_handler(RepositoryError)
     @app.exception_handler(DocumentError)
     @app.exception_handler(UploadError)
-    async def domain_error(request: Request, exc: ApiQueryError | RepositoryError | DocumentError | UploadError):
+    @app.exception_handler(IngestionError)
+    async def domain_error(request: Request, exc: ApiQueryError | RepositoryError | DocumentError | UploadError | IngestionError):
         return _error(request, _domain_status(exc.code), exc.code)
 
     @app.exception_handler(RequestValidationError)
@@ -176,6 +181,20 @@ def create_app(engine: Engine | None = None) -> FastAPI:
     @router.get("/cases/{case_id}/documents", response_model=DocumentsOut)
     def list_documents(case_id: str):
         return documents.list_current(case_id)
+
+    @router.get("/cases/{case_id}/snapshots/{snapshot_id}/documents/"
+                "{document_id}/evidence", response_model=DocumentEvidenceOut)
+    def list_document_evidence(case_id: str, snapshot_id: str,
+                               document_id: str,
+                               after_ordinal: int = Query(default=-1, ge=-1),
+                               limit: int = Query(default=100, ge=1, le=100)):
+        return ingestion.list_evidence(case_id, snapshot_id, document_id,
+                                       after_ordinal, limit)
+
+    @router.get("/cases/{case_id}/snapshots/{snapshot_id}/evidence/"
+                "{evidence_id}", response_model=EvidenceOut)
+    def read_evidence(case_id: str, snapshot_id: str, evidence_id: str):
+        return ingestion.read_evidence(case_id, snapshot_id, evidence_id)
 
     @router.post("/cases/{case_id}/conversations", status_code=201,
                  response_model=ConversationOut)

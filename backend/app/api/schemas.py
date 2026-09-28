@@ -104,3 +104,28 @@ class DocumentsOut(BaseModel):
     revision: int
     snapshot_id: str | None
     documents: list[DocumentOut]
+
+
+class EvidenceOut(BaseModel):
+    id: str
+    document_id: str
+    ordinal: int
+    source_text: str
+    page_idx: int | None
+    bbox: list[float] | None
+    page_width_pt: float | None
+    page_height_pt: float | None
+    sheet: str | None
+    cell: str | None
+    parser_version: str | None
+
+
+class DocumentEvidenceOut(BaseModel):
+    case_id: str
+    snapshot_id: str
+    document_id: str
+    parse_status: str
+    parser_version: str | None
+    coverage_issues: list[str]
+    evidence: list[EvidenceOut]
+    next_ordinal: int

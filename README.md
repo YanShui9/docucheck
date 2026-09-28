@@ -14,6 +14,8 @@
 
 > M3 第五小步的 [后端上传与输入快照](docs/m3-5-upload-snapshot-2026-09-28.md)已完成范围内验收：PDF/XLSX 预检、角色与供应商绑定、文件哈希及随机路径、版本递增与快照保留。离线后端 **300 passed, 3 skipped**，Ruff 与依赖检查通过；用户运行的真实 MySQL 上传测试另得 **1 passed**。文档仍为 `pending`，解析入库、Agent worker、认证和前端尚未接入。
 
+> M3 第六小步的 [上传资料解析与证据入库](docs/m3-6-evidence-ingestion-2026-09-28.md)已完成离线实现：按快照解析、原件哈希复核、证据位置及覆盖信息入库、只读证据 API 与本机 CLI。后端 **306 passed, 4 skipped**，Ruff 和依赖检查通过；新增真实 MySQL 解析测试待用户运行，真实 MinerU PDF 尚未实测。Agent worker、认证和前端尚未接入。
+
 > 最新协作状态（2026-09-25）：[M1 最小真实 Agent](docs/m1-acceptance-2026-09-25.md)在模拟包与内存字段范围内完成验收；真实模型连续两问通过，后端离线测试 90/90、全目录 Ruff 与依赖检查通过。正式上传、其他七字段和独立质量评测尚未完成。后续仍按[分步协作计划](docs/step-by-step-plan.md)一次做一个小步骤。任何前端工作开始前须先暂停并讨论设计规范与样式。
 
 > 2026-09-26：[M2-0 XLSX 内存分列证据修正](docs/m2-0-acceptance-2026-09-26.md)和 [M2-1 答复引用范围修正](docs/m2-1-acceptance-2026-09-26.md)已通过离线回归（当前 110 项测试）。下一小步为 M2-2 解析覆盖；M2 完整采购审查尚未完成。
@@ -32,7 +34,7 @@
 
 > 2026-09-27：[M2-2g XLSX 隐藏行列覆盖检查](docs/m2-2g-xlsx-hidden-rows-columns-2026-09-27.md)已通过离线回归（当前 144 项测试）。隐藏与零尺寸行列不再仅凭已读单元格判为完整。下一小步拟检查隐藏工作表；M2-2 尚未验收。
 
-DocuCheck 是一个正在开发的本地采购资料初审 Agent 工作台。目标交互是上传资料后提问，由单 Agent 调用受控工具并返回带来源的答复；八字段正式结论由规则引擎计算。现有资产包括基础环境、单家与三家模拟文档、PDF/XLSX 解析、快照证据、词法检索、DeepSeek Provider，以及八字段抽取/规则/Agent 离线链路。真实模型曾在 M1 的内存问题和追问上运行；M2 的真实单家、三家合成包探针均已完成。数据库首版迁移已在用户本机 MySQL 上验证；首批 Case/会话/Run 与后端文件上传 API 已实现，Linux worker 仍只有启动与健康检查骨架，前端尚未实现。
+DocuCheck 是一个正在开发的本地采购资料初审 Agent 工作台。目标交互是上传资料后提问，由单 Agent 调用受控工具并返回带来源的答复；八字段正式结论由规则引擎计算。现有资产包括基础环境、单家与三家模拟文档、PDF/XLSX 解析、快照证据、词法检索、DeepSeek Provider，以及八字段抽取/规则/Agent 离线链路。真实模型曾在 M1 的内存问题和追问上运行；M2 的真实单家、三家合成包探针均已完成。数据库首版迁移已在用户本机 MySQL 上验证；首批 Case/会话/Run、后端文件上传 API 与证据读取 API 已实现，解析入库尚未接入 Linux worker；前端尚未实现。
 
 AI 协作上下文见 [CLAUDE.md](CLAUDE.md)；Codex 入口为 [AGENTS.md](AGENTS.md)。当前设计基线是 [Agent 架构 v1.0](docs/superpowers/specs/2026-09-24-agent-first-design.md)，涵盖模型、状态、工具、上下文、RAG、恢复和评测；阶段条件见 [路线图](docs/development-roadmap.md)。
 
