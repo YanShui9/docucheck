@@ -14,6 +14,8 @@
 
 > **M3 第四小步（2026-09-28，范围内验收完成）**：新增本地 FastAPI Case/会话/消息/Run/事件入口及取消、重试接口；空 Case 没有上传快照时拒绝提交。离线后端 **296 passed, 2 skipped**，Ruff、`pip check` 通过；用户显式运行的 [M3-4 真实 MySQL API 测试](docs/m3-4-api-entry-2026-09-28.md)另得 **1 passed**。该测试在进程内调用 HTTP 路由，尚未验收网络服务启动；上传、Agent worker、认证和前端未接入。
 
+> **M3 第五小步（2026-09-28，离线实现、MySQL 待验）**：新增后端 PDF/XLSX 上传、文件角色/供应商绑定、随机路径存储、哈希/限额预检、不可变输入快照与同键重放；当前文档状态为 `pending`，尚无正式证据入库或 worker。后端 **300 passed, 3 skipped**，Ruff 与依赖检查通过；新增 MySQL 上传测试待用户执行。见 [M3-5 上传与快照记录](docs/m3-5-upload-snapshot-2026-09-28.md)。未开始前端。
+
 ## 最新协作约定（2026-09-25，优先执行）
 
 用户要求先确认计划、一次一个小步骤，不连续实施多个阶段。执行前阅读 `docs/step-by-step-plan.md`；先说明本步内容与验收，用户确认后只做本步。API 配置/调用、安装、启动容器等额外操作先给步骤，由用户执行。不要自动启动并行开发。M1 的七个小步骤已在模拟包与内存字段范围内完成；[M1 验收小结](docs/m1-acceptance-2026-09-25.md)区分真实模型结果、离线验证与未实现能力。真实两轮对话第三次尝试通过：首问 6 次模型调用返回“资料冲突”，追问 3 次调用复用同会话、同快照的核验结果并读原文；当时后端离线测试 90/90、全目录 Ruff 和 `pip check` 通过。当时追问附带需求来源的问题已在 M2-1 做离线修正；继续每次只实施一个经用户确认的小步骤。
@@ -81,13 +83,13 @@ Windows 上运行 API 和 Vite；Docker Compose 运行 MySQL、Redis 和 Linux C
 
 ## 目录现状与目标
 
-当前已存在：根目录 `compose.yaml`、`pyproject.toml`；`backend/environment.yml`、`backend/app/`（Celery 健康检查、PDF/XLSX 解析、`evidence/`、`providers/`、`agent/`、`extraction/`、`rules/`）、`backend/tests/`；`examples/dev-pack-001/` 与 `examples/dev-pack-003/`；`evals/`、`docs/`、`scripts/`。`frontend/`、正式 API 和数据库迁移尚未建立；M2 八字段业务模块已通过合成包离线回归及用户执行的真实模型单家、三家开发包探针。
+当前已存在：根目录 `compose.yaml`、`pyproject.toml`；`backend/environment.yml`、`backend/app/`（Celery 健康检查、PDF/XLSX 解析、`evidence/`、`providers/`、`agent/`、`extraction/`、`rules/`、`db/`、`api/`）、`backend/tests/`、`backend/migrations/`；`examples/dev-pack-001/` 与 `examples/dev-pack-003/`；`evals/`、`docs/`、`scripts/`。数据库迁移及首批 API 已建立；`frontend/` 尚未建立。M2 八字段业务模块已通过合成包离线回归及用户执行的真实模型单家、三家开发包探针。
 
 近期沿用 `backend/app/`，逐步增加 `agent/`、`providers/`、`evidence/`、`extraction/`、`rules/`、`repositories/`、`api/`、`tasks/`；另建 `backend/migrations/`、`frontend/`、`evals/` 和 CI。正式可安装包迁移另行处理，不仅为匹配旧目标树移动现有代码。
 
-## API 契约（设计，尚未实现）
+## API 契约（部分已实现，详细进度见 M3 验收记录）
 
-- 前缀 `/api/v1`。Case 内容修改和问题提交带 `expected_revision`，全新 Case 创建不要求；创建运行、修正、重试和澄清恢复带 `Idempotency-Key`。同键异载荷返回 HTTP 409。
+- 前缀 `/api/v1`。Case 内容修改和问题提交带 `expected_revision`，全新 Case 创建不要求；上传、创建运行、修正、重试和澄清恢复带 `Idempotency-Key`。同键异载荷返回 HTTP 409。
 - 资源：`/cases`、供应商/文档、`/cases/{id}/conversations`、`/conversations/{id}/messages`、`/agent-runs/{id}` 及其 events/results/cancel/retry/resume/export、`/cases/{id}/corrections`、`/evidence/{id}`、`/documents/{id}/content`。详细请求与返回见新架构；旧 `/questions`、`/runs` 均未实现，不建立兼容层。
 - 运行需支持取消与显式重试；健康接口为 `/health/live`、`/health/ready`。错误响应包含 `error.code`、`error.message`、`error.details`、`error.request_id`。文件读取接口只接受服务端生成的 ID，不接受客户端文件系统路径。
 - 创建 Run 与 Outbox 在同一数据库事务内；worker 按 run/attempt 幂等处理，不承诺 exactly-once。导出读取不可变运行快照，和页面显示一致。

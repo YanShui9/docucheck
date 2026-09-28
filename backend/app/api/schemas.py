@@ -79,3 +79,28 @@ class EventsOut(BaseModel):
     run_id: str
     events: list[EventOut]
     next_seq: int
+
+
+class DocumentAccepted(BaseModel):
+    document_id: str
+    case_id: str
+    snapshot_id: str
+    revision: int
+    parse_status: str
+    source_sha256: str
+
+
+class DocumentOut(BaseModel):
+    id: str
+    original_name: str
+    role: str
+    supplier_handle: str | None
+    parse_status: str
+    source_sha256: str
+
+
+class DocumentsOut(BaseModel):
+    case_id: str
+    revision: int
+    snapshot_id: str | None
+    documents: list[DocumentOut]

@@ -1,26 +1,45 @@
 """First local FastAPI slice; start with uvicorn's --factory option."""
 
+import os
 from contextlib import asynccontextmanager
+from pathlib import Path
+from typing import Annotated
 from uuid import uuid4
 
-from fastapi import APIRouter, FastAPI, Header, HTTPException, Query, Request, Response
+from fastapi import (
+    APIRouter,
+    FastAPI,
+    File,
+    Form,
+    Header,
+    HTTPException,
+    Query,
+    Request,
+    Response,
+    UploadFile,
+)
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from sqlalchemy import Engine, create_engine, select
 
 from ..db.api_queries import ApiQueries, ApiQueryError
-from ..db.connection import database_url
+from ..db.connection import ROOT, database_url
+from ..db.document_repository import DocumentError, DocumentRepository, UploadCommand
 from ..db.run_repository import RepositoryError, RunRepository, SubmitRun
+from ..parsing import MAX_FILE_BYTES
 from .schemas import (
     AttemptAccepted,
     CaseOut,
     ConversationOut,
+    DocumentAccepted,
+    DocumentsOut,
     EventsOut,
     MessageAccepted,
     MessageIn,
     RetryIn,
     RunOut,
 )
+from .upload import UploadError, UploadStorage
 
 
 def _error(request: Request, status: int, code: str, details: object = None):
@@ -34,8 +53,15 @@ def _domain_status(code: str) -> int:
     if code in {"not_found", "run_not_found", "scope_mismatch"}:
         return 404
     if code in {"snapshot_not_ready", "revision_conflict", "snapshot_changed",
-                "idempotency_conflict", "stale_attempt", "invalid_transition"}:
+                "idempotency_conflict", "stale_attempt", "invalid_transition",
+                "supplier_conflict"}:
         return 409
+    if code == "file_limit":
+        return 413
+    if code in {"invalid_file", "invalid_filename", "unsupported_file",
+                "invalid_supplier_binding", "invalid_role", "case_file_limit",
+                "case_supplier_limit", "case_page_limit"}:
+        return 422
     if code == "invalid_request":
         return 400
     return 500
@@ -46,7 +72,8 @@ def create_app(engine: Engine | None = None) -> FastAPI:
     if engine is None:
         engine = create_engine(database_url(), pool_pre_ping=True,
                                hide_parameters=True)
-    queries, runs = ApiQueries(engine), RunRepository(engine)
+    queries, runs, documents = ApiQueries(engine), RunRepository(engine), DocumentRepository(engine)
+    storage = UploadStorage(Path(os.getenv("DOCUCHECK_DATA_DIR", str(ROOT / "data"))))
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
@@ -61,13 +88,23 @@ def create_app(engine: Engine | None = None) -> FastAPI:
     @app.middleware("http")
     async def request_id(request: Request, call_next):
         request.state.request_id = uuid4().hex
+        if (request.method == "POST" and request.url.path.startswith("/api/v1/cases/")
+                and request.url.path.endswith("/documents")):
+            length = request.headers.get("content-length", "")
+            if length.isdecimal() and (len(length) > 20 or
+                                       int(length) > MAX_FILE_BYTES + 64 * 1024):
+                response = _error(request, 413, "file_limit")
+                response.headers["X-Request-ID"] = request.state.request_id
+                return response
         response = await call_next(request)
         response.headers["X-Request-ID"] = request.state.request_id
         return response
 
     @app.exception_handler(ApiQueryError)
     @app.exception_handler(RepositoryError)
-    async def domain_error(request: Request, exc: ApiQueryError | RepositoryError):
+    @app.exception_handler(DocumentError)
+    @app.exception_handler(UploadError)
+    async def domain_error(request: Request, exc: ApiQueryError | RepositoryError | DocumentError | UploadError):
         return _error(request, _domain_status(exc.code), exc.code)
 
     @app.exception_handler(RequestValidationError)
@@ -104,6 +141,41 @@ def create_app(engine: Engine | None = None) -> FastAPI:
     @router.post("/cases", status_code=201, response_model=CaseOut)
     def create_case():
         return queries.create_case()
+
+    @router.post("/cases/{case_id}/documents", status_code=201,
+                 response_model=DocumentAccepted)
+    def upload_document(case_id: str,
+                        file: Annotated[UploadFile, File()],
+                        role: Annotated[str, Form()],
+                        expected_revision: Annotated[int, Form(ge=0)],
+                        supplier_handle: Annotated[str | None, Form()] = None,
+                        supplier_name: Annotated[str | None, Form()] = None,
+                        idempotency_key: str = Header(
+                            alias="Idempotency-Key", min_length=1, max_length=255,
+                        )):
+        saved = storage.save(file)
+        try:
+            receipt = documents.upload(UploadCommand(
+                case_id=case_id, expected_revision=expected_revision,
+                role=role, supplier_handle=supplier_handle,
+                supplier_name=supplier_name,
+                idempotency_key=idempotency_key,
+                document_id=saved.document_id,
+                original_name=saved.original_name,
+                storage_key=saved.storage_key,
+                source_sha256=saved.source_sha256,
+                media_type=saved.media_type, pdf_pages=saved.pdf_pages,
+            ))
+        except Exception:
+            storage.discard(saved)
+            raise
+        if receipt["document_id"] != saved.document_id:
+            storage.discard(saved)
+        return receipt
+
+    @router.get("/cases/{case_id}/documents", response_model=DocumentsOut)
+    def list_documents(case_id: str):
+        return documents.list_current(case_id)
 
     @router.post("/cases/{case_id}/conversations", status_code=201,
                  response_model=ConversationOut)
