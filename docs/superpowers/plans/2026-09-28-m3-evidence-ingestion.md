@@ -25,5 +25,5 @@
 
 ### Task 3：验收与交接
 
-- [x] 运行定向及后端回归、Ruff、依赖检查；新增用户本机 MySQL 上传加解析集成测试（实际 MySQL 运行等待用户执行）。
+- [x] 运行定向及后端回归、Ruff、依赖检查；用户本机真实 MySQL 上传加 XLSX 解析测试 `1 passed in 2.28s`。
 - [x] 更新 README、CLAUDE、路线图及 M3-6 验收记录，明确真实 MySQL/PDF MinerU 状态和下一步 worker 接线。

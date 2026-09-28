@@ -26,12 +26,12 @@ XLSX 可直接处理。PDF 处理需要配置 `DOCUCHECK_MINERU_EXECUTABLE`，�
 - 本机离线后端回归：**306 passed, 4 skipped**。跳过项包含需显式启用的真实 MySQL 测试；`ruff check backend evals`、`pip check` 和 `git diff --check` 通过。
 - 真实上传的 XLSX 经进程内 HTTP 上传并解析后，可按工作表及单元格查原文；重复处理不增加证据行。开发包 PDF 用受控 MinerU 缓存结果测试页定位、页面尺寸、`partial` 覆盖和新快照独立证据 ID。
 - 哈希篡改、路径越界、解析期间原件变化均不能生成证据；注入证据主键冲突时文档状态与证据行一起回滚。跨 Case/快照读证据返回 404。
-- **尚未执行**新增的真实 MySQL 解析集成测试，也未运行本机真实 MinerU 命令。PDF 结果只通过现有解析器与受控缓存验证；生产资料的准确率、耗时和恢复行为尚未验收。
+- **实际结果（用户本机，2026-09-28）：** 显式启用真实 MySQL 测试并运行 `backend/tests/test_document_ingestion_mysql.py -q`，反馈 **1 passed in 2.28s**，随后清除了 `DOCUCHECK_RUN_MYSQL_TESTS`。测试覆盖真实 MySQL 中的 XLSX 上传、解析、单元格来源、重复处理和 Case 隔离。未运行本机真实 MinerU 命令；PDF 结果只通过现有解析器与受控缓存验证，生产资料的准确率、耗时和恢复行为尚未验收。
 - 尚未接入 Celery、Run/Agent 的取证流程，也没有异步调度、索引更新、认证或前端。解析输出设有单块 60,000 UTF-8 字节、最多 25,000 块、合计 50 MiB 的入库边界，超出时文档标为 `failed` 并保留原因；后续需要对极端大文档再做性能测试。
 
 ### 用户本机 MySQL 集成验收
 
-请在已激活 `docucheck` Conda 环境的项目根目录、MySQL 容器健康且 Alembic 位于 `0001_core (head)` 时，逐行运行：
+本次已由用户在已激活 `docucheck` Conda 环境、MySQL 可用时逐行运行；复验命令如下：
 
 ```powershell
 $env:DOCUCHECK_RUN_MYSQL_TESTS = '1'
@@ -39,7 +39,7 @@ python.exe -m pytest backend/tests/test_document_ingestion_mysql.py -q
 Remove-Item Env:DOCUCHECK_RUN_MYSQL_TESTS
 ```
 
-该测试在真实 MySQL 上上传并解析开发包 XLSX，核对位置、幂等与 Case 隔离，最后清理自己的测试数据。请反馈测试摘要或脱敏错误，不发送 `.env`、密码或采购文件。
+本次结果为 **1 passed in 2.28s**。该测试在真实 MySQL 上上传并解析开发包 XLSX，核对位置、幂等与 Case 隔离，最后清理自己的测试数据；它不验证真实 MinerU PDF 或 Agent worker。
 
 ## 依据与下一步
 
