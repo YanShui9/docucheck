@@ -6,7 +6,9 @@
 
 > **M3 前审查修复（2026-09-28，覆盖上方旧测试数）**：比较词串字段、完整审查漏项、来源问答串供应商、宽 XLSX 行漏批与已知超预算审查、最终可见答案评测口径均已做离线修复。当前 `pytest backend/tests -q` **269 passed**，`ruff check backend evals` 和 `git diff --check` 通过；脚本化开发包任务 2/2、可见状态 32/32、引用错误 0/76，词法检索 17/17。本轮未调用 DeepSeek。容量预检是下界，不能保证所有解析上限内的文件都能一次完成；正式上传、独立资料集、多次真实模型试验、费用和完整时延尚未验收。详见 [M1/M2 审查及后续修复](docs/m1-m2-pre-m3-audit-2026-09-28.md)。可继续 M3 设计和实现，正式结果接口须通过上传/异步/幂等端到端验证；前端仍需先讨论设计。
 
-> **M3 第一小步（2026-09-28，最新）**：已实现纯 Python Run 生命周期契约，覆盖领取、完成、取消、澄清恢复、中断重试及 attempt/fence/快照归属；后端 **275 项测试**、Ruff 通过。见 [M3 分步计划](docs/superpowers/plans/2026-09-28-m3-run-lifecycle.md)。尚无数据库迁移、API 或持久 worker；跨进程安全需下一步数据库原子条件更新。当前 Conda 尚缺 SQLAlchemy/Alembic，安装和 Docker 验证由用户按届时步骤执行；前端仍须先讨论规范与样式。
+> **M3 第一小步（2026-09-28，历史进度）**：已实现纯 Python Run 生命周期契约，覆盖领取、完成、取消、澄清恢复、中断重试及 attempt/fence/快照归属；当时后端 **275 项测试**、Ruff 通过。见 [M3 分步计划](docs/superpowers/plans/2026-09-28-m3-run-lifecycle.md)。跨进程安全仍需数据库原子条件更新；前端仍须先讨论规范与样式。
+
+> **M3 第二小步（2026-09-28，离线完成、MySQL 待验）**：SQLAlchemy Core 定义 12 张核心业务表，Alembic `0001_core` 首版迁移与 Windows Conda 依赖锁已加入；本机后端 **280 项测试**、Ruff、`pip check` 通过，SQLite 升降迁移及 MySQL 方言 SQL 生成通过。用户已安装 SQLAlchemy 2.0.54、Alembic 1.20.0、PyMySQL 1.2.3；还需用户按 [M3-2 验收步骤](docs/m3-2-persistence-schema-2026-09-28.md)启动 Docker MySQL 并运行 `upgrade head`。repository 事务、API、worker 和前端尚未实现。
 
 ## 最新协作约定（2026-09-25，优先执行）
 

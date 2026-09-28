@@ -32,4 +32,4 @@
 
 **阶段验收：** M3 完成须通过重启后会话可读、澄清释放 worker、重复消息只提交一次、取消后迟到结果不发布、显式重试生成新 attempt、旧快照结果不冒充新版本等端到端检查。本轮的纯状态契约只证明第一组规则，不宣称 M3 完成。
 
-**环境准备：** 当前 `docucheck` Conda 环境尚未安装 SQLAlchemy/Alembic；本轮不安装依赖、不运行 Docker。下一小步需要先锁定持久化依赖，再由用户执行安装；真正验证 MySQL 迁移时另向用户提供 Docker 命令。
+**该步环境记录：** 第一小步实施时 `docucheck` Conda 环境尚未安装 SQLAlchemy/Alembic，因此没有安装依赖或运行 Docker。用户随后为第二小步安装了锁定的持久化依赖；MySQL 迁移验证步骤见 [M3-2 记录](../../m3-2-persistence-schema-2026-09-28.md)。

@@ -6,6 +6,8 @@
 
 > M3 第一小步已实现 [Run 生命周期契约](docs/superpowers/plans/2026-09-28-m3-run-lifecycle.md)：领取、完成、取消、澄清恢复、重试均检查活跃 attempt、fence 与快照边界。后端 **275 项测试**和 Ruff 通过；MySQL 持久化、正式 API 与 worker 尚未接线。本轮未运行 Docker 或编写前端。
 
+> M3 第二小步的 [MySQL 核心表和 Alembic 迁移](docs/m3-2-persistence-schema-2026-09-28.md)已通过离线检查（后端 **280 项测试**、Ruff、SQLite 升降迁移）；真实 MySQL 升级尚待用户按文档运行 Docker 验证。当前只有数据表定义，事务 repository、正式 API 和 worker 尚未接线。
+
 > 最新协作状态（2026-09-25）：[M1 最小真实 Agent](docs/m1-acceptance-2026-09-25.md)在模拟包与内存字段范围内完成验收；真实模型连续两问通过，后端离线测试 90/90、全目录 Ruff 与依赖检查通过。正式上传、其他七字段和独立质量评测尚未完成。后续仍按[分步协作计划](docs/step-by-step-plan.md)一次做一个小步骤。任何前端工作开始前须先暂停并讨论设计规范与样式。
 
 > 2026-09-26：[M2-0 XLSX 内存分列证据修正](docs/m2-0-acceptance-2026-09-26.md)和 [M2-1 答复引用范围修正](docs/m2-1-acceptance-2026-09-26.md)已通过离线回归（当前 110 项测试）。下一小步为 M2-2 解析覆盖；M2 完整采购审查尚未完成。
