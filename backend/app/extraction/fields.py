@@ -146,16 +146,35 @@ def _source_blocks(candidate: FieldCandidate, repo: EvidenceRepository, supplier
     return blocks
 
 
-def _comparator(text: str) -> str:
-    if re.search(r"至少|不低于|≥|>=", text):
-        return "gte"
-    if re.search(r"不超过|不高于|至多|≤|<=|以内|内交付", text):
-        return "lte"
-    if re.search(r"(?<![<>])>(?!=)|大于|多于|超过|高于", text):
-        return "gt"
-    if re.search(r"(?<![<>])<(?!=)|小于|少于|低于", text):
-        return "lt"
-    return "eq"
+def _comparator(field: FieldKey, text: str, value_match: re.Match[str]) -> str:
+    """Bind a comparison to the field label and value, never a neighboring field."""
+    labels = sorted((match.start(), match.end(), label_field)
+                    for label_field, pattern in EXPLICIT_LABELS.items()
+                    for match in pattern.finditer(text))
+    preceding = [label for label in labels if label[0] < value_match.start()]
+    nearest = preceding[-1] if preceding else None
+    if (nearest is not None and nearest[2] != field) or (
+        nearest is None and any(label[2] != field for label in labels)
+    ):
+        return "unknown"
+
+    start = nearest[1] if nearest else 0
+    prefix = text[start:value_match.start()]
+    conjunctions = list(re.finditer(r"并且|同时|以及|且", prefix))
+    if conjunctions:
+        prefix = prefix[conjunctions[-1].end():]
+    postfix = re.match(r"\s*(?:以内|内交付)", text[value_match.end():])
+    local = prefix + (postfix.group() if postfix else "")
+
+    found = {
+        comparator for comparator, pattern in (
+            ("gte", r"至少|不低于|≥|>="),
+            ("lte", r"不超过|不高于|至多|≤|<=|以内|内交付"),
+            ("gt", r"(?<![<>])>(?!=)|大于|多于|(?<!不)超过|(?<!不)高于"),
+            ("lt", r"(?<![<>])<(?!=)|小于|少于|(?<!不)低于"),
+        ) if re.search(pattern, local)
+    }
+    return next(iter(found)) if len(found) == 1 else "unknown" if found else "eq"
 
 
 def _meaning(field: FieldKey, text: str, raw_unit: str, normalized_unit: str):
@@ -218,14 +237,16 @@ def _validate_candidate(candidate: FieldCandidate, repo: EvidenceRepository,
         rf"(?<![\d.]){re.escape(candidate.raw_value)}(?![\d.])\s*(?:个\s*)?"
         rf"{re.escape(candidate.raw_unit)}(?![A-Za-z])", re.IGNORECASE,
     )
-    matched = next((clause for clause in clauses if source_value.search(clause)), None)
+    matched = next(((clause, match) for clause in clauses
+                    if (match := source_value.search(clause))), None)
     if matched is None:
         raise ValueError("candidate_value")
+    clause, value_match = matched
     value, unit = normalize_field_value(field, candidate.raw_value, candidate.raw_unit)
-    qualifier, attributes = _meaning(field, matched, candidate.raw_unit, unit)
+    qualifier, attributes = _meaning(field, clause, candidate.raw_unit, unit)
     first = blocks[0]
     refs = tuple(block.evidence_id for block in blocks)
-    comparator = _comparator(matched)
+    comparator = _comparator(field, clause, value_match)
     identity = digest([repo.snapshot_id, supplier, field.value, candidate.raw_value,
                        candidate.raw_unit, refs, qualifier, comparator, attributes])
     return FieldFact(

@@ -4,6 +4,7 @@ import json
 from dataclasses import replace
 from pathlib import Path
 
+import pytest
 from langchain_core.messages import AIMessage
 
 from backend.app.evidence.repository import EvidenceRepository, load_case
@@ -183,3 +184,51 @@ def test_repeated_same_number_with_distinct_qualifiers_needs_more_coverage() -> 
     assert any("unverified_value" in issue for issue in result.coverage_issues)
     assert evaluate_field(repo, "vendor-a", FieldKey.STORAGE, result.facts,
                           scan_complete=result.complete).business_status is None
+
+
+@pytest.mark.parametrize("requirement, expected_comparator, expected_status", [
+    ("主机重量不超过 1.6 kg且质保至少 24 个月", "lte", "不满足"),
+    ("质保至少 24 个月且主机重量不超过 1.6 kg", "lte", "不满足"),
+    ("质保至少 24 个月且主机重量 1.6 kg", "eq", "不满足"),
+    ("质保至少 24 个月且主机重量至少/不超过 1.6 kg", "unknown", "待人工确认"),
+])
+def test_weight_comparator_stays_with_its_value_in_mixed_requirement(
+    requirement: str, expected_comparator: str, expected_status: str,
+) -> None:
+    original = load_case(PACK)
+    documents = []
+    for document in original.documents:
+        if document.role != "requirement":
+            documents.append(document)
+            continue
+        blocks = tuple(replace(block, text=requirement)
+                       if block.text == "主机重量不超过 1.6 kg" else block
+                       for block in document.parsed.blocks)
+        documents.append(replace(document, parsed=replace(document.parsed, blocks=blocks)))
+    repo = EvidenceRepository(original.case_id, original.revision + 1, documents)
+
+    def weight_candidates(operation, messages, schema):
+        facts = []
+        for block in json.loads(messages[-1].content)["evidence"]:
+            if "主机重量" in block["text"] and "1.6 kg" in block["text"]:
+                facts.append({"field_key": "weight", "raw_value": "1.6",
+                              "raw_unit": "kg", "evidence_refs": [block["evidence_id"]]})
+            elif block["text"] == "主机重量 1.8 kg":
+                facts.append({"field_key": "weight", "raw_value": "1.8",
+                              "raw_unit": "kg", "evidence_refs": [block["evidence_id"]]})
+            if "质保至少 24 个月" in block["text"] or "质保期限至少 24 个月" in block["text"]:
+                facts.append({"field_key": "warranty", "raw_value": "24",
+                              "raw_unit": "个月", "evidence_refs": [block["evidence_id"]]})
+        return AIMessage(content="", tool_calls=[{"id": "weights", "name": "FieldCandidates",
+                                                  "args": {"facts": facts}}])
+
+    results = extract_fields(repo, "vendor-a", [FieldKey.WEIGHT, FieldKey.WARRANTY],
+                             weight_candidates)
+    result = results[FieldKey.WEIGHT]
+    assert result.complete and results[FieldKey.WARRANTY].complete
+    requirement_fact = next(fact for fact in result.facts if fact.role == "requirement")
+    assert requirement_fact.comparator == expected_comparator
+    assert all(fact.comparator == "gte" for fact in results[FieldKey.WARRANTY].facts)
+    check = evaluate_field(repo, "vendor-a", FieldKey.WEIGHT, result.facts,
+                           scan_complete=result.complete)
+    assert check.business_status == expected_status

@@ -73,6 +73,9 @@ def test_one_supplier_seven_new_fields_match_synthetic_gold() -> None:
         "delivery_days": "待人工确认",
     }
     assert all(result.processing_status == "complete" for result in results.values())
+    delivery_requirement = next(fact for fact in extracted[FieldKey.DELIVERY_DAYS].facts
+                                if fact.role == "requirement")
+    assert delivery_requirement.comparator == "lte"
 
 
 def test_self_describing_price_cell_does_not_require_redundant_label_reference() -> None:
