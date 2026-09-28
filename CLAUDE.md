@@ -18,7 +18,7 @@
 
 > **M3 第六小步（2026-09-28，范围内验收完成）**：上传原件按 Case/快照解析前后复核路径、大小与 SHA-256；文档解析状态、覆盖信息和定位证据同事务提交；支持本机解析 CLI 和分页证据只读 API。离线后端 **306 passed, 4 skipped**，Ruff、依赖检查通过；用户显式运行的真实 MySQL 上传加 XLSX 解析测试另得 **1 passed in 2.28s**，并清除了测试环境变量。真实 MinerU PDF 尚未实测；Agent worker、认证、前端未接入。详见 [M3-6 记录](docs/m3-6-evidence-ingestion-2026-09-28.md)。
 
-> **M3 第七小步（2026-09-28，离线实现完成）**：数据库快照证据原 ID 和来源可进入现有 LangGraph Agent；受控单次 Run 按 attempt/fence 提交答复、模型用量和 `outcome_unknown`。后端 **323 passed, 5 skipped**，Ruff 与依赖检查通过。本机命令默认预览，只有 `--send` 会调用已配置模型。真实 MySQL 与 DeepSeek 尚待用户验收；Celery 派发、跨进程连续追问、认证和前端未接线。见 [M3-7 记录](docs/m3-7-persisted-agent-run-2026-09-28.md)。
+> **M3 第七小步（2026-09-28，MySQL 范围内验收完成）**：数据库快照证据原 ID 和来源可进入现有 LangGraph Agent；受控单次 Run 按 attempt/fence 提交答复、模型用量和 `outcome_unknown`。离线后端 **323 passed, 5 skipped**，Ruff 与依赖检查通过；用户显式运行的真实 MySQL 集成测试另得 **1 passed in 3.42s**，随后清除了测试环境变量。此测试使用脚本化 Provider；真实 DeepSeek 和网络服务启动仍待验收。本机命令默认预览，只有 `--send` 会调用已配置模型。Celery 派发、跨进程连续追问、认证和前端未接线。见 [M3-7 记录](docs/m3-7-persisted-agent-run-2026-09-28.md)。
 
 ## 最新协作约定（2026-09-25，优先执行）
 

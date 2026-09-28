@@ -19,12 +19,12 @@ python.exe -m backend.app.run_once --run-id <run_id> --attempt-id <attempt_id> -
 
 - 离线测试将开发包 XLSX 经进程内 HTTP 上传、解析、提交 Run，使用脚本化 Provider 验证来源、正式答复、Run 状态、模型 ID 和用量。PDF 使用受控 MinerU 缓存验证持久化页定位和新旧快照证据隔离。
 - 另覆盖未解析快照不调用模型、解析后 retry、容量拒绝、Case 版本变化、重复 attempt、取消后迟到结果、异常/键盘中断，以及模型超时的 `outcome_unknown` 标志。
-- 本机后端全量回归：**323 passed, 5 skipped**；真实 MySQL 集成测试仍需用户显式执行，真实 DeepSeek 上传资料 Run 未运行。`ruff check backend evals`、`pip check` 和 `git diff --check` 通过。
+- 本机后端全量回归：**323 passed, 5 skipped**；`ruff check backend evals`、`pip check` 和 `git diff --check` 通过。**用户本机实际结果（2026-09-28）：** 显式运行 `backend/tests/test_persisted_agent_run_mysql.py -q`，反馈 **1 passed in 3.42s**，随后清除了 `DOCUCHECK_RUN_MYSQL_TESTS`。该测试使用脚本化 Provider，验证真实 MySQL 上的 XLSX 上传、解析、单次 Agent Run、证据来源和结果读取；尚未运行真实 DeepSeek 上传资料 Run。
 - Celery/Outbox 派发、后台崩溃恢复、持久化多轮上下文与结果轨迹、网络服务及前端仍待实现。M3 整体尚未完成。
 
 ### 用户本机真实 MySQL 验收
 
-在已激活 `docucheck` Conda 环境的项目根目录、MySQL 容器健康且已完成迁移时，逐行执行：
+本次已由用户在已激活 `docucheck` Conda 环境、MySQL 可用时逐行执行；复验命令如下：
 
 ```powershell
 $env:DOCUCHECK_RUN_MYSQL_TESTS = '1'
@@ -32,7 +32,52 @@ python.exe -m pytest backend/tests/test_persisted_agent_run_mysql.py -q
 Remove-Item Env:DOCUCHECK_RUN_MYSQL_TESTS
 ```
 
-该测试只用脚本化 Provider，验证真实 MySQL 的上传、解析、Run 和证据来源，不调用 DeepSeek；结束时清理自己的测试数据。请反馈测试摘要或脱敏错误，不发送 `.env`、密钥或采购文件。
+本次结果为 **1 passed in 3.42s**。该测试只用脚本化 Provider，验证真实 MySQL 的上传、解析、Run 和证据来源，不调用 DeepSeek；结束时清理自己的测试数据。
+
+### 用户本机真实 DeepSeek 来源问答探针
+
+下面只使用开发包中的 `vendor-a-quote.xlsx`，验证真实模型能否从正式上传证据回答来源问题，不代表八字段完整审查。会在本机 MySQL 和 `data/uploads` 留下一份开发用 Case；`--send` 将问题及必要资料片段发送到 `.env` 中配置的模型服务，可能产生正常 API 费用。不要在终端或反馈中粘贴 API key。
+
+1. 确保 MySQL 已运行；在**第一个**已激活 `docucheck` 环境的 PowerShell 窗口、项目根目录启动本地 API，看到 `Uvicorn running on http://127.0.0.1:8000` 后保持该窗口运行：
+
+   ```powershell
+   python.exe -m uvicorn backend.app.api.main:create_app --factory --host 127.0.0.1 --port 8000
+   ```
+
+2. 在**第二个**同样已激活环境的 PowerShell 窗口、项目根目录逐行运行。`$uploaded` 应显示 `parse_status: pending`、`revision: 1`；解析命令应显示该文档 `complete`：
+
+   ```powershell
+   $base = 'http://127.0.0.1:8000'
+   $case = Invoke-RestMethod -Method Post -Uri "$base/api/v1/cases"
+   $quotePath = (Resolve-Path -LiteralPath '.\examples\dev-pack-001\vendor-a-quote.xlsx').Path.Replace('\', '/')
+   $uploadKey = [guid]::NewGuid().ToString('N')
+   $uploadJson = curl.exe --silent --show-error --fail -X POST "$base/api/v1/cases/$($case.id)/documents" -H "Idempotency-Key: $uploadKey" -F 'role=quote' -F 'supplier_handle=vendor-a' -F 'supplier_name=Vendor A' -F 'expected_revision=0' -F "file=@$quotePath"
+   if ($LASTEXITCODE -ne 0) { throw '文件上传失败，请反馈脱敏错误' }
+   $uploaded = $uploadJson | ConvertFrom-Json
+   $uploaded | Select-Object document_id, snapshot_id, revision, parse_status
+   python.exe -m backend.app.ingest_snapshot --case-id $case.id --snapshot-id $uploaded.snapshot_id
+   ```
+
+3. 创建会话并提交一个来源问题；`$submitted` 应包含 `run_id` 与 `attempt_id`。先运行预览，确认 `snapshot_status` 为 `ready`、`run_status` 为 `queued`：
+
+   ```powershell
+   $conversation = Invoke-RestMethod -Method Post -Uri "$base/api/v1/cases/$($case.id)/conversations"
+   $question = @{ content = '请列出供应商 A 报价中已装内存的原文和所在单元格'; mode = 'standard'; expected_revision = $uploaded.revision } | ConvertTo-Json -Compress
+   $headers = @{ 'Idempotency-Key' = [guid]::NewGuid().ToString('N') }
+   $submitted = Invoke-RestMethod -Method Post -Uri "$base/api/v1/conversations/$($conversation.id)/messages" -Headers $headers -ContentType 'application/json; charset=utf-8' -Body $question
+   $submitted | Select-Object run_id, attempt_id
+   python.exe -m backend.app.run_once --run-id $submitted.run_id --attempt-id $submitted.attempt_id
+   ```
+
+4. **以下命令实际调用模型。** 只有预览显示 `ready` 时执行；完成后查询数据库中的 Run 状态。期望答复能指出 `vendor-a-quote.xlsx` 的 `报价!B6` 和 `16 GB`，Run 为 `completed`，但真实模型结果须以输出为准：
+
+   ```powershell
+   python.exe -m backend.app.run_once --run-id $submitted.run_id --attempt-id $submitted.attempt_id --send
+   $run = Invoke-RestMethod -Method Get -Uri "$base/api/v1/agent-runs/$($submitted.run_id)"
+   $run | Select-Object status, error_code, answer_text
+   ```
+
+同一个 attempt 不要再次执行 `--send`。若返回 `partial`/`failed`，把脱敏的命令输出和 Run 状态发来；后续按现有 retry API 处理。完成后可在第一个窗口按 Ctrl+C 停止本地 API。上传使用 [FastAPI 官方的 File/Form 模式](https://fastapi.tiangolo.com/tutorial/request-files/) 与 [curl `--form` 语法](https://curl.se/docs/manpage.html)；本节命令尚需用户本机实测。
 
 ## 设计依据
 

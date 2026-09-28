@@ -8,7 +8,7 @@
 
 > **M3 当前进度（2026-09-28）**：M3-2～M3-5 的数据库、Run repository、基础 API 和上传快照已分别验收；M3-6 [上传资料解析与证据入库](m3-6-evidence-ingestion-2026-09-28.md)已完成范围内验收（离线后端 **306 passed, 4 skipped**；用户真实 MySQL 上传加 XLSX 解析 **1 passed**）。真实 MinerU PDF 未实测；下一小步是后台解析/Run Agent 任务接线与中断恢复验证。M3 整体尚未完成，前端仍在设计讨论暂停点。
 
-> **M3-7 当前进度（2026-09-28）**：[持久化证据驱动单次 Agent Run](m3-7-persisted-agent-run-2026-09-28.md)已完成离线实现（后端 **323 passed, 5 skipped**）；真实 MySQL 和模型运行待用户验收。下一小步将此执行器接入 Outbox/Celery，处理重复投递、断电后恢复和跨进程多轮上下文。M3 整体未完成；前端开始前先讨论规范与样式。
+> **M3-7 当前进度（2026-09-28）**：[持久化证据驱动单次 Agent Run](m3-7-persisted-agent-run-2026-09-28.md)已完成 MySQL 范围内验收（离线后端 **323 passed, 5 skipped**；用户真实 MySQL 脚本化 Provider 测试 **1 passed**）。真实 DeepSeek 与网络服务运行待验收。下一小步将此执行器接入 Outbox/Celery，处理重复投递、断电后恢复和跨进程多轮上下文。M3 整体未完成；前端开始前先讨论规范与样式。
 
 > **M3 第一小步（2026-09-28，历史进度）**：按[运行生命周期计划](superpowers/plans/2026-09-28-m3-run-lifecycle.md)新增不可变 Run 状态及 attempt/fence/快照归属规则；当时定向 6 项、后端合计 **275 项测试**和 Ruff 通过。数据库原子更新仍未实现；这一小步未运行 Docker 或模型 API。
 
