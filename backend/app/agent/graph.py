@@ -3,7 +3,7 @@ import json
 import re
 from uuid import uuid4
 
-from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 from langgraph.graph import END, START, StateGraph
 from langsmith import tracing_context
 from pydantic import ValidationError
@@ -95,6 +95,8 @@ class AgentSession:
                     raise ProviderError("invalid_output")
                 event.update(status="completed", usage=response.usage_metadata,
                              request_id=response.response_metadata.get("request_id"))
+                if operation == "decide":
+                    event["tool_call_count"] = len(response.tool_calls)
                 budget.record(response, reserved_input, options["max_output_tokens"])
                 return response
             except ProviderError as exc:
@@ -117,9 +119,25 @@ class AgentSession:
                 budget.decision()
                 messages = compact_tools(state["messages"])
                 handles = verified_result_handles(self.tools.results)
-                decision_messages = ([messages[0], handles, *messages[1:]]
-                                     if handles else messages)
+                guidance = [SystemMessage(content=(
+                    "上一轮没有调用工具。继续当前用户问题时必须只调用一个可用工具，"
+                    "不得直接回答；如范围不清，调用 request_clarification。"
+                ))] if state["tool_repairs"] else []
+                decision_messages = [messages[0], *guidance,
+                                     *([handles] if handles else []), *messages[1:]]
                 reply = model_call("decide", decision_messages, self.schemas)
+                if not reply.tool_calls:
+                    if state["tool_repairs"] >= 1:
+                        return {"status": "failed", "error": "one_tool_required",
+                                "next_node": "end"}
+                    return {"tool_repairs": 1, "next_node": "decide"}
+                if len(reply.tool_calls) > 1:
+                    events[-1]["serialized_tool_calls"] = len(reply.tool_calls) - 1
+                    reply = AIMessage(
+                        content=reply.content, tool_calls=[reply.tool_calls[0]],
+                        id=reply.id, response_metadata=reply.response_metadata,
+                        usage_metadata=reply.usage_metadata,
+                    )
                 return {"messages": [*messages, reply], "next_node": "act"}
             except (RunStopped, ProviderError) as exc:
                 return stop(exc)
@@ -128,6 +146,7 @@ class AgentSession:
             reply = state["messages"][-1]
             if len(reply.tool_calls) != 1:
                 return {"status": "failed", "error": "one_tool_required", "next_node": "end"}
+            deferred_calls = events[-1].get("serialized_tool_calls", 0)
             call = reply.tool_calls[0]
             name, args = call["name"], call["args"]
             event = {"kind": "tool", "tool": name, "sequence": len(events) + 1, "status": "started"}
@@ -190,6 +209,9 @@ class AgentSession:
                                          "issue_types": sorted(issue_types)})
                     event["field_coverage"] = coverage
                 observation = compact_observation(name, result)
+                if deferred_calls:
+                    observation["deferred_tool_calls"] = deferred_calls
+                    observation["instruction"] = "Other proposed calls were not run; request any still needed one at a time."
                 return {"messages": [*state["messages"], ToolMessage(tool_call_id=call["id"],
                             content=json.dumps(observation, ensure_ascii=False))], "next_node": "decide"}
             except (RunStopped, ProviderError) as exc:
@@ -217,7 +239,8 @@ class AgentSession:
             state = builder.compile().invoke({"messages": assemble(self.repo, self.history, question,
                 self.schemas, budget.context_window, self.focus,
                 self.pending_clarification), "status": "running", "answer": "", "error": None,
-                "repairs": 0, "next_node": "decide"}, {"recursion_limit": 2 * self.max_decisions + 4,
+                "repairs": 0, "tool_repairs": 0, "next_node": "decide"},
+                {"recursion_limit": 2 * self.max_decisions + 4,
                                                         "callbacks": []})
         answer = state["answer"] or f"本次处理未完成：{state['error']}。"
         if state["status"] in {"completed", "partial", "waiting_user"}:

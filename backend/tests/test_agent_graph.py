@@ -10,6 +10,7 @@ from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 from backend.app.evidence.repository import load_case
 
 PACK = Path(__file__).resolve().parents[2] / "examples/dev-pack-001"
+PACK_THREE = Path(__file__).resolve().parents[2] / "examples/dev-pack-003"
 
 
 def call(name, args, *, usage=False):
@@ -83,6 +84,80 @@ def test_repeated_tools_stop_at_budget():
     result = module.AgentSession(load_case(PACK), Loop(), max_decisions=2).ask("检查内存")
     assert result.status == "partial"
     assert result.error == "decision_budget"
+    assert result.usage["decisions"] == 2
+
+
+def test_parallel_decision_calls_are_serialized_into_one_observed_tool() -> None:
+    module = import_module("backend.app.agent.graph")
+
+    class Parallel(ScenarioProvider):
+        def decide(self, messages, tools, **kwargs):
+            self.steps += 1
+            if self.steps == 1:
+                return call("list_case_sources", {}, usage=True)
+            if self.steps == 2:
+                return AIMessage(content="", tool_calls=[
+                    {"id": "first", "name": "search_evidence",
+                     "args": {"query": "内存", "supplier": "vendor-a"}},
+                    {"id": "second", "name": "search_evidence",
+                     "args": {"query": "存储", "supplier": "vendor-b"}},
+                    {"id": "third", "name": "search_evidence",
+                     "args": {"query": "重量", "supplier": "vendor-c"}},
+                ], usage_metadata={"input_tokens": 100, "output_tokens": 40,
+                                   "total_tokens": 140})
+            latest_ai = next(message for message in reversed(messages)
+                             if message.type == "ai")
+            assert [item["id"] for item in latest_ai.tool_calls] == ["first"]
+            assert messages[-1].type == "tool"
+            assert messages[-1].tool_call_id == "first"
+            assert json.loads(messages[-1].content)["deferred_tool_calls"] == 2
+            return call("request_clarification", {"question": "请确认后续范围。"}, usage=True)
+
+    result = module.AgentSession(load_case(PACK_THREE), Parallel()).ask("审查所有供应商")
+
+    assert result.status == "waiting_user"
+    assert [event.get("tool") for event in result.events if event["kind"] == "tool"] == [
+        "list_case_sources", "search_evidence", "request_clarification",
+    ]
+    decisions = [event for event in result.events if event.get("operation") == "decide"]
+    assert decisions[1]["tool_call_count"] == 3
+    assert decisions[1]["serialized_tool_calls"] == 2
+
+
+def test_missing_decision_tool_gets_one_corrective_attempt() -> None:
+    module = import_module("backend.app.agent.graph")
+
+    class NoToolOnce(ScenarioProvider):
+        def decide(self, messages, tools, **kwargs):
+            self.steps += 1
+            if self.steps == 1:
+                return AIMessage(content="我会先查看资料。", tool_calls=[],
+                                 usage_metadata={"input_tokens": 100,
+                                                 "output_tokens": 20,
+                                                 "total_tokens": 120})
+            assert any(message.type == "system" and "只调用一个工具" in message.content
+                       for message in messages)
+            return call("request_clarification", {"question": "请确认范围。"}, usage=True)
+
+    result = module.AgentSession(load_case(PACK), NoToolOnce()).ask("审查资料")
+
+    assert result.status == "waiting_user"
+    assert result.usage["decisions"] == 2
+    assert [event["tool_call_count"] for event in result.events
+            if event.get("operation") == "decide"] == [0, 1]
+
+
+def test_repeated_missing_decision_tool_stops_after_one_correction() -> None:
+    module = import_module("backend.app.agent.graph")
+
+    class NeverCallsTool(ScenarioProvider):
+        def decide(self, messages, tools, **kwargs):
+            return AIMessage(content="直接回答", tool_calls=[])
+
+    result = module.AgentSession(load_case(PACK), NeverCallsTool()).ask("审查资料")
+
+    assert result.status == "failed"
+    assert result.error == "one_tool_required"
     assert result.usage["decisions"] == 2
 
 

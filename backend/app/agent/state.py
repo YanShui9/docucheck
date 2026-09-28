@@ -25,6 +25,7 @@ class AgentState(TypedDict):
     answer: str
     error: str | None
     repairs: int
+    tool_repairs: int
     next_node: str
 
 
