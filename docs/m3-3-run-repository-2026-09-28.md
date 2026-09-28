@@ -25,6 +25,8 @@ Remove-Item Env:DOCUCHECK_RUN_MYSQL_TESTS
 
 预期 `1 passed`。该测试用两个连接竞争同一新问题幂等键、同一 Run 的领取、完成与取消的终态，以及同一 retry 幂等键；要求消息/Run 仅创建一次、领取只成功一次、终态只能有一个、重试只创建一个新 Attempt。若失败，请回传脱敏 traceback 和测试摘要，不发送数据库凭据。
 
+**实际结果（用户本机，2026-09-28）：** 用户在已激活的 `docucheck` 环境中显式开启测试，执行上述 pytest 命令，反馈 `1 passed in 0.92s`，随后清除了 `DOCUCHECK_RUN_MYSQL_TESTS`。这次运行覆盖测试定义的四组双连接竞争；没有运行持续压力测试。
+
 ## 范围边界与下一步
 
-真实 MySQL 并发测试尚待用户运行，因此当前只完成代码与离线验收。repository 尚未接 FastAPI、文件上传或 Celery worker；也没有 worker 租约续期、外部模型结果未知窗口的完整处理。下一小步在 MySQL 并发结果通过后再接正式 API/worker 路径。前端工作开始前先讨论设计规范和样式。
+M3-3 的代码、离线测试与一次真实 MySQL 并发测试已验收。repository 尚未接 FastAPI、文件上传或 Celery worker；也没有 worker 租约续期、外部模型结果未知窗口的完整处理。下一小步先接正式 FastAPI 会话、消息和 Run 接口，再接 worker。前端工作开始前先讨论设计规范和样式。
