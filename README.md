@@ -2,6 +2,8 @@
 
 > 最新进度（2026-09-28）：M2 八字段采购审查的离线代码链路已接通；后端 240 项测试与 `ruff check backend evals` 通过。用户执行的真实 DeepSeek 单家和三家合成包探针均为 `completed`，分别与标注一致（8/8、24/24）；三家逐家抽取、核验的轨迹未发现跨供应商引用。M2 合成开发包范围的功能验收通过，费用、完整时延及独立资料集质量仍待验收。详情见 [M2 验收记录](docs/m2-offline-acceptance-2026-09-27.md)。M3 的正式 API/worker 和 M4 前端尚未开始；前端开始前先讨论设计规范与样式。下方按日期保留历史过程记录。
 
+> M3 前审查新增了三个已离线复现的结果/来源正确性问题，另有 XLSX 容量与预算不匹配；详见 [M1/M2 审查记录](docs/m1-m2-pre-m3-audit-2026-09-28.md)。开发包探针的成功记录仍有效，正式结果 API 接线前须修复审查阻断项。
+
 > 最新协作状态（2026-09-25）：[M1 最小真实 Agent](docs/m1-acceptance-2026-09-25.md)在模拟包与内存字段范围内完成验收；真实模型连续两问通过，后端离线测试 90/90、全目录 Ruff 与依赖检查通过。正式上传、其他七字段和独立质量评测尚未完成。后续仍按[分步协作计划](docs/step-by-step-plan.md)一次做一个小步骤。任何前端工作开始前须先暂停并讨论设计规范与样式。
 
 > 2026-09-26：[M2-0 XLSX 内存分列证据修正](docs/m2-0-acceptance-2026-09-26.md)和 [M2-1 答复引用范围修正](docs/m2-1-acceptance-2026-09-26.md)已通过离线回归（当前 110 项测试）。下一小步为 M2-2 解析覆盖；M2 完整采购审查尚未完成。
@@ -24,7 +26,7 @@ DocuCheck 是一个正在开发的本地采购资料初审 Agent 工作台。目
 
 AI 协作上下文见 [CLAUDE.md](CLAUDE.md)；Codex 入口为 [AGENTS.md](AGENTS.md)。当前设计基线是 [Agent 架构 v1.0](docs/superpowers/specs/2026-09-24-agent-first-design.md)，涵盖模型、状态、工具、上下文、RAG、恢复和评测；阶段条件见 [路线图](docs/development-roadmap.md)。
 
-2026-09-24 已按 Agent 为中心重排计划。[M1 实施计划](docs/superpowers/plans/2026-09-24-agent-mvp.md)中的模拟包内存链路已完成验收；M2 离线链路与待执行的真实探针见 [最新记录](docs/m2-offline-acceptance-2026-09-27.md)。历史阶段 0/1 名称不代表新的里程碑进度。
+2026-09-24 已按 Agent 为中心重排计划。[M1 实施计划](docs/superpowers/plans/2026-09-24-agent-mvp.md)中的模拟包内存链路已完成验收；M2 离线链路与已执行的真实探针见 [验收记录](docs/m2-offline-acceptance-2026-09-27.md)。历史阶段 0/1 名称不代表新的里程碑进度。
 
 ## 当前范围
 
