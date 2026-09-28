@@ -142,6 +142,28 @@ def test_value_from_other_field_in_same_source_is_rejected() -> None:
     assert any("candidate_invalid_uncovered" in issue for issue in result.coverage_issues)
 
 
+def test_extra_other_field_candidate_does_not_poison_complete_storage() -> None:
+    repo = load_case(PACK)
+
+    class ExtraMemory(StorageCandidates):
+        def __call__(self, operation, messages, schema):
+            reply = super().__call__(operation, messages, schema)
+            batch = json.loads(messages[-1].content)["evidence"]
+            memory = next((block for block in batch if "已装内存 16 GB" in block["text"]), None)
+            if memory:
+                reply.tool_calls[0]["args"]["facts"].append({
+                    "field_key": "memory", "raw_value": "16", "raw_unit": "GB",
+                    "evidence_refs": [memory["evidence_id"]],
+                })
+            return reply
+
+    result = extract_fields(repo, "vendor-a", [FieldKey.STORAGE],
+                            ExtraMemory())[FieldKey.STORAGE]
+
+    assert result.complete
+    assert len(result.facts) == 2
+
+
 def test_repeated_same_number_with_distinct_qualifiers_needs_more_coverage() -> None:
     original = load_case(PACK)
     documents = []

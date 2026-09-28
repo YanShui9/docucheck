@@ -15,7 +15,7 @@ class RunContext:
     attempt_id: str
     model_id: str | None
     mode: str = "standard"
-    prompt_version: str = "agent-m2-v1"
+    prompt_version: str = "agent-m2-v2"
     rule_version: str = "fields-v1+memory-v1"
 
 

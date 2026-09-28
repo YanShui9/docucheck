@@ -8,6 +8,7 @@ from langgraph.graph import END, START, StateGraph
 from langsmith import tracing_context
 from pydantic import ValidationError
 
+from ..field_contract import FieldKey
 from ..providers import ProviderError
 from .answer import render_answer
 from .context import (
@@ -72,6 +73,21 @@ class AgentSession:
         if not question.strip() or len(question) > 2000:
             raise ValueError("invalid_question")
         implicit_supplier = self._implicit_supplier(question)
+        compact_question = re.sub(r"\s+", "", question)
+        matrix_suppliers = (tuple(sorted({source["supplier"] for source in self.repo.sources()
+                                          if source["supplier"]}))
+                            if ("完整审查" in compact_question
+                                and ("全部供应商" in compact_question
+                                     or "所有供应商" in compact_question)
+                                and ("八项" in compact_question
+                                     or "所有字段" in compact_question
+                                     or "全部字段" in compact_question)) else ())
+        if len(matrix_suppliers) < 2:
+            matrix_suppliers = ()
+        matrix_started = False
+        matrix_fact_sets: dict[str, list[dict]] = {}
+        matrix_attempts: dict[str, int] = {}
+        matrix_evaluated: dict[str, list[str]] = {}
         context = RunContext(self.repo.case_id, self.repo.snapshot_id, self.repo.revision,
                              self.conversation_id, uuid4().hex, uuid4().hex,
                              getattr(self.provider, "model_id", None), self.mode)
@@ -114,6 +130,27 @@ class AgentSession:
             return {"status": status, "error": code, "next_node": "end",
                     "answer": f"本次处理未完成：{code}。没有生成新的正式结论。"}
 
+        def matrix_next_call() -> tuple[str, dict] | None:
+            if not matrix_suppliers or not matrix_started:
+                return None
+            for supplier in matrix_suppliers:
+                if supplier in matrix_evaluated:
+                    continue
+                fact_sets = matrix_fact_sets.get(supplier)
+                if (fact_sets is None or
+                        (not all(item["complete"] for item in fact_sets)
+                         and matrix_attempts[supplier] < 2)):
+                    return "extract_facts", {"supplier": supplier,
+                                             "field_keys": [field.value for field in FieldKey]}
+                return "evaluate_checks", {"supplier": supplier,
+                                           "fact_set_ids": [item["fact_set_id"]
+                                                            for item in fact_sets]}
+            return "submit_answer", {"kind": "check",
+                                     "check_result_ids": [result_id
+                                                          for supplier in matrix_suppliers
+                                                          for result_id in matrix_evaluated[supplier]],
+                                     "evidence_ids": []}
+
         def decide(state: AgentState):
             try:
                 budget.decision()
@@ -126,15 +163,25 @@ class AgentSession:
                 decision_messages = [messages[0], *guidance,
                                      *([handles] if handles else []), *messages[1:]]
                 reply = model_call("decide", decision_messages, self.schemas)
+                planned = matrix_next_call()
                 if not reply.tool_calls:
-                    if state["tool_repairs"] >= 1:
-                        return {"status": "failed", "error": "one_tool_required",
-                                "next_node": "end"}
-                    return {"tool_repairs": 1, "next_node": "decide"}
+                    if planned is None:
+                        if state["tool_repairs"] >= 1:
+                            return {"status": "failed", "error": "one_tool_required",
+                                    "next_node": "end"}
+                        return {"tool_repairs": 1, "next_node": "decide"}
+                    chosen = {"id": uuid4().hex, "name": planned[0], "args": planned[1]}
+                    events[-1]["policy_override"] = planned[0]
+                else:
+                    chosen = reply.tool_calls[0]
                 if len(reply.tool_calls) > 1:
                     events[-1]["serialized_tool_calls"] = len(reply.tool_calls) - 1
+                if planned is not None and (chosen["name"], chosen["args"]) != planned:
+                    events[-1]["policy_override"] = planned[0]
+                    chosen = {"id": chosen["id"], "name": planned[0], "args": planned[1]}
+                if len(reply.tool_calls) != 1 or chosen != reply.tool_calls[0]:
                     reply = AIMessage(
-                        content=reply.content, tool_calls=[reply.tool_calls[0]],
+                        content=reply.content, tool_calls=[chosen],
                         id=reply.id, response_metadata=reply.response_metadata,
                         usage_metadata=reply.usage_metadata,
                     )
@@ -143,6 +190,7 @@ class AgentSession:
                 return stop(exc)
 
         def act(state: AgentState):
+            nonlocal matrix_started
             reply = state["messages"][-1]
             if len(reply.tool_calls) != 1:
                 return {"status": "failed", "error": "one_tool_required", "next_node": "end"}
@@ -196,6 +244,18 @@ class AgentSession:
                         raise ValueError("supplier_scope")
                 result = self.tools.execute(name, args, model_call)
                 budget.check()
+                if matrix_suppliers:
+                    if name in {"list_case_sources", "search_evidence", "read_source"}:
+                        matrix_started = True
+                    elif name == "extract_facts" and "fact_sets" in result["data"]:
+                        supplier = result["data"]["supplier"]
+                        matrix_started = True
+                        matrix_attempts[supplier] = matrix_attempts.get(supplier, 0) + 1
+                        matrix_fact_sets[supplier] = result["data"]["fact_sets"]
+                    elif name == "evaluate_checks" and "check_results" in result["data"]:
+                        supplier = result["data"]["supplier"]
+                        if len(result["data"]["check_results"]) == len(FieldKey):
+                            matrix_evaluated[supplier] = result["data"]["check_result_ids"]
                 event.update(status="completed", evidence_refs=result["evidence_refs"])
                 if name == "extract_facts" and "fact_sets" in result["data"]:
                     coverage = []

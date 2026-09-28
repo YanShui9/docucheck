@@ -18,6 +18,25 @@ from backend.tests.test_m2_full_review import SevenFieldCandidates
 from evals.m2_agent import ScriptedProvider
 
 PACK = Path(__file__).resolve().parents[2] / "examples" / "dev-pack-001"
+PACK_THREE = Path(__file__).resolve().parents[2] / "examples" / "dev-pack-003"
+
+
+class RepeatsFirstSupplier(ScriptedProvider):
+    def __init__(self):
+        super().__init__(("vendor-a", "vendor-b", "vendor-c"))
+
+    def decide(self, messages, tools, **kwargs):
+        step = self.step
+        self.step += 1
+        if step == 0:
+            name, args = "list_case_sources", {}
+        else:
+            name, args = "extract_facts", {"supplier": "vendor-a",
+                                           "field_keys": list(FieldKey)}
+        return AIMessage(content="", tool_calls=[{"id": f"repeat-{step}",
+                                                  "name": name, "args": args}],
+                         usage_metadata={"input_tokens": 150, "output_tokens": 30,
+                                         "total_tokens": 180})
 
 
 def test_agent_tools_extract_and_evaluate_storage_without_retrieval_top_k() -> None:
@@ -214,6 +233,49 @@ def test_graph_preserves_all_three_supplier_result_handles_after_compaction() ->
         "完整审查全部供应商的所有字段")
     assert result.status == "completed", (result.error, result.usage)
     assert len(re.findall(r"^vendor-[abc] · ", result.answer, re.MULTILINE)) == 24
+
+
+def test_full_matrix_guard_advances_past_repeated_extraction_decisions() -> None:
+    repo = load_case(PACK_THREE)
+    session = AgentSession(repo, RepeatsFirstSupplier(), mode="thorough")
+    result = session.ask("请完整审查全部 供应商的八项指标，并列出每家每项结果与来源")
+
+    assert result.status == "completed", (result.error, result.usage)
+    assert len(re.findall(r"^vendor-[abc] · ", result.answer, re.MULTILINE)) == 24
+    assert [event["tool"] for event in result.events if event["kind"] == "tool"] == [
+        "list_case_sources", "extract_facts", "evaluate_checks",
+        "extract_facts", "evaluate_checks", "extract_facts", "evaluate_checks",
+        "submit_answer",
+    ]
+    assert len(session.tools.results) == 24
+
+
+def test_full_matrix_guard_keeps_uncovered_field_partial_after_bounded_retry() -> None:
+    repo = load_case(PACK_THREE)
+    missing = next(block.evidence_id for block in repo.blocks
+                   if block.supplier == "vendor-b" and "标称 SSD 1 TB" in block.text)
+
+    class MissingBStorage(RepeatsFirstSupplier):
+        def extract(self, messages, schema, **kwargs):
+            reply = super().extract(messages, schema, **kwargs)
+            if schema["function"]["name"] == "FieldCandidates":
+                reply.tool_calls[0]["args"]["facts"] = [
+                    fact for fact in reply.tool_calls[0]["args"]["facts"]
+                    if missing not in fact["evidence_refs"]
+                ]
+            return reply
+
+    session = AgentSession(repo, MissingBStorage(), mode="thorough")
+    result = session.ask("请完整审查全部 供应商的八项指标")
+
+    assert result.status == "partial", (result.error, result.usage)
+    assert "vendor-b · 存储：处理未完成" in result.answer
+    assert len(re.findall(r"^vendor-[abc] · ", result.answer, re.MULTILINE)) == 24
+    b_extractions = [event for event in result.events
+                     if event.get("tool") == "extract_facts"
+                     and any(item["field_key"] == "storage" and not item["complete"]
+                             for item in event.get("field_coverage", []))]
+    assert len(b_extractions) == 2
 
 
 def test_partial_full_review_trace_records_only_safe_field_coverage_categories() -> None:

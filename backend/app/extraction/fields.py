@@ -322,8 +322,6 @@ def extract_fields(
         scanned.extend(item["evidence_id"] for item in batch)
         for candidate in candidates:
             if candidate.field_key not in generic:
-                for field in generic:
-                    issues[field].append(f"unexpected_field:{batch_number}")
                 continue
             try:
                 if not set(candidate.evidence_refs) <= current_batch_ids:
