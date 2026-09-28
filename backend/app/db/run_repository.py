@@ -251,7 +251,10 @@ class RunRepository:
     def finish(self, run_id: str, attempt_id: str, fence: int,
                snapshot_id: str, status: RunStatus,
                answer_text: str | None = None,
-               error_code: str | None = None) -> RunState:
+               error_code: str | None = None,
+               model_id: str | None = None,
+               usage_json: dict | None = None,
+               outcome_unknown: bool = False) -> RunState:
         if status not in {RunStatus.COMPLETED, RunStatus.PARTIAL,
                           RunStatus.FAILED, RunStatus.WAITING_USER}:
             raise RepositoryError("invalid_transition")
@@ -272,7 +275,9 @@ class RunRepository:
                 run_attempts.c.id == attempt_id,
                 run_attempts.c.run_id == run_id,
                 run_attempts.c.status == RunStatus.RUNNING.value,
-            ).values(status=status.value, finished_at=now))
+            ).values(status=status.value, finished_at=now,
+                     model_id=model_id, usage_json=usage_json,
+                     outcome_unknown=outcome_unknown))
             if attempt.rowcount != 1:
                 raise RepositoryError("repository_invariant")
             self._append_event(connection, run_id, attempt_id,

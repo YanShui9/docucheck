@@ -35,7 +35,11 @@ def bind_document(parsed: ParseResult, *, source_path: Path, role: str,
 
 
 class EvidenceRepository:
-    def __init__(self, case_id: str, revision: int, documents: list[Document]):
+    def __init__(self, case_id: str, revision: int, documents: list[Document],
+                 *, snapshot_id: str | None = None,
+                 scoped_blocks: tuple[ScopedEvidence, ...] | None = None):
+        if (snapshot_id is None) != (scoped_blocks is None):
+            raise ValueError("invalid_snapshot")
         if not documents or len(documents) > 7 or revision < 1:
             raise ValueError("invalid_snapshot")
         if len({d.document_id for d in documents}) != len(documents):
@@ -50,17 +54,30 @@ class EvidenceRepository:
             raise ValueError("case_page_limit")
         self.case_id, self.revision = case_id, revision
         self.documents = tuple(documents)
-        self.snapshot_id = digest([case_id, revision, [asdict(d) for d in documents]])
+        self.snapshot_id = snapshot_id or digest([case_id, revision, [asdict(d) for d in documents]])
         blocks = []
-        for document in documents:
-            for ordinal, block in enumerate(document.parsed.blocks):
-                values = asdict(block)
-                values["evidence_id"] = digest([self.snapshot_id, document.document_id,
-                                                 document.source_hash, document.parsed.parser_version,
-                                                 ordinal, values])
-                blocks.append(ScopedEvidence(**values, role=document.role, supplier=document.supplier,
-                                             model=document.model, source_hash=document.source_hash,
-                                             parser_version=document.parsed.parser_version, ordinal=ordinal))
+        if scoped_blocks is None:
+            for document in documents:
+                for ordinal, block in enumerate(document.parsed.blocks):
+                    values = asdict(block)
+                    values["evidence_id"] = digest([self.snapshot_id, document.document_id,
+                                                     document.source_hash, document.parsed.parser_version,
+                                                     ordinal, values])
+                    blocks.append(ScopedEvidence(**values, role=document.role, supplier=document.supplier,
+                                                 model=document.model, source_hash=document.source_hash,
+                                                 parser_version=document.parsed.parser_version, ordinal=ordinal))
+        else:
+            by_document = {document.document_id: document for document in documents}
+            for block in scoped_blocks:
+                document = by_document.get(block.document_id)
+                if (document is None or block.role != document.role
+                        or block.supplier != document.supplier
+                        or block.source_hash != document.source_hash
+                        or block.parser_version != document.parsed.parser_version):
+                    raise ValueError("evidence_scope")
+            blocks.extend(scoped_blocks)
+        if len({block.evidence_id for block in blocks}) != len(blocks):
+            raise ValueError("duplicate_evidence")
         self.blocks = tuple(blocks)
         self._by_id = {b.evidence_id: b for b in blocks}
 

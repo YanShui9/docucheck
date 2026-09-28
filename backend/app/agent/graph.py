@@ -37,7 +37,7 @@ SAFE_COVERAGE_TYPES = frozenset({
 class AgentSession:
     """One CLI conversation pinned to an immutable repository snapshot."""
     def __init__(self, repo, provider, *, max_decisions: int | None = None,
-                 mode: str = "standard"):
+                 mode: str = "standard", conversation_id: str | None = None):
         if mode not in MODE_LIMITS:
             raise ValueError("invalid_mode")
         if max_decisions is not None and max_decisions < 1:
@@ -49,7 +49,7 @@ class AgentSession:
         self.history = []
         self.focus: dict[str, str] | None = None
         self.pending_clarification: str | None = None
-        self.conversation_id = uuid4().hex
+        self.conversation_id = conversation_id or uuid4().hex
         self._cancelled = False
         self.schemas = tool_schemas()
 
@@ -70,7 +70,8 @@ class AgentSession:
                 return None
         return self.focus["supplier"]
 
-    def ask(self, question: str) -> RunResult:
+    def ask(self, question: str, *, run_id: str | None = None,
+            attempt_id: str | None = None) -> RunResult:
         if not question.strip() or len(question) > 2000:
             raise ValueError("invalid_question")
         implicit_supplier = self._implicit_supplier(question)
@@ -92,7 +93,8 @@ class AgentSession:
         matrix_attempts: dict[str, int] = {}
         matrix_evaluated: dict[str, list[str]] = {}
         context = RunContext(self.repo.case_id, self.repo.snapshot_id, self.repo.revision,
-                             self.conversation_id, uuid4().hex, uuid4().hex,
+                             self.conversation_id, run_id or uuid4().hex,
+                             attempt_id or uuid4().hex,
                              getattr(self.provider, "model_id", None), self.mode)
         budget = Budget(**(MODE_LIMITS[self.mode] | {"max_decisions": self.max_decisions}),
                         context_window=getattr(self.provider, "context_window", 32768),
