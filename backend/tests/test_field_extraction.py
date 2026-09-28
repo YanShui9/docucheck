@@ -6,9 +6,10 @@ from pathlib import Path
 
 import pytest
 from langchain_core.messages import AIMessage
+from openpyxl.utils.cell import get_column_letter
 
 from backend.app.evidence.repository import EvidenceRepository, load_case
-from backend.app.extraction.fields import extract_fields
+from backend.app.extraction.fields import _batches, extract_fields
 from backend.app.field_contract import FieldKey
 from backend.app.rules.fields import evaluate_field
 
@@ -232,3 +233,33 @@ def test_weight_comparator_stays_with_its_value_in_mixed_requirement(
     check = evaluate_field(repo, "vendor-a", FieldKey.WEIGHT, result.facts,
                            scan_complete=result.complete)
     assert check.business_status == expected_status
+
+
+def test_wide_xlsx_row_keeps_every_adjacent_cell_pair_in_a_batch():
+    repo = load_case(PACK)
+    source = next(block for block in repo.blocks if block.role == "quote" and block.cell)
+    row = [replace(source, evidence_id=f"{column:064x}", cell=f"{get_column_letter(column)}1",
+                   text="x", ordinal=column)
+           for column in range(1, 31)]
+
+    batches, issues = _batches(row)
+    batch_ids = [{item["evidence_id"] for item in batch} for batch in batches]
+
+    assert not issues
+    assert len(batches) >= 2
+    assert all(any({row[index].evidence_id, row[index + 1].evidence_id} <= ids
+                   for ids in batch_ids) for index in range(len(row) - 1))
+
+
+def test_wide_xlsx_row_preserves_pairs_when_cells_arrive_out_of_order():
+    repo = load_case(PACK)
+    source = next(block for block in repo.blocks if block.role == "quote" and block.cell)
+    row = [replace(source, evidence_id=f"{column:064x}", cell=f"{get_column_letter(column)}1",
+                   text="x", ordinal=column)
+           for column in range(1, 31)]
+    batches, issues = _batches(row[::2] + row[1::2])
+    batch_ids = [{item["evidence_id"] for item in batch} for batch in batches]
+
+    assert not issues
+    assert all(any({row[index].evidence_id, row[index + 1].evidence_id} <= ids
+                   for ids in batch_ids) for index in range(len(row) - 1))

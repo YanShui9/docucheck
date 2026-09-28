@@ -1,7 +1,8 @@
 """Render only verified structured results and original source quotations."""
 import re
+from dataclasses import dataclass
 
-from ..field_contract import FieldCheckResult
+from ..field_contract import FieldCheckResult, FieldKey
 from ..rules.memory import CheckResult
 from .tools import AnswerDraft, ToolExecutor
 
@@ -32,33 +33,87 @@ FIELD_QUESTIONS = {
 }
 
 
-def _answer_scope(question: str, tools: ToolExecutor, results: list,
-                  required_supplier: str | None = None) -> None:
-    if required_supplier and any(result.supplier != required_supplier for result in results):
-        raise ValueError("answer_invalid")
-    full = re.search(r"完整审查|全面审查|全部字段|所有字段|所有供应商|全部供应商|各家", question)
+@dataclass(frozen=True)
+class QuestionScope:
+    suppliers: frozenset[str] | None
+    fields: frozenset[str] | None
+    required_pairs: frozenset[tuple[str, str]] | None
+    full_review: bool
+
+
+def resolve_question_scope(question: str, tools: ToolExecutor,
+                           required_supplier: str | None = None) -> QuestionScope:
+    compact = re.sub(r"\s+", "", question)
+    all_suppliers = {source["supplier"] for source in tools.repo.sources()
+                     if source["supplier"]}
+    all_supplier_request = re.search(r"所有供应商|全部供应商|各家|每家", compact)
+    all_field_request = re.search(
+        r"八项指标|八项结果|全部八项|所有八项|全部字段|所有字段|各项指标|全部指标|所有指标",
+        compact,
+    )
+    review_intent = re.search(r"审查|核对|核验|评估|比较|对比|达标|满足|结果|结论", compact)
+    source_intent = re.search(r"原文|来源|证据|资料|文件", compact)
+    full = bool(re.search(r"完整审查|全面审查", compact)
+                or (all_field_request and review_intent)
+                or (all_supplier_request and review_intent and not source_intent))
     requested_fields = {field for field, pattern in FIELD_QUESTIONS.items()
-                        if re.search(pattern, question, re.IGNORECASE)}
+                        if re.search(pattern, compact, re.IGNORECASE)}
+    if all_field_request or (full and not requested_fields):
+        requested_fields = {field.value for field in FieldKey}
     requested_suppliers = set()
-    for source in tools.repo.sources():
-        supplier = source["supplier"]
-        if not supplier:
-            continue
+    aliases = {alias.casefold() for group in re.findall(
+        r"供应商([A-Za-z](?:(?:、|,|，|和|及|与)[A-Za-z])*)(?![A-Za-z0-9])",
+        compact, re.IGNORECASE,
+    ) for alias in re.split(r"[、,，和及与]", group)}
+    for group in re.findall(
+        r"(?<![A-Za-z])([A-Za-z](?:(?:、|,|，|和|及|与)[A-Za-z])+)(?![A-Za-z])",
+        compact, re.IGNORECASE,
+    ):
+        aliases.update(alias.casefold() for alias in re.split(r"[、,，和及与]", group))
+    aliases.update(alias.casefold() for alias in re.findall(
+        r"(?<![A-Za-z])([A-Za-z])的(?:报价|资料|来源|原文|证据|内存|存储|屏幕|重量|质保|数量|单价|交付)",
+        compact, re.IGNORECASE,
+    ))
+    for supplier in all_suppliers:
         suffix = supplier.rsplit("-", 1)[-1]
-        if (supplier.casefold() in question.casefold()
+        if (re.search(rf"(?<![A-Za-z0-9_-]){re.escape(supplier)}(?![A-Za-z0-9_-])",
+                      compact, re.IGNORECASE)
                 or (len(suffix) == 1 and suffix.isalpha()
-                    and re.search(rf"供应商\s*{re.escape(suffix)}", question, re.IGNORECASE))):
+                    and suffix.casefold() in aliases)):
             requested_suppliers.add(supplier)
-    if requested_suppliers and any(result.supplier not in requested_suppliers
-                                   for result in results):
+    if all_supplier_request:
+        requested_suppliers = all_suppliers
+    elif required_supplier and not requested_suppliers:
+        requested_suppliers.add(required_supplier)
+    elif full and not requested_suppliers and len(all_suppliers) == 1:
+        requested_suppliers = all_suppliers
+    suppliers = frozenset(requested_suppliers) if requested_suppliers else None
+    fields = frozenset(requested_fields) if requested_fields else None
+    pairs = (frozenset((supplier, field) for supplier in suppliers for field in fields)
+             if suppliers and fields else None)
+    return QuestionScope(suppliers, fields, pairs, full)
+
+
+def _answer_scope(question: str, tools: ToolExecutor, results: list,
+                  required_supplier: str | None = None) -> QuestionScope:
+    scope = resolve_question_scope(question, tools, required_supplier)
+    if scope.suppliers and any(result.supplier not in scope.suppliers for result in results):
         raise ValueError("answer_invalid")
-    if requested_fields and any(str(result.field_key) not in requested_fields
-                                for result in results):
+    if scope.fields and any(str(result.field_key) not in scope.fields for result in results):
         raise ValueError("answer_invalid")
-    if not full and len({result.supplier for result in results}) > 1:
+    if scope.full_review and scope.required_pairs is None:
         raise ValueError("answer_invalid")
-    if not full and not requested_fields and len({result.field_key for result in results}) > 1:
+    if scope.full_review and not results:
         raise ValueError("answer_invalid")
+    if results and scope.required_pairs is not None and {
+        (result.supplier, str(result.field_key)) for result in results
+    } != scope.required_pairs:
+        raise ValueError("answer_invalid")
+    if not scope.full_review and not scope.suppliers and len({result.supplier for result in results}) > 1:
+        raise ValueError("answer_invalid")
+    if not scope.full_review and not scope.fields and len({result.field_key for result in results}) > 1:
+        raise ValueError("answer_invalid")
+    return scope
 
 
 def render_answer(draft: AnswerDraft, tools: ToolExecutor, question: str,
@@ -81,7 +136,7 @@ def render_answer(draft: AnswerDraft, tools: ToolExecutor, question: str,
         raise ValueError("answer_invalid")
     if len({(result.supplier, result.field_key) for result in results}) != len(results):
         raise ValueError("answer_invalid")
-    _answer_scope(question, tools, results, required_supplier)
+    scope = _answer_scope(question, tools, results, required_supplier)
     lines: list[str] = []
     refs: list[str] = []
     result_refs: set[str] = set()
@@ -113,7 +168,13 @@ def render_answer(draft: AnswerDraft, tools: ToolExecutor, question: str,
     refs = list(dict.fromkeys(refs))
     if (not refs and not draft.check_result_ids) or not set(refs) <= tools.seen:
         raise ValueError("answer_invalid")
-    for block in tools.repo.read(refs):
+    source_blocks = tools.repo.read(refs)
+    if (not results and scope.suppliers and len(scope.suppliers) > 1
+            and {block.supplier for block in source_blocks if block.supplier} != scope.suppliers):
+        raise ValueError("answer_invalid")
+    for block in source_blocks:
+        if scope.suppliers and block.supplier not in (None, *scope.suppliers):
+            raise ValueError("answer_invalid")
         location = f"第 {block.page_idx + 1} 页" if block.page_idx is not None else f"{block.sheet}!{block.cell}"
         # Quotes are explicitly delimited, never interpreted as executable content.
         text = block.text[:1000]

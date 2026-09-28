@@ -135,7 +135,13 @@ def main(argv: list[str] | None = None) -> int:
     else:
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(payload, encoding="utf-8")
-    return 0
+    recall = report["retrieval"]["recall_at_12"]
+    scope = report["retrieval"]["supplier_scope"]
+    passed = (recall["numerator"] == recall["denominator"]
+              and scope["numerator"] == scope["denominator"]
+              and all(score["numerator"] == score["denominator"]
+                      for score in report["guardrails"].values()))
+    return 0 if passed else 1
 
 
 if __name__ == "__main__":

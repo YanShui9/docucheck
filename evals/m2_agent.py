@@ -8,6 +8,7 @@ from pathlib import Path
 
 from langchain_core.messages import AIMessage
 
+from backend.app.agent.answer import FIELD_NAMES
 from backend.app.agent.graph import AgentSession
 from backend.app.evidence.repository import load_case
 from backend.app.field_contract import FieldKey
@@ -102,6 +103,17 @@ class ScriptedProvider:
         return _call("FieldCandidates", {"facts": facts}, self.extract_calls)
 
 
+def _visible_statuses(answer: str, suppliers: tuple[str, ...]) -> dict[tuple[str, str], list[str]]:
+    names = {label: field for field, label in FIELD_NAMES.items()}
+    visible: dict[tuple[str, str], list[str]] = {}
+    for line in answer.splitlines():
+        match = re.match(r"^(.+?) · (.+?)：(.+?)。", line)
+        if not match or match[1] not in suppliers or match[2] not in names:
+            continue
+        visible.setdefault((match[1], names[match[2]]), []).append(match[3])
+    return visible
+
+
 def evaluate() -> dict:
     expected = json.loads(LABELS.read_text(encoding="utf-8"))["expected_status_by_supplier"]
     scenarios = []
@@ -118,8 +130,9 @@ def evaluate() -> dict:
         elapsed_ms = round((time.monotonic() - started) * 1000, 2)
         checked = {(result.supplier, str(result.field_key)): result
                    for result in session.tools.results.values()}
-        correct = sum(result.business_status == expected[supplier][field]
-                      for (supplier, field), result in checked.items())
+        visible = _visible_statuses(run.answer, suppliers)
+        correct = sum(visible.get((supplier, field.value)) == [expected[supplier][field.value]]
+                      for supplier in suppliers for field in FieldKey)
         expected_cells = len(suppliers) * len(FieldKey)
         reference_checks = [(result.supplier, ref) for result in checked.values()
                             for ref in result.evidence_refs]
@@ -127,7 +140,12 @@ def evaluate() -> dict:
         for supplier, ref in reference_checks:
             try:
                 block = repo.read([ref])[0]
-                citation_errors += block.supplier not in (None, supplier)
+                location = (f"第 {block.page_idx + 1} 页" if block.page_idx is not None
+                            else f"{block.sheet}!{block.cell}")
+                visible_source = (f"来源：{block.document_id} · {location}\n"
+                                  f"原文：{block.text[:1000]}")
+                citation_errors += (block.supplier not in (None, supplier)
+                                    or visible_source not in run.answer)
             except ValueError:
                 citation_errors += 1
         scenarios.append({
@@ -138,6 +156,8 @@ def evaluate() -> dict:
                                                   and citation_errors == 0),
                                    "denominator": 1},
             "status_accuracy": {"numerator": correct, "denominator": expected_cells},
+            "visible_result_cells": sum(len(values) for values in visible.values()),
+            "internal_checked_cells": len(checked),
             "citation_errors": {"numerator": citation_errors,
                                 "denominator": len(reference_checks)},
             "scripted_model_calls": run.usage["model_calls"],
@@ -161,13 +181,20 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path)
     args = parser.parse_args(argv)
-    payload = json.dumps(evaluate(), ensure_ascii=False, indent=2) + "\n"
+    report = evaluate()
+    payload = json.dumps(report, ensure_ascii=False, indent=2) + "\n"
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(payload, encoding="utf-8")
     else:
         print(payload, end="")
-    return 0
+    passed = (report["agent_task_success"]["numerator"] ==
+              report["agent_task_success"]["denominator"]
+              and report["status_accuracy"]["numerator"] ==
+              report["status_accuracy"]["denominator"]
+              and all(item["citation_errors"]["numerator"] == 0
+                      for item in report["scenarios"]))
+    return 0 if passed else 1
 
 
 if __name__ == "__main__":

@@ -10,7 +10,8 @@ from pydantic import ValidationError
 
 from ..field_contract import FieldKey
 from ..providers import ProviderError
-from .answer import render_answer
+from .answer import render_answer, resolve_question_scope
+from .capacity import review_capacity
 from .context import (
     assemble,
     compact_observation,
@@ -73,6 +74,8 @@ class AgentSession:
         if not question.strip() or len(question) > 2000:
             raise ValueError("invalid_question")
         implicit_supplier = self._implicit_supplier(question)
+        question_scope = resolve_question_scope(question, self.tools, implicit_supplier)
+        allowed_suppliers = question_scope.suppliers
         compact_question = re.sub(r"\s+", "", question)
         matrix_suppliers = (tuple(sorted({source["supplier"] for source in self.repo.sources()
                                           if source["supplier"]}))
@@ -94,6 +97,16 @@ class AgentSession:
         budget = Budget(**(MODE_LIMITS[self.mode] | {"max_decisions": self.max_decisions}),
                         context_window=getattr(self.provider, "context_window", 32768),
                         cancelled=lambda: self._cancelled)
+        capacity = review_capacity(self.repo, question_scope,
+                                   max_calls=budget.max_calls,
+                                   max_decisions=budget.max_decisions)
+        if capacity is not None:
+            batch_count, minimum_calls = capacity
+            answer = (f"本次完整审查预计至少需要 {batch_count} 个全量抽取批次、"
+                      f"{minimum_calls} 次模型调用，超过当前模式预算或存在超大证据组。"
+                      "请缩小资料或拆分审查；没有生成正式结论。")
+            return RunResult(context, "partial", answer, "review_capacity",
+                             budget.summary(), ())
         events = []
 
         def model_call(operation, messages, schema):
@@ -231,18 +244,28 @@ class AgentSession:
                     event.update(status="completed")
                     self.pending_clarification = clarification.question
                     return {"answer": clarification.question, "status": "waiting_user", "next_node": "end"}
-                if implicit_supplier:
-                    if name == "search_evidence":
-                        args = {**args, "supplier": args.get("supplier") or implicit_supplier}
+                if allowed_suppliers:
+                    if (name == "search_evidence" and args.get("supplier") is None
+                            and len(allowed_suppliers) == 1):
+                        args = {**args, "supplier": next(iter(allowed_suppliers))}
                     if name in {"search_evidence", "extract_facts", "evaluate_checks",
-                                "get_check_results"} and args.get("supplier") != implicit_supplier:
+                                "get_check_results"} and args.get("supplier") not in allowed_suppliers:
                         raise ValueError("supplier_scope")
                     if name == "read_source" and any(
-                        block.supplier not in (None, implicit_supplier)
+                        block.supplier is not None and block.supplier not in allowed_suppliers
                         for block in self.repo.read(args.get("evidence_ids", []))
                     ):
                         raise ValueError("supplier_scope")
                 result = self.tools.execute(name, args, model_call)
+                if allowed_suppliers and any(
+                    block.supplier is not None and block.supplier not in allowed_suppliers
+                    for block in self.repo.read(result["evidence_refs"])
+                ):
+                    raise ValueError("supplier_scope")
+                if name == "list_case_sources" and allowed_suppliers:
+                    result["data"] = [source for source in result["data"]
+                                      if source["supplier"] is None
+                                      or source["supplier"] in allowed_suppliers]
                 budget.check()
                 if matrix_suppliers:
                     if name in {"list_case_sources", "search_evidence", "read_source"}:

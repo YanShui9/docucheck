@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from evals.m2_development import evaluate_dataset, score_recall_at_12
+from evals.m2_development import evaluate_dataset, main, score_recall_at_12
 
 DATASET = Path(__file__).resolve().parents[2] / "evals" / "cases" / "lexical-001.json"
 
@@ -59,3 +59,15 @@ def test_gold_annotations_do_not_change_input_snapshot(tmp_path: Path) -> None:
     revised = evaluate_dataset(changed_gold)
     assert original["snapshot_id"] == revised["snapshot_id"]
     assert original["retrieval"]["queries"][0]["hit_count"] == revised["retrieval"]["queries"][0]["hit_count"]
+
+
+def test_development_command_returns_failure_when_recall_drops(
+    tmp_path: Path, capsys,
+) -> None:
+    source = json.loads(DATASET.read_text(encoding="utf-8"))
+    source["queries"][0]["query"] = "a-term-that-cannot-match-any-source-xyz"
+    changed = tmp_path / "lower-recall.json"
+    changed.write_text(json.dumps(source), encoding="utf-8")
+
+    assert main(["--dataset", str(changed)]) == 1
+    capsys.readouterr()

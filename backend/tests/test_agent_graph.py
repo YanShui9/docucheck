@@ -113,7 +113,7 @@ def test_parallel_decision_calls_are_serialized_into_one_observed_tool() -> None
             assert json.loads(messages[-1].content)["deferred_tool_calls"] == 2
             return call("request_clarification", {"question": "请确认后续范围。"}, usage=True)
 
-    result = module.AgentSession(load_case(PACK_THREE), Parallel()).ask("审查所有供应商")
+    result = module.AgentSession(load_case(PACK_THREE), Parallel()).ask("查看所有供应商资料")
 
     assert result.status == "waiting_user"
     assert [event.get("tool") for event in result.events if event["kind"] == "tool"] == [
@@ -169,6 +169,32 @@ def test_foreign_evidence_is_rejected_without_returning_content():
     result = module.AgentSession(load_case(PACK), Foreign()).ask("查看资料")
     assert result.status == "failed"
     assert result.error == "evidence_scope"
+
+
+def test_named_supplier_question_cannot_read_other_supplier_source():
+    module = import_module("backend.app.agent.graph")
+    repo = load_case(PACK_THREE)
+    foreign = next(block for block in repo.blocks
+                   if block.supplier == "vendor-b" and block.role == "quote"
+                   and block.cell == "B6")
+
+    class WrongSupplier(ScenarioProvider):
+        def decide(self, messages, tools, **kwargs):
+            return call("read_source", {"evidence_ids": [foreign.evidence_id]}, usage=True)
+
+    result = module.AgentSession(repo, WrongSupplier()).ask("供应商 A 的报价原文是什么？")
+    assert result.status == "failed"
+    assert result.error == "supplier_scope"
+    assert foreign.text not in result.answer
+
+
+def test_full_review_cannot_complete_from_only_memory_check():
+    module = import_module("backend.app.agent.graph")
+    result = module.AgentSession(load_case(PACK), ScenarioProvider(),
+                                 mode="thorough").ask("请完整审查供应商 A 的八项指标")
+    assert result.status != "completed"
+    assert any(event.get("tool") == "submit_answer" and event["status"] != "completed"
+               for event in result.events)
 
 
 def test_cancel_and_clarification_terminate():

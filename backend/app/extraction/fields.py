@@ -99,7 +99,11 @@ def _groups(blocks: list) -> list[list]:
         else:
             key = (block.evidence_id,)
         groups.setdefault(key, []).append(block)
-    return list(groups.values())
+    ordered = list(groups.values())
+    for group in ordered:
+        if group[0].cell and group[0].sheet:
+            group.sort(key=lambda block: coordinate_to_tuple(block.cell)[1])
+    return ordered
 
 
 def _batches(blocks: list) -> tuple[list[list[dict]], list[str]]:
@@ -107,19 +111,41 @@ def _batches(blocks: list) -> tuple[list[list[dict]], list[str]]:
     issues: list[str] = []
     current: list[dict] = []
     size = 0
+    def byte_size(payload: list[dict]) -> int:
+        return len(json.dumps(payload, ensure_ascii=False).encode("utf-8"))
+
     for group in _groups(blocks):
         payload = [{"evidence_id": block.evidence_id, "text": block.text,
                     "document_id": block.document_id, "role": block.role,
                     "sheet": block.sheet, "cell": block.cell} for block in group]
-        length = len(json.dumps(payload, ensure_ascii=False).encode("utf-8"))
-        if length > MAX_BATCH_BYTES:
-            issues.append(f"batch_too_large:{group[0].document_id}:{group[0].ordinal}")
-            continue
-        if current and size + length > MAX_BATCH_BYTES:
-            batches.append(current)
-            current, size = [], 0
-        current.extend(payload)
-        size += length
+        parts = [payload]
+        if byte_size(payload) > MAX_BATCH_BYTES and group[0].cell:
+            parts = []
+            part: list[dict] = []
+            for item in payload:
+                if byte_size([*part, item]) <= MAX_BATCH_BYTES:
+                    part.append(item)
+                    continue
+                if part:
+                    parts.append(part)
+                overlap = [part[-1], item] if part else [item]
+                if byte_size(overlap) > MAX_BATCH_BYTES:
+                    issues.append(f"batch_too_large:{group[0].document_id}:{group[0].ordinal}")
+                    part = [item] if byte_size([item]) <= MAX_BATCH_BYTES else []
+                else:
+                    part = overlap
+            if part:
+                parts.append(part)
+        for part in parts:
+            length = byte_size(part)
+            if length > MAX_BATCH_BYTES:
+                issues.append(f"batch_too_large:{group[0].document_id}:{group[0].ordinal}")
+                continue
+            if current and size + length > MAX_BATCH_BYTES:
+                batches.append(current)
+                current, size = [], 0
+            current.extend(part)
+            size += length
     if current:
         batches.append(current)
     return batches, issues
