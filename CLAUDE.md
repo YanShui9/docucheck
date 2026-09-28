@@ -12,7 +12,7 @@
 
 > **M3 第三小步（2026-09-28，验收完成）**：已加入 Run repository 的提交事务、新问题与 retry/resume 同键幂等、条件领取/完成/取消/重试/恢复及 Case 版本检查；离线后端 **293 passed, 1 skipped**，Ruff、`pip check` 通过。用户显式启用的真实 MySQL 并发测试另得 **1 passed**；详见 [M3-3 验收记录](docs/m3-3-run-repository-2026-09-28.md)。正式 API、worker 租约及前端尚未接线。
 
-> **M3 第四小步（2026-09-28，离线完成、MySQL HTTP 待验）**：新增本地 FastAPI Case/会话/消息/Run/事件入口及取消、重试接口；空 Case 没有上传快照时拒绝提交。后端 **296 passed, 2 skipped**，Ruff、`pip check` 通过；其中一项跳过的是待用户运行的 [M3-4 真实 MySQL HTTP 验收](docs/m3-4-api-entry-2026-09-28.md)。上传、Agent worker、认证和前端未接入。
+> **M3 第四小步（2026-09-28，范围内验收完成）**：新增本地 FastAPI Case/会话/消息/Run/事件入口及取消、重试接口；空 Case 没有上传快照时拒绝提交。离线后端 **296 passed, 2 skipped**，Ruff、`pip check` 通过；用户显式运行的 [M3-4 真实 MySQL API 测试](docs/m3-4-api-entry-2026-09-28.md)另得 **1 passed**。该测试在进程内调用 HTTP 路由，尚未验收网络服务启动；上传、Agent worker、认证和前端未接入。
 
 ## 最新协作约定（2026-09-25，优先执行）
 
