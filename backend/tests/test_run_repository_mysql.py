@@ -3,14 +3,14 @@
 import os
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from threading import Barrier
 from uuid import uuid4
 
 import pytest
 from dotenv import dotenv_values
-from sqlalchemy import create_engine, delete, insert, select
+from sqlalchemy import create_engine, delete, insert, select, update
 from sqlalchemy.engine import URL
 
 from backend.app.db.models import (
@@ -24,6 +24,7 @@ from backend.app.db.models import (
     run_attempts,
     run_events,
 )
+from backend.app.db.outbox_repository import OutboxRepository
 from backend.app.db.run_repository import RepositoryError, RunRepository, SubmitRun
 from backend.app.runtime.lifecycle import RunState, RunStatus
 
@@ -157,3 +158,35 @@ def test_mysql_idempotency_claim_and_terminal_races(mysql_repository):
     with repository.engine.connect() as connection:
         assert len(connection.scalars(select(run_attempts.c.id).where(
             run_attempts.c.run_id == retry_run.run_id)).all()) == 2
+
+
+def test_mysql_outbox_claim_skips_locked_row(mysql_repository):
+    repository, (case_id, snapshot_id, conversation_id) = mysql_repository
+    first = repository.submit(SubmitRun(
+        case_id=case_id, conversation_id=conversation_id,
+        snapshot_id=snapshot_id, expected_revision=1,
+        content="审查 A", mode="standard", idempotency_key="outbox-first",
+    ))
+    second = repository.submit(SubmitRun(
+        case_id=case_id, conversation_id=conversation_id,
+        snapshot_id=snapshot_id, expected_revision=1,
+        content="审查 B", mode="standard", idempotency_key="outbox-second",
+    ))
+    event_type = f"test.{uuid4().hex[:16]}"
+    with repository.engine.begin() as connection:
+        connection.execute(update(outbox).where(
+            outbox.c.run_id.in_((first.run_id, second.run_id)),
+        ).values(event_type=event_type))
+    now = datetime.now(UTC).replace(tzinfo=None) + timedelta(seconds=1)
+    with repository.engine.connect() as locked_connection, locked_connection.begin():
+        locked = locked_connection.scalar(select(outbox.c.id).where(
+            outbox.c.run_id == first.run_id).with_for_update())
+        claims = OutboxRepository(repository.engine).claim(
+            limit=2, event_type=event_type, now=now)
+        assert len(claims) == 1
+        assert claims[0].run_id == second.run_id
+        assert claims[0].id != locked
+    remaining = OutboxRepository(repository.engine).claim(
+        limit=2, event_type=event_type, now=now)
+    assert len(remaining) == 1
+    assert remaining[0].run_id == first.run_id

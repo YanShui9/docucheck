@@ -18,6 +18,8 @@
 
 > M3 第七小步的 [持久化证据驱动单次 Agent Run](docs/m3-7-persisted-agent-run-2026-09-28.md)已完成单文件来源问答范围内验收：正式上传快照的证据 ID 和来源进入 LangGraph Agent，Run 通过 attempt/fence 保存答复、用量和结果未知标志。后端 **323 passed, 5 skipped**、Ruff 通过；真实 MySQL 集成测试 **1 passed**。本机网络 API 上传及解析报价文件后，真实 `deepseek-flash` Run 为 `completed`，正确引用 `报价!B6` 的 `16 GB`。首次答复仅显示文档 ID 的问题已修正并离线验证，旧 Run 答复不变。Celery、连续追问恢复和前端尚未接入。
 
+> M3 第八小步 A 的 [Outbox 领取与过期恢复](docs/m3-8a-outbox-claims-2026-09-28.md)已完成范围内验收：可领取待发 Run 事件、租约到期重领、拒绝旧领取者确认，MySQL 并发锁竞争定向测试 **1 passed**；后端离线 **326 passed, 6 skipped**。尚未发布 Redis 或接通 Celery worker；本步未运行 Docker、模型和前端。
+
 > 最新协作状态（2026-09-25）：[M1 最小真实 Agent](docs/m1-acceptance-2026-09-25.md)在模拟包与内存字段范围内完成验收；真实模型连续两问通过，后端离线测试 90/90、全目录 Ruff 与依赖检查通过。正式上传、其他七字段和独立质量评测尚未完成。后续仍按[分步协作计划](docs/step-by-step-plan.md)一次做一个小步骤。任何前端工作开始前须先暂停并讨论设计规范与样式。
 
 > 2026-09-26：[M2-0 XLSX 内存分列证据修正](docs/m2-0-acceptance-2026-09-26.md)和 [M2-1 答复引用范围修正](docs/m2-1-acceptance-2026-09-26.md)已通过离线回归（当前 110 项测试）。下一小步为 M2-2 解析覆盖；M2 完整采购审查尚未完成。
@@ -93,4 +95,4 @@ Compose 启动 MySQL 8.4、Redis 7.4 和 Linux Celery worker。MySQL 仅映射�
 
 停止服务可运行 `docker compose stop`；此命令保留数据库卷。
 
-当前已有 Case/会话/Run、后端上传的首批 API 和数据库迁移；上传原件仍为 `pending`，实际处理任务与前端尚未实现。
+当前已有 Case/会话/Run、上传及证据读取 API 和数据库迁移；上传后可显式运行解析 CLI，Run 可显式执行。Outbox 领取已实现，Redis 发布与 Celery 自动执行尚未接通；前端尚未实现。
