@@ -10,7 +10,9 @@
 
 > **M3-7 历史节点（2026-09-28）**：[持久化证据驱动单次 Agent Run](m3-7-persisted-agent-run-2026-09-28.md)已完成单文件来源问答范围内验收（当时离线后端 **323 passed, 5 skipped**；真实 MySQL 脚本化 Provider 测试 **1 passed**；本机网络 API、上传解析及真实 `deepseek-flash` 单次问答 `completed`，定位 `报价!B6` 的 `16 GB`）。来源文件名显示修正已离线验证，旧 Run 仍保存原答复。后续进度见下方 M3-8a。M3 整体未完成；前端开始前先讨论规范与样式。
 
-> **M3-8a 当前进度（2026-09-28）**：[Outbox 领取与过期恢复](m3-8a-outbox-claims-2026-09-28.md)已实现数据库领取、确认、退回与租约过期重领；离线后端 **326 passed, 6 skipped**，真实 MySQL `SKIP LOCKED` 定向测试 **1 passed**。下一小步为 Redis 发布器与 Celery Run 任务，需单独验证重复投递和崩溃恢复；本步未启动 Docker 或调用模型。M3 整体未完成，前端仍在设计讨论暂停点。
+> **M3-8a 历史节点（2026-09-28）**：[Outbox 领取与过期恢复](m3-8a-outbox-claims-2026-09-28.md)已实现数据库领取、确认、退回与租约过期重领；当时离线后端 **326 passed, 6 skipped**，真实 MySQL `SKIP LOCKED` 定向测试 **1 passed**。该步未启动 Docker 或调用模型；后续进度见下方 M3-8b。
+
+> **M3-8b 当前进度（2026-09-28）**：[Outbox 发布与 Celery Run 任务](m3-8b-outbox-celery-2026-09-28.md)完成短事务外发布、发送失败重试、过期/重复 attempt 保护和 Linux worker 接线。离线后端 **341 passed, 7 skipped**，真实 MySQL/Redis/Celery 空快照闭环 **1 passed**，没有调用模型；容器 worker 健康，dispatcher 已运行。M3-8c 须解决 worker 强杀后 `running` 状态回收与 Redis 丢消息对账。M3 整体未完成，前端仍在设计讨论暂停点。
 
 > **M3 第一小步（2026-09-28，历史进度）**：按[运行生命周期计划](superpowers/plans/2026-09-28-m3-run-lifecycle.md)新增不可变 Run 状态及 attempt/fence/快照归属规则；当时定向 6 项、后端合计 **275 项测试**和 Ruff 通过。数据库原子更新仍未实现；这一小步未运行 Docker 或模型 API。
 
@@ -47,7 +49,7 @@
 - 已有：Git、Conda Python 3.12、模拟 PDF/XLSX 与标注、MinerU 开发验证、MySQL/Redis/Linux worker 健康检查、基础解析代码。
 - 历史开发样例结果：三文件生成 35 个证据块，16/16 标注位置可定位，8 项测试通过。详情见 [环境记录](environment/2026-09-24.md)。本次文档修订未重新执行业务测试。
 - M1 模拟包范围已验收：Agent 循环与 CLI 已通过离线测试和一次完整的真实模型两轮运行。内存候选事实抽取、证据验证及规则引擎已有离线定向验证，用户亦运行真实三批模拟资料抽取；模拟包 `RAM` 词法检索找回三处内存来源 3/3。八字段、真实采购文档和正式质量目标尚未验收。
-- M2 合成资料离线链路已具备八字段与三供应商审查；词法开发集 17/17，脚本化 Agent 2/2、32/32。用户执行的真实 DeepSeek 单家、三家探针分别完成 8/8、24/24 项合成标注核对。数据库首版迁移与 Run repository 已验收，首批会话/消息/Run API 和后端上传/快照完成离线验证；正式解析入库、Agent worker 与前端未实现。复杂 PDF/XLSX 结构、Linux worker 正式任务接线、跨平台依赖复现、费用与完整时延测量和独立封存集质量测量仍是限制。
+- M2 合成资料离线链路已具备八字段与三供应商审查；词法开发集 17/17，脚本化 Agent 2/2、32/32。用户执行的真实 DeepSeek 单家、三家探针分别完成 8/8、24/24 项合成标注核对。M3 已实现首批会话/消息/Run API、上传快照、正式解析入库和 Linux worker 单次 Run 自动执行；后台解析、强杀恢复、跨进程多轮状态与前端未实现。复杂 PDF/XLSX 结构、费用与完整时延测量和独立封存集质量测量仍是限制。
 
 ## 新的里程碑
 

@@ -263,6 +263,69 @@ def test_submitted_run_uses_persisted_ids_and_finishes(uploaded_case):
     assert provider.calls == 3
 
 
+def test_worker_execution_ignores_duplicate_without_second_model_call(uploaded_case):
+    from backend.app.db.worker_runner import execute_queued_run
+
+    client, engine, storage, case_id, uploaded = uploaded_case
+    DocumentIngestion(engine, storage).process_document(
+        case_id, uploaded["snapshot_id"], uploaded["document_id"])
+    with engine.connect() as connection:
+        evidence_id = connection.scalar(select(evidence_blocks.c.id).where(
+            evidence_blocks.c.document_version_id == uploaded["document_id"],
+            evidence_blocks.c.cell == "B6",
+        ))
+    submitted, _ = _submit_question(client, case_id)
+    provider = SourceProvider(evidence_id)
+    created = []
+
+    def provider_factory():
+        created.append(True)
+        return provider
+
+    first = execute_queued_run(engine, submitted["run_id"],
+                               submitted["attempt_id"], provider_factory)
+    second = execute_queued_run(engine, submitted["run_id"],
+                                submitted["attempt_id"], provider_factory)
+    assert first.status == "completed" and first.model_calls == 3
+    assert second.status == "ignored" and second.error_code == "stale_attempt"
+    assert created == [True] and provider.calls == 3
+
+
+def test_worker_provider_configuration_error_is_persisted(uploaded_case):
+    from backend.app.db.worker_runner import execute_queued_run
+
+    client, engine, _, case_id, _ = uploaded_case
+    submitted, _ = _submit_question(client, case_id)
+
+    def unconfigured():
+        raise ProviderError("configuration_error")
+
+    report = execute_queued_run(engine, submitted["run_id"],
+                                submitted["attempt_id"], unconfigured)
+    assert report.status == "failed" and report.error_code == "configuration_error"
+    persisted = client.get(f"/api/v1/agent-runs/{submitted['run_id']}").json()
+    assert persisted["status"] == "failed"
+    assert persisted["error_code"] == "configuration_error"
+
+
+def test_worker_unexpected_provider_setup_error_does_not_leave_queued_run(uploaded_case):
+    from backend.app.db.worker_runner import execute_queued_run
+
+    client, engine, _, case_id, _ = uploaded_case
+    submitted, _ = _submit_question(client, case_id)
+
+    def broken_factory():
+        raise RuntimeError("private setup detail")
+
+    report = execute_queued_run(engine, submitted["run_id"],
+                                submitted["attempt_id"], broken_factory)
+    assert report.status == "failed"
+    assert report.error_code == "worker_setup_failed"
+    persisted = client.get(f"/api/v1/agent-runs/{submitted['run_id']}").json()
+    assert persisted["status"] == "failed"
+    assert "private" not in str(persisted)
+
+
 def test_unparsed_snapshot_ends_partial_without_model_call(uploaded_case):
     from backend.app.db.run_executor import execute_run
 

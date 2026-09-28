@@ -20,6 +20,8 @@
 
 > M3 第八小步 A 的 [Outbox 领取与过期恢复](docs/m3-8a-outbox-claims-2026-09-28.md)已完成范围内验收：可领取待发 Run 事件、租约到期重领、拒绝旧领取者确认，MySQL 并发锁竞争定向测试 **1 passed**；后端离线 **326 passed, 6 skipped**。尚未发布 Redis 或接通 Celery worker；本步未运行 Docker、模型和前端。
 
+> M3 第八小步 B 的 [Outbox 发布与 Celery Run 任务](docs/m3-8b-outbox-celery-2026-09-28.md)已通过本机闭环：后端离线 **341 passed, 7 skipped**，真实 MySQL/Redis/Linux Celery 空快照测试 **1 passed**、`model_calls=0`，worker 健康。自动派发已启动；新提交且资料就绪的 Run 将使用配置的模型。强杀 worker 后的 `running` 回收和 Redis 丢消息对账仍待 M3-8c；前端未开始。
+
 > 最新协作状态（2026-09-25）：[M1 最小真实 Agent](docs/m1-acceptance-2026-09-25.md)在模拟包与内存字段范围内完成验收；真实模型连续两问通过，后端离线测试 90/90、全目录 Ruff 与依赖检查通过。正式上传、其他七字段和独立质量评测尚未完成。后续仍按[分步协作计划](docs/step-by-step-plan.md)一次做一个小步骤。任何前端工作开始前须先暂停并讨论设计规范与样式。
 
 > 2026-09-26：[M2-0 XLSX 内存分列证据修正](docs/m2-0-acceptance-2026-09-26.md)和 [M2-1 答复引用范围修正](docs/m2-1-acceptance-2026-09-26.md)已通过离线回归（当前 110 项测试）。下一小步为 M2-2 解析覆盖；M2 完整采购审查尚未完成。
@@ -38,7 +40,7 @@
 
 > 2026-09-27：[M2-2g XLSX 隐藏行列覆盖检查](docs/m2-2g-xlsx-hidden-rows-columns-2026-09-27.md)已通过离线回归（当前 144 项测试）。隐藏与零尺寸行列不再仅凭已读单元格判为完整。下一小步拟检查隐藏工作表；M2-2 尚未验收。
 
-DocuCheck 是一个正在开发的本地采购资料初审 Agent 工作台。目标交互是上传资料后提问，由单 Agent 调用受控工具并返回带来源的答复；八字段正式结论由规则引擎计算。现有资产包括基础环境、单家与三家模拟文档、PDF/XLSX 解析、快照证据、词法检索、DeepSeek Provider，以及八字段抽取/规则/Agent 离线链路。真实模型曾在 M1 的内存问题和追问上运行；M2 的真实单家、三家合成包探针均已完成。数据库首版迁移已在用户本机 MySQL 上验证；首批 Case/会话/Run、后端文件上传 API、证据读取 API 和单次持久化 Agent Run 执行器已实现，尚未接入 Linux worker；前端尚未实现。
+DocuCheck 是一个正在开发的本地采购资料初审 Agent 工作台。目标交互是上传资料后提问，由单 Agent 调用受控工具并返回带来源的答复；八字段正式结论由规则引擎计算。现有资产包括基础环境、单家与三家模拟文档、PDF/XLSX 解析、快照证据、词法检索、DeepSeek Provider，以及八字段抽取/规则/Agent 离线链路。真实模型曾在 M1 的内存问题和追问上运行；M2 的真实单家、三家合成包探针均已完成。数据库首版迁移已在用户本机 MySQL 上验证；首批 Case/会话/Run、后端文件上传 API、证据读取 API 和单次持久化 Agent Run 执行器已实现，Linux worker 单次 Run 自动执行已接通；前端尚未实现。
 
 AI 协作上下文见 [CLAUDE.md](CLAUDE.md)；Codex 入口为 [AGENTS.md](AGENTS.md)。当前设计基线是 [Agent 架构 v1.0](docs/superpowers/specs/2026-09-24-agent-first-design.md)，涵盖模型、状态、工具、上下文、RAG、恢复和评测；阶段条件见 [路线图](docs/development-roadmap.md)。
 
@@ -76,7 +78,7 @@ python -m pytest backend/tests/test_dev_pack.py -q
 python -m backend.app.parse_dev_pack --mineru-executable "E:\developTools\miniconda3\envs\docucheck-mineru\Scripts\mineru-kit.exe" --output data/dev-pack-evidence.json
 ```
 
-当前这是本机开发命令；Linux worker 中的解析依赖和正式任务接线尚未完成。输出在被 Git 忽略的 `data/` 中，每条 PDF 证据包含页码与 bbox，每条 XLSX 证据包含工作表与单元格。
+当前这是本机开发解析命令；Linux worker 已接入 Agent Run，后台上传解析任务尚未接线。输出在被 Git 忽略的 `data/` 中，每条 PDF 证据包含页码与 bbox，每条 XLSX 证据包含工作表与单元格。
 
 ## 数据与状态
 
@@ -87,12 +89,13 @@ python -m backend.app.parse_dev_pack --mineru-executable "E:\developTools\minico
 Docker Desktop 使用 Linux Engine。在项目根目录创建 `.env`（可从 `.env.example` 复制），将两个示例口令替换为本地随机口令后运行：
 
 ```powershell
-docker compose up -d --build
-docker compose ps
+docker compose up -d mysql redis
+docker compose --profile agent up -d --build worker dispatcher
+docker compose --profile agent ps
 ```
 
-Compose 启动 MySQL 8.4、Redis 7.4 和 Linux Celery worker。MySQL 仅映射到本机 `127.0.0.1:3307`，Redis 仅映射到 `127.0.0.1:6379`；项目文件共享目录是 `data/`，在 worker 内为 `/data`。数据库使用独立的 Docker 卷。首次配置的详细验证见 [环境记录](docs/environment/2026-09-24.md)。
+Compose 启动 MySQL 8.4、Redis 7.4；显式启用 `agent` profile 后启动 Linux Celery worker 和 Outbox dispatcher。dispatcher 会自动处理新提交的 Run，资料就绪时 worker 可调用 `.env` 中配置的模型服务。MySQL 仅映射到本机 `127.0.0.1:3307`，Redis 仅映射到 `127.0.0.1:6379`；项目文件共享目录是 `data/`，在 worker 内为 `/data`。数据库使用独立的 Docker 卷。首次配置的详细验证见 [环境记录](docs/environment/2026-09-24.md)。
 
-停止服务可运行 `docker compose stop`；此命令保留数据库卷。
+仅停止自动处理可运行 `docker compose --profile agent stop dispatcher worker`；停止全部服务可运行 `docker compose --profile agent stop`，这两个命令都保留数据库卷。
 
-当前已有 Case/会话/Run、上传及证据读取 API 和数据库迁移；上传后可显式运行解析 CLI，Run 可显式执行。Outbox 领取已实现，Redis 发布与 Celery 自动执行尚未接通；前端尚未实现。
+当前已有 Case/会话/Run、上传及证据读取 API 和数据库迁移；上传后仍需显式运行解析 CLI。Outbox、Redis 发布与 Celery 单次 Run 自动执行已接通；worker 强杀后的 Run 恢复、后台解析与跨进程多轮追问仍待实现，前端尚未实现。

@@ -22,6 +22,8 @@
 
 > **M3 第八小步 A（2026-09-28，范围内验收完成）**：新增 Outbox 数据库租约领取、确认和失败延后；`delivery_attempts` 拒绝旧领取者写入，MySQL `SKIP LOCKED` 并发定向测试 **1 passed**。离线后端 **326 passed, 6 skipped**，Ruff 与依赖检查通过。本步不发布 Redis、不启动 Docker、不调用模型；Celery worker 接线、崩溃恢复和多轮持久化仍待后续。见 [M3-8a 记录](docs/m3-8a-outbox-claims-2026-09-28.md)。
 
+> **M3 第八小步 B（2026-09-28，范围内验收完成）**：Outbox 发布器在数据库事务外将 `run.dispatch` 发至 Redis，Linux Celery worker 按 Run/attempt 领取并运行持久化 LangGraph Agent；重复投递受数据库 fence 保护。后端离线 **341 passed, 7 skipped**，真实 MySQL/Redis/Celery 空快照闭环 **1 passed**，worker 健康、自动派发已启动；本步未调用模型 API。强杀 worker 后 `running` 回收、Redis 丢消息对账、跨进程多轮持久化和前端仍待后续。见 [M3-8b 记录](docs/m3-8b-outbox-celery-2026-09-28.md)。
+
 ## 最新协作约定（2026-09-25，优先执行）
 
 用户要求先确认计划、一次一个小步骤，不连续实施多个阶段。执行前阅读 `docs/step-by-step-plan.md`；先说明本步内容与验收，用户确认后只做本步。API 配置/调用、安装、启动容器等额外操作先给步骤，由用户执行。不要自动启动并行开发。M1 的七个小步骤已在模拟包与内存字段范围内完成；[M1 验收小结](docs/m1-acceptance-2026-09-25.md)区分真实模型结果、离线验证与未实现能力。真实两轮对话第三次尝试通过：首问 6 次模型调用返回“资料冲突”，追问 3 次调用复用同会话、同快照的核验结果并读原文；当时后端离线测试 90/90、全目录 Ruff 和 `pip check` 通过。当时追问附带需求来源的问题已在 M2-1 做离线修正；继续每次只实施一个经用户确认的小步骤。
