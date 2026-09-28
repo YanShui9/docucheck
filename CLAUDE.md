@@ -8,7 +8,7 @@
 
 > **M3 第一小步（2026-09-28，历史进度）**：已实现纯 Python Run 生命周期契约，覆盖领取、完成、取消、澄清恢复、中断重试及 attempt/fence/快照归属；当时后端 **275 项测试**、Ruff 通过。见 [M3 分步计划](docs/superpowers/plans/2026-09-28-m3-run-lifecycle.md)。跨进程安全仍需数据库原子条件更新；前端仍须先讨论规范与样式。
 
-> **M3 第二小步（2026-09-28，离线完成、MySQL 待验）**：SQLAlchemy Core 定义 12 张核心业务表，Alembic `0001_core` 首版迁移与 Windows Conda 依赖锁已加入；本机后端 **280 项测试**、Ruff、`pip check` 通过，SQLite 升降迁移及 MySQL 方言 SQL 生成通过。用户已安装 SQLAlchemy 2.0.54、Alembic 1.20.0、PyMySQL 1.2.3；还需用户按 [M3-2 验收步骤](docs/m3-2-persistence-schema-2026-09-28.md)启动 Docker MySQL 并运行 `upgrade head`。repository 事务、API、worker 和前端尚未实现。
+> **M3 第二小步（2026-09-28，迁移验收完成）**：SQLAlchemy Core 定义 12 张核心业务表，Alembic `0001_core` 首版迁移与 Windows Conda 依赖锁已加入；本机后端 **280 项测试**、Ruff、`pip check` 通过，SQLite 升降迁移及 MySQL 方言 SQL 生成通过。用户在本机启动 Docker MySQL 8.4，容器显示 `healthy`；`upgrade head` 无报错，`current` 显示 `0001_core (head)`。详见 [M3-2 验收记录](docs/m3-2-persistence-schema-2026-09-28.md)。repository 事务、API、worker 和前端尚未实现。
 
 ## 最新协作约定（2026-09-25，优先执行）
 

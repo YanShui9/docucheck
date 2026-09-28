@@ -15,7 +15,7 @@
 - 测试先于模型与迁移编写，最初因模块/迁移缺失而失败。
 - `pytest backend/tests/test_m3_schema.py -q`：5 passed；覆盖同一 Case 运行与 Outbox、跨 Case 快照/供应商拒绝、幂等键唯一、Alembic 临时 SQLite 升降级及模型/迁移差异为零。
 - `pytest backend/tests -q`：280 passed；`ruff check backend evals`、`pip check`、`git diff --check` 通过。
-- Alembic 在**不连接数据库**的 MySQL 方言下生成建表 SQL，含 12 张业务表及版本表。实际 MySQL 8.4 外键和升级尚需用户验证。
+- Alembic 在**不连接数据库**的 MySQL 方言下生成建表 SQL，含 12 张业务表及版本表；实际 MySQL 8.4 升级结果见下节。
 
 ## 用户在本机验证 MySQL
 
@@ -30,6 +30,13 @@ python.exe -m alembic -c backend/alembic.ini current
 
 预期 `mysql` 状态为 `healthy`，升级无错误，`current` 显示 `0001_core (head)`。若当前库已有同名手工表或迁移失败，请只反馈已脱敏错误和 `current` 输出，不运行 `downgrade base`；该命令会删除本迁移创建的业务表。不要发送 `.env`、数据库密码或原始采购资料。
 
+## 实际 MySQL 验收（用户本机，2026-09-28）
+
+- 用户在已激活 `docucheck` Conda 环境的项目根目录执行上述四条命令。
+- `docker compose ps mysql` 显示 `mysql:8.4` 容器运行且 `healthy`，端口映射为 `127.0.0.1:3307->3306/tcp`。
+- `alembic upgrade head` 无报错；随后 `alembic current` 输出 `0001_core (head)`。这确认当前配置连接的 MySQL 库已应用首版迁移。
+- 本次未执行数据库并发测试、事务 repository 测试、正式上传或 API/worker 端到端测试；这些不属于本步验收结论。
+
 ## 下一步
 
-MySQL 升级验证通过后，下一小步实现 repository 的事务、幂等和原子 Run 状态更新，并做数据库并发测试；随后再接 FastAPI 与 worker。前端仍须先讨论设计规范和样式。
+下一小步实现 repository 的事务、幂等和原子 Run 状态更新，并做数据库并发测试；随后再接 FastAPI 与 worker。前端仍须先讨论设计规范和样式。
