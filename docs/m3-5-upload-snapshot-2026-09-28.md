@@ -13,7 +13,7 @@
 - 用户在 `docucheck` Conda 环境安装 `python-multipart==0.0.32`；本机环境检查已检测到该版本，`pip check` 返回 `No broken requirements found`。
 - 新增上传定向 SQLite HTTP 测试：版本递增、旧快照保留、旧 Run 过期、幂等重放/冲突、文件拒绝与清理、PDF 页数/活动文档/供应商上限。
 - 本机离线后端回归：**300 passed, 3 skipped**。跳过项是 2 个既有 MySQL 测试与本步新增的真实 MySQL 上传测试。`ruff check backend evals` 与 `git diff --check` 通过。
-- 尚未运行本步真实 MySQL 上传测试，也未启动网络监听或调用模型 API。
+- **实际结果（用户本机，2026-09-28）：** 显式启用 MySQL 测试并运行 `backend/tests/test_document_upload_mysql.py -q`，反馈 `1 passed in 2.14s`，随后清除了 `DOCUCHECK_RUN_MYSQL_TESTS`。这验证了测试范围内的上传、快照写入、同键重放与文档读取；未启动网络监听，也未调用模型 API。
 
 ### 用户本机真实 MySQL 验收
 
@@ -25,7 +25,7 @@ python.exe -m pytest backend/tests/test_document_upload_mysql.py -q
 Remove-Item Env:DOCUCHECK_RUN_MYSQL_TESTS
 ```
 
-预期 `1 passed`。测试通过进程内 HTTP 客户端向已迁移的真实 MySQL 上传样例 PDF，检查版本、同键重放及文档/快照记录；结束时删除测试数据。不调用 DeepSeek，不启动 Uvicorn。若失败，请反馈脱敏的 pytest 错误与摘要，不发送 `.env` 或密码。
+本次实际结果为 `1 passed in 2.14s`。测试通过进程内 HTTP 客户端向已迁移的真实 MySQL 上传样例 PDF，检查版本、同键重放及文档/快照记录；结束时删除测试数据。不调用 DeepSeek，不启动 Uvicorn。以上步骤供后续复验；若复验失败，请反馈脱敏的 pytest 错误与摘要，不发送 `.env` 或密码。
 
 ## 设计依据与下一步
 

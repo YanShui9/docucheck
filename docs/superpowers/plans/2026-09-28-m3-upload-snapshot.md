@@ -27,3 +27,4 @@
 
 - [x] 定向及后端回归、Ruff、`pip check`、差异检查通过。
 - [x] 更新 README、CLAUDE、路线图和 M3-5 验收记录，写明解析/worker 尚未完成，并给用户真实 MySQL 测试步骤。未经用户操作不声称 MySQL 验收。
+- [x] 用户运行真实 MySQL 上传测试：`1 passed in 2.14s`；已记录 M3-5 范围内验收，本次未报告失败。

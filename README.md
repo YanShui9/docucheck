@@ -12,7 +12,7 @@
 
 > M3 第四小步的 [FastAPI 入口](docs/m3-4-api-entry-2026-09-28.md)已完成范围内验收：空 Case、会话、消息提交、Run/事件查询、取消和重试。离线后端 **296 passed, 2 skipped**，Ruff 通过；用户另行运行的真实 MySQL 进程内 API 测试 **1 passed**。文件上传、Agent worker、认证和前端尚未接入。
 
-> M3 第五小步的 [后端上传与输入快照](docs/m3-5-upload-snapshot-2026-09-28.md)已完成离线实现：PDF/XLSX 预检、角色与供应商绑定、文件哈希及随机路径、版本递增与快照保留。后端 **300 passed, 3 skipped**，Ruff 与依赖检查通过；真实 MySQL 上传验收待用户执行。文档仍为 `pending`，解析入库、Agent worker、认证和前端尚未接入。
+> M3 第五小步的 [后端上传与输入快照](docs/m3-5-upload-snapshot-2026-09-28.md)已完成范围内验收：PDF/XLSX 预检、角色与供应商绑定、文件哈希及随机路径、版本递增与快照保留。离线后端 **300 passed, 3 skipped**，Ruff 与依赖检查通过；用户运行的真实 MySQL 上传测试另得 **1 passed**。文档仍为 `pending`，解析入库、Agent worker、认证和前端尚未接入。
 
 > 最新协作状态（2026-09-25）：[M1 最小真实 Agent](docs/m1-acceptance-2026-09-25.md)在模拟包与内存字段范围内完成验收；真实模型连续两问通过，后端离线测试 90/90、全目录 Ruff 与依赖检查通过。正式上传、其他七字段和独立质量评测尚未完成。后续仍按[分步协作计划](docs/step-by-step-plan.md)一次做一个小步骤。任何前端工作开始前须先暂停并讨论设计规范与样式。
 
