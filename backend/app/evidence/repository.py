@@ -37,13 +37,16 @@ def bind_document(parsed: ParseResult, *, source_path: Path, role: str,
 class EvidenceRepository:
     def __init__(self, case_id: str, revision: int, documents: list[Document],
                  *, snapshot_id: str | None = None,
-                 scoped_blocks: tuple[ScopedEvidence, ...] | None = None):
+                 scoped_blocks: tuple[ScopedEvidence, ...] | None = None,
+                 document_names: dict[str, str] | None = None):
         if (snapshot_id is None) != (scoped_blocks is None):
             raise ValueError("invalid_snapshot")
         if not documents or len(documents) > 7 or revision < 1:
             raise ValueError("invalid_snapshot")
         if len({d.document_id for d in documents}) != len(documents):
             raise ValueError("duplicate_document")
+        if document_names and not set(document_names) <= {d.document_id for d in documents}:
+            raise ValueError("evidence_scope")
         if any(
             d.document_id.lower().endswith(".pdf")
             and (type(d.parsed.total_pages) is not int or d.parsed.total_pages < 1)
@@ -54,6 +57,7 @@ class EvidenceRepository:
             raise ValueError("case_page_limit")
         self.case_id, self.revision = case_id, revision
         self.documents = tuple(documents)
+        self._document_names = dict(document_names or {})
         self.snapshot_id = snapshot_id or digest([case_id, revision, [asdict(d) for d in documents]])
         blocks = []
         if scoped_blocks is None:
@@ -85,6 +89,9 @@ class EvidenceRepository:
         if any(key not in self._by_id for key in ids):
             raise ValueError("evidence_scope")
         return [self._by_id[key] for key in ids]
+
+    def source_name(self, document_id: str) -> str:
+        return self._document_names.get(document_id, document_id)
 
     def supplier_blocks(self, supplier: str) -> list[ScopedEvidence]:
         self.assert_supplier(supplier)

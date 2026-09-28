@@ -179,5 +179,6 @@ def render_answer(draft: AnswerDraft, tools: ToolExecutor, question: str,
         # Quotes are explicitly delimited, never interpreted as executable content.
         text = block.text[:1000]
         suffix = "（原文片段已截断）" if len(block.text) > 1000 else ""
-        lines.append(f"来源：{block.document_id} · {location}\n原文：{text}{suffix}")
+        lines.append(f"来源：{tools.repo.source_name(block.document_id)} · {location}"
+                     f"\n原文：{text}{suffix}")
     return "\n\n".join(lines), status

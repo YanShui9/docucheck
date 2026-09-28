@@ -247,6 +247,7 @@ def test_submitted_run_uses_persisted_ids_and_finishes(uploaded_case):
     assert report.attempt_id == submitted["attempt_id"]
     assert report.model_calls == 3
     assert "B6" in report.answer_text and "16 GB" in report.answer_text
+    assert "来源：vendor-a-quote.xlsx · 报价!B6" in report.answer_text
     persisted = client.get(f"/api/v1/agent-runs/{submitted['run_id']}").json()
     assert persisted["status"] == "completed"
     assert persisted["answer_text"] == report.answer_text

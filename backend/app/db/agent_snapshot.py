@@ -100,6 +100,8 @@ def load_agent_snapshot(engine: Engine, case_id: str,
     try:
         return EvidenceRepository(case_id, revision, documents,
                                   snapshot_id=snapshot_id,
-                                  scoped_blocks=tuple(scoped))
+                                  scoped_blocks=tuple(scoped),
+                                  document_names={row["id"]: row["original_name"]
+                                                  for row in document_rows})
     except ValueError as exc:
         raise SnapshotLoadError("snapshot_not_ready") from exc

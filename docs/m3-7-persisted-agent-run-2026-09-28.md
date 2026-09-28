@@ -19,7 +19,7 @@ python.exe -m backend.app.run_once --run-id <run_id> --attempt-id <attempt_id> -
 
 - 离线测试将开发包 XLSX 经进程内 HTTP 上传、解析、提交 Run，使用脚本化 Provider 验证来源、正式答复、Run 状态、模型 ID 和用量。PDF 使用受控 MinerU 缓存验证持久化页定位和新旧快照证据隔离。
 - 另覆盖未解析快照不调用模型、解析后 retry、容量拒绝、Case 版本变化、重复 attempt、取消后迟到结果、异常/键盘中断，以及模型超时的 `outcome_unknown` 标志。
-- 本机后端全量回归：**323 passed, 5 skipped**；`ruff check backend evals`、`pip check` 和 `git diff --check` 通过。**用户本机实际结果（2026-09-28）：** 显式运行 `backend/tests/test_persisted_agent_run_mysql.py -q`，反馈 **1 passed in 3.42s**，随后清除了 `DOCUCHECK_RUN_MYSQL_TESTS`。该测试使用脚本化 Provider，验证真实 MySQL 上的 XLSX 上传、解析、单次 Agent Run、证据来源和结果读取；尚未运行真实 DeepSeek 上传资料 Run。
+- 本机后端全量回归：**323 passed, 5 skipped**；`ruff check backend evals`、`pip check` 和 `git diff --check` 通过。**用户本机实际结果（2026-09-28）：** 显式运行 `backend/tests/test_persisted_agent_run_mysql.py -q`，反馈 **1 passed in 3.42s**，随后清除了 `DOCUCHECK_RUN_MYSQL_TESTS`。该测试使用脚本化 Provider，验证真实 MySQL 上的 XLSX 上传、解析、单次 Agent Run、证据来源和结果读取。本轮另执行了网络 API 上传及真实 DeepSeek 来源问答探针，结果见下。
 - Celery/Outbox 派发、后台崩溃恢复、持久化多轮上下文与结果轨迹、网络服务及前端仍待实现。M3 整体尚未完成。
 
 ### 用户本机真实 MySQL 验收
@@ -77,7 +77,13 @@ Remove-Item Env:DOCUCHECK_RUN_MYSQL_TESTS
    $run | Select-Object status, error_code, answer_text
    ```
 
-同一个 attempt 不要再次执行 `--send`。若返回 `partial`/`failed`，把脱敏的命令输出和 Run 状态发来；后续按现有 retry API 处理。完成后可在第一个窗口按 Ctrl+C 停止本地 API。上传使用 [FastAPI 官方的 File/Form 模式](https://fastapi.tiangolo.com/tutorial/request-files/) 与 [curl `--form` 语法](https://curl.se/docs/manpage.html)；本节命令尚需用户本机实测。
+同一个 attempt 不要再次执行 `--send`。若返回 `partial`/`failed`，把脱敏的命令输出和 Run 状态发来；后续按现有 retry API 处理。完成后可在第一个窗口按 Ctrl+C 停止本地 API。上传使用 [FastAPI 官方的 File/Form 模式](https://fastapi.tiangolo.com/tutorial/request-files/) 与 [curl `--form` 语法](https://curl.se/docs/manpage.html)。
+
+### 本轮实际探针结果
+
+本机网络 API 的 `/health/ready` 为 `ok`；上传 `vendor-a-quote.xlsx` 后创建的快照 revision 为 1、初始解析状态为 `pending`。解析 CLI 将其标为 `complete`，生成 14 条证据，覆盖问题为空。Run 预览为 `queued/ready`；显式 `--send` 后，真实 `deepseek-flash` Run `04c7167f488b4fde8fa69e9e6576fc62` 为 `completed`、`error_code=null`、`is_current=true`，5 次模型调用，记录 12,732 输入 token、481 输出 token，`outcome_unknown=false`。答复引用 `报价!A6` 的“已装内存”和 `报价!B6` 的“已装内存 16 GB”；API 原文、单元格与持久化证据一致。该单文件来源问答通过；不能据此宣称八字段审查或多轮恢复已通过。
+
+首次真实答复把数据库文档 ID 显示为来源名称。根因是入库快照保留了 `original_name`，但 Agent 答复渲染直接使用内部 `document_id`。随后新增失败复现测试，在仓库中将快照的原文件名作为**显示标签**传给渲染器，内部文档 ID、证据 ID 与校验边界保持不变。针对测试与答复范围测试 **27 passed**；后端全量 **323 passed, 5 skipped**，Ruff 通过；同一份 MySQL 快照重新加载可将该文档 ID 映射到 `vendor-a-quote.xlsx`。旧 Run 的答复按历史记录保留 ID；修正后的真实模型 Run 尚未再次调用。
 
 ## 设计依据
 

@@ -16,7 +16,7 @@
 
 > M3 第六小步的 [上传资料解析与证据入库](docs/m3-6-evidence-ingestion-2026-09-28.md)已完成范围内验收：按快照解析、原件哈希复核、证据位置及覆盖信息入库、只读证据 API 与本机 CLI。离线后端 **306 passed, 4 skipped**，Ruff 和依赖检查通过；用户运行的真实 MySQL 上传加 XLSX 解析测试另得 **1 passed**。真实 MinerU PDF 尚未实测；Agent worker、认证和前端尚未接入。
 
-> M3 第七小步的 [持久化证据驱动单次 Agent Run](docs/m3-7-persisted-agent-run-2026-09-28.md)已完成 MySQL 范围内验收：正式上传快照的证据 ID 和来源可进入现有 LangGraph Agent，Run 通过 attempt/fence 保存答复、用量和结果未知标志。离线后端 **323 passed, 5 skipped**，Ruff 与依赖检查通过；用户运行的真实 MySQL 集成测试另得 **1 passed**，使用脚本化 Provider。真实 DeepSeek 与网络服务启动尚待验收；Celery、连续追问恢复和前端尚未接入。
+> M3 第七小步的 [持久化证据驱动单次 Agent Run](docs/m3-7-persisted-agent-run-2026-09-28.md)已完成单文件来源问答范围内验收：正式上传快照的证据 ID 和来源进入 LangGraph Agent，Run 通过 attempt/fence 保存答复、用量和结果未知标志。后端 **323 passed, 5 skipped**、Ruff 通过；真实 MySQL 集成测试 **1 passed**。本机网络 API 上传及解析报价文件后，真实 `deepseek-flash` Run 为 `completed`，正确引用 `报价!B6` 的 `16 GB`。首次答复仅显示文档 ID 的问题已修正并离线验证，旧 Run 答复不变。Celery、连续追问恢复和前端尚未接入。
 
 > 最新协作状态（2026-09-25）：[M1 最小真实 Agent](docs/m1-acceptance-2026-09-25.md)在模拟包与内存字段范围内完成验收；真实模型连续两问通过，后端离线测试 90/90、全目录 Ruff 与依赖检查通过。正式上传、其他七字段和独立质量评测尚未完成。后续仍按[分步协作计划](docs/step-by-step-plan.md)一次做一个小步骤。任何前端工作开始前须先暂停并讨论设计规范与样式。
 
