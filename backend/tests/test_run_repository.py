@@ -1,0 +1,222 @@
+"""Persistence checks for the M3 Run transaction boundary."""
+
+from datetime import UTC, datetime
+
+import pytest
+from sqlalchemy import create_engine, event, func, insert, select
+
+from backend.app.db.models import (
+    agent_runs,
+    cases,
+    conversations,
+    idempotency_records,
+    input_snapshots,
+    messages,
+    metadata,
+    outbox,
+    run_attempts,
+    run_events,
+)
+from backend.app.db.run_repository import RepositoryError, RunRepository, SubmitRun
+from backend.app.runtime.lifecycle import RunStatus
+
+NOW = datetime(2026, 9, 28, tzinfo=UTC)
+
+
+@pytest.fixture
+def repository(tmp_path):
+    engine = create_engine(f"sqlite:///{tmp_path / 'runs.db'}")
+
+    @event.listens_for(engine, "connect")
+    def enable_foreign_keys(connection, record):
+        connection.execute("PRAGMA foreign_keys=ON")
+
+    metadata.create_all(engine)
+    with engine.begin() as connection:
+        connection.execute(insert(cases), [
+            {"id": "case-a", "revision": 1, "created_at": NOW, "updated_at": NOW},
+            {"id": "case-b", "revision": 1, "created_at": NOW, "updated_at": NOW},
+        ])
+        connection.execute(insert(input_snapshots), [
+            {"id": "snapshot-a", "case_id": "case-a", "revision": 1, "created_at": NOW},
+            {"id": "snapshot-b", "case_id": "case-b", "revision": 1, "created_at": NOW},
+        ])
+        connection.execute(insert(conversations), [
+            {"id": "conv-a", "case_id": "case-a", "created_at": NOW},
+            {"id": "conv-b", "case_id": "case-b", "created_at": NOW},
+        ])
+    yield RunRepository(engine)
+    engine.dispose()
+
+
+def _request(**changes):
+    return {"case_id": "case-a", "conversation_id": "conv-a",
+            "snapshot_id": "snapshot-a", "expected_revision": 1,
+            "content": "完整审查供应商 A", "mode": "thorough",
+            "idempotency_key": "request-1"} | changes
+
+
+def _submit(repository, **changes):
+    return repository.submit(SubmitRun(**_request(**changes)))
+
+
+def _count(connection, table):
+    return connection.scalar(select(func.count()).select_from(table))
+
+
+def test_submit_is_atomic_and_same_payload_reuses_first_run(repository):
+    first = _submit(repository)
+    second = _submit(repository)
+    assert second == first
+    with repository.engine.connect() as connection:
+        for table in (messages, agent_runs, run_attempts, outbox,
+                      run_events, idempotency_records):
+            assert _count(connection, table) == 1
+        assert connection.scalar(select(agent_runs.c.status)) == "queued"
+        assert connection.scalar(select(outbox.c.event_key)) == (
+            f"run:{first.run_id}:attempt:{first.attempt_id}:dispatch"
+        )
+
+
+def test_same_key_different_payload_conflicts_without_second_message(repository):
+    _submit(repository)
+    with pytest.raises(RepositoryError, match="idempotency_conflict"):
+        _submit(repository, content="改成审查供应商 B")
+    with repository.engine.connect() as connection:
+        assert _count(connection, messages) == 1
+
+
+@pytest.mark.parametrize("changes,code", [
+    ({"expected_revision": 2}, "revision_conflict"),
+    ({"conversation_id": "conv-b"}, "scope_mismatch"),
+    ({"snapshot_id": "snapshot-b"}, "scope_mismatch"),
+])
+def test_invalid_scope_or_revision_rolls_back_everything(repository, changes, code):
+    with pytest.raises(RepositoryError, match=code):
+        _submit(repository, **changes)
+    with repository.engine.connect() as connection:
+        for table in (messages, agent_runs, run_attempts, outbox,
+                      run_events, idempotency_records):
+            assert _count(connection, table) == 0
+
+
+def test_claim_once_finish_rejects_stale_fence_and_snapshot(repository):
+    submitted = _submit(repository)
+    running = repository.claim(submitted.run_id, submitted.attempt_id)
+    assert running.status == RunStatus.RUNNING
+    assert running.fence == 1
+    with pytest.raises(RepositoryError, match="stale_attempt"):
+        repository.claim(submitted.run_id, submitted.attempt_id)
+    with pytest.raises(RepositoryError, match="stale_attempt"):
+        repository.finish(submitted.run_id, submitted.attempt_id, 0,
+                          "snapshot-a", RunStatus.COMPLETED, "bad")
+    with pytest.raises(RepositoryError, match="stale_attempt"):
+        repository.finish(submitted.run_id, submitted.attempt_id, 1,
+                          "snapshot-b", RunStatus.COMPLETED, "bad")
+    done = repository.finish(submitted.run_id, submitted.attempt_id, 1,
+                             "snapshot-a", RunStatus.COMPLETED, "ok")
+    assert done.status == RunStatus.COMPLETED
+    with repository.engine.connect() as connection:
+        assert connection.scalar(select(agent_runs.c.answer_text)) == "ok"
+        assert _count(connection, run_events) == 3
+
+
+def test_cancel_blocks_late_answer(repository):
+    submitted = _submit(repository)
+    running = repository.claim(submitted.run_id, submitted.attempt_id)
+    cancelled = repository.cancel(submitted.run_id)
+    assert cancelled.status == RunStatus.CANCELLED
+    with pytest.raises(RepositoryError, match="stale_attempt"):
+        repository.finish(submitted.run_id, submitted.attempt_id, running.fence,
+                          "snapshot-a", RunStatus.COMPLETED, "late")
+    with repository.engine.connect() as connection:
+        assert connection.scalar(select(agent_runs.c.answer_text)) is None
+
+
+def test_retry_and_resume_replace_attempt_and_reject_old_result(repository):
+    first = _submit(repository)
+    running = repository.claim(first.run_id, first.attempt_id)
+    repository.interrupt(first.run_id, first.attempt_id, running.fence)
+    retried = repository.retry(first.run_id, "snapshot-a", 1, "retry-1")
+    queued = repository.get(first.run_id)
+    assert queued.status == RunStatus.QUEUED
+    assert retried.attempt_id == queued.active_attempt_id
+    assert queued.active_attempt_id != first.attempt_id
+    with pytest.raises(RepositoryError, match="stale_attempt"):
+        repository.finish(first.run_id, first.attempt_id, running.fence,
+                          "snapshot-a", RunStatus.COMPLETED, "late")
+    next_running = repository.claim(first.run_id, queued.active_attempt_id)
+    assert next_running.fence == 2
+    waiting = repository.finish(first.run_id, queued.active_attempt_id, 2,
+                                "snapshot-a", RunStatus.WAITING_USER)
+    assert waiting.status == RunStatus.WAITING_USER
+    resumed_receipt = repository.resume(first.run_id, "snapshot-a", 1, "resume-1")
+    resumed = repository.get(first.run_id)
+    assert resumed.status == RunStatus.QUEUED
+    assert resumed_receipt.attempt_id == resumed.active_attempt_id
+    assert resumed.active_attempt_id not in {first.attempt_id,
+                                             queued.active_attempt_id}
+    with repository.engine.connect() as connection:
+        assert _count(connection, run_attempts) == 3
+        assert _count(connection, outbox) == 3
+
+
+def test_retry_rejects_changed_current_case_revision(repository):
+    first = _submit(repository)
+    running = repository.claim(first.run_id, first.attempt_id)
+    repository.interrupt(first.run_id, first.attempt_id, running.fence)
+    with repository.engine.begin() as connection:
+        connection.execute(cases.update().where(cases.c.id == "case-a")
+                           .values(revision=2))
+    with pytest.raises(RepositoryError, match="snapshot_changed"):
+        repository.retry(first.run_id, "snapshot-a", 1, "retry-1")
+    with repository.engine.connect() as connection:
+        assert _count(connection, run_attempts) == 1
+
+
+def test_retry_idempotency_replays_original_attempt_and_conflicts_on_payload(repository):
+    first = _submit(repository)
+    running = repository.claim(first.run_id, first.attempt_id)
+    repository.interrupt(first.run_id, first.attempt_id, running.fence)
+    retried = repository.retry(first.run_id, "snapshot-a", 1, "retry-1")
+    repository.claim(first.run_id, retried.attempt_id)
+    assert repository.retry(first.run_id, "snapshot-a", 1, "retry-1") == retried
+    with pytest.raises(RepositoryError, match="idempotency_conflict"):
+        repository.retry(first.run_id, "snapshot-b", 1, "retry-1")
+    with repository.engine.connect() as connection:
+        assert _count(connection, run_attempts) == 2
+        assert _count(connection, outbox) == 2
+
+
+def test_resume_idempotency_replays_original_attempt(repository):
+    first = _submit(repository)
+    running = repository.claim(first.run_id, first.attempt_id)
+    repository.finish(first.run_id, first.attempt_id, running.fence,
+                      "snapshot-a", RunStatus.WAITING_USER)
+    resumed = repository.resume(first.run_id, "snapshot-a", 1, "resume-1")
+    assert repository.resume(first.run_id, "snapshot-a", 1, "resume-1") == resumed
+    with repository.engine.connect() as connection:
+        assert _count(connection, run_attempts) == 2
+
+
+def test_claim_rejects_run_after_case_revision_changes(repository):
+    first = _submit(repository)
+    with repository.engine.begin() as connection:
+        connection.execute(cases.update().where(cases.c.id == "case-a")
+                           .values(revision=2))
+    with pytest.raises(RepositoryError, match="snapshot_changed"):
+        repository.claim(first.run_id, first.attempt_id)
+    assert repository.get(first.run_id).status == RunStatus.QUEUED
+
+
+def test_finish_rejects_answer_after_case_revision_changes(repository):
+    first = _submit(repository)
+    running = repository.claim(first.run_id, first.attempt_id)
+    with repository.engine.begin() as connection:
+        connection.execute(cases.update().where(cases.c.id == "case-a")
+                           .values(revision=2))
+    with pytest.raises(RepositoryError, match="snapshot_changed"):
+        repository.finish(first.run_id, first.attempt_id, running.fence,
+                          "snapshot-a", RunStatus.COMPLETED, "stale")
+    with repository.engine.connect() as connection:
+        assert connection.scalar(select(agent_runs.c.answer_text)) is None

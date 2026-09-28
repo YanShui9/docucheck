@@ -10,6 +10,8 @@
 
 > **M3 第二小步（2026-09-28，迁移验收完成）**：[核心表与迁移记录](m3-2-persistence-schema-2026-09-28.md)定义 12 张业务表、Alembic `0001_core` 和依赖锁；后端 **280 项测试**、Ruff、临时 SQLite 升降迁移通过，MySQL 方言 SQL 可生成。用户本机 Docker MySQL 8.4 显示 `healthy`，Alembic 升级无报错，`current` 为 `0001_core (head)`。事务 repository、API、worker 与正式上传仍未实现。
 
+> **M3 第三小步（2026-09-28，离线完成、MySQL 并发待验）**：[Run repository 验收记录](m3-3-run-repository-2026-09-28.md)说明提交事务、新问题与 retry/resume 幂等、条件状态更新和 Case 版本边界。后端 **293 passed, 1 skipped**，Ruff 与依赖检查通过；真实 MySQL 并发测试由用户显式启用后验收。正式 API、worker、上传与前端仍未实现。
+
 > 2026-09-25：用户要求改为 [分步协作](step-by-step-plan.md)。M1 的七个小步骤已在模拟包和内存字段范围内完成，详见 [M1 验收小结](m1-acceptance-2026-09-25.md)。真实模型两轮对话第三次尝试通过；当时后端离线测试 90/90、全目录 Ruff 和依赖检查通过。追问答复聚焦度已在 M2-1 做离线修正，正式质量评测仍待后续；任何前端工作开始前先暂停讨论设计规范及样式。
 
 > M1 完成后的代码审查与 M2 小步顺序见 [M1 审查记录](m1-review-2026-09-25.md)和 [M2 任务拆分](m2-task-breakdown-2026-09-25.md)。审查复现了相邻单元格漏抽后误判“满足”，以及多供应商引用串家的风险；M2-0、M2-1 优先处理。
