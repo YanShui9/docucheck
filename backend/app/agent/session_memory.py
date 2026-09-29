@@ -9,6 +9,7 @@ from ..field_contract import FieldCheckResult, FieldKey
 from ..rules.fields import RULE_VERSION as FIELDS_RULE_VERSION
 from ..rules.memory import RULE_VERSION as MEMORY_RULE_VERSION
 from ..rules.memory import CheckResult
+from .fact_memory import decode_fact_sets, encode_fact_sets
 
 MAX_RESULTS = 24  # three suppliers x eight fields
 MAX_REFS_PER_RESULT = 256
@@ -26,15 +27,18 @@ def _repository_fingerprint(repo) -> str:
 
 
 def serialize_session(session, last_answer: str) -> dict:
-    """Store server-produced results, never extracted facts or model tool messages."""
+    """Store bounded verified facts and results, never raw model tool messages."""
+    encoded_facts = encode_fact_sets(session.repo, session.tools.fact_sets)
     latest = {}
     for result in reversed(list(session.tools.results.values())):
         latest.setdefault((result.supplier, str(result.field_key)), result)
     results = list(reversed(list(latest.values())))[:MAX_RESULTS]
     return {
-        "version": 1,
+        "version": 2,
         "snapshot_id": session.repo.snapshot_id,
         "repository_fingerprint": _repository_fingerprint(session.repo),
+        "fact_sets_available": encoded_facts is not None,
+        "fact_sets": encoded_facts if encoded_facts is not None else [],
         "focus": session.focus,
         "pending_clarification": session.pending_clarification,
         "check_results": [{**asdict(result),
@@ -94,7 +98,7 @@ def _result(session, value: dict):
 
 def restore_session(session, memory: dict, history: list[tuple]) -> None:
     """Validate every carried handle before exposing it to a new model call."""
-    if (not isinstance(memory, dict) or memory.get("version") != 1
+    if (not isinstance(memory, dict) or memory.get("version") not in {1, 2}
             or memory.get("snapshot_id") != session.repo.snapshot_id
             or memory.get("repository_fingerprint") !=
             _repository_fingerprint(session.repo)
@@ -117,10 +121,16 @@ def restore_session(session, memory: dict, history: list[tuple]) -> None:
     results = [_result(session, value) for value in memory["check_results"]]
     if len({result.check_result_id for result in results}) != len(results):
         raise ValueError("memory_scope")
-    session.tools.results = {result.check_result_id: result for result in results}
-    session.tools.seen = {ref for result in results for ref in result.evidence_refs}
-    session.focus = focus
-    session.pending_clarification = pending
+    fact_sets = {}
+    if memory["version"] == 2:
+        available = memory.get("fact_sets_available")
+        payload = memory.get("fact_sets")
+        if type(available) is not bool or not isinstance(payload, list):
+            raise ValueError("memory_scope")
+        if available:
+            fact_sets = decode_fact_sets(session.repo, payload)
+        elif payload:
+            raise ValueError("memory_scope")
     turns = memory.get("recent_turns")
     if turns is not None:
         if (not isinstance(turns, list) or len(turns) > 4
@@ -132,7 +142,13 @@ def restore_session(session, memory: dict, history: list[tuple]) -> None:
                        or not 0 < len(turn["answer"]) <= 20_000
                        for turn in turns)):
             raise ValueError("memory_scope")
-        session.history = [(HumanMessage(content=turn["question"]),
-                            AIMessage(content=turn["answer"])) for turn in turns]
+        restored_history = [(HumanMessage(content=turn["question"]),
+                             AIMessage(content=turn["answer"])) for turn in turns]
     else:
-        session.history = history[-4:]
+        restored_history = history[-4:]
+    session.tools.results = {result.check_result_id: result for result in results}
+    session.tools.fact_sets = fact_sets
+    session.tools.seen = {ref for result in results for ref in result.evidence_refs}
+    session.focus = focus
+    session.pending_clarification = pending
+    session.history = restored_history
