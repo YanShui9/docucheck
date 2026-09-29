@@ -85,9 +85,12 @@ def _hash_request(request: SubmitRun) -> str:
 
 
 def _hash_attempt(run_id: str, snapshot_id: str, revision: int,
-                  operation: str) -> str:
-    encoded = json.dumps({"run_id": run_id, "snapshot_id": snapshot_id,
-                          "revision": revision, "operation": operation},
+                  operation: str, content: str | None = None) -> str:
+    payload = {"run_id": run_id, "snapshot_id": snapshot_id,
+               "revision": revision, "operation": operation}
+    if content is not None:
+        payload["content"] = content
+    encoded = json.dumps(payload,
                          sort_keys=True, separators=(",", ":")).encode("utf-8")
     return sha256(encoded).hexdigest()
 
@@ -201,6 +204,15 @@ class RunRepository:
                 )).first()
                 if snapshot is None or conversation is None:
                     raise RepositoryError("scope_mismatch")
+                busy = connection.scalar(select(agent_runs.c.id).where(
+                    agent_runs.c.conversation_id == request.conversation_id,
+                    agent_runs.c.snapshot_id == request.snapshot_id,
+                    agent_runs.c.status.in_((RunStatus.QUEUED.value,
+                                            RunStatus.RUNNING.value,
+                                            RunStatus.WAITING_USER.value)),
+                ).limit(1).with_for_update())
+                if busy is not None:
+                    raise RepositoryError("conversation_busy")
                 connection.execute(insert(messages).values(
                     id=message_id, conversation_id=request.conversation_id,
                     role="user", content=request.content, created_at=now,
@@ -324,7 +336,8 @@ class RunRepository:
                error_code: str | None = None,
                model_id: str | None = None,
                usage_json: dict | None = None,
-               outcome_unknown: bool = False) -> RunState:
+               outcome_unknown: bool = False,
+               memory_json: dict | None = None) -> RunState:
         if status not in {RunStatus.COMPLETED, RunStatus.PARTIAL,
                           RunStatus.FAILED, RunStatus.WAITING_USER}:
             raise RepositoryError("invalid_transition")
@@ -338,7 +351,8 @@ class RunRepository:
                 agent_runs.c.snapshot_id == snapshot_id,
                 agent_runs.c.status == RunStatus.RUNNING.value,
             ).values(status=status.value, answer_text=answer_text,
-                     error_code=error_code, updated_at=now))
+                     error_code=error_code, memory_json=memory_json,
+                     updated_at=now))
             if changed.rowcount != 1:
                 raise RepositoryError("stale_attempt")
             attempt = connection.execute(update(run_attempts).where(
@@ -419,12 +433,17 @@ class RunRepository:
 
     def _new_attempt(self, run_id: str, snapshot_id: str, revision: int,
                      idempotency_key: str, operation: str,
-                     allowed: set[RunStatus]) -> AttemptReceipt:
+                     allowed: set[RunStatus],
+                     content: str | None = None) -> AttemptReceipt:
         if not run_id or not snapshot_id or revision < 1 or not (
                 1 <= len(idempotency_key) <= 255):
             raise RepositoryError("invalid_request")
+        if operation == "resume" and (content is None or not content.strip()
+                                      or len(content) > 2000):
+            raise RepositoryError("invalid_request")
         scope = f"run:{run_id}:{operation}"
-        request_hash = _hash_attempt(run_id, snapshot_id, revision, operation)
+        request_hash = _hash_attempt(run_id, snapshot_id, revision, operation,
+                                     content)
         try:
             with self.engine.begin() as connection:
                 existing = self._replay_attempt(
@@ -460,10 +479,17 @@ class RunRepository:
                     raise RepositoryError("stale_attempt")
                 attempt_no = connection.scalar(select(func.max(run_attempts.c.attempt_no))
                                                .where(run_attempts.c.run_id == run_id)) + 1
+                resume_message_id = None
+                if operation == "resume":
+                    resume_message_id = _id()
+                    connection.execute(insert(messages).values(
+                        id=resume_message_id,
+                        conversation_id=row["conversation_id"],
+                        role="user", content=content, created_at=now))
                 connection.execute(insert(run_attempts).values(
                     id=attempt_id, run_id=run_id, attempt_no=attempt_no,
                     status=RunStatus.QUEUED.value, outcome_unknown=False,
-                    created_at=now,
+                    resume_message_id=resume_message_id, created_at=now,
                 ))
                 self._append_event(connection, run_id, attempt_id,
                                    "queued", RunStatus.QUEUED, now)
@@ -485,6 +511,6 @@ class RunRepository:
                                            RunStatus.PARTIAL})
 
     def resume(self, run_id: str, snapshot_id: str, revision: int,
-               idempotency_key: str) -> AttemptReceipt:
+               idempotency_key: str, content: str) -> AttemptReceipt:
         return self._new_attempt(run_id, snapshot_id, revision, idempotency_key,
-                                 "resume", {RunStatus.WAITING_USER})
+                                 "resume", {RunStatus.WAITING_USER}, content)

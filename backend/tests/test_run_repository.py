@@ -151,7 +151,8 @@ def test_retry_and_resume_replace_attempt_and_reject_old_result(repository):
     waiting = repository.finish(first.run_id, queued.active_attempt_id, 2,
                                 "snapshot-a", RunStatus.WAITING_USER)
     assert waiting.status == RunStatus.WAITING_USER
-    resumed_receipt = repository.resume(first.run_id, "snapshot-a", 1, "resume-1")
+    resumed_receipt = repository.resume(first.run_id, "snapshot-a", 1,
+                                        "resume-1", "供应商 A")
     resumed = repository.get(first.run_id)
     assert resumed.status == RunStatus.QUEUED
     assert resumed_receipt.attempt_id == resumed.active_attempt_id
@@ -194,10 +195,40 @@ def test_resume_idempotency_replays_original_attempt(repository):
     running = repository.claim(first.run_id, first.attempt_id)
     repository.finish(first.run_id, first.attempt_id, running.fence,
                       "snapshot-a", RunStatus.WAITING_USER)
-    resumed = repository.resume(first.run_id, "snapshot-a", 1, "resume-1")
-    assert repository.resume(first.run_id, "snapshot-a", 1, "resume-1") == resumed
+    resumed = repository.resume(first.run_id, "snapshot-a", 1,
+                                "resume-1", "供应商 A")
+    assert repository.resume(first.run_id, "snapshot-a", 1,
+                             "resume-1", "供应商 A") == resumed
+    with pytest.raises(RepositoryError, match="idempotency_conflict"):
+        repository.resume(first.run_id, "snapshot-a", 1,
+                          "resume-1", "供应商 B")
     with repository.engine.connect() as connection:
         assert _count(connection, run_attempts) == 2
+        assert _count(connection, messages) == 2
+        response_id = connection.scalar(select(run_attempts.c.resume_message_id).where(
+            run_attempts.c.id == resumed.attempt_id))
+        assert connection.scalar(select(messages.c.content).where(
+            messages.c.id == response_id)) == "供应商 A"
+
+
+def test_conversation_accepts_only_one_active_run(repository):
+    first = _submit(repository)
+    with pytest.raises(RepositoryError, match="conversation_busy"):
+        _submit(repository, idempotency_key="question-2")
+    running = repository.claim(first.run_id, first.attempt_id)
+    with pytest.raises(RepositoryError, match="conversation_busy"):
+        _submit(repository, idempotency_key="question-3")
+    repository.finish(first.run_id, first.attempt_id, running.fence,
+                      running.snapshot_id, RunStatus.WAITING_USER)
+    with pytest.raises(RepositoryError, match="conversation_busy"):
+        _submit(repository, idempotency_key="question-4")
+    resumed = repository.resume(first.run_id, running.snapshot_id, 1,
+                                "clarify-1", "供应商 A")
+    claimed = repository.claim(first.run_id, resumed.attempt_id)
+    repository.finish(first.run_id, resumed.attempt_id, claimed.fence,
+                      claimed.snapshot_id, RunStatus.COMPLETED, "已完成")
+    second = _submit(repository, idempotency_key="question-5")
+    assert second.run_id != first.run_id
 
 
 def test_claim_rejects_run_after_case_revision_changes(repository):

@@ -100,6 +100,60 @@ def test_mysql_uploaded_evidence_completes_one_agent_run(tmp_path, monkeypatch):
             assert "B6" in result.answer_text and "16 GB" in result.answer_text
             assert client.get(f"/api/v1/agent-runs/{run['run_id']}").json()[
                 "status"] == "completed"
+            followup = client.post(
+                f"/api/v1/conversations/{conversation.json()['id']}/messages",
+                headers={"Idempotency-Key": "mysql-agent-followup"},
+                json={"content": "刚才那条来源在哪里？", "mode": "standard",
+                      "expected_revision": 1},
+            )
+            assert followup.status_code == 202, followup.text
+
+            class FollowupProvider(SourceProvider):
+                def decide(self, messages, tools, **kwargs):
+                    if self.calls == 0:
+                        contents = [str(item.content) for item in messages]
+                        assert any("16 GB" in item for item in contents)
+                        assert any("供应商 A" in item for item in contents)
+                    return super().decide(messages, tools, **kwargs)
+
+            next_run = followup.json()
+            second = execute_run(engine, next_run["run_id"], next_run["attempt_id"],
+                                 FollowupProvider(evidence_id))
+            assert second.status == "completed" and "B6" in second.answer_text
+            clarify = client.post(
+                f"/api/v1/conversations/{conversation.json()['id']}/messages",
+                headers={"Idempotency-Key": "mysql-agent-clarify"},
+                json={"content": "请继续核对来源", "mode": "standard",
+                      "expected_revision": 1},
+            )
+            assert clarify.status_code == 202, clarify.text
+
+            class ClarifyProvider:
+                model_id = "scripted-clarify"
+                context_window = 32_768
+
+                def decide(self, messages, tools, **kwargs):
+                    return AIMessage(content="", tool_calls=[{
+                        "id": "clarify-call", "name": "request_clarification",
+                        "args": {"question": "请确认供应商。"},
+                    }], usage_metadata={"input_tokens": 100, "output_tokens": 20,
+                                       "total_tokens": 120})
+
+            clarify_run = clarify.json()
+            waiting = execute_run(engine, clarify_run["run_id"],
+                                  clarify_run["attempt_id"], ClarifyProvider())
+            assert waiting.status == "waiting_user"
+            resumed = client.post(
+                f"/api/v1/agent-runs/{clarify_run['run_id']}/resume",
+                headers={"Idempotency-Key": "mysql-agent-resume"},
+                json={"content": "供应商 A", "expected_revision": 1},
+            )
+            assert resumed.status_code == 202, resumed.text
+            resumed_result = execute_run(engine, clarify_run["run_id"],
+                                         resumed.json()["attempt_id"],
+                                         SourceProvider(evidence_id))
+            assert resumed_result.status == "completed"
+            assert "16 GB" in resumed_result.answer_text
     finally:
         try:
             if case_id:
@@ -107,6 +161,12 @@ def test_mysql_uploaded_evidence_completes_one_agent_run(tmp_path, monkeypatch):
                     ids = connection.scalars(select(agent_runs.c.id).where(
                         agent_runs.c.case_id == case_id)).all()
                     if ids:
+                        attempt_ids = connection.scalars(select(run_attempts.c.id).where(
+                            run_attempts.c.run_id.in_(ids))).all()
+                        if attempt_ids:
+                            connection.execute(delete(idempotency_records).where(
+                                idempotency_records.c.resource_type == "attempt",
+                                idempotency_records.c.resource_id.in_(attempt_ids)))
                         connection.execute(delete(run_events).where(
                             run_events.c.run_id.in_(ids)))
                         connection.execute(delete(outbox).where(

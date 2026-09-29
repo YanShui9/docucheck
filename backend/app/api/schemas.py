@@ -26,6 +26,20 @@ class RetryIn(BaseModel):
     expected_revision: int = Field(ge=1)
 
 
+class ResumeIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    content: str = Field(min_length=1, max_length=2000)
+    expected_revision: int = Field(ge=1)
+
+    @field_validator("content")
+    @classmethod
+    def non_blank(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("message_empty")
+        return value
+
+
 class CaseOut(BaseModel):
     id: str
     revision: int

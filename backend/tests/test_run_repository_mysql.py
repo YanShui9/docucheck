@@ -82,10 +82,13 @@ def mysql_repository():
                     connection.execute(delete(idempotency_records).where(
                         idempotency_records.c.operation_scope ==
                         f"case:{case_id}:message"))
+                    conversation_ids = connection.scalars(select(
+                        conversations.c.id).where(
+                            conversations.c.case_id == case_id)).all()
                     connection.execute(delete(messages).where(
-                        messages.c.conversation_id == conversation_id))
+                        messages.c.conversation_id.in_(conversation_ids)))
                     connection.execute(delete(conversations).where(
-                        conversations.c.id == conversation_id))
+                        conversations.c.id.in_(conversation_ids)))
                     connection.execute(delete(input_snapshots).where(
                         input_snapshots.c.id == snapshot_id))
                     connection.execute(delete(cases).where(cases.c.id == case_id))
@@ -162,13 +165,18 @@ def test_mysql_idempotency_claim_and_terminal_races(mysql_repository):
 
 def test_mysql_outbox_claim_skips_locked_row(mysql_repository):
     repository, (case_id, snapshot_id, conversation_id) = mysql_repository
+    second_conversation_id = uuid4().hex
+    with repository.engine.begin() as connection:
+        connection.execute(insert(conversations).values(
+            id=second_conversation_id, case_id=case_id,
+            created_at=datetime.now(UTC).replace(tzinfo=None)))
     first = repository.submit(SubmitRun(
         case_id=case_id, conversation_id=conversation_id,
         snapshot_id=snapshot_id, expected_revision=1,
         content="审查 A", mode="standard", idempotency_key="outbox-first",
     ))
     second = repository.submit(SubmitRun(
-        case_id=case_id, conversation_id=conversation_id,
+        case_id=case_id, conversation_id=second_conversation_id,
         snapshot_id=snapshot_id, expected_revision=1,
         content="审查 B", mode="standard", idempotency_key="outbox-second",
     ))
@@ -190,3 +198,19 @@ def test_mysql_outbox_claim_skips_locked_row(mysql_repository):
         limit=2, event_type=event_type, now=now)
     assert len(remaining) == 1
     assert remaining[0].run_id == first.run_id
+
+
+def test_mysql_serializes_distinct_questions_in_one_conversation(mysql_repository):
+    repository, (case_id, snapshot_id, conversation_id) = mysql_repository
+
+    def submit(suffix):
+        return repository.submit(SubmitRun(
+            case_id=case_id, conversation_id=conversation_id,
+            snapshot_id=snapshot_id, expected_revision=1,
+            content=f"审查 {suffix}", mode="standard",
+            idempotency_key=f"question-{suffix}",
+        ))
+
+    results = _race(lambda: submit("A"), lambda: submit("B"))
+    assert sum(result == "conversation_busy" for result in results) == 1
+    assert sum(hasattr(result, "run_id") for result in results) == 1

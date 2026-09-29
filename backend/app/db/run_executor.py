@@ -5,9 +5,11 @@ from dataclasses import dataclass
 from sqlalchemy import Engine, select
 
 from ..agent.graph import AgentSession
+from ..agent.session_memory import restore_session, serialize_session
 from ..runtime.lifecycle import RunStatus
 from .agent_snapshot import SnapshotLoadError, load_agent_snapshot
-from .models import agent_runs, messages
+from .conversation_context import ConversationContextError, load_conversation_context
+from .models import agent_runs
 from .run_heartbeat import run_heartbeat
 from .run_repository import RepositoryError, RunRepository
 
@@ -32,10 +34,8 @@ def execute_run(engine: Engine, run_id: str, attempt_id: str,
             with engine.connect() as connection:
                 request = connection.execute(select(
                     agent_runs.c.case_id, agent_runs.c.conversation_id,
-                    agent_runs.c.mode, messages.c.content,
-                ).join(messages, agent_runs.c.message_id == messages.c.id).where(
-                    agent_runs.c.id == run_id,
-                )).mappings().one()
+                    agent_runs.c.mode,
+                ).where(agent_runs.c.id == run_id)).mappings().one()
             try:
                 repo = load_agent_snapshot(engine, request["case_id"],
                                            claimed.snapshot_id)
@@ -47,7 +47,20 @@ def execute_run(engine: Engine, run_id: str, attempt_id: str,
                                        exc.code, 0)
             session = AgentSession(repo, provider, mode=request["mode"],
                                    conversation_id=request["conversation_id"])
-            result = session.ask(request["content"], run_id=run_id,
+            try:
+                context = load_conversation_context(engine, run_id, attempt_id)
+                if context.memory is not None:
+                    restore_session(session, context.memory, context.history)
+                else:
+                    session.history = context.history
+            except (ConversationContextError, ValueError):
+                answer = "会话上下文未通过范围核验，请检查本轮记录。"
+                runs.finish(run_id, attempt_id, claimed.fence, claimed.snapshot_id,
+                            RunStatus.PARTIAL, answer_text=answer,
+                            error_code="memory_scope")
+                return ExecutionReport(run_id, attempt_id, "partial", answer,
+                                       "memory_scope", 0)
+            result = session.ask(context.question, run_id=run_id,
                                  attempt_id=attempt_id)
             if result.status == RunStatus.CANCELLED.value:
                 runs.cancel(run_id)
@@ -57,6 +70,7 @@ def execute_run(engine: Engine, run_id: str, attempt_id: str,
                             error_code=result.error,
                             model_id=getattr(provider, "model_id", None),
                             usage_json=result.usage,
+                            memory_json=serialize_session(session, result.answer),
                             outcome_unknown=any(event.get("outcome_unknown") is True
                                                 for event in result.events))
             return ExecutionReport(run_id, attempt_id, result.status, result.answer,

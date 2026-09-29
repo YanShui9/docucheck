@@ -24,6 +24,8 @@
 
 > M3 第八小步 C 的 [Run 失联与队列消息恢复](docs/m3-8c-run-recovery-2026-09-29.md)已通过范围内验收：运行中 Run 每 10 秒写心跳、120 秒失联后标为 `interrupted / worker_lost / outcome_unknown`，旧结果被 fence 拒绝；已投递但仍排队的 Outbox 延时重投。离线后端 **350 passed, 8 skipped**，显式 MySQL/API/Redis/Celery 测试 **3 passed**，包括无模型调用的独立进程强制终止场景。Redis 已启用 AOF 卷，迁移到 `0003_recovery_precision`；跨进程多轮会话、后台解析和前端仍待后续。
 
+> M3 第九小步的 [跨进程会话追问与澄清恢复](docs/m3-9-conversation-recovery-2026-09-29.md)已实现同会话同快照的最近四轮问答及核验结果持久化、澄清回复 API、连续澄清与活跃 Run 互斥。离线 **357 passed, 9 skipped**，真实 MySQL 定向 **5 passed**；迁移为 `0004_conversation_memory`。脚本化 Provider 测试没有调用 DeepSeek；后台解析与前端仍待后续。
+
 > 最新协作状态（2026-09-25）：[M1 最小真实 Agent](docs/m1-acceptance-2026-09-25.md)在模拟包与内存字段范围内完成验收；真实模型连续两问通过，后端离线测试 90/90、全目录 Ruff 与依赖检查通过。正式上传、其他七字段和独立质量评测尚未完成。后续仍按[分步协作计划](docs/step-by-step-plan.md)一次做一个小步骤。任何前端工作开始前须先暂停并讨论设计规范与样式。
 
 > 2026-09-26：[M2-0 XLSX 内存分列证据修正](docs/m2-0-acceptance-2026-09-26.md)和 [M2-1 答复引用范围修正](docs/m2-1-acceptance-2026-09-26.md)已通过离线回归（当前 110 项测试）。下一小步为 M2-2 解析覆盖；M2 完整采购审查尚未完成。
@@ -100,4 +102,4 @@ Compose 启动 MySQL 8.4、Redis 7.4；显式启用 `agent` profile 后启动 Li
 
 仅停止自动处理可运行 `docker compose --profile agent stop dispatcher worker`；停止全部服务可运行 `docker compose --profile agent stop`，这两个命令都保留数据库卷。
 
-当前已有 Case/会话/Run、上传及证据读取 API 和数据库迁移；上传后仍需显式运行解析 CLI。Outbox、Redis 发布、Celery 单次 Run 自动执行与失联回收已接通；失联后的模型结果标为未知，只能显式重试。后台解析与跨进程多轮追问仍待实现，前端尚未实现。
+当前已有 Case/会话/Run、上传及证据读取 API 和数据库迁移；上传后仍需显式运行解析 CLI。Outbox、Redis 发布、Celery Run 自动执行、失联回收和跨进程多轮追问已接通；失联后的模型结果标为未知，只能显式重试。后台解析尚未实现，前端尚未实现。

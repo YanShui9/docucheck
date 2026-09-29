@@ -142,6 +142,7 @@ agent_runs = Table(
     Column("fence", Integer, nullable=False),
     Column("answer_text", Text),
     Column("error_code", String(64)),
+    Column("memory_json", JSON),
     Column("created_at", DateTime, nullable=False),
     Column("updated_at", precise_datetime, nullable=False),
     ForeignKeyConstraint(["case_id", "conversation_id"],
@@ -161,6 +162,8 @@ agent_runs = Table(
 )
 Index("ix_runs_case_created", agent_runs.c.case_id, agent_runs.c.created_at)
 Index("ix_runs_status_updated", agent_runs.c.status, agent_runs.c.updated_at)
+Index("ix_runs_conversation_snapshot_status", agent_runs.c.conversation_id,
+      agent_runs.c.snapshot_id, agent_runs.c.status)
 
 run_attempts = Table(
     "run_attempts", metadata,
@@ -171,6 +174,7 @@ run_attempts = Table(
     Column("outcome_unknown", Boolean, nullable=False),
     Column("model_id", String(100)),
     Column("usage_json", JSON),
+    Column("resume_message_id", String(32), ForeignKey("messages.id")),
     Column("created_at", DateTime, nullable=False),
     Column("started_at", DateTime),
     Column("finished_at", DateTime),

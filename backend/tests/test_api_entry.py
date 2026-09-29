@@ -160,3 +160,32 @@ def test_lost_worker_is_visible_as_unknown_and_retry_resets_active_attempt(api):
     active = client.get(url).json()
     assert active["status"] == "queued"
     assert active["outcome_unknown"] is False
+
+
+def test_clarification_resume_accepts_reply_once_and_blocks_parallel_question(api):
+    client, engine = api
+    case_id, conversation_id = _case_and_conversation(client)
+    _snapshot(engine, case_id)
+    submitted = _message(client, conversation_id).json()
+    runs = RunRepository(engine)
+    claimed = runs.claim(submitted["run_id"], submitted["attempt_id"])
+    from backend.app.runtime.lifecycle import RunStatus
+    runs.finish(submitted["run_id"], submitted["attempt_id"], claimed.fence,
+                "snapshot-1", RunStatus.WAITING_USER,
+                answer_text="请说明供应商。")
+
+    blocked = _message(client, conversation_id, key="another-question")
+    assert blocked.status_code == 409
+    assert blocked.json()["error"]["code"] == "conversation_busy"
+
+    url = f"/api/v1/agent-runs/{submitted['run_id']}/resume"
+    headers = {"Idempotency-Key": "clarification-1"}
+    body = {"content": "供应商 A", "expected_revision": 1}
+    resumed = client.post(url, headers=headers, json=body)
+    assert resumed.status_code == 202
+    assert resumed.json()["attempt_id"] != submitted["attempt_id"]
+    assert client.post(url, headers=headers, json=body).json() == resumed.json()
+    conflict = client.post(url, headers=headers,
+                           json={"content": "供应商 B", "expected_revision": 1})
+    assert conflict.status_code == 409
+    assert conflict.json()["error"]["code"] == "idempotency_conflict"

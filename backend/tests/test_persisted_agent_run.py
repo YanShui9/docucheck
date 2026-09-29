@@ -267,6 +267,153 @@ def test_submitted_run_uses_persisted_ids_and_finishes(uploaded_case):
     assert provider.calls == 3
 
 
+def test_clarification_resume_and_followup_restore_conversation(uploaded_case):
+    from backend.app.db.run_executor import execute_run
+
+    client, engine, storage, case_id, uploaded = uploaded_case
+    DocumentIngestion(engine, storage).process_document(
+        case_id, uploaded["snapshot_id"], uploaded["document_id"])
+    with engine.connect() as connection:
+        evidence_id = connection.scalar(select(evidence_blocks.c.id).where(
+            evidence_blocks.c.document_version_id == uploaded["document_id"],
+            evidence_blocks.c.cell == "B6"))
+    submitted, conversation_id = _submit_question(client, case_id)
+
+    class Clarify:
+        model_id = "scripted-clarify"
+        context_window = 32_768
+
+        def decide(self, messages, tools, **kwargs):
+            return _call("request_clarification", {"question": "请确认供应商。"})
+
+    first = execute_run(engine, submitted["run_id"], submitted["attempt_id"], Clarify())
+    assert first.status == "waiting_user"
+    resumed = client.post(f"/api/v1/agent-runs/{submitted['run_id']}/resume",
+                          headers={"Idempotency-Key": "answer-clarification"},
+                          json={"content": "供应商 A", "expected_revision": 1})
+    assert resumed.status_code == 202, resumed.text
+
+    class ResumeProvider(SourceProvider):
+        def decide(self, messages, tools, **kwargs):
+            if self.calls == 0:
+                contents = [str(item.content) for item in messages]
+                assert "供应商 A" in contents[-1]
+                assert any("请确认供应商。" in item for item in contents)
+                assert any("请列出供应商 A 报价中的内存原文" in item
+                           for item in contents)
+            return super().decide(messages, tools, **kwargs)
+
+    second = execute_run(engine, submitted["run_id"],
+                         resumed.json()["attempt_id"], ResumeProvider(evidence_id))
+    assert second.status == "completed" and "16 GB" in second.answer_text
+    followup = client.post(
+        f"/api/v1/conversations/{conversation_id}/messages",
+        headers={"Idempotency-Key": "followup"},
+        json={"content": "那条原文在哪里？", "mode": "standard",
+              "expected_revision": 1})
+    assert followup.status_code == 202, followup.text
+
+    class FollowupProvider(SourceProvider):
+        def decide(self, messages, tools, **kwargs):
+            if self.calls == 0:
+                contents = [str(item.content) for item in messages]
+                assert any("供应商 A" in item for item in contents)
+                assert any("16 GB" in item for item in contents)
+            return super().decide(messages, tools, **kwargs)
+
+    third = execute_run(engine, followup.json()["run_id"],
+                        followup.json()["attempt_id"], FollowupProvider(evidence_id))
+    assert third.status == "completed" and "B6" in third.answer_text
+
+
+def test_second_clarification_keeps_first_user_reply(uploaded_case):
+    from backend.app.db.run_executor import execute_run
+
+    client, engine, storage, case_id, uploaded = uploaded_case
+    DocumentIngestion(engine, storage).process_document(
+        case_id, uploaded["snapshot_id"], uploaded["document_id"])
+    submitted, _ = _submit_question(client, case_id)
+
+    class Ask:
+        model_id = "scripted-clarify"
+        context_window = 32_768
+
+        def __init__(self, prompt):
+            self.prompt = prompt
+
+        def decide(self, messages, tools, **kwargs):
+            return _call("request_clarification", {"question": self.prompt})
+
+    first = execute_run(engine, submitted["run_id"], submitted["attempt_id"],
+                        Ask("请确认供应商。"))
+    assert first.status == "waiting_user"
+    reply_one = client.post(f"/api/v1/agent-runs/{submitted['run_id']}/resume",
+                            headers={"Idempotency-Key": "reply-one"},
+                            json={"content": "供应商 A", "expected_revision": 1}).json()
+    second = execute_run(engine, submitted["run_id"], reply_one["attempt_id"],
+                         Ask("请确认型号。"))
+    assert second.status == "waiting_user"
+    reply_two = client.post(f"/api/v1/agent-runs/{submitted['run_id']}/resume",
+                            headers={"Idempotency-Key": "reply-two"},
+                            json={"content": "型号 X", "expected_revision": 1}).json()
+
+    class Inspect:
+        model_id = "scripted-inspect"
+        context_window = 32_768
+
+        def decide(self, messages, tools, **kwargs):
+            contents = [str(item.content) for item in messages]
+            assert any(item == "供应商 A" for item in contents)
+            assert any("请确认供应商。" in item for item in contents)
+            assert any("请确认型号。" in item for item in contents)
+            assert contents[-1] == "型号 X"
+            return _call("request_clarification", {"question": "请继续。"})
+
+    report = execute_run(engine, submitted["run_id"], reply_two["attempt_id"],
+                         Inspect())
+    assert report.status == "waiting_user"
+
+
+def test_changed_persisted_memory_stops_before_model_call(uploaded_case):
+    from backend.app.db.run_executor import execute_run
+
+    client, engine, storage, case_id, uploaded = uploaded_case
+    DocumentIngestion(engine, storage).process_document(
+        case_id, uploaded["snapshot_id"], uploaded["document_id"])
+    with engine.connect() as connection:
+        evidence_id = connection.scalar(select(evidence_blocks.c.id).where(
+            evidence_blocks.c.document_version_id == uploaded["document_id"],
+            evidence_blocks.c.cell == "B6"))
+    first, conversation_id = _submit_question(client, case_id)
+    assert execute_run(engine, first["run_id"], first["attempt_id"],
+                       SourceProvider(evidence_id)).status == "completed"
+    with engine.begin() as connection:
+        memory = connection.scalar(select(agent_runs.c.memory_json).where(
+            agent_runs.c.id == first["run_id"]))
+        connection.execute(update(agent_runs).where(
+            agent_runs.c.id == first["run_id"]).values(memory_json={
+                **memory, "repository_fingerprint": "invalid",
+            }))
+    followup = client.post(
+        f"/api/v1/conversations/{conversation_id}/messages",
+        headers={"Idempotency-Key": "invalid-memory-followup"},
+        json={"content": "它在哪里？", "mode": "standard",
+              "expected_revision": 1}).json()
+
+    class ForbiddenProvider:
+        model_id = "forbidden"
+        context_window = 32_768
+
+        def decide(self, messages, tools, **kwargs):
+            raise AssertionError("invalid memory reached model")
+
+    report = execute_run(engine, followup["run_id"],
+                         followup["attempt_id"], ForbiddenProvider())
+    assert report.status == "partial"
+    assert report.error_code == "memory_scope"
+    assert report.model_calls == 0
+
+
 def test_executor_heartbeats_during_blocked_model_call(uploaded_case):
     from backend.app.db.run_executor import execute_run
 

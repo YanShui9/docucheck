@@ -39,6 +39,7 @@ from .schemas import (
     EvidenceOut,
     MessageAccepted,
     MessageIn,
+    ResumeIn,
     RetryIn,
     RunOut,
 )
@@ -57,7 +58,7 @@ def _domain_status(code: str) -> int:
         return 404
     if code in {"snapshot_not_ready", "revision_conflict", "snapshot_changed",
                 "idempotency_conflict", "stale_attempt", "invalid_transition",
-                "supplier_conflict"}:
+                "supplier_conflict", "conversation_busy"}:
         return 409
     if code == "file_limit":
         return 413
@@ -242,6 +243,18 @@ def create_app(engine: Engine | None = None) -> FastAPI:
         run = queries.get_run(run_id)
         receipt = runs.retry(run_id, run["snapshot_id"], body.expected_revision,
                              idempotency_key)
+        response.headers["Location"] = f"/api/v1/agent-runs/{run_id}"
+        return {"run_id": receipt.run_id, "attempt_id": receipt.attempt_id}
+
+    @router.post("/agent-runs/{run_id}/resume", status_code=202,
+                 response_model=AttemptAccepted)
+    def resume_run(run_id: str, body: ResumeIn, response: Response,
+                   idempotency_key: str = Header(
+                       alias="Idempotency-Key", min_length=1, max_length=255,
+                   )):
+        run = queries.get_run(run_id)
+        receipt = runs.resume(run_id, run["snapshot_id"], body.expected_revision,
+                              idempotency_key, body.content)
         response.headers["Location"] = f"/api/v1/agent-runs/{run_id}"
         return {"run_id": receipt.run_id, "attempt_id": receipt.attempt_id}
 
