@@ -239,3 +239,31 @@ idempotency_records = Table(
     UniqueConstraint("operation_scope", "key", name="uq_idempotency_scope_key"),
     mysql_engine="InnoDB",
 )
+
+corrections = Table(
+    "corrections", metadata,
+    Column("id", String(32), primary_key=True),
+    Column("case_id", String(32), ForeignKey("cases.id"), nullable=False),
+    Column("source_run_id", String(32), ForeignKey("agent_runs.id"), nullable=False),
+    Column("from_snapshot_id", String(64), nullable=False),
+    Column("to_snapshot_id", String(64), nullable=False),
+    Column("fact_set_id", String(64), nullable=False),
+    Column("fact_id", String(64), nullable=False),
+    Column("field_key", String(32), nullable=False),
+    Column("supplier", String(64), nullable=False),
+    Column("old_fact_json", JSON, nullable=False),
+    Column("corrected_candidate_json", JSON, nullable=False),
+    Column("source_evidence_ids_json", JSON, nullable=False),
+    Column("target_evidence_ids_json", JSON, nullable=False),
+    Column("reason", String(2000), nullable=False),
+    Column("created_at", DateTime, nullable=False),
+    ForeignKeyConstraint(["case_id", "from_snapshot_id"],
+                         ["input_snapshots.case_id", "input_snapshots.id"],
+                         name="fk_corrections_from_snapshot"),
+    ForeignKeyConstraint(["case_id", "to_snapshot_id"],
+                         ["input_snapshots.case_id", "input_snapshots.id"],
+                         name="fk_corrections_to_snapshot"),
+    UniqueConstraint("to_snapshot_id", name="uq_corrections_to_snapshot"),
+    mysql_engine="InnoDB",
+)
+Index("ix_corrections_case_created", corrections.c.case_id, corrections.c.created_at)

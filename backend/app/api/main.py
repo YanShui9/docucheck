@@ -24,6 +24,11 @@ from sqlalchemy import Engine, create_engine, select
 
 from ..db.api_queries import ApiQueries, ApiQueryError
 from ..db.connection import ROOT, database_url
+from ..db.correction_repository import (
+    CorrectionError,
+    CorrectionRepository,
+    SubmitCorrection,
+)
 from ..db.document_repository import DocumentError, DocumentRepository, UploadCommand
 from ..db.ingestion import DocumentIngestion, IngestionError
 from ..db.run_repository import RepositoryError, RunRepository, SubmitRun
@@ -32,6 +37,9 @@ from .schemas import (
     AttemptAccepted,
     CaseOut,
     ConversationOut,
+    CorrectionAccepted,
+    CorrectionIn,
+    CorrectionOut,
     DocumentAccepted,
     DocumentEvidenceOut,
     DocumentsOut,
@@ -41,6 +49,7 @@ from .schemas import (
     MessageIn,
     ResumeIn,
     RetryIn,
+    RunFactsOut,
     RunOut,
 )
 from .upload import UploadError, UploadStorage
@@ -60,6 +69,14 @@ def _domain_status(code: str) -> int:
                 "idempotency_conflict", "stale_attempt", "invalid_transition",
                 "supplier_conflict", "conversation_busy"}:
         return 409
+    if code in {"case_busy", "source_run_not_current", "facts_unavailable",
+                "memory_scope", "snapshot_capacity",
+                "correction_pending_recheck"}:
+        return 409
+    if code == "fact_not_found":
+        return 404
+    if code in {"unsupported_correction", "correction_unchanged"}:
+        return 422
     if code == "file_limit":
         return 413
     if code in {"invalid_file", "invalid_filename", "unsupported_file",
@@ -77,6 +94,7 @@ def create_app(engine: Engine | None = None) -> FastAPI:
         engine = create_engine(database_url(), pool_pre_ping=True,
                                hide_parameters=True)
     queries, runs, documents = ApiQueries(engine), RunRepository(engine), DocumentRepository(engine)
+    corrections = CorrectionRepository(engine)
     storage = UploadStorage(Path(os.getenv("DOCUCHECK_DATA_DIR", str(ROOT / "data"))))
     ingestion = DocumentIngestion(engine, storage.root)
 
@@ -110,7 +128,8 @@ def create_app(engine: Engine | None = None) -> FastAPI:
     @app.exception_handler(DocumentError)
     @app.exception_handler(UploadError)
     @app.exception_handler(IngestionError)
-    async def domain_error(request: Request, exc: ApiQueryError | RepositoryError | DocumentError | UploadError | IngestionError):
+    @app.exception_handler(CorrectionError)
+    async def domain_error(request: Request, exc: ApiQueryError | RepositoryError | DocumentError | UploadError | IngestionError | CorrectionError):
         return _error(request, _domain_status(exc.code), exc.code)
 
     @app.exception_handler(RequestValidationError)
@@ -183,6 +202,22 @@ def create_app(engine: Engine | None = None) -> FastAPI:
     def list_documents(case_id: str):
         return documents.list_current(case_id)
 
+    @router.post("/cases/{case_id}/corrections", status_code=201,
+                 response_model=CorrectionAccepted)
+    def submit_correction(case_id: str, body: CorrectionIn,
+                          idempotency_key: str = Header(
+                              alias="Idempotency-Key", min_length=1, max_length=255,
+                          )):
+        return corrections.submit(SubmitCorrection(
+            case_id=case_id, idempotency_key=idempotency_key,
+            **body.model_dump(),
+        ))
+
+    @router.get("/cases/{case_id}/corrections/{correction_id}",
+                response_model=CorrectionOut)
+    def get_correction(case_id: str, correction_id: str):
+        return corrections.get_correction(case_id, correction_id)
+
     @router.get("/cases/{case_id}/snapshots/{snapshot_id}/documents/"
                 "{document_id}/evidence", response_model=DocumentEvidenceOut)
     def list_document_evidence(case_id: str, snapshot_id: str,
@@ -224,6 +259,10 @@ def create_app(engine: Engine | None = None) -> FastAPI:
     @router.get("/agent-runs/{run_id}", response_model=RunOut)
     def get_run(run_id: str):
         return queries.get_run(run_id)
+
+    @router.get("/agent-runs/{run_id}/facts", response_model=RunFactsOut)
+    def get_run_facts(run_id: str):
+        return corrections.get_run_facts(run_id)
 
     @router.get("/agent-runs/{run_id}/events", response_model=EventsOut)
     def get_events(run_id: str, after_seq: int = Query(default=0, ge=0)):

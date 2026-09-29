@@ -17,6 +17,7 @@ from .models import (
     agent_runs,
     cases,
     conversations,
+    corrections,
     idempotency_records,
     input_snapshots,
     messages,
@@ -204,6 +205,10 @@ class RunRepository:
                 )).first()
                 if snapshot is None or conversation is None:
                     raise RepositoryError("scope_mismatch")
+                if connection.scalar(select(corrections.c.id).where(
+                    corrections.c.to_snapshot_id == request.snapshot_id,
+                )) is not None:
+                    raise RepositoryError("correction_pending_recheck")
                 busy = connection.scalar(select(agent_runs.c.id).where(
                     agent_runs.c.conversation_id == request.conversation_id,
                     agent_runs.c.snapshot_id == request.snapshot_id,

@@ -144,3 +144,55 @@ class DocumentEvidenceOut(BaseModel):
     coverage_issues: list[str]
     evidence: list[EvidenceOut]
     next_ordinal: int
+
+
+class CorrectionIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    source_run_id: str = Field(min_length=1, max_length=32)
+    fact_set_id: str = Field(min_length=1, max_length=64)
+    fact_id: str = Field(min_length=1, max_length=64)
+    raw_value: str = Field(pattern=r"^\d+(\.\d+)?$", max_length=20)
+    raw_unit: str = Field(min_length=1, max_length=30)
+    reason: str = Field(min_length=1, max_length=2000)
+    expected_revision: int = Field(ge=1)
+
+    @field_validator("reason")
+    @classmethod
+    def reason_non_blank(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("reason_empty")
+        return value
+
+
+class CorrectionAccepted(BaseModel):
+    correction_id: str
+    case_id: str
+    source_run_id: str
+    from_snapshot_id: str
+    snapshot_id: str
+    revision: int
+    review_status: Literal["pending_recheck"]
+
+
+class CorrectionOut(CorrectionAccepted):
+    fact_set_id: str
+    fact_id: str
+    field_key: str
+    supplier: str
+    old_fact: dict
+    corrected_candidate: dict
+    source_evidence_ids: list[str]
+    target_evidence_ids: list[str]
+    reason: str
+    created_at: str
+
+
+class RunFactsOut(BaseModel):
+    run_id: str
+    case_id: str
+    snapshot_id: str
+    revision: int
+    is_current: bool
+    available: bool
+    fact_sets: list[dict]

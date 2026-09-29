@@ -22,6 +22,8 @@
 
 > **M3-11a 当前进度（2026-09-29）**：[可复核事实集持久化](m3-11a-fact-persistence-2026-09-29.md)将已验证事实及扫描范围写入 Run 记忆 v2，跨进程恢复重新核验来源；v1 历史记录可读。离线 **379 passed, 10 skipped**，Ruff 与依赖检查通过。本步不含修正提交、新版本重算或删除清理；前端保持讨论暂停点。
 
+> **M3-11b 当前进度（2026-09-29）**：[来源事实修正](m3-11b-correction-submission-2026-09-29.md)增加事实列表、修正提交与审计读取，新值限定为同一原文证据支持的值；原子产生新快照并令旧 Run 过期。新版本 `pending_recheck` 阶段禁止新 Run，等待 M3-11c 的规则重算。迁移为 `0006_corrections`；离线 **387 passed, 11 skipped**，真实 MySQL 无模型并发测试 **1 passed**。前端、正式新结论和删除清理待后续。
+
 > **M3 第一小步（2026-09-28，历史进度）**：按[运行生命周期计划](superpowers/plans/2026-09-28-m3-run-lifecycle.md)新增不可变 Run 状态及 attempt/fence/快照归属规则；当时定向 6 项、后端合计 **275 项测试**和 Ruff 通过。数据库原子更新仍未实现；这一小步未运行 Docker 或模型 API。
 
 > **M3 第二小步（2026-09-28，迁移验收完成）**：[核心表与迁移记录](m3-2-persistence-schema-2026-09-28.md)定义 12 张业务表、Alembic `0001_core` 和依赖锁；后端 **280 项测试**、Ruff、临时 SQLite 升降迁移通过，MySQL 方言 SQL 可生成。用户本机 Docker MySQL 8.4 显示 `healthy`，Alembic 升级无报错，`current` 为 `0001_core (head)`。事务 repository、API、worker 与正式上传仍未实现。

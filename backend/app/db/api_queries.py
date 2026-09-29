@@ -9,6 +9,7 @@ from .models import (
     agent_runs,
     cases,
     conversations,
+    corrections,
     input_snapshots,
     run_attempts,
     run_events,
@@ -72,6 +73,10 @@ class ApiQueries:
             if snapshot_id is None:
                 raise ApiQueryError("revision_conflict" if row.revision !=
                                     expected_revision else "snapshot_not_ready")
+            if connection.scalar(select(corrections.c.id).where(
+                corrections.c.to_snapshot_id == snapshot_id,
+            )) is not None:
+                raise ApiQueryError("correction_pending_recheck")
             return row.case_id, snapshot_id
 
     def get_run(self, run_id: str) -> dict:
