@@ -3,13 +3,29 @@
 import argparse
 import json
 import time
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
+from datetime import datetime
 
 from dotenv import load_dotenv
 from sqlalchemy import Engine, create_engine
 
 from .db.connection import ROOT, database_url
 from .db.outbox_dispatcher import PublishRun, dispatch_once
+from .db.outbox_repository import OutboxRepository
+from .db.run_repository import RunRepository
+
+
+@dataclass(frozen=True)
+class MaintenanceSummary:
+    recovered: int
+    requeued: int
+
+
+def maintenance_once(engine: Engine, *, now: datetime | None = None,
+                     limit: int = 100) -> MaintenanceSummary:
+    recovered = RunRepository(engine).recover_stale(now=now, limit=limit)
+    requeued = OutboxRepository(engine).requeue_unclaimed(now=now, limit=limit)
+    return MaintenanceSummary(recovered, requeued)
 
 
 def _publish(run_id: str, attempt_id: str, event_key: str) -> None:
@@ -26,8 +42,10 @@ def main(argv: list[str] | None = None, *, engine: Engine | None = None,
     parser.add_argument("--once", action="store_true")
     parser.add_argument("--limit", type=int, default=10)
     parser.add_argument("--poll-seconds", type=float, default=2)
+    parser.add_argument("--maintenance-seconds", type=float, default=30)
     args = parser.parse_args(argv)
-    if not 1 <= args.limit <= 100 or not 0.1 <= args.poll_seconds <= 60:
+    if (not 1 <= args.limit <= 100 or not 0.1 <= args.poll_seconds <= 60
+            or not 1 <= args.maintenance_seconds <= 3600):
         parser.error("invalid dispatch limits")
     load_dotenv(ROOT / ".env", override=False)
     owns_engine = engine is None
@@ -35,11 +53,19 @@ def main(argv: list[str] | None = None, *, engine: Engine | None = None,
         engine = create_engine(database_url(), pool_pre_ping=True,
                                hide_parameters=True)
     sender = publish or _publish
+    next_maintenance = 0.0
     try:
         while True:
+            maintenance = None
+            if args.once or time.monotonic() >= next_maintenance:
+                maintenance = maintenance_once(engine)
+                next_maintenance = time.monotonic() + args.maintenance_seconds
             summary = dispatch_once(engine, sender, limit=args.limit)
-            if args.once or summary.claimed:
-                print(json.dumps(asdict(summary)), flush=True)
+            if args.once or summary.claimed or (maintenance and (
+                    maintenance.recovered or maintenance.requeued)):
+                print(json.dumps({**asdict(summary),
+                                  **asdict(maintenance or MaintenanceSummary(0, 0))}),
+                      flush=True)
             if args.once:
                 return 0 if summary.retried == 0 else 1
             time.sleep(args.poll_seconds)

@@ -24,6 +24,8 @@
 
 > **M3 第八小步 B（2026-09-28，范围内验收完成）**：Outbox 发布器在数据库事务外将 `run.dispatch` 发至 Redis，Linux Celery worker 按 Run/attempt 领取并运行持久化 LangGraph Agent；重复投递受数据库 fence 保护。后端离线 **341 passed, 7 skipped**，真实 MySQL/Redis/Celery 空快照闭环 **1 passed**，worker 健康、自动派发已启动；本步未调用模型 API。强杀 worker 后 `running` 回收、Redis 丢消息对账、跨进程多轮持久化和前端仍待后续。见 [M3-8b 记录](docs/m3-8b-outbox-celery-2026-09-28.md)。
 
+> **M3 第八小步 C（2026-09-29，范围内验收完成）**：Run 心跳、120 秒失联回收与 fence、结果未知的 API 可见性、已投递但未领取 Outbox 的延时重投已实现；旧 Case 版本不重复派发。Redis AOF 卷、MySQL 恢复索引与 `DATETIME(6)` 迁移已应用，本机 Alembic 为 `0003_recovery_precision`。离线后端 **350 passed, 8 skipped**，显式 MySQL/API/Redis/Celery 测试 **3 passed**，含独立进程强制终止且不调用模型的回收测试。跨进程多轮上下文、后台解析与前端仍待后续；见 [M3-8c 记录](docs/m3-8c-run-recovery-2026-09-29.md)。
+
 ## 最新协作约定（2026-09-25，优先执行）
 
 用户要求先确认计划、一次一个小步骤，不连续实施多个阶段。执行前阅读 `docs/step-by-step-plan.md`；先说明本步内容与验收，用户确认后只做本步。API 配置/调用、安装、启动容器等额外操作先给步骤，由用户执行。不要自动启动并行开发。M1 的七个小步骤已在模拟包与内存字段范围内完成；[M1 验收小结](docs/m1-acceptance-2026-09-25.md)区分真实模型结果、离线验证与未实现能力。真实两轮对话第三次尝试通过：首问 6 次模型调用返回“资料冲突”，追问 3 次调用复用同会话、同快照的核验结果并读原文；当时后端离线测试 90/90、全目录 Ruff 和 `pip check` 通过。当时追问附带需求来源的问题已在 M2-1 做离线修正；继续每次只实施一个经用户确认的小步骤。
@@ -101,6 +103,7 @@ Windows 上运行 API 和 Vite；Docker Compose 运行 MySQL、Redis 和 Linux C
 - 资源：`/cases`、供应商/文档、`/cases/{id}/conversations`、`/conversations/{id}/messages`、`/agent-runs/{id}` 及其 events/results/cancel/retry/resume/export、`/cases/{id}/corrections`、`/evidence/{id}`、`/documents/{id}/content`。详细请求与返回见新架构；旧 `/questions`、`/runs` 均未实现，不建立兼容层。
 - 运行需支持取消与显式重试；健康接口为 `/health/live`、`/health/ready`。错误响应包含 `error.code`、`error.message`、`error.details`、`error.request_id`。文件读取接口只接受服务端生成的 ID，不接受客户端文件系统路径。
 - 创建 Run 与 Outbox 在同一数据库事务内；worker 按 run/attempt 幂等处理，不承诺 exactly-once。导出读取不可变运行快照，和页面显示一致。
+- Run 查询返回活跃 attempt 的 `outcome_unknown`。`worker_lost` 的 Run 为 `interrupted`，用户须显式 retry；系统不能自动重发可能已经到达模型服务的请求。
 
 ## 计划与当前进度
 

@@ -1,7 +1,10 @@
 """A submitted Run uses evidence from its bound uploaded snapshot."""
 
 import json
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from threading import Event
+from time import monotonic, sleep
 
 import pytest
 from fastapi.testclient import TestClient
@@ -11,6 +14,7 @@ from sqlalchemy import create_engine, event, select, update
 from backend.app.api.main import create_app
 from backend.app.db.ingestion import DocumentIngestion
 from backend.app.db.models import (
+    agent_runs,
     document_versions,
     evidence_blocks,
     metadata,
@@ -261,6 +265,52 @@ def test_submitted_run_uses_persisted_ids_and_finishes(uploaded_case):
     with pytest.raises(RepositoryError, match="stale_attempt"):
         execute_run(engine, submitted["run_id"], submitted["attempt_id"], provider)
     assert provider.calls == 3
+
+
+def test_executor_heartbeats_during_blocked_model_call(uploaded_case):
+    from backend.app.db.run_executor import execute_run
+
+    client, engine, storage, case_id, uploaded = uploaded_case
+    DocumentIngestion(engine, storage).process_document(
+        case_id, uploaded["snapshot_id"], uploaded["document_id"])
+    with engine.connect() as connection:
+        evidence_id = connection.scalar(select(evidence_blocks.c.id).where(
+            evidence_blocks.c.document_version_id == uploaded["document_id"],
+            evidence_blocks.c.cell == "B6",
+        ))
+    submitted, _ = _submit_question(client, case_id)
+    entered, release = Event(), Event()
+
+    class BlockingProvider(SourceProvider):
+        def decide(self, messages, tools, **kwargs):
+            if self.calls == 0:
+                entered.set()
+                if not release.wait(5):
+                    raise AssertionError("model-call test wait expired")
+            return super().decide(messages, tools, **kwargs)
+
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        task = pool.submit(execute_run, engine, submitted["run_id"],
+                           submitted["attempt_id"], BlockingProvider(evidence_id),
+                           heartbeat_interval_seconds=0.02)
+        try:
+            assert entered.wait(5)
+            with engine.connect() as connection:
+                claimed_at = connection.scalar(select(agent_runs.c.updated_at).where(
+                    agent_runs.c.id == submitted["run_id"]))
+            deadline = monotonic() + 1
+            while monotonic() < deadline:
+                with engine.connect() as connection:
+                    updated = connection.scalar(select(agent_runs.c.updated_at).where(
+                        agent_runs.c.id == submitted["run_id"]))
+                if updated > claimed_at:
+                    break
+                sleep(0.01)
+            else:
+                pytest.fail("executor did not heartbeat while the model was blocked")
+        finally:
+            release.set()
+        assert task.result(timeout=10).status == "completed"
 
 
 def test_worker_execution_ignores_duplicate_without_second_model_call(uploaded_case):

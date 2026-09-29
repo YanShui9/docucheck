@@ -5,7 +5,14 @@ from uuid import uuid4
 
 from sqlalchemy import Engine, insert, select
 
-from .models import agent_runs, cases, conversations, input_snapshots, run_events
+from .models import (
+    agent_runs,
+    cases,
+    conversations,
+    input_snapshots,
+    run_attempts,
+    run_events,
+)
 
 
 class ApiQueryError(ValueError):
@@ -71,7 +78,10 @@ class ApiQueries:
         with self.engine.connect() as connection:
             row = connection.execute(select(
                 agent_runs, cases.c.revision.label("current_revision"),
-            ).join(cases, agent_runs.c.case_id == cases.c.id).where(
+                run_attempts.c.outcome_unknown.label("active_outcome_unknown"),
+            ).join(cases, agent_runs.c.case_id == cases.c.id).join(
+                run_attempts, agent_runs.c.active_attempt_id == run_attempts.c.id,
+            ).where(
                 agent_runs.c.id == run_id,
             )).mappings().first()
             if row is None:
@@ -85,6 +95,7 @@ class ApiQueries:
                 "active_attempt_id": row["active_attempt_id"],
                 "answer_text": row["answer_text"],
                 "error_code": row["error_code"],
+                "outcome_unknown": row["active_outcome_unknown"],
                 "is_current": row["revision"] == row["current_revision"],
                 "created_at": _utc(row["created_at"]),
                 "updated_at": _utc(row["updated_at"]),

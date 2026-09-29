@@ -1,13 +1,13 @@
 """First HTTP slice: real SQL writes, idempotency and Run visibility."""
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, event, insert, update
 
 from backend.app.api.main import create_app
-from backend.app.db.models import cases, input_snapshots, metadata
+from backend.app.db.models import agent_runs, cases, input_snapshots, metadata
 from backend.app.db.run_repository import RunRepository
 
 
@@ -133,3 +133,30 @@ def test_retry_replays_one_attempt_and_stale_revision_cannot_create_new_run(api)
     assert replay.json() == first
     run = client.get(f"/api/v1/agent-runs/{first['run_id']}").json()
     assert run["is_current"] is False
+
+
+def test_lost_worker_is_visible_as_unknown_and_retry_resets_active_attempt(api):
+    client, engine = api
+    case_id, conversation_id = _case_and_conversation(client)
+    _snapshot(engine, case_id)
+    submitted = _message(client, conversation_id).json()
+    runs = RunRepository(engine)
+    runs.claim(submitted["run_id"], submitted["attempt_id"])
+    now = datetime.now(UTC).replace(tzinfo=None)
+    with engine.begin() as connection:
+        connection.execute(update(agent_runs).where(
+            agent_runs.c.id == submitted["run_id"]).values(
+                updated_at=now - timedelta(minutes=3)))
+    assert runs.recover_stale(now=now) == 1
+    url = f"/api/v1/agent-runs/{submitted['run_id']}"
+    lost = client.get(url).json()
+    assert lost["status"] == "interrupted"
+    assert lost["error_code"] == "worker_lost"
+    assert lost["outcome_unknown"] is True
+    retry = client.post(f"{url}/retry",
+                        headers={"Idempotency-Key": "manual-after-loss"},
+                        json={"expected_revision": 1})
+    assert retry.status_code == 202
+    active = client.get(url).json()
+    assert active["status"] == "queued"
+    assert active["outcome_unknown"] is False

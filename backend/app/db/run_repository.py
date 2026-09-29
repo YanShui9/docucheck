@@ -5,7 +5,7 @@ The API and worker may call this repository; it does not call a model or queue.
 
 import json
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from hashlib import sha256
 from uuid import uuid4
 
@@ -63,6 +63,14 @@ def _id() -> str:
 def _now() -> datetime:
     # MySQL DATETIME and the first migration store UTC without a zone suffix.
     return datetime.now(UTC).replace(tzinfo=None)
+
+
+def _utc_naive(value: datetime | None) -> datetime:
+    if value is None:
+        return _now()
+    if value.tzinfo is not None:
+        return value.astimezone(UTC).replace(tzinfo=None)
+    return value
 
 
 def _hash_request(request: SubmitRun) -> str:
@@ -247,6 +255,68 @@ class RunRepository:
             self._append_event(connection, run_id, attempt_id,
                                "claimed", RunStatus.RUNNING, now)
             return _state(self._read_run(connection, run_id))
+
+    def heartbeat(self, run_id: str, attempt_id: str, fence: int, *,
+                  now: datetime | None = None) -> bool:
+        """Refresh only the attempt that still owns a running Run."""
+        current = _utc_naive(now)
+        with self.engine.begin() as connection:
+            changed = connection.execute(update(agent_runs).where(
+                agent_runs.c.id == run_id,
+                agent_runs.c.active_attempt_id == attempt_id,
+                agent_runs.c.fence == fence,
+                agent_runs.c.status == RunStatus.RUNNING.value,
+                agent_runs.c.updated_at <= current,
+            ).values(updated_at=current))
+            return changed.rowcount == 1
+
+    def recover_stale(self, *, now: datetime | None = None,
+                      stale_after_seconds: int = 120,
+                      limit: int = 100) -> int:
+        """Fence lost workers; leave unknown model outcomes for manual retry."""
+        if (type(stale_after_seconds) is not int
+                or not 30 <= stale_after_seconds <= 86_400):
+            raise ValueError("invalid_stale_after")
+        if type(limit) is not int or not 1 <= limit <= 100:
+            raise ValueError("invalid_limit")
+        current = _utc_naive(now)
+        cutoff = current - timedelta(seconds=stale_after_seconds)
+        recovered = 0
+        with self.engine.begin() as connection:
+            rows = connection.execute(select(
+                agent_runs.c.id, agent_runs.c.active_attempt_id,
+                agent_runs.c.fence,
+            ).where(
+                agent_runs.c.status == RunStatus.RUNNING.value,
+                agent_runs.c.updated_at <= cutoff,
+            ).order_by(agent_runs.c.updated_at, agent_runs.c.id).limit(limit)
+                .with_for_update(skip_locked=True)).mappings().all()
+            for row in rows:
+                changed = connection.execute(update(agent_runs).where(
+                    agent_runs.c.id == row["id"],
+                    agent_runs.c.active_attempt_id == row["active_attempt_id"],
+                    agent_runs.c.fence == row["fence"],
+                    agent_runs.c.status == RunStatus.RUNNING.value,
+                    agent_runs.c.updated_at <= cutoff,
+                ).values(status=RunStatus.INTERRUPTED.value,
+                         fence=agent_runs.c.fence + 1,
+                         answer_text=None, error_code="worker_lost",
+                         updated_at=current))
+                if changed.rowcount != 1:
+                    continue
+                attempt = connection.execute(update(run_attempts).where(
+                    run_attempts.c.id == row["active_attempt_id"],
+                    run_attempts.c.run_id == row["id"],
+                    run_attempts.c.status == RunStatus.RUNNING.value,
+                ).values(status=RunStatus.INTERRUPTED.value,
+                         finished_at=current, outcome_unknown=True))
+                if attempt.rowcount != 1:
+                    raise RepositoryError("repository_invariant")
+                self._append_event(connection, row["id"],
+                                   row["active_attempt_id"], "interrupted",
+                                   RunStatus.INTERRUPTED, current)
+                recovered += 1
+        return recovered
 
     def finish(self, run_id: str, attempt_id: str, fence: int,
                snapshot_id: str, status: RunStatus,

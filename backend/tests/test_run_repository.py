@@ -1,6 +1,7 @@
 """Persistence checks for the M3 Run transaction boundary."""
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
+from time import monotonic, sleep
 
 import pytest
 from sqlalchemy import create_engine, event, func, insert, select
@@ -220,3 +221,68 @@ def test_finish_rejects_answer_after_case_revision_changes(repository):
                           "snapshot-a", RunStatus.COMPLETED, "stale")
     with repository.engine.connect() as connection:
         assert connection.scalar(select(agent_runs.c.answer_text)) is None
+
+
+def test_heartbeat_keeps_run_live_then_stale_recovery_fences_late_answer(repository):
+    submitted = _submit(repository)
+    running = repository.claim(submitted.run_id, submitted.attempt_id)
+    with repository.engine.connect() as connection:
+        claimed_at = connection.scalar(select(agent_runs.c.updated_at))
+    beat_at = claimed_at + timedelta(seconds=30)
+    assert repository.heartbeat(submitted.run_id, submitted.attempt_id,
+                                running.fence, now=beat_at)
+    assert repository.recover_stale(
+        now=beat_at + timedelta(seconds=119), stale_after_seconds=120) == 0
+    assert repository.recover_stale(
+        now=beat_at + timedelta(seconds=121), stale_after_seconds=120) == 1
+    interrupted = repository.get(submitted.run_id)
+    assert interrupted.status == RunStatus.INTERRUPTED
+    assert interrupted.fence == running.fence + 1
+    with repository.engine.connect() as connection:
+        run_row = connection.execute(select(agent_runs).where(
+            agent_runs.c.id == submitted.run_id)).mappings().one()
+        attempt = connection.execute(select(run_attempts).where(
+            run_attempts.c.id == submitted.attempt_id)).mappings().one()
+    assert run_row["error_code"] == "worker_lost"
+    assert run_row["answer_text"] is None
+    assert attempt["outcome_unknown"] is True
+    assert attempt["status"] == "interrupted"
+    assert not repository.heartbeat(submitted.run_id, submitted.attempt_id,
+                                    running.fence, now=beat_at + timedelta(seconds=122))
+    with pytest.raises(RepositoryError, match="stale_attempt"):
+        repository.finish(submitted.run_id, submitted.attempt_id, running.fence,
+                          running.snapshot_id, RunStatus.COMPLETED, "late")
+    retry = repository.retry(submitted.run_id, running.snapshot_id,
+                             running.revision, "manual-after-loss")
+    assert retry.attempt_id != submitted.attempt_id
+
+
+def test_stale_sweep_ignores_finished_run(repository):
+    submitted = _submit(repository)
+    running = repository.claim(submitted.run_id, submitted.attempt_id)
+    repository.finish(submitted.run_id, submitted.attempt_id, running.fence,
+                      running.snapshot_id, RunStatus.COMPLETED, "done")
+    assert repository.recover_stale(now=NOW + timedelta(days=30),
+                                    stale_after_seconds=120) == 0
+    assert repository.get(submitted.run_id).status == RunStatus.COMPLETED
+
+
+def test_background_heartbeat_refreshes_running_run(repository):
+    from backend.app.db.run_heartbeat import run_heartbeat
+
+    submitted = _submit(repository)
+    running = repository.claim(submitted.run_id, submitted.attempt_id)
+    with repository.engine.connect() as connection:
+        before = connection.scalar(select(agent_runs.c.updated_at))
+    with run_heartbeat(repository, running, interval_seconds=0.02):
+        deadline = monotonic() + 1
+        while monotonic() < deadline:
+            with repository.engine.connect() as connection:
+                updated = connection.scalar(select(agent_runs.c.updated_at))
+            if updated > before:
+                break
+            sleep(0.01)
+        else:
+            pytest.fail("running heartbeat did not update its lease")
+    repository.finish(submitted.run_id, submitted.attempt_id, running.fence,
+                      running.snapshot_id, RunStatus.COMPLETED, "done")

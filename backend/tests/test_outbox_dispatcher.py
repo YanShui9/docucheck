@@ -128,6 +128,48 @@ def test_publish_then_lost_ack_can_repeat_but_run_claim_cannot(queued):
         runs.claim(receipt.run_id, receipt.attempt_id)
 
 
+def test_maintenance_republishes_lost_queue_message_then_stops_after_claim(queued):
+    from backend.app.dispatch_outbox import maintenance_once
+
+    engine, receipt, now = queued
+    sent = []
+    first = dispatch_once(engine, lambda *args: sent.append(args), now=now)
+    assert first.published == 1
+    summary = maintenance_once(engine, now=now + timedelta(seconds=121))
+    assert summary.requeued == 1 and summary.recovered == 0
+    second = dispatch_once(engine, lambda *args: sent.append(args),
+                           now=now + timedelta(seconds=121))
+    assert second.published == 1 and len(sent) == 2 and sent[0] == sent[1]
+    RunRepository(engine).claim(receipt.run_id, receipt.attempt_id)
+    later = maintenance_once(engine, now=now + timedelta(hours=2))
+    assert later.requeued == 0
+
+
+def test_maintenance_marks_lost_running_attempt_unknown_without_publishing(queued):
+    from backend.app.db.models import agent_runs, run_attempts
+    from backend.app.dispatch_outbox import maintenance_once
+
+    engine, receipt, now = queued
+    running = RunRepository(engine).claim(receipt.run_id, receipt.attempt_id)
+    with engine.begin() as connection:
+        connection.execute(update(agent_runs).where(
+            agent_runs.c.id == receipt.run_id).values(
+                updated_at=now - timedelta(minutes=3)))
+    summary = maintenance_once(engine, now=now)
+    assert summary.recovered == 1 and summary.requeued == 0
+    assert dispatch_once(engine, lambda *args: pytest.fail("unexpected publish"),
+                         now=now).published == 0
+    with engine.connect() as connection:
+        assert connection.scalar(select(run_attempts.c.outcome_unknown)) is True
+    from backend.app.runtime.lifecycle import RunStatus
+
+    assert RunRepository(engine).get(receipt.run_id).status == RunStatus.INTERRUPTED
+    with pytest.raises(Exception, match="stale_attempt"):
+        RunRepository(engine).finish(receipt.run_id, receipt.attempt_id,
+                                     running.fence, running.snapshot_id,
+                                     RunStatus.COMPLETED, "late")
+
+
 def test_dispatcher_cli_once_uses_injected_publisher(queued, capsys):
     from backend.app.dispatch_outbox import main
 

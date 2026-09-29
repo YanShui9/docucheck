@@ -113,3 +113,41 @@ def test_release_waits_for_retry_delay_and_validates_bounds(dispatchable):
     with pytest.raises(ValueError, match="invalid_retry_delay"):
         repository.release(second.id, second.delivery_attempts,
                            retry_delay_seconds=-1, now=now)
+
+
+def test_delivered_queued_run_is_requeued_after_grace_with_backoff(dispatchable):
+    repository, engine, receipt, now = dispatchable
+    first = repository.claim(now=now)[0]
+    assert repository.mark_delivered(first.id, first.delivery_attempts, now=now)
+    with engine.connect() as connection:
+        next_check = connection.scalar(select(outbox.c.available_at))
+    assert next_check == now + timedelta(seconds=120)
+    assert repository.requeue_unclaimed(now=now + timedelta(seconds=119)) == 0
+    assert repository.requeue_unclaimed(now=next_check) == 1
+    second = repository.claim(now=next_check)[0]
+    assert second.attempt_id == receipt.attempt_id
+    assert second.delivery_attempts == 2
+    assert repository.mark_delivered(second.id, second.delivery_attempts,
+                                     now=next_check)
+    with engine.connect() as connection:
+        assert connection.scalar(select(outbox.c.available_at)) == (
+            next_check + timedelta(seconds=240))
+    running = RunRepository(engine).claim(receipt.run_id, receipt.attempt_id)
+    from backend.app.runtime.lifecycle import RunStatus
+
+    RunRepository(engine).finish(receipt.run_id, receipt.attempt_id,
+                                 running.fence, running.snapshot_id,
+                                 RunStatus.COMPLETED, "done")
+    assert repository.requeue_unclaimed(
+        now=next_check + timedelta(hours=2)) == 0
+
+
+def test_delivered_old_snapshot_is_not_requeued(dispatchable):
+    repository, engine, _, now = dispatchable
+    first = repository.claim(now=now)[0]
+    assert repository.mark_delivered(first.id, first.delivery_attempts, now=now)
+    with engine.begin() as connection:
+        connection.execute(cases.update().where(cases.c.id == "case-a")
+                           .values(revision=2))
+    assert repository.requeue_unclaimed(
+        now=now + timedelta(minutes=3)) == 0

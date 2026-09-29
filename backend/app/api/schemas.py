@@ -61,6 +61,7 @@ class RunOut(BaseModel):
     active_attempt_id: str
     answer_text: str | None
     error_code: str | None
+    outcome_unknown: bool
     is_current: bool
     created_at: str
     updated_at: str

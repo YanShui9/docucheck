@@ -20,8 +20,10 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
 )
+from sqlalchemy.dialects import mysql
 
 metadata = MetaData()
+precise_datetime = DateTime().with_variant(mysql.DATETIME(fsp=6), "mysql")
 
 cases = Table(
     "cases", metadata,
@@ -141,7 +143,7 @@ agent_runs = Table(
     Column("answer_text", Text),
     Column("error_code", String(64)),
     Column("created_at", DateTime, nullable=False),
-    Column("updated_at", DateTime, nullable=False),
+    Column("updated_at", precise_datetime, nullable=False),
     ForeignKeyConstraint(["case_id", "conversation_id"],
                          ["conversations.case_id", "conversations.id"],
                          name="fk_runs_conversation"),
@@ -158,6 +160,7 @@ agent_runs = Table(
     mysql_engine="InnoDB",
 )
 Index("ix_runs_case_created", agent_runs.c.case_id, agent_runs.c.created_at)
+Index("ix_runs_status_updated", agent_runs.c.status, agent_runs.c.updated_at)
 
 run_attempts = Table(
     "run_attempts", metadata,
@@ -204,8 +207,8 @@ outbox = Table(
     Column("payload_json", JSON, nullable=False),
     Column("status", String(20), nullable=False),
     Column("delivery_attempts", Integer, nullable=False),
-    Column("available_at", DateTime, nullable=False),
-    Column("delivered_at", DateTime),
+    Column("available_at", precise_datetime, nullable=False),
+    Column("delivered_at", precise_datetime),
     Column("created_at", DateTime, nullable=False),
     ForeignKeyConstraint(["run_id", "attempt_id"],
                          ["run_attempts.run_id", "run_attempts.id"],
