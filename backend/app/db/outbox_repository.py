@@ -44,10 +44,17 @@ class OutboxRepository:
         lease_until = current + timedelta(seconds=lease_seconds)
         claims: list[OutboxClaim] = []
         with self.engine.begin() as connection:
+            active_case = exists(select(agent_runs.c.id).join(
+                cases, cases.c.id == agent_runs.c.case_id,
+            ).where(
+                agent_runs.c.id == outbox.c.run_id,
+                cases.c.deletion_requested_at.is_(None),
+            ))
             rows = connection.execute(select(outbox).where(
                 outbox.c.event_type == event_type,
                 outbox.c.status.in_(("pending", "sending")),
                 outbox.c.available_at <= current,
+                active_case,
             ).order_by(outbox.c.available_at, outbox.c.id).limit(limit)
                 .with_for_update(skip_locked=True)).mappings().all()
             for row in rows:
@@ -99,6 +106,7 @@ class OutboxRepository:
             agent_runs.c.active_attempt_id == outbox.c.attempt_id,
             agent_runs.c.status == "queued",
             agent_runs.c.revision == cases.c.revision,
+            cases.c.deletion_requested_at.is_(None),
         ))
         requeued = 0
         with self.engine.begin() as connection:

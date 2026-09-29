@@ -23,6 +23,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import Engine, create_engine, select
 
 from ..db.api_queries import ApiQueries, ApiQueryError
+from ..db.case_deletion import CaseDeletion, CaseDeletionError
 from ..db.connection import ROOT, database_url
 from ..db.correction_recheck import CorrectionRecheck
 from ..db.correction_repository import (
@@ -36,6 +37,7 @@ from ..db.run_repository import RepositoryError, RunRepository, SubmitRun
 from ..parsing import MAX_FILE_BYTES
 from .schemas import (
     AttemptAccepted,
+    CaseDeletionOut,
     CaseOut,
     ConversationOut,
     CorrectionAccepted,
@@ -73,7 +75,7 @@ def _domain_status(code: str) -> int:
     if code in {"case_busy", "source_run_not_current", "facts_unavailable",
                 "memory_scope", "snapshot_capacity",
                 "correction_pending_recheck", "correction_source_changed",
-                "correction_recheck_capacity"}:
+                "correction_recheck_capacity", "case_deleting"}:
         return 409
     if code == "fact_not_found":
         return 404
@@ -98,6 +100,7 @@ def create_app(engine: Engine | None = None) -> FastAPI:
     queries, runs, documents = ApiQueries(engine), RunRepository(engine), DocumentRepository(engine)
     corrections = CorrectionRepository(engine)
     rechecks = CorrectionRecheck(engine)
+    deletion = CaseDeletion(engine)
     storage = UploadStorage(Path(os.getenv("DOCUCHECK_DATA_DIR", str(ROOT / "data"))))
     ingestion = DocumentIngestion(engine, storage.root)
 
@@ -132,7 +135,8 @@ def create_app(engine: Engine | None = None) -> FastAPI:
     @app.exception_handler(UploadError)
     @app.exception_handler(IngestionError)
     @app.exception_handler(CorrectionError)
-    async def domain_error(request: Request, exc: ApiQueryError | RepositoryError | DocumentError | UploadError | IngestionError | CorrectionError):
+    @app.exception_handler(CaseDeletionError)
+    async def domain_error(request: Request, exc: ApiQueryError | RepositoryError | DocumentError | UploadError | IngestionError | CorrectionError | CaseDeletionError):
         return _error(request, _domain_status(exc.code), exc.code)
 
     @app.exception_handler(RequestValidationError)
@@ -169,6 +173,12 @@ def create_app(engine: Engine | None = None) -> FastAPI:
     @router.post("/cases", status_code=201, response_model=CaseOut)
     def create_case():
         return queries.create_case()
+
+    @router.delete("/cases/{case_id}", status_code=202,
+                   response_model=CaseDeletionOut)
+    def request_case_deletion(case_id: str,
+                              expected_revision: int = Query(ge=0)):
+        return deletion.request(case_id, expected_revision)
 
     @router.post("/cases/{case_id}/documents", status_code=201,
                  response_model=DocumentAccepted)

@@ -29,6 +29,7 @@ cases = Table(
     "cases", metadata,
     Column("id", String(32), primary_key=True),
     Column("revision", Integer, nullable=False),
+    Column("deletion_requested_at", precise_datetime),
     Column("created_at", DateTime, nullable=False),
     Column("updated_at", DateTime, nullable=False),
     CheckConstraint("revision >= 0", name="ck_cases_revision"),

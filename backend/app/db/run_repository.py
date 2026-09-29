@@ -123,8 +123,12 @@ class RunRepository:
 
     def _require_current_case(self, connection, run_id: str) -> None:
         run = self._read_run(connection, run_id)
-        case = connection.execute(select(cases.c.revision).where(
+        case = connection.execute(select(
+            cases.c.revision, cases.c.deletion_requested_at,
+        ).where(
             cases.c.id == run["case_id"]).with_for_update()).first()
+        if case is not None and case.deletion_requested_at is not None:
+            raise RepositoryError("case_deleting")
         if case is None or case.revision != run["revision"]:
             raise RepositoryError("snapshot_changed")
 
@@ -179,6 +183,10 @@ class RunRepository:
             raise RepositoryError("invalid_request")
         request_hash = _hash_request(request)
         with self.engine.connect() as connection:
+            case = connection.execute(select(cases.c.deletion_requested_at).where(
+                cases.c.id == request.case_id)).first()
+            if case is not None and case.deletion_requested_at is not None:
+                raise RepositoryError("case_deleting")
             replay = self._replay(connection, scope, request.idempotency_key,
                                   request_hash)
             if replay is not None:
@@ -210,10 +218,14 @@ class RunRepository:
                     request_hash=request_hash, resource_type="run",
                     resource_id=run_id, created_at=now,
                 ))
-                case = connection.execute(select(cases.c.revision).where(
+                case = connection.execute(select(
+                    cases.c.revision, cases.c.deletion_requested_at,
+                ).where(
                     cases.c.id == request.case_id).with_for_update()).first()
                 if case is None:
                     raise RepositoryError("scope_mismatch")
+                if case.deletion_requested_at is not None:
+                    raise RepositoryError("case_deleting")
                 if case.revision != request.expected_revision:
                     raise RepositoryError("revision_conflict")
                 snapshot = connection.execute(select(input_snapshots.c.id).where(
@@ -476,6 +488,12 @@ class RunRepository:
                                      content)
         try:
             with self.engine.begin() as connection:
+                row = self._read_run(connection, run_id)
+                case = connection.execute(select(
+                    cases.c.revision, cases.c.deletion_requested_at,
+                ).where(cases.c.id == row["case_id"]).with_for_update()).first()
+                if case is not None and case.deletion_requested_at is not None:
+                    raise RepositoryError("case_deleting")
                 existing = self._replay_attempt(
                     connection, scope, idempotency_key, request_hash, run_id,
                 )
@@ -487,9 +505,6 @@ class RunRepository:
                     request_hash=request_hash, resource_type="attempt",
                     resource_id=attempt_id, created_at=now,
                 ))
-                row = self._read_run(connection, run_id)
-                case = connection.execute(select(cases.c.revision).where(
-                    cases.c.id == row["case_id"]).with_for_update()).first()
                 if (snapshot_id != row["snapshot_id"] or revision != row["revision"]
                         or case is None or case.revision != revision):
                     raise RepositoryError("snapshot_changed")

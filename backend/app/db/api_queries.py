@@ -46,9 +46,13 @@ class ApiQueries:
     def create_conversation(self, case_id: str) -> dict:
         conversation_id, now = uuid4().hex, _now()
         with self.engine.begin() as connection:
-            exists = connection.scalar(select(cases.c.id).where(cases.c.id == case_id))
-            if exists is None:
+            case = connection.execute(select(
+                cases.c.id, cases.c.deletion_requested_at,
+            ).where(cases.c.id == case_id).with_for_update()).first()
+            if case is None:
                 raise ApiQueryError("not_found")
+            if case.deletion_requested_at is not None:
+                raise ApiQueryError("case_deleting")
             connection.execute(insert(conversations).values(
                 id=conversation_id, case_id=case_id, created_at=now,
             ))
@@ -60,11 +64,14 @@ class ApiQueries:
         with self.engine.connect() as connection:
             row = connection.execute(select(
                 conversations.c.case_id, cases.c.revision,
+                cases.c.deletion_requested_at,
             ).join(cases, conversations.c.case_id == cases.c.id).where(
                 conversations.c.id == conversation_id,
             )).first()
             if row is None:
                 raise ApiQueryError("not_found")
+            if row.deletion_requested_at is not None:
+                raise ApiQueryError("case_deleting")
             if row.revision == 0:
                 raise ApiQueryError("snapshot_not_ready")
             snapshot_id = connection.scalar(select(input_snapshots.c.id).where(

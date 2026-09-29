@@ -46,6 +46,13 @@ class CaseOut(BaseModel):
     created_at: str
 
 
+class CaseDeletionOut(BaseModel):
+    case_id: str
+    revision: int
+    status: Literal["deleting"]
+    requested_at: str
+
+
 class ConversationOut(BaseModel):
     id: str
     case_id: str

@@ -106,6 +106,8 @@ M1 使用本机 CLI 和显式输入快照建立业务闭环；M3 将相同服务
 
 ### M3：运行服务
 
+**2026-09-29 M3-12a 进度：** [Case 删除请求与运行栅栏](m3-12a-case-deletion-request-2026-09-29.md)已完成源码与 MySQL 迁移验证。删除请求标记 `deleting`，原子终止活跃 Run、解析领取和待派发事件；实际数据库及原件清理仍待下一小步。前端继续受设计确认暂停点约束。
+
 - [ ] 数据模型与 Alembic 迁移；MySQL repository 实现 M1 接口。
 - [ ] API 实现 Case/文档/会话/messages/agent-runs/证据，错误与幂等约定统一。
 - [ ] 文件与索引准备、Agent 执行接 Linux Celery worker；Windows/Linux 分别锁定依赖。

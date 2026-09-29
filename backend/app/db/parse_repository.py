@@ -46,6 +46,7 @@ class ParseRepository:
                    document_versions.c.snapshot_id == input_snapshots.c.id)
                 .join(cases, input_snapshots.c.case_id == cases.c.id)
                 .where(input_snapshots.c.revision == cases.c.revision,
+                       cases.c.deletion_requested_at.is_(None),
                        or_(document_versions.c.parse_status == "pending",
                            and_(document_versions.c.parse_status == "processing",
                                 document_versions.c.parse_lease_until <= current)))

@@ -255,10 +255,14 @@ class CorrectionRepository:
         request_hash = _hash(request)
         try:
             with self.engine.begin() as connection:
-                case = connection.execute(select(cases.c.revision).where(
+                case = connection.execute(select(
+                    cases.c.revision, cases.c.deletion_requested_at,
+                ).where(
                     cases.c.id == request.case_id).with_for_update()).first()
                 if case is None:
                     raise CorrectionError("not_found")
+                if case.deletion_requested_at is not None:
+                    raise CorrectionError("case_deleting")
                 replay = self._replay(connection, scope, request.idempotency_key,
                                       request_hash)
                 if replay is not None:

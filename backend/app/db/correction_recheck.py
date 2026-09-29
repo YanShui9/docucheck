@@ -259,7 +259,12 @@ class CorrectionRecheck:
             )).mappings().first()
             if row is None:
                 raise CorrectionError("not_found")
-            current = connection.scalar(select(cases.c.revision).where(cases.c.id == case_id))
+            case = connection.execute(select(
+                cases.c.revision, cases.c.deletion_requested_at,
+            ).where(cases.c.id == case_id)).first()
+            if case is not None and case.deletion_requested_at is not None:
+                raise CorrectionError("case_deleting")
+            current = case.revision if case is not None else None
             target_revision = connection.scalar(select(input_snapshots.c.revision).where(
                 input_snapshots.c.id == row["to_snapshot_id"],
                 input_snapshots.c.case_id == case_id,
@@ -289,8 +294,14 @@ class CorrectionRecheck:
         now = datetime.now(UTC).replace(tzinfo=None)
         try:
             with self.engine.begin() as connection:
-                locked_revision = connection.scalar(select(cases.c.revision).where(
-                    cases.c.id == case_id).with_for_update())
+                locked_case = connection.execute(select(
+                    cases.c.revision, cases.c.deletion_requested_at,
+                ).where(cases.c.id == case_id).with_for_update()).first()
+                if (locked_case is not None
+                        and locked_case.deletion_requested_at is not None):
+                    raise CorrectionError("case_deleting")
+                locked_revision = (locked_case.revision
+                                   if locked_case is not None else None)
                 if locked_revision != target_revision:
                     raise CorrectionError("revision_conflict")
                 existing = connection.scalar(select(correction_reviews.c.correction_id).where(

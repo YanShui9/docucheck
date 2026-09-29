@@ -18,7 +18,7 @@ from ..parsing import (
     parse_pdf,
     parse_xlsx,
 )
-from .models import document_versions, evidence_blocks
+from .models import cases, document_versions, evidence_blocks
 
 MAX_EVIDENCE_BYTES = 60_000
 MAX_EVIDENCE_BLOCKS = 25_000
@@ -175,6 +175,12 @@ class DocumentIngestion:
 
     def process_document(self, case_id: str, snapshot_id: str,
                          document_id: str, *, claim_id: str | None = None) -> dict:
+        with self.engine.connect() as connection:
+            case = connection.execute(select(
+                cases.c.deletion_requested_at,
+            ).where(cases.c.id == case_id)).first()
+        if case is not None and case.deletion_requested_at is not None:
+            raise IngestionError("case_deleting")
         row = self._document(case_id, snapshot_id, document_id)
         if row["parse_status"] in {"complete", "partial"}:
             return self._current_receipt(case_id, snapshot_id, document_id)
@@ -208,6 +214,11 @@ class DocumentIngestion:
         }
         with self.engine.begin() as connection:
             current = datetime.now(UTC).replace(tzinfo=None)
+            case = connection.execute(select(
+                cases.c.deletion_requested_at,
+            ).where(cases.c.id == case_id).with_for_update()).first()
+            if case is not None and case.deletion_requested_at is not None:
+                raise IngestionError("case_deleting")
             condition = [
                 document_versions.c.id == document_id,
                 document_versions.c.case_id == case_id,
