@@ -155,23 +155,33 @@ class DocumentIngestion:
             )).mappings().one()
             return self._receipt(connection, row)
 
-    def _fail(self, row, code: str) -> dict:
+    def _fail(self, row, code: str, claim_id: str | None = None) -> dict:
         coverage = {"preflight": (row["coverage_json"] or {}).get("preflight", {}),
                     "coverage_issues": [code]}
+        current = datetime.now(UTC).replace(tzinfo=None)
         with self.engine.begin() as connection:
-            connection.execute(update(document_versions).where(
+            condition = [
                 document_versions.c.id == row["id"],
                 document_versions.c.parse_status == row["parse_status"],
-            ).values(parse_status="failed", parser_version=None,
-                     coverage_json=coverage))
+            ]
+            if claim_id is not None:
+                condition.extend((document_versions.c.parse_claim_id == claim_id,
+                                  document_versions.c.parse_lease_until > current))
+            connection.execute(update(document_versions).where(*condition).values(
+                parse_status="failed", parser_version=None,
+                parse_claim_id=None, parse_lease_until=None,
+                coverage_json=coverage))
         return self._current_receipt(row["case_id"], row["snapshot_id"], row["id"])
 
     def process_document(self, case_id: str, snapshot_id: str,
-                         document_id: str) -> dict:
+                         document_id: str, *, claim_id: str | None = None) -> dict:
         row = self._document(case_id, snapshot_id, document_id)
         if row["parse_status"] in {"complete", "partial"}:
             return self._current_receipt(case_id, snapshot_id, document_id)
-        if row["parse_status"] not in {"pending", "failed"}:
+        if claim_id is not None:
+            if row["parse_status"] != "processing" or row["parse_claim_id"] != claim_id:
+                raise IngestionError("stale_parse_claim")
+        elif row["parse_status"] not in {"pending", "failed"}:
             raise IngestionError("invalid_parse_state")
         try:
             path = self._source(row)
@@ -181,11 +191,11 @@ class DocumentIngestion:
         except IngestionError as exc:
             if exc.code == "parser_not_configured":
                 raise
-            return self._fail(row, exc.code)
+            return self._fail(row, exc.code, claim_id)
         except UnsupportedContentError:
-            return self._fail(row, "unsupported_content")
+            return self._fail(row, "unsupported_content", claim_id)
         except DocumentParsingError:
-            return self._fail(row, "parser_failed")
+            return self._fail(row, "parser_failed", claim_id)
 
         coverage = {
             "preflight": (row["coverage_json"] or {}).get("preflight", {}),
@@ -197,12 +207,19 @@ class DocumentIngestion:
             "coverage_issues": list(parsed.coverage_issues),
         }
         with self.engine.begin() as connection:
-            changed = connection.execute(update(document_versions).where(
+            current = datetime.now(UTC).replace(tzinfo=None)
+            condition = [
                 document_versions.c.id == document_id,
                 document_versions.c.case_id == case_id,
                 document_versions.c.snapshot_id == snapshot_id,
                 document_versions.c.parse_status == row["parse_status"],
-            ).values(parse_status=parsed.status,
+            ]
+            if claim_id is not None:
+                condition.extend((document_versions.c.parse_claim_id == claim_id,
+                                  document_versions.c.parse_lease_until > current))
+            changed = connection.execute(update(document_versions).where(*condition).values(
+                parse_status=parsed.status, parse_claim_id=None,
+                parse_lease_until=None,
                      parser_version=_stored_parser_version(parsed.parser_version),
                      coverage_json=coverage))
             if changed.rowcount == 1:

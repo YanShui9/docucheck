@@ -8,6 +8,7 @@ from sqlalchemy import create_engine, event, insert, select, update
 from backend.app.db.models import (
     cases,
     conversations,
+    document_versions,
     input_snapshots,
     metadata,
     outbox,
@@ -61,6 +62,29 @@ def test_publishes_only_current_queued_attempt_and_acks(queued):
     assert dispatch_once(engine, lambda *args: sent.append(args),
                          now=now + timedelta(seconds=61)).claimed == 0
     assert len(sent) == 1
+
+
+def test_waits_for_uploaded_document_parsing_before_dispatch(queued):
+    engine, receipt, now = queued
+    with engine.begin() as connection:
+        connection.execute(insert(document_versions).values(
+            id="document-a", case_id="case-a", snapshot_id="snapshot-a",
+            role="requirement", original_name="requirements.pdf",
+            storage_key="uploads/do/document-a.pdf", source_sha256="a" * 64,
+            media_type="application/pdf", parse_status="pending",
+            coverage_json={"preflight": {"pdf_pages": 1}}, created_at=now,
+        ))
+    sent = []
+    waiting = dispatch_once(engine, lambda *args: sent.append(args), now=now)
+    assert waiting.retried == 1 and waiting.published == 0
+    assert sent == []
+    with engine.begin() as connection:
+        connection.execute(update(document_versions).where(
+            document_versions.c.id == "document-a").values(parse_status="complete"))
+    ready = dispatch_once(engine, lambda *args: sent.append(args),
+                          now=now + timedelta(seconds=31))
+    assert ready.published == 1
+    assert sent[0][:2] == (receipt.run_id, receipt.attempt_id)
 
 
 def test_broker_failure_releases_with_delay_and_retries(queued):

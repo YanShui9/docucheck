@@ -28,6 +28,8 @@
 
 > **M3 第九小步（2026-09-29，范围内验收完成）**：同会话同快照的最近四轮问答、已验证核验结果、焦点与待澄清问题可跨 worker 恢复；`POST /api/v1/agent-runs/{run_id}/resume` 将澄清回复入库并创建新 attempt。活跃 Run 互斥，恢复前验证来源、规则版本和资料指纹。本机 Alembic 为 `0004_conversation_memory`；离线 **357 passed, 9 skipped**，真实 MySQL 脚本化 Provider 定向 **5 passed**，未调用 DeepSeek。见 [M3-9 记录](docs/m3-9-conversation-recovery-2026-09-29.md)。后台解析与前端未开始。
 
+> **M3 第十小步（2026-09-29）**：上传后的本机后台解析进程已实现当前快照文档的 MySQL 租约领取、XLSX/PDF 解析、迟到结果栅栏及三次失联转失败；Outbox 在文档解析结束前延后 Agent Run 派发。迁移为 `0005_background_parsing`，离线 **365 passed, 10 skipped**；本机启动方式与验收边界见 [M3-10 记录](docs/m3-10-background-parsing-2026-09-29.md)。真实 MinerU PDF 端到端解析与前端仍未验收；前端开始前先讨论规范和样式。
+
 ## 最新协作约定（2026-09-25，优先执行）
 
 > 2026-09-29 更新：用户已明确授权 AI 代为执行本地繁琐操作；需要使用 Docker 时先告知。真实模型 API 调用仍先说明用途、发送范围和可能费用；开始前端设计或代码前先暂停讨论规范与样式。下段关于额外操作由用户执行是历史记录。

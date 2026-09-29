@@ -26,6 +26,8 @@
 
 > M3 第九小步的 [跨进程会话追问与澄清恢复](docs/m3-9-conversation-recovery-2026-09-29.md)已实现同会话同快照的最近四轮问答及核验结果持久化、澄清回复 API、连续澄清与活跃 Run 互斥。离线 **357 passed, 9 skipped**，真实 MySQL 定向 **5 passed**；迁移为 `0004_conversation_memory`。脚本化 Provider 测试没有调用 DeepSeek；后台解析与前端仍待后续。
 
+> M3 第十小步的 [上传后台解析](docs/m3-10-background-parsing-2026-09-29.md)已实现 MySQL 租约领取、失联重领和旧结果栅栏；待解析文档会延后 Agent Run 派发。迁移为 `0005_background_parsing`，离线 **365 passed, 10 skipped**。PDF 的真实 MinerU 命令端到端处理仍待验收；前端尚未开始。
+
 > 最新协作状态（2026-09-25）：[M1 最小真实 Agent](docs/m1-acceptance-2026-09-25.md)在模拟包与内存字段范围内完成验收；真实模型连续两问通过，后端离线测试 90/90、全目录 Ruff 与依赖检查通过。正式上传、其他七字段和独立质量评测尚未完成。后续仍按[分步协作计划](docs/step-by-step-plan.md)一次做一个小步骤。任何前端工作开始前须先暂停并讨论设计规范与样式。
 
 > 2026-09-26：[M2-0 XLSX 内存分列证据修正](docs/m2-0-acceptance-2026-09-26.md)和 [M2-1 答复引用范围修正](docs/m2-1-acceptance-2026-09-26.md)已通过离线回归（当前 110 项测试）。下一小步为 M2-2 解析覆盖；M2 完整采购审查尚未完成。
@@ -98,8 +100,15 @@ docker compose --profile agent up -d --build worker dispatcher
 docker compose --profile agent ps
 ```
 
+在已激活的 `docucheck` Conda 环境中，迁移数据库并另开本机终端运行解析进程。它负责上传后的 PDF/XLSX 自动解析；关闭终端后进程停止，重启时会继续领取待处理文档。PDF 需指向本机已安装的 MinerU：
+
+```powershell
+python.exe -m alembic -c backend/alembic.ini upgrade head
+python.exe -m backend.app.parse_background --mineru-executable 'E:\developTools\miniconda3\envs\docucheck-mineru\Scripts\mineru-kit.exe'
+```
+
 Compose 启动 MySQL 8.4、Redis 7.4；显式启用 `agent` profile 后启动 Linux Celery worker 和 Outbox dispatcher。dispatcher 会自动处理新提交的 Run，资料就绪时 worker 可调用 `.env` 中配置的模型服务。MySQL 仅映射到本机 `127.0.0.1:3307`，Redis 仅映射到 `127.0.0.1:6379`；项目文件共享目录是 `data/`，在 worker 内为 `/data`。MySQL 和 Redis 使用各自的 Docker 卷；Redis 开启 AOF，每秒刷盘。首次配置的详细验证见 [环境记录](docs/environment/2026-09-24.md)。
 
 仅停止自动处理可运行 `docker compose --profile agent stop dispatcher worker`；停止全部服务可运行 `docker compose --profile agent stop`，这两个命令都保留数据库卷。
 
-当前已有 Case/会话/Run、上传及证据读取 API 和数据库迁移；上传后仍需显式运行解析 CLI。Outbox、Redis 发布、Celery Run 自动执行、失联回收和跨进程多轮追问已接通；失联后的模型结果标为未知，只能显式重试。后台解析尚未实现，前端尚未实现。
+当前已有 Case/会话/Run、上传及证据读取 API 和数据库迁移；本机解析进程运行时会自动处理上传文档，手动解析 CLI 可用于排障。Outbox、Redis 发布、Celery Run 自动执行、失联回收和跨进程多轮追问已接通；失联后的模型结果标为未知，只能显式重试。前端尚未实现。

@@ -18,6 +18,7 @@ from backend.app.db.models import (
     input_snapshots,
     suppliers,
 )
+from backend.app.db.parse_worker import process_once
 
 EXAMPLES = Path(__file__).resolve().parents[2] / "examples" / "dev-pack-001"
 
@@ -46,10 +47,10 @@ def test_mysql_uploaded_xlsx_becomes_scoped_evidence(tmp_path, monkeypatch):
             assert uploaded.status_code == 201, uploaded.text
             receipt = uploaded.json()
             service = DocumentIngestion(engine, storage)
-            first = service.process_document(case_id, receipt["snapshot_id"],
-                                             receipt["document_id"])
+            first = process_once(engine, storage, limit=1)[0]
             assert first["parse_status"] == "complete"
             assert first["evidence_count"] > 0
+            assert process_once(engine, storage, limit=1) == []
             assert service.process_document(case_id, receipt["snapshot_id"],
                                             receipt["document_id"]) == first
             url = (f"/api/v1/cases/{case_id}/snapshots/{receipt['snapshot_id']}"

@@ -4,9 +4,10 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
 
-from sqlalchemy import Engine
+from sqlalchemy import Engine, func, select
 
 from ..runtime.lifecycle import RunStatus
+from .models import document_versions
 from .outbox_repository import OutboxClaim, OutboxRepository
 from .run_repository import RepositoryError, RunRepository
 
@@ -56,6 +57,19 @@ def dispatch_once(engine: Engine, publish: PublishRun, *, limit: int = 10,
                 or run.active_attempt_id != claim.attempt_id):
             if outbox.mark_delivered(claim.id, claim.delivery_attempts, now=now):
                 skipped += 1
+            else:
+                lease_lost += 1
+            continue
+        with engine.connect() as connection:
+            waiting = connection.scalar(select(func.count()).select_from(
+                document_versions).where(
+                    document_versions.c.snapshot_id == run.snapshot_id,
+                    document_versions.c.parse_status.in_(("pending", "processing")),
+                ))
+        if waiting:
+            if outbox.release(claim.id, claim.delivery_attempts,
+                              retry_delay_seconds=10, now=now):
+                retried += 1
             else:
                 lease_lost += 1
             continue

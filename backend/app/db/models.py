@@ -73,6 +73,9 @@ document_versions = Table(
     Column("media_type", String(100), nullable=False),
     Column("parser_version", String(64)),
     Column("parse_status", String(20), nullable=False),
+    Column("parse_claim_id", String(32)),
+    Column("parse_lease_until", precise_datetime),
+    Column("parse_attempts", Integer, nullable=False, server_default="0"),
     Column("coverage_json", JSON),
     Column("created_at", DateTime, nullable=False),
     ForeignKeyConstraint(["case_id", "snapshot_id"],
@@ -89,6 +92,8 @@ document_versions = Table(
     UniqueConstraint("snapshot_id", "id", name="uq_documents_snapshot_id"),
     mysql_engine="InnoDB",
 )
+Index("ix_documents_parse_lease", document_versions.c.parse_status,
+      document_versions.c.parse_lease_until)
 
 evidence_blocks = Table(
     "evidence_blocks", metadata,
