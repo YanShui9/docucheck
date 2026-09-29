@@ -13,10 +13,14 @@ from sqlalchemy import Engine, func, insert, select, update
 from sqlalchemy.exc import IntegrityError
 
 from ..runtime.lifecycle import RunState, RunStatus
+from .agent_snapshot import SnapshotLoadError, load_agent_snapshot
+from .correction_recheck import CorrectionRecheck
+from .correction_repository import CorrectionError
 from .models import (
     agent_runs,
     cases,
     conversations,
+    correction_reviews,
     corrections,
     idempotency_records,
     input_snapshots,
@@ -174,6 +178,24 @@ class RunRepository:
         if len(scope) > 128:
             raise RepositoryError("invalid_request")
         request_hash = _hash_request(request)
+        with self.engine.connect() as connection:
+            replay = self._replay(connection, scope, request.idempotency_key,
+                                  request_hash)
+            if replay is not None:
+                return replay
+            correction_id = connection.scalar(select(corrections.c.id).where(
+                corrections.c.to_snapshot_id == request.snapshot_id,
+                corrections.c.case_id == request.case_id,
+            ))
+        if correction_id is not None:
+            try:
+                repo = load_agent_snapshot(self.engine, request.case_id,
+                                           request.snapshot_id)
+                CorrectionRecheck(self.engine).load_for_run(
+                    request.case_id, request.snapshot_id, repo,
+                )
+            except (CorrectionError, SnapshotLoadError) as exc:
+                raise RepositoryError(exc.code) from exc
         try:
             with self.engine.begin() as connection:
                 existing = self._replay(connection, scope,
@@ -205,9 +227,12 @@ class RunRepository:
                 )).first()
                 if snapshot is None or conversation is None:
                     raise RepositoryError("scope_mismatch")
-                if connection.scalar(select(corrections.c.id).where(
+                correction_id = connection.scalar(select(corrections.c.id).where(
                     corrections.c.to_snapshot_id == request.snapshot_id,
-                )) is not None:
+                ))
+                if correction_id is not None and connection.scalar(select(
+                        correction_reviews.c.correction_id,
+                ).where(correction_reviews.c.correction_id == correction_id)) is None:
                     raise RepositoryError("correction_pending_recheck")
                 busy = connection.scalar(select(agent_runs.c.id).where(
                     agent_runs.c.conversation_id == request.conversation_id,

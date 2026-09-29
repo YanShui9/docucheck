@@ -8,7 +8,7 @@ from sqlalchemy import Engine, insert, select
 from sqlalchemy.exc import IntegrityError
 
 from ..agent.fact_memory import decode_fact_sets, encode_fact_sets
-from ..evidence.repository import digest
+from ..evidence.repository import EvidenceRepository, digest
 from ..extraction.fields import FieldCandidate, _validate_candidate
 from ..extraction.memory import FactSet
 from ..extraction.validation import Candidate, validate_memory
@@ -218,6 +218,38 @@ class CorrectionRecheck:
     def __init__(self, engine: Engine):
         self.engine = engine
         self.corrections = CorrectionRepository(engine)
+
+    def load_for_run(self, case_id: str, snapshot_id: str,
+                     new_repo: EvidenceRepository) -> dict | None:
+        """Recheck persisted review content before any model call for this snapshot."""
+        if new_repo.case_id != case_id or new_repo.snapshot_id != snapshot_id:
+            raise CorrectionError("correction_source_changed")
+        with self.engine.connect() as connection:
+            correction = connection.execute(select(corrections).where(
+                corrections.c.case_id == case_id,
+                corrections.c.to_snapshot_id == snapshot_id,
+            )).mappings().first()
+            if correction is None:
+                return None
+            review = connection.execute(select(correction_reviews).where(
+                correction_reviews.c.correction_id == correction["id"],
+                correction_reviews.c.case_id == case_id,
+                correction_reviews.c.snapshot_id == snapshot_id,
+            )).mappings().first()
+            if review is None:
+                raise CorrectionError("correction_pending_recheck")
+            source_run = connection.execute(select(agent_runs).where(
+                agent_runs.c.id == correction["source_run_id"],
+            )).mappings().first()
+        if source_run is None:
+            raise CorrectionError("correction_source_changed")
+        old_repo, sets = self.corrections._facts(source_run)
+        if old_repo is None:
+            raise CorrectionError("correction_source_changed")
+        expected = _prepared(correction, source_run, old_repo, sets, new_repo)
+        if any(review[key] != value for key, value in expected.items()):
+            raise CorrectionError("correction_source_changed")
+        return {"correction_id": correction["id"], **expected}
 
     def recheck(self, case_id: str, correction_id: str) -> dict:
         with self.engine.connect() as connection:

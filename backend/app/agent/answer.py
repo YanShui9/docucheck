@@ -142,6 +142,10 @@ def render_answer(draft: AnswerDraft, tools: ToolExecutor, question: str,
     result_refs: set[str] = set()
     status = "completed"
     for result in results:
+        review_pair = (result.supplier, FieldKey(result.field_key))
+        if (review_pair in tools.review_result_ids
+                and result.check_result_id != tools.review_result_ids[review_pair]):
+            raise ValueError("answer_invalid")
         result_refs.update(result.evidence_refs)
         refs.extend(result.reason_evidence_refs if conflict_sources
                     and result.reason_code in {"contradicting_installed_capacity",
@@ -159,6 +163,8 @@ def render_answer(draft: AnswerDraft, tools: ToolExecutor, question: str,
             }.get(result.reason_code, reason)
         lines.append(f"{result.supplier} · {FIELD_NAMES[field]}："
                      f"{result.business_status or '处理未完成'}。{reason}")
+        if tools.review_statuses.get(review_pair) == "needs_review":
+            lines.append("人工修正复核：原值与修正值均有原文支持，仍需人工复核。")
         if result.processing_status != "complete":
             status = "partial"
     if draft.check_result_ids and not set(draft.evidence_ids) <= result_refs:

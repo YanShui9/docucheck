@@ -89,6 +89,34 @@ class ToolExecutor:
         self.fact_sets: dict[str, FactSet | FieldFactSet] = {}
         self.results: dict[str, CheckResult | FieldCheckResult] = {}
         self.seen: set[str] = set()
+        self.review_fact_sets: dict[tuple[str, FieldKey], FactSet | FieldFactSet] = {}
+        self.review_statuses: dict[tuple[str, FieldKey], str] = {}
+        self.review_result_ids: dict[tuple[str, FieldKey], str] = {}
+
+    def bind_review(self, fact_set: FactSet | FieldFactSet,
+                    result: CheckResult | FieldCheckResult, status: str) -> None:
+        field = (fact_set.field_key if isinstance(fact_set, FieldFactSet)
+                 else FieldKey.MEMORY)
+        pair = (fact_set.supplier, field)
+        if (status not in {"complete", "needs_review"}
+                or result.snapshot_id != self.repo.snapshot_id
+                or (isinstance(fact_set, FieldFactSet)
+                    and fact_set.snapshot_id != self.repo.snapshot_id)
+                or result.supplier != fact_set.supplier
+                or result.field_key != field):
+            raise ValueError("correction_source_changed")
+        self.fact_sets = {key: item for key, item in self.fact_sets.items()
+                          if (item.supplier,
+                              item.field_key if isinstance(item, FieldFactSet)
+                              else FieldKey.MEMORY) != pair}
+        self.results = {key: item for key, item in self.results.items()
+                        if (item.supplier, FieldKey(item.field_key)) != pair}
+        self.fact_sets[fact_set.fact_set_id] = fact_set
+        self.results[result.check_result_id] = result
+        self.review_fact_sets[pair] = fact_set
+        self.review_statuses[pair] = status
+        self.review_result_ids[pair] = result.check_result_id
+        self.seen.update(result.evidence_refs)
 
     def execute(self, name: str, arguments: dict, model_call) -> dict:
         if name not in DEFINITIONS:
@@ -108,9 +136,11 @@ class ToolExecutor:
         elif name == "extract_facts":
             self.repo.assert_supplier(args.supplier)
             if args.field_keys == [FieldKey.MEMORY]:
-                facts = next((f for f in self.fact_sets.values()
-                              if isinstance(f, FactSet) and f.supplier == args.supplier
-                              and f.complete), None)
+                facts = self.review_fact_sets.get((args.supplier, FieldKey.MEMORY))
+                if facts is None:
+                    facts = next((f for f in self.fact_sets.values()
+                                  if isinstance(f, FactSet) and f.supplier == args.supplier
+                                  and f.complete), None)
                 if facts is None:
                     facts = extract_memory(self.repo, args.supplier, model_call)
                     self.fact_sets[facts.fact_set_id] = facts
@@ -120,22 +150,27 @@ class ToolExecutor:
                 refs = [ref for f in facts.facts for ref in f.evidence_refs]
             else:
                 requested = tuple(dict.fromkeys(args.field_keys))
-                cached = {field: next((f for f in self.fact_sets.values()
-                                       if isinstance(f, FieldFactSet)
-                                       and f.supplier == args.supplier
-                                       and f.snapshot_id == self.repo.snapshot_id
-                                       and f.field_key == field and f.complete), None)
+                cached = {field: self.review_fact_sets.get((args.supplier, field))
+                          or next((f for f in self.fact_sets.values()
+                                   if isinstance(f, FieldFactSet)
+                                   and f.supplier == args.supplier
+                                   and f.snapshot_id == self.repo.snapshot_id
+                                   and f.field_key == field and f.complete), None)
                           for field in requested}
-                if any(value is None for value in cached.values()):
-                    extracted = extract_fields(self.repo, args.supplier, requested, model_call)
+                missing = tuple(field for field, value in cached.items() if value is None)
+                if missing:
+                    extracted = extract_fields(self.repo, args.supplier, missing, model_call)
                     for fact_set in extracted.values():
                         self.fact_sets[fact_set.fact_set_id] = fact_set
-                    cached = extracted
+                    cached.update(extracted)
                 selected = [cached[field] for field in requested]
                 data = {"supplier": args.supplier, "fact_sets": [{
-                    "fact_set_id": item.fact_set_id, "field_key": item.field_key.value,
+                    "fact_set_id": item.fact_set_id,
+                    "field_key": (item.field_key.value if isinstance(item, FieldFactSet)
+                                  else FieldKey.MEMORY.value),
                     "complete": item.complete, "scanned_count": len(item.scanned_ids),
-                    "coverage_issues": item.coverage_issues,
+                    "coverage_issues": (item.coverage_issues if isinstance(item, FieldFactSet)
+                                        else ()),
                     "facts": [asdict(fact) | {"value": str(fact.value)}
                               for fact in item.facts],
                 } for item in selected]}
@@ -149,6 +184,11 @@ class ToolExecutor:
             selected = [self.fact_sets.get(key) for key in fact_ids]
             if any(item is None or item.supplier != args.supplier for item in selected):
                 raise ValueError("fact_set_scope")
+            for item in selected:
+                field = item.field_key if isinstance(item, FieldFactSet) else FieldKey.MEMORY
+                pinned = self.review_fact_sets.get((args.supplier, field))
+                if pinned is not None and item.fact_set_id != pinned.fact_set_id:
+                    raise ValueError("fact_set_scope")
             if len(selected) == 1 and isinstance(selected[0], FactSet):
                 facts = selected[0]
                 result = evaluate_memory(self.repo, args.supplier, list(facts.facts),
@@ -156,13 +196,18 @@ class ToolExecutor:
                 self.results[result.check_result_id] = result
                 data, refs = asdict(result), list(result.evidence_refs)
             else:
-                if any(not isinstance(item, FieldFactSet)
-                       or item.snapshot_id != self.repo.snapshot_id for item in selected):
+                if any(isinstance(item, FieldFactSet)
+                       and item.snapshot_id != self.repo.snapshot_id for item in selected):
                     raise ValueError("fact_set_scope")
-                if len({item.field_key for item in selected}) != len(selected):
+                fields = [item.field_key if isinstance(item, FieldFactSet)
+                          else FieldKey.MEMORY for item in selected]
+                if len(set(fields)) != len(selected):
                     raise ValueError("fact_set_scope")
-                checks = [evaluate_field(self.repo, args.supplier, item.field_key,
-                                         item.facts, scan_complete=item.complete)
+                checks = [(evaluate_field(self.repo, args.supplier, item.field_key,
+                                          item.facts, scan_complete=item.complete)
+                           if isinstance(item, FieldFactSet) else
+                           evaluate_memory(self.repo, args.supplier, list(item.facts),
+                                           scan_complete=item.complete))
                           for item in selected]
                 for check in checks:
                     self.results[check.check_result_id] = check

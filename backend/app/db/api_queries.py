@@ -9,6 +9,7 @@ from .models import (
     agent_runs,
     cases,
     conversations,
+    correction_reviews,
     corrections,
     input_snapshots,
     run_attempts,
@@ -73,9 +74,12 @@ class ApiQueries:
             if snapshot_id is None:
                 raise ApiQueryError("revision_conflict" if row.revision !=
                                     expected_revision else "snapshot_not_ready")
-            if connection.scalar(select(corrections.c.id).where(
+            correction_id = connection.scalar(select(corrections.c.id).where(
                 corrections.c.to_snapshot_id == snapshot_id,
-            )) is not None:
+            ))
+            if correction_id is not None and connection.scalar(select(
+                    correction_reviews.c.correction_id,
+            ).where(correction_reviews.c.correction_id == correction_id)) is None:
                 raise ApiQueryError("correction_pending_recheck")
             return row.case_id, snapshot_id
 
@@ -91,6 +95,12 @@ class ApiQueries:
             )).mappings().first()
             if row is None:
                 raise ApiQueryError("not_found")
+            correction = connection.execute(select(
+                corrections.c.id, correction_reviews.c.review_status,
+            ).outerjoin(correction_reviews,
+                        correction_reviews.c.correction_id == corrections.c.id).where(
+                corrections.c.to_snapshot_id == row["snapshot_id"],
+            )).first()
             return {
                 "id": row["id"], "case_id": row["case_id"],
                 "conversation_id": row["conversation_id"],
@@ -102,6 +112,9 @@ class ApiQueries:
                 "error_code": row["error_code"],
                 "outcome_unknown": row["active_outcome_unknown"],
                 "is_current": row["revision"] == row["current_revision"],
+                "correction_id": correction.id if correction is not None else None,
+                "correction_review_status": (correction.review_status
+                                             if correction is not None else None),
                 "created_at": _utc(row["created_at"]),
                 "updated_at": _utc(row["updated_at"]),
             }

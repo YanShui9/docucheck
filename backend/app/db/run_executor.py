@@ -4,11 +4,14 @@ from dataclasses import dataclass
 
 from sqlalchemy import Engine, select
 
+from ..agent.fact_memory import decode_fact_sets
 from ..agent.graph import AgentSession
-from ..agent.session_memory import restore_session, serialize_session
+from ..agent.session_memory import _result, restore_session, serialize_session
 from ..runtime.lifecycle import RunStatus
 from .agent_snapshot import SnapshotLoadError, load_agent_snapshot
 from .conversation_context import ConversationContextError, load_conversation_context
+from .correction_recheck import CorrectionRecheck
+from .correction_repository import CorrectionError
 from .models import agent_runs
 from .run_heartbeat import run_heartbeat
 from .run_repository import RepositoryError, RunRepository
@@ -60,6 +63,23 @@ def execute_run(engine: Engine, run_id: str, attempt_id: str,
                             error_code="memory_scope")
                 return ExecutionReport(run_id, attempt_id, "partial", answer,
                                        "memory_scope", 0)
+            try:
+                review = CorrectionRecheck(engine).load_for_run(
+                    request["case_id"], claimed.snapshot_id, repo,
+                )
+                if review is not None:
+                    fact_sets = decode_fact_sets(repo, [review["fact_set_json"]])
+                    if len(fact_sets) != 1:
+                        raise ValueError("correction_source_changed")
+                    result = _result(session, review["check_result_json"])
+                    session.tools.bind_review(next(iter(fact_sets.values())), result,
+                                              review["review_status"])
+            except (CorrectionError, ValueError) as exc:
+                code = exc.code if isinstance(exc, CorrectionError) else "correction_source_changed"
+                answer = "修正复核记录或来源未通过核验，没有生成新的正式结论。"
+                runs.finish(run_id, attempt_id, claimed.fence, claimed.snapshot_id,
+                            RunStatus.PARTIAL, answer_text=answer, error_code=code)
+                return ExecutionReport(run_id, attempt_id, "partial", answer, code, 0)
             result = session.ask(context.question, run_id=run_id,
                                  attempt_id=attempt_id)
             if result.status == RunStatus.CANCELLED.value:

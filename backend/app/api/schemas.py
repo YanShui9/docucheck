@@ -77,6 +77,8 @@ class RunOut(BaseModel):
     error_code: str | None
     outcome_unknown: bool
     is_current: bool
+    correction_id: str | None = None
+    correction_review_status: Literal["complete", "needs_review"] | None = None
     created_at: str
     updated_at: str
 

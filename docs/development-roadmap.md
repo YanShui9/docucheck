@@ -26,6 +26,8 @@
 
 > **M3-11c 当前进度（2026-09-29）**：[确定性修正规则复核](m3-11c-correction-recheck-2026-09-29.md)映射并重新核验整组事实，保留同源旧值与新值，重跑现有规则并追加一条复核记录。复核状态 `needs_review` 与规则处理状态分开；Agent 尚未消费修正事实，新版本 Run 继续阻断。迁移为 `0007_correction_reviews`；离线 **396 passed, 11 skipped**，MySQL 并发 **1 passed**，未调用模型。下一步是修正事实进入 Agent、版本结果展示及删除清理；前端仍在设计讨论暂停点。
 
+> **M3-11d 当前进度（2026-09-29）**：[修正快照 Agent Run](m3-11d-corrected-agent-run-2026-09-29.md)在提交与执行前核验复核记录，把同源旧值和修正值绑定到 Agent 工具，并在 Run API 和正式答复中呈现 `needs_review`。离线 **404 passed, 11 skipped**、Ruff 与依赖检查通过；本步没有真实模型、Docker 或 MySQL/Redis/Celery 闭环。删除清理、真实性能和前端仍待后续；前端设计前继续暂停讨论。
+
 > **M3 第一小步（2026-09-28，历史进度）**：按[运行生命周期计划](superpowers/plans/2026-09-28-m3-run-lifecycle.md)新增不可变 Run 状态及 attempt/fence/快照归属规则；当时定向 6 项、后端合计 **275 项测试**和 Ruff 通过。数据库原子更新仍未实现；这一小步未运行 Docker 或模型 API。
 
 > **M3 第二小步（2026-09-28，迁移验收完成）**：[核心表与迁移记录](m3-2-persistence-schema-2026-09-28.md)定义 12 张业务表、Alembic `0001_core` 和依赖锁；后端 **280 项测试**、Ruff、临时 SQLite 升降迁移通过，MySQL 方言 SQL 可生成。用户本机 Docker MySQL 8.4 显示 `healthy`，Alembic 升级无报错，`current` 为 `0001_core (head)`。事务 repository、API、worker 与正式上传仍未实现。
