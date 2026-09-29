@@ -24,6 +24,7 @@ from sqlalchemy import Engine, create_engine, select
 
 from ..db.api_queries import ApiQueries, ApiQueryError
 from ..db.connection import ROOT, database_url
+from ..db.correction_recheck import CorrectionRecheck
 from ..db.correction_repository import (
     CorrectionError,
     CorrectionRepository,
@@ -71,7 +72,8 @@ def _domain_status(code: str) -> int:
         return 409
     if code in {"case_busy", "source_run_not_current", "facts_unavailable",
                 "memory_scope", "snapshot_capacity",
-                "correction_pending_recheck"}:
+                "correction_pending_recheck", "correction_source_changed",
+                "correction_recheck_capacity"}:
         return 409
     if code == "fact_not_found":
         return 404
@@ -95,6 +97,7 @@ def create_app(engine: Engine | None = None) -> FastAPI:
                                hide_parameters=True)
     queries, runs, documents = ApiQueries(engine), RunRepository(engine), DocumentRepository(engine)
     corrections = CorrectionRepository(engine)
+    rechecks = CorrectionRecheck(engine)
     storage = UploadStorage(Path(os.getenv("DOCUCHECK_DATA_DIR", str(ROOT / "data"))))
     ingestion = DocumentIngestion(engine, storage.root)
 
@@ -217,6 +220,11 @@ def create_app(engine: Engine | None = None) -> FastAPI:
                 response_model=CorrectionOut)
     def get_correction(case_id: str, correction_id: str):
         return corrections.get_correction(case_id, correction_id)
+
+    @router.post("/cases/{case_id}/corrections/{correction_id}/recheck",
+                 response_model=CorrectionOut)
+    def recheck_correction(case_id: str, correction_id: str):
+        return rechecks.recheck(case_id, correction_id)
 
     @router.get("/cases/{case_id}/snapshots/{snapshot_id}/documents/"
                 "{document_id}/evidence", response_model=DocumentEvidenceOut)

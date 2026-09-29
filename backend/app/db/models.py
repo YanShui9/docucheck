@@ -267,3 +267,23 @@ corrections = Table(
     mysql_engine="InnoDB",
 )
 Index("ix_corrections_case_created", corrections.c.case_id, corrections.c.created_at)
+
+correction_reviews = Table(
+    "correction_reviews", metadata,
+    Column("correction_id", String(32), ForeignKey("corrections.id"),
+           primary_key=True),
+    Column("case_id", String(32), ForeignKey("cases.id"), nullable=False),
+    Column("snapshot_id", String(64), nullable=False),
+    Column("review_status", String(20), nullable=False),
+    Column("repository_fingerprint", String(64), nullable=False),
+    Column("corrected_fact_id", String(64), nullable=False),
+    Column("fact_set_json", JSON, nullable=False),
+    Column("check_result_json", JSON, nullable=False),
+    Column("created_at", DateTime, nullable=False),
+    ForeignKeyConstraint(["case_id", "snapshot_id"],
+                         ["input_snapshots.case_id", "input_snapshots.id"],
+                         name="fk_correction_reviews_snapshot"),
+    CheckConstraint("review_status IN ('complete', 'needs_review')",
+                    name="ck_correction_reviews_status"),
+    mysql_engine="InnoDB",
+)

@@ -32,6 +32,8 @@
 
 > M3-11b 的 [来源事实修正](docs/m3-11b-correction-submission-2026-09-29.md)已接通事实列表、修正提交和审计读取；新值须由同一原文支持，提交生成新 Case 版本并让旧 Run 过期。新版本处于 `pending_recheck`，规则重算前拒绝新 Run。离线 **387 passed, 11 skipped**，真实 MySQL 无模型并发测试 **1 passed**，迁移为 `0006_corrections`；worker/dispatcher 已更新。正式新结论、删除清理与前端仍待后续。
 
+> M3-11c 的 [确定性修正规则复核](docs/m3-11c-correction-recheck-2026-09-29.md)已接通 `POST /api/v1/cases/{case_id}/corrections/{correction_id}/recheck`：新快照重验原文并重跑规则，保留同一原文支持的旧值和新值，标记 `needs_review`。离线 **396 passed, 11 skipped**，MySQL 并发 **1 passed**，迁移到 `0007_correction_reviews`，未调用模型。Agent 尚未消费修正事实，所以新 Run 仍受阻；删除清理与前端待后续。
+
 > 最新协作状态（2026-09-25）：[M1 最小真实 Agent](docs/m1-acceptance-2026-09-25.md)在模拟包与内存字段范围内完成验收；真实模型连续两问通过，后端离线测试 90/90、全目录 Ruff 与依赖检查通过。正式上传、其他七字段和独立质量评测尚未完成。后续仍按[分步协作计划](docs/step-by-step-plan.md)一次做一个小步骤。任何前端工作开始前须先暂停并讨论设计规范与样式。
 
 > 2026-09-26：[M2-0 XLSX 内存分列证据修正](docs/m2-0-acceptance-2026-09-26.md)和 [M2-1 答复引用范围修正](docs/m2-1-acceptance-2026-09-26.md)已通过离线回归（当前 110 项测试）。下一小步为 M2-2 解析覆盖；M2 完整采购审查尚未完成。

@@ -14,6 +14,7 @@ from backend.app.agent.graph import AgentSession
 from backend.app.agent.session_memory import serialize_session
 from backend.app.db.agent_snapshot import load_agent_snapshot
 from backend.app.db.connection import database_url
+from backend.app.db.correction_recheck import CorrectionRecheck
 from backend.app.db.correction_repository import (
     CorrectionError,
     CorrectionRepository,
@@ -23,6 +24,7 @@ from backend.app.db.models import (
     agent_runs,
     cases,
     conversations,
+    correction_reviews,
     corrections,
     document_versions,
     evidence_blocks,
@@ -137,6 +139,21 @@ def test_mysql_concurrent_corrections_advance_once():
                 cases.c.id == case_id)) == 2
             assert len(connection.execute(select(corrections).where(
                 corrections.c.case_id == case_id)).all()) == 1
+        rechecker = CorrectionRecheck(engine)
+        recheck_barrier = Barrier(2)
+
+        def recheck(_):
+            recheck_barrier.wait()
+            return rechecker.recheck(case_id, receipt["correction_id"])
+
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            reviews = list(pool.map(recheck, range(2)))
+        assert reviews[0] == reviews[1]
+        assert reviews[0]["review_status"] == "needs_review"
+        assert reviews[0]["check_result"]["business_status"] is None
+        with engine.connect() as connection:
+            assert len(connection.execute(select(correction_reviews).where(
+                correction_reviews.c.case_id == case_id)).all()) == 1
     finally:
         try:
             if created:
@@ -144,6 +161,8 @@ def test_mysql_concurrent_corrections_advance_once():
                     connection.execute(delete(idempotency_records).where(
                         idempotency_records.c.operation_scope ==
                         f"case:{case_id}:correction"))
+                    connection.execute(delete(correction_reviews).where(
+                        correction_reviews.c.case_id == case_id))
                     connection.execute(delete(corrections).where(
                         corrections.c.case_id == case_id))
                     document_ids = connection.scalars(select(document_versions.c.id).where(

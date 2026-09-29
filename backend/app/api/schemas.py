@@ -176,6 +176,7 @@ class CorrectionAccepted(BaseModel):
 
 
 class CorrectionOut(CorrectionAccepted):
+    review_status: Literal["pending_recheck", "complete", "needs_review"]
     fact_set_id: str
     fact_id: str
     field_key: str
@@ -186,6 +187,8 @@ class CorrectionOut(CorrectionAccepted):
     target_evidence_ids: list[str]
     reason: str
     created_at: str
+    corrected_fact: dict | None = None
+    check_result: dict | None = None
 
 
 class RunFactsOut(BaseModel):

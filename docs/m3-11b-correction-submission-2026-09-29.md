@@ -17,6 +17,6 @@
 
 ## 边界与后续
 
-- 本步仅形成受原文支持的修正记录及新版本，尚无正式新业务状态。M3-11c 应在新快照重新验证映射证据，替换指定事实，确定性重算受影响字段，保存新规则结果，并解除 `pending_recheck`。不能把修正回执展示为“满足/不满足”的新结论。
+- 本步仅形成受原文支持的修正记录及新版本，尚无正式新业务状态。后续 M3-11c 已在新快照重新验证映射证据，保留同源旧值与新值，确定性重算并保存规则结果；由于 Agent 尚未消费修正事实，Run 仍保持阻断。不能把修正回执展示为“满足/不满足”的新结论。
 - 历史 v1、缺失或超限事实集不能直接修正；须重新完成可保存事实集的 Run。复制上限为 25,000 证据块/50 MiB Agent 可读文本；大资料的事务耗时和存储增量尚未测量。删除清理、权限控制、前端与真实采购资料集验收仍待后续阶段。
 - 参考 [MySQL InnoDB 的行锁与隔离级别](https://dev.mysql.com/doc/refman/8.4/en/innodb-transaction-isolation-levels.html)、[SQLAlchemy 的显式事务边界](https://docs.sqlalchemy.org/en/21/changelog/migration_20.html) 和 [Alembic 操作参考](https://alembic.sqlalchemy.org/en/latest/ops.html)。当前选择 Case 行锁加唯一约束；不同业务写路径的死锁重试策略与大快照性能需后续测量和收敛。

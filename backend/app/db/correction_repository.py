@@ -22,6 +22,7 @@ from .agent_snapshot import SnapshotLoadError, load_agent_snapshot
 from .models import (
     agent_runs,
     cases,
+    correction_reviews,
     corrections,
     document_versions,
     evidence_blocks,
@@ -61,6 +62,21 @@ def _plain(value):
     if isinstance(value, Decimal):
         return str(value)
     return value
+
+
+def _review_fingerprint(repo) -> str:
+    """Bind a saved review to complete source text and document coverage."""
+    return digest([
+        repo.snapshot_id,
+        sorted((document.document_id, document.source_hash, document.role,
+                document.supplier, document.model, document.parsed.parser_version,
+                document.parsed.status, document.parsed.coverage_issues,
+                document.parsed.total_pages, document.parsed.processed_pages,
+                document.parsed.total_sheets, document.parsed.processed_sheets)
+               for document in repo.documents),
+        sorted((asdict(block) for block in repo.blocks),
+               key=lambda block: block["evidence_id"]),
+    ])
 
 
 def _hash(request: SubmitCorrection) -> str:
@@ -165,14 +181,25 @@ class CorrectionRepository:
                 corrections.c.case_id == case_id,
                 corrections.c.id == correction_id,
             )).mappings().first()
+            review = (connection.execute(select(correction_reviews).where(
+                correction_reviews.c.correction_id == correction_id,
+            )).mappings().first() if row is not None else None)
         if row is None:
             raise CorrectionError("not_found")
+        if review is not None:
+            try:
+                repo = load_agent_snapshot(self.engine, case_id, row["to_snapshot_id"])
+            except SnapshotLoadError as exc:
+                raise CorrectionError(exc.code) from exc
+            if _review_fingerprint(repo) != review["repository_fingerprint"]:
+                raise CorrectionError("correction_source_changed")
         return {
             "correction_id": row["id"], "case_id": row["case_id"],
             "source_run_id": row["source_run_id"],
             "from_snapshot_id": row["from_snapshot_id"],
             "snapshot_id": row["to_snapshot_id"], "revision": row["revision"],
-            "review_status": "pending_recheck",
+            "review_status": (review["review_status"] if review is not None
+                              else "pending_recheck"),
             "fact_set_id": row["fact_set_id"], "fact_id": row["fact_id"],
             "field_key": row["field_key"], "supplier": row["supplier"],
             "old_fact": row["old_fact_json"],
@@ -181,6 +208,10 @@ class CorrectionRepository:
             "target_evidence_ids": row["target_evidence_ids_json"],
             "reason": row["reason"],
             "created_at": row["created_at"].replace(tzinfo=UTC).isoformat(),
+            "corrected_fact": (next((fact for fact in review["fact_set_json"]["facts"]
+                                     if fact["fact_id"] == review["corrected_fact_id"]), None)
+                               if review is not None else None),
+            "check_result": (review["check_result_json"] if review is not None else None),
         }
 
     @staticmethod
