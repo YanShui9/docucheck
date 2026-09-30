@@ -40,6 +40,7 @@ from .schemas import (
     CaseDeletionOut,
     CaseOut,
     ConversationOut,
+    ConversationsOut,
     CorrectionAccepted,
     CorrectionIn,
     CorrectionOut,
@@ -50,6 +51,7 @@ from .schemas import (
     EvidenceOut,
     MessageAccepted,
     MessageIn,
+    MessagesOut,
     ResumeIn,
     RetryIn,
     RunFactsOut,
@@ -264,6 +266,19 @@ def create_app(engine: Engine | None = None) -> FastAPI:
                  response_model=ConversationOut)
     def create_conversation(case_id: str):
         return queries.create_conversation(case_id)
+
+    @router.get("/cases/{case_id}/conversations", response_model=ConversationsOut)
+    def list_conversations(case_id: str,
+                           offset: int = Query(default=0, ge=0),
+                           limit: int = Query(default=50, ge=1, le=100)):
+        return queries.list_conversations(case_id, offset, limit)
+
+    @router.get("/conversations/{conversation_id}/messages",
+                response_model=MessagesOut)
+    def list_messages(conversation_id: str,
+                      offset: int = Query(default=0, ge=0),
+                      limit: int = Query(default=50, ge=1, le=100)):
+        return queries.list_messages(conversation_id, offset, limit)
 
     @router.post("/conversations/{conversation_id}/messages", status_code=202,
                  response_model=MessageAccepted)

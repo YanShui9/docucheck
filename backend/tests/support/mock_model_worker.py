@@ -28,20 +28,28 @@ class ChatHandler(BaseHTTPRequestHandler):
         with self.lock:
             type(self).calls += 1
             number = type(self).calls
-        evidence_id = os.environ["DOCUCHECK_SMOKE_EVIDENCE_ID"]
-        if number == 1:
-            name, arguments = "search_evidence", {
-                "query": "已装内存", "supplier": "vendor-a",
-            }
-        elif number == 2:
-            name, arguments = "read_source", {"evidence_ids": [evidence_id]}
-        elif number == 3:
-            name, arguments = "submit_answer", {
-                "kind": "evidence", "evidence_ids": [evidence_id],
-            }
+        scenario = os.environ.get("DOCUCHECK_SMOKE_SCENARIO", "source")
+        if scenario == "reviewed":
+            calls = (
+                ("extract_facts", {"supplier": "vendor-a",
+                                   "field_keys": ["storage"]}),
+                ("evaluate_checks", {"supplier": "vendor-a", "fact_set_ids": [
+                    os.environ["DOCUCHECK_SMOKE_FACT_SET_ID"]]}),
+                ("submit_answer", {"kind": "check", "check_result_ids": [
+                    os.environ["DOCUCHECK_SMOKE_CHECK_RESULT_ID"]]}),
+            )
         else:
+            evidence_id = os.environ["DOCUCHECK_SMOKE_EVIDENCE_ID"]
+            calls = (
+                ("search_evidence", {"query": "已装内存", "supplier": "vendor-a"}),
+                ("read_source", {"evidence_ids": [evidence_id]}),
+                ("submit_answer", {"kind": "evidence",
+                                   "evidence_ids": [evidence_id]}),
+            )
+        if number > len(calls):
             self.send_error(400)
             return
+        name, arguments = calls[number - 1]
         response = {
             "id": f"chatcmpl-smoke-{uuid4().hex}",
             "object": "chat.completion",

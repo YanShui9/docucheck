@@ -2,6 +2,8 @@
 
 更新：2026-09-24。本次按用户要求重排开发顺序；本文件取代原“先完成解析，再接 Agent”的阶段计划。架构实施基线为 [Agent 架构 v1.0](superpowers/specs/2026-09-24-agent-first-design.md)。阶段名称变化不意味着功能已完成。
 
+> **M3 阶段结论（2026-09-30）**：路线图表格中的本地后端完成条件已验收。新增可分页会话/消息读取 API，真实 MySQL 重启后读取与幂等重放通过；真实 MinerU 样例 PDF 上传解析、修正事实后的隔离 Celery Agent Run 也通过。全量后端 **416 passed, 19 skipped**，显式 MySQL 定向 7 项及两项后台闭环各自通过；详见 [M3 验收与审查](m3-acceptance-2026-09-30.md)。M4 前端仍按约定先讨论规范与样式；真实资料质量、成本、性能和独立验收集属于 M5，历史节点记录保留在下文。
+
 > **M2 阶段记录（2026-09-28）**：用户授权一次完成 M2 代码。M2-0～M2-8 的支持范围内离线实现及 M2-9 离线回归已完成，当时后端 240 项测试、`ruff check backend evals` 通过；合成单家 8 格、三家 24 格脚本化 Agent 运行通过。用户执行的真实 DeepSeek 单家、三家合成包探针均为 `completed`，业务状态与标注一致（8/8、24/24），三家证据轨迹未跨供应商；M2 开发包范围的功能验收通过。费用、完整时延与独立资料集质量留待后续验收。逐项结果与命令见 [M2 验收记录](m2-offline-acceptance-2026-09-27.md)。下方按日期保留历史进度。
 
 > **M3 入口审查与修复（2026-09-28，覆盖上方旧测试数）**：[M1/M2 审查及后续修复](m1-m2-pre-m3-audit-2026-09-28.md)中的比较词错误“满足”、完整审查漏项、来源问答串供应商、宽表行漏批、已知超预算与评测口径均已离线修复。后端 **269 项测试**、Ruff 通过；脚本化 Agent 2/2、可见状态 32/32、引用错误 0/76，检索 17/17。容量预检是下界；修复后的真实 DeepSeek 多次运行、独立资料集及正式上传链路仍待验收。下一步可实施 M3 持久化 API/worker，正式结果接口须验证上传、异步恢复、幂等和容量提示；前端继续保持讨论暂停点。
@@ -132,12 +134,12 @@ M1 使用本机 CLI 和显式输入快照建立业务闭环；M3 将相同服务
 
 **2026-09-30 M3-12f 进度：** [文件删除后异常退出恢复](m3-12f-interrupted-cleanup-acceptance-2026-09-30.md)已完成精确故障窗口的子进程异常退出及长驻 cleaner 接管验收；Docker 容器本身的强杀与真实资料仍待验证。
 
-- [ ] 数据模型与 Alembic 迁移；MySQL repository 实现 M1 接口。
-- [ ] API 实现 Case/文档/会话/messages/agent-runs/证据，错误与幂等约定统一。
-- [ ] 文件与索引准备、Agent 执行接 Linux Celery worker；Windows/Linux 分别锁定依赖。
-- [ ] Run + Outbox 同事务；领取租约、fencing、取消、重复投递、迟到响应。
-- [ ] waiting_user/resume 与 interrupted/retry 持久化；模型 outcome_unknown 可见。
-- [ ] 修正、版本失效、删除清理；集成测试覆盖 worker 崩溃与会话恢复。
+- [x] 数据模型与 Alembic 迁移；MySQL repository 实现 M1 接口。
+- [x] API 实现 Case/文档/会话/messages/agent-runs/证据，错误与幂等约定统一。
+- [x] 文件与索引准备、Agent 执行接 Linux Celery worker；Windows/Linux 分别锁定依赖。
+- [x] Run + Outbox 同事务；领取租约、fencing、取消、重复投递、迟到响应。
+- [x] waiting_user/resume 与 interrupted/retry 持久化；模型 outcome_unknown 可见。
+- [x] 修正、版本失效、删除清理；集成测试覆盖 worker 崩溃与会话恢复。
 
 ### M4：可复核的对话产品
 

@@ -9,6 +9,7 @@ from sqlalchemy import create_engine, event, insert, update
 from backend.app.api.main import create_app
 from backend.app.db.models import agent_runs, cases, input_snapshots, metadata
 from backend.app.db.run_repository import RunRepository
+from backend.app.runtime.lifecycle import RunStatus
 
 
 @pytest.fixture
@@ -50,6 +51,77 @@ def _message(client, conversation_id, *, content="审查供应商 A", key="quest
                        headers={"Idempotency-Key": key},
                        json={"content": content, "mode": "thorough",
                              "expected_revision": 1})
+
+
+def test_conversation_and_messages_are_discoverable_after_api_restart(tmp_path):
+    path = tmp_path / "restart.db"
+    first_engine = create_engine(f"sqlite:///{path}")
+
+    @event.listens_for(first_engine, "connect")
+    def enable_first_foreign_keys(connection, record):
+        connection.execute("PRAGMA foreign_keys=ON")
+
+    metadata.create_all(first_engine)
+    with TestClient(create_app(first_engine)) as first_client:
+        case_id, conversation_id = _case_and_conversation(first_client)
+        second_conversation = first_client.post(
+            f"/api/v1/cases/{case_id}/conversations",
+        ).json()["id"]
+        _snapshot(first_engine, case_id)
+        receipt = _message(first_client, conversation_id).json()
+        repository = RunRepository(first_engine)
+        claimed = repository.claim(receipt["run_id"], receipt["attempt_id"])
+        repository.finish(receipt["run_id"], receipt["attempt_id"],
+                          claimed.fence, claimed.snapshot_id,
+                          RunStatus.COMPLETED, "已完成审查")
+    first_engine.dispose()
+
+    second_engine = create_engine(f"sqlite:///{path}")
+
+    @event.listens_for(second_engine, "connect")
+    def enable_second_foreign_keys(connection, record):
+        connection.execute("PRAGMA foreign_keys=ON")
+
+    try:
+        with TestClient(create_app(second_engine)) as second_client:
+            conversations = second_client.get(
+                f"/api/v1/cases/{case_id}/conversations?limit=1",
+            )
+            assert conversations.status_code == 200, conversations.text
+            page = conversations.json()
+            assert page["case_id"] == case_id
+            assert len(page["conversations"]) == 1
+            assert page["next_offset"] == 1
+            later = second_client.get(
+                f"/api/v1/cases/{case_id}/conversations?limit=1&offset=1",
+            ).json()
+            assert {page["conversations"][0]["id"],
+                    later["conversations"][0]["id"]} == {
+                        conversation_id, second_conversation,
+                    }
+            messages = second_client.get(
+                f"/api/v1/conversations/{conversation_id}/messages",
+            )
+            assert messages.status_code == 200, messages.text
+            item = messages.json()["messages"][0]
+            assert item["content"] == "审查供应商 A"
+            assert item["run_id"] == receipt["run_id"]
+            assert second_client.get(
+                f"/api/v1/agent-runs/{receipt['run_id']}",
+            ).json()["answer_text"] == "已完成审查"
+            replay = _message(second_client, conversation_id)
+            assert replay.status_code == 202 and replay.json() == receipt
+            assert len(second_client.get(
+                f"/api/v1/conversations/{conversation_id}/messages",
+            ).json()["messages"]) == 1
+            assert second_client.get(
+                "/api/v1/cases/missing/conversations",
+            ).status_code == 404
+            assert second_client.get(
+                "/api/v1/conversations/missing/messages",
+            ).status_code == 404
+    finally:
+        second_engine.dispose()
 
 
 def test_empty_case_refuses_question_and_errors_do_not_echo_content(api):
@@ -189,3 +261,18 @@ def test_clarification_resume_accepts_reply_once_and_blocks_parallel_question(ap
                            json={"content": "供应商 B", "expected_revision": 1})
     assert conflict.status_code == 409
     assert conflict.json()["error"]["code"] == "idempotency_conflict"
+
+    first_page = client.get(
+        f"/api/v1/conversations/{conversation_id}/messages?limit=1",
+    ).json()
+    second_page = client.get(
+        f"/api/v1/conversations/{conversation_id}/messages?limit=1&offset=1",
+    ).json()
+    assert first_page["next_offset"] == 1
+    assert second_page["next_offset"] is None
+    assert [first_page["messages"][0]["content"],
+            second_page["messages"][0]["content"]] == [
+                "审查供应商 A", "供应商 A",
+            ]
+    assert {first_page["messages"][0]["run_id"],
+            second_page["messages"][0]["run_id"]} == {submitted["run_id"]}

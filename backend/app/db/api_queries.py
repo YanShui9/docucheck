@@ -12,6 +12,7 @@ from .models import (
     correction_reviews,
     corrections,
     input_snapshots,
+    messages,
     run_attempts,
     run_events,
 )
@@ -58,6 +59,54 @@ class ApiQueries:
             ))
         return {"id": conversation_id, "case_id": case_id,
                 "created_at": _utc(now)}
+
+    def list_conversations(self, case_id: str, offset: int, limit: int) -> dict:
+        with self.engine.connect() as connection:
+            if connection.scalar(select(cases.c.id).where(cases.c.id == case_id)) is None:
+                raise ApiQueryError("not_found")
+            rows = connection.execute(select(conversations).where(
+                conversations.c.case_id == case_id,
+            ).order_by(conversations.c.created_at, conversations.c.id)
+                .offset(offset).limit(limit + 1)).mappings().all()
+        return {
+            "case_id": case_id,
+            "conversations": [
+                {"id": row["id"], "case_id": row["case_id"],
+                 "created_at": _utc(row["created_at"])}
+                for row in rows[:limit]
+            ],
+            "next_offset": offset + limit if len(rows) > limit else None,
+        }
+
+    def list_messages(self, conversation_id: str, offset: int, limit: int) -> dict:
+        with self.engine.connect() as connection:
+            if connection.scalar(select(conversations.c.id).where(
+                    conversations.c.id == conversation_id)) is None:
+                raise ApiQueryError("not_found")
+            rows = connection.execute(select(messages).where(
+                messages.c.conversation_id == conversation_id,
+            ).order_by(messages.c.created_at, messages.c.id)
+                .offset(offset).limit(limit + 1)).mappings().all()
+            page = rows[:limit]
+            message_ids = [row["id"] for row in page]
+            run_ids: dict[str, str] = {}
+            if message_ids:
+                run_ids.update(connection.execute(select(
+                    agent_runs.c.message_id, agent_runs.c.id,
+                ).where(agent_runs.c.message_id.in_(message_ids))).all())
+                run_ids.update(connection.execute(select(
+                    run_attempts.c.resume_message_id, run_attempts.c.run_id,
+                ).where(run_attempts.c.resume_message_id.in_(message_ids))).all())
+        return {
+            "conversation_id": conversation_id,
+            "messages": [
+                {"id": row["id"], "role": row["role"],
+                 "content": row["content"], "run_id": run_ids.get(row["id"]),
+                 "created_at": _utc(row["created_at"])}
+                for row in page
+            ],
+            "next_offset": offset + limit if len(rows) > limit else None,
+        }
 
     def snapshot_for_conversation(self, conversation_id: str,
                                   expected_revision: int) -> tuple[str, str]:

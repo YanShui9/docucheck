@@ -61,6 +61,26 @@ class ConversationOut(BaseModel):
     created_at: str
 
 
+class ConversationsOut(BaseModel):
+    case_id: str
+    conversations: list[ConversationOut]
+    next_offset: int | None
+
+
+class StoredMessageOut(BaseModel):
+    id: str
+    role: Literal["user", "assistant"]
+    content: str
+    run_id: str | None
+    created_at: str
+
+
+class MessagesOut(BaseModel):
+    conversation_id: str
+    messages: list[StoredMessageOut]
+    next_offset: int | None
+
+
 class MessageAccepted(BaseModel):
     message_id: str
     run_id: str

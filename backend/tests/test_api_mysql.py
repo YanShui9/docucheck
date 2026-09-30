@@ -89,6 +89,30 @@ def test_mysql_http_submission_replay_and_run_visibility():
             cancelled = client.post(f"/api/v1/agent-runs/{run_id}/cancel")
             assert cancelled.status_code == 200
             assert cancelled.json()["status"] == "cancelled"
+
+        restarted_engine = create_engine(database_url(), pool_pre_ping=True,
+                                         hide_parameters=True)
+        try:
+            with TestClient(create_app(restarted_engine)) as restarted:
+                listed = restarted.get(
+                    f"/api/v1/cases/{case_id}/conversations",
+                )
+                assert listed.status_code == 200
+                assert [item["id"] for item in listed.json()["conversations"]] == [
+                    conversation_id,
+                ]
+                history = restarted.get(url)
+                assert history.status_code == 200
+                assert history.json()["messages"][0]["run_id"] == run_id
+                assert restarted.get(
+                    f"/api/v1/agent-runs/{run_id}",
+                ).json()["status"] == "cancelled"
+                assert restarted.post(url, headers=headers, json=body).json() == (
+                    first.json()
+                )
+                assert len(restarted.get(url).json()["messages"]) == 1
+        finally:
+            restarted_engine.dispose()
     finally:
         try:
             if case_id:
