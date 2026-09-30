@@ -40,6 +40,8 @@
 
 > **M3 Agent 部署核对（2026-09-30）**：[镜像同步与无模型派发验收](m3-agent-deployment-sync-2026-09-30.md)发现运行中的 worker/dispatcher 仍是早于 M3-11d 的旧镜像；已用与当前源码及依赖哈希一致的本地镜像重建两服务。worker `healthy`，无模型 MySQL/Redis/Celery 闭环 **1 passed**。修正快照经真实 Celery worker 的业务运行仍待验收；前端仍在设计讨论暂停点。
 
+> **M3 Agent 业务链路验收（2026-09-30）**：[上传解析至 Celery Run 的隔离闭环](m3-agent-worker-e2e-2026-09-30.md)已通过 FastAPI 上传、待解析派发延后、后台 XLSX 解析、Redis/Celery 自动执行和 Run API 来源答复，显式集成测试 **1 passed**，使用容器内假模型，外部模型调用 0 次。修正快照、多供应商完整审查及 MinerU PDF 仍待验收；前端仍需先讨论。
+
 > **M3 第一小步（2026-09-28，历史进度）**：按[运行生命周期计划](superpowers/plans/2026-09-28-m3-run-lifecycle.md)新增不可变 Run 状态及 attempt/fence/快照归属规则；当时定向 6 项、后端合计 **275 项测试**和 Ruff 通过。数据库原子更新仍未实现；这一小步未运行 Docker 或模型 API。
 
 > **M3 第二小步（2026-09-28，迁移验收完成）**：[核心表与迁移记录](m3-2-persistence-schema-2026-09-28.md)定义 12 张业务表、Alembic `0001_core` 和依赖锁；后端 **280 项测试**、Ruff、临时 SQLite 升降迁移通过，MySQL 方言 SQL 可生成。用户本机 Docker MySQL 8.4 显示 `healthy`，Alembic 升级无报错，`current` 为 `0001_core (head)`。事务 repository、API、worker 与正式上传仍未实现。
