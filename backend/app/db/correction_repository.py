@@ -154,11 +154,14 @@ class CorrectionRepository:
         with self.engine.connect() as connection:
             row = connection.execute(select(
                 agent_runs, cases.c.revision.label("current_revision"),
+                cases.c.deletion_cleanup_started_at,
             ).join(cases, agent_runs.c.case_id == cases.c.id).where(
                 agent_runs.c.id == run_id,
             )).mappings().first()
         if row is None:
             raise CorrectionError("not_found")
+        if row["deletion_cleanup_started_at"] is not None:
+            raise CorrectionError("case_deleting")
         if row["status"] not in {"completed", "partial"}:
             return {"run_id": run_id, "case_id": row["case_id"],
                     "snapshot_id": row["snapshot_id"], "revision": row["revision"],
@@ -174,6 +177,14 @@ class CorrectionRepository:
 
     def get_correction(self, case_id: str, correction_id: str) -> dict:
         with self.engine.connect() as connection:
+            case = connection.execute(select(
+                cases.c.deletion_cleanup_started_at,
+                cases.c.deletion_completed_at,
+            ).where(cases.c.id == case_id)).first()
+            if case is not None and case.deletion_completed_at is not None:
+                raise CorrectionError("case_deleted")
+            if case is not None and case.deletion_cleanup_started_at is not None:
+                raise CorrectionError("case_deleting")
             row = connection.execute(select(
                 corrections, input_snapshots.c.revision,
             ).join(input_snapshots,

@@ -25,19 +25,40 @@ def _now() -> datetime:
     return datetime.now(UTC).replace(tzinfo=None)
 
 
-def _receipt(case_id: str, revision: int, requested_at: datetime) -> dict:
+def _utc(value: datetime | None) -> str | None:
+    if value is None:
+        return None
+    return value.replace(tzinfo=UTC).isoformat().replace("+00:00", "Z")
+
+
+def _receipt(case_id: str, revision: int, requested_at: datetime | None,
+             completed_at: datetime | None = None,
+             error_code: str | None = None) -> dict:
     return {
         "case_id": case_id,
         "revision": revision,
-        "status": "deleting",
-        "requested_at": requested_at.replace(tzinfo=UTC).isoformat().replace(
-            "+00:00", "Z"),
+        "status": ("deleted" if completed_at is not None else
+                   "deleting" if requested_at is not None else "active"),
+        "requested_at": _utc(requested_at),
+        "completed_at": _utc(completed_at),
+        "error_code": error_code,
     }
 
 
 class CaseDeletion:
     def __init__(self, engine: Engine):
         self.engine = engine
+
+    def get(self, case_id: str) -> dict:
+        with self.engine.connect() as connection:
+            case = connection.execute(select(cases).where(
+                cases.c.id == case_id)).mappings().first()
+        if case is None:
+            raise CaseDeletionError("not_found")
+        return _receipt(case_id, case["revision"],
+                        case["deletion_requested_at"],
+                        case["deletion_completed_at"],
+                        case["deletion_error_code"])
 
     def request(self, case_id: str, expected_revision: int) -> dict:
         if not case_id or type(expected_revision) is not int or expected_revision < 0:
@@ -49,7 +70,9 @@ class CaseDeletion:
                 raise CaseDeletionError("not_found")
             if case["deletion_requested_at"] is not None:
                 return _receipt(case_id, case["revision"],
-                                case["deletion_requested_at"])
+                                case["deletion_requested_at"],
+                                case["deletion_completed_at"],
+                                case["deletion_error_code"])
             if case["revision"] != expected_revision:
                 raise CaseDeletionError("revision_conflict")
 

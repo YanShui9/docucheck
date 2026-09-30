@@ -30,11 +30,19 @@ cases = Table(
     Column("id", String(32), primary_key=True),
     Column("revision", Integer, nullable=False),
     Column("deletion_requested_at", precise_datetime),
+    Column("deletion_cleanup_started_at", precise_datetime),
+    Column("deletion_claim_id", String(32)),
+    Column("deletion_lease_until", precise_datetime),
+    Column("deletion_attempts", Integer, nullable=False, server_default="0"),
+    Column("deletion_error_code", String(64)),
+    Column("deletion_completed_at", precise_datetime),
     Column("created_at", DateTime, nullable=False),
     Column("updated_at", DateTime, nullable=False),
     CheckConstraint("revision >= 0", name="ck_cases_revision"),
     mysql_engine="InnoDB",
 )
+Index("ix_cases_cleanup_due", cases.c.deletion_completed_at,
+      cases.c.deletion_requested_at, cases.c.deletion_lease_until)
 
 suppliers = Table(
     "suppliers", metadata,
@@ -286,5 +294,17 @@ correction_reviews = Table(
                          name="fk_correction_reviews_snapshot"),
     CheckConstraint("review_status IN ('complete', 'needs_review')",
                     name="ck_correction_reviews_status"),
+    mysql_engine="InnoDB",
+)
+
+case_cleanup_files = Table(
+    "case_cleanup_files", metadata,
+    Column("id", String(32), primary_key=True),
+    Column("case_id", String(32), ForeignKey("cases.id"), nullable=False),
+    Column("storage_key", String(512), nullable=False),
+    Column("disposition", String(20)),
+    Column("processed_at", precise_datetime),
+    Column("created_at", DateTime, nullable=False),
+    UniqueConstraint("case_id", "storage_key", name="uq_cleanup_case_storage"),
     mysql_engine="InnoDB",
 )

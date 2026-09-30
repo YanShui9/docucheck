@@ -79,6 +79,8 @@ def _domain_status(code: str) -> int:
         return 409
     if code == "fact_not_found":
         return 404
+    if code == "case_deleted":
+        return 410
     if code in {"unsupported_correction", "correction_unchanged"}:
         return 422
     if code == "file_limit":
@@ -177,8 +179,16 @@ def create_app(engine: Engine | None = None) -> FastAPI:
     @router.delete("/cases/{case_id}", status_code=202,
                    response_model=CaseDeletionOut)
     def request_case_deletion(case_id: str,
+                              response: Response,
                               expected_revision: int = Query(ge=0)):
-        return deletion.request(case_id, expected_revision)
+        receipt = deletion.request(case_id, expected_revision)
+        if receipt["status"] == "deleted":
+            response.status_code = 200
+        return receipt
+
+    @router.get("/cases/{case_id}/deletion", response_model=CaseDeletionOut)
+    def get_case_deletion(case_id: str):
+        return deletion.get(case_id)
 
     @router.post("/cases/{case_id}/documents", status_code=201,
                  response_model=DocumentAccepted)

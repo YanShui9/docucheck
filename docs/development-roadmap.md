@@ -28,6 +28,8 @@
 
 > **M3-11d 当前进度（2026-09-29）**：[修正快照 Agent Run](m3-11d-corrected-agent-run-2026-09-29.md)在提交与执行前核验复核记录，把同源旧值和修正值绑定到 Agent 工具，并在 Run API 和正式答复中呈现 `needs_review`。离线 **404 passed, 11 skipped**、Ruff 与依赖检查通过；本步没有真实模型、Docker 或 MySQL/Redis/Celery 闭环。删除清理、真实性能和前端仍待后续；前端设计前继续暂停讨论。
 
+> **M3-12b 当前进度（2026-09-30）**：[Case 受控清理](m3-12b-case-cleanup-2026-09-30.md)已实现租约、文件清单、引用检查、数据库清理与删除墓碑；离线 **415 passed, 13 skipped**，合成 MySQL **1 passed**，迁移到 `0009_case_cleanup`。长驻 cleaner 尚未启动；真实清理时延和服务重启后的端到端验证待做。前端仍在设计讨论暂停点。
+
 > **M3 第一小步（2026-09-28，历史进度）**：按[运行生命周期计划](superpowers/plans/2026-09-28-m3-run-lifecycle.md)新增不可变 Run 状态及 attempt/fence/快照归属规则；当时定向 6 项、后端合计 **275 项测试**和 Ruff 通过。数据库原子更新仍未实现；这一小步未运行 Docker 或模型 API。
 
 > **M3 第二小步（2026-09-28，迁移验收完成）**：[核心表与迁移记录](m3-2-persistence-schema-2026-09-28.md)定义 12 张业务表、Alembic `0001_core` 和依赖锁；后端 **280 项测试**、Ruff、临时 SQLite 升降迁移通过，MySQL 方言 SQL 可生成。用户本机 Docker MySQL 8.4 显示 `healthy`，Alembic 升级无报错，`current` 为 `0001_core (head)`。事务 repository、API、worker 与正式上传仍未实现。
@@ -107,6 +109,8 @@ M1 使用本机 CLI 和显式输入快照建立业务闭环；M3 将相同服务
 ### M3：运行服务
 
 **2026-09-29 M3-12a 进度：** [Case 删除请求与运行栅栏](m3-12a-case-deletion-request-2026-09-29.md)已完成源码与 MySQL 迁移验证。删除请求标记 `deleting`，原子终止活跃 Run、解析领取和待派发事件；实际数据库及原件清理仍待下一小步。前端继续受设计确认暂停点约束。
+
+**2026-09-30 M3-12b 进度：** [Case 受控清理](m3-12b-case-cleanup-2026-09-30.md)已完成源码、离线及合成 MySQL 验证；长驻 cleaner 的部署尚未执行。
 
 - [ ] 数据模型与 Alembic 迁移；MySQL repository 实现 M1 接口。
 - [ ] API 实现 Case/文档/会话/messages/agent-runs/证据，错误与幂等约定统一。

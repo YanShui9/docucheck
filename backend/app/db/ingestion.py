@@ -67,6 +67,17 @@ class DocumentIngestion:
             raise IngestionError("not_found")
         return row
 
+    def _require_readable(self, case_id: str) -> None:
+        with self.engine.connect() as connection:
+            case = connection.execute(select(
+                cases.c.deletion_cleanup_started_at,
+                cases.c.deletion_completed_at,
+            ).where(cases.c.id == case_id)).first()
+        if case is not None and case.deletion_completed_at is not None:
+            raise IngestionError("case_deleted")
+        if case is not None and case.deletion_cleanup_started_at is not None:
+            raise IngestionError("case_deleting")
+
     def _source(self, row) -> Path:
         key = row["storage_key"]
         if not isinstance(key, str):
@@ -272,6 +283,7 @@ class DocumentIngestion:
 
     def list_evidence(self, case_id: str, snapshot_id: str, document_id: str,
                       after_ordinal: int = -1, limit: int = 100) -> dict:
+        self._require_readable(case_id)
         document = self._document(case_id, snapshot_id, document_id)
         with self.engine.connect() as connection:
             rows = connection.execute(select(evidence_blocks).where(
@@ -289,6 +301,7 @@ class DocumentIngestion:
 
     def read_evidence(self, case_id: str, snapshot_id: str,
                       evidence_id: str) -> dict:
+        self._require_readable(case_id)
         with self.engine.connect() as connection:
             row = connection.execute(select(
                 evidence_blocks, document_versions.c.id.label("owner_document_id"),

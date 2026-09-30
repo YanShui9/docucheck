@@ -232,10 +232,17 @@ class DocumentRepository:
 
     def list_current(self, case_id: str) -> dict:
         with self.engine.connect() as connection:
-            revision = connection.scalar(select(cases.c.revision).where(
-                cases.c.id == case_id))
-            if revision is None:
+            case = connection.execute(select(
+                cases.c.revision, cases.c.deletion_cleanup_started_at,
+                cases.c.deletion_completed_at,
+            ).where(cases.c.id == case_id)).first()
+            if case is None:
                 raise DocumentError("not_found")
+            if case.deletion_completed_at is not None:
+                raise DocumentError("case_deleted")
+            if case.deletion_cleanup_started_at is not None:
+                raise DocumentError("case_deleting")
+            revision = case.revision
             if revision == 0:
                 return {"case_id": case_id, "revision": 0,
                         "snapshot_id": None, "documents": []}

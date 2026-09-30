@@ -82,6 +82,24 @@ services:
       redis:
         condition: service_healthy
 
+  cleaner:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.worker
+    profiles: [agent]
+    restart: unless-stopped
+    command: ["python", "-m", "app.cleanup_cases"]
+    environment:
+      DOCUCHECK_MYSQL_HOST: mysql
+      DOCUCHECK_MYSQL_PORT: "3306"
+      DOCUCHECK_MYSQL_PASSWORD: ${DOCUCHECK_MYSQL_PASSWORD:?Set DOCUCHECK_MYSQL_PASSWORD in .env}
+      DOCUCHECK_DATA_DIR: /data
+    volumes:
+      - ./data:/data
+    depends_on:
+      mysql:
+        condition: service_healthy
+
 volumes:
   mysql_data:
   redis_data:

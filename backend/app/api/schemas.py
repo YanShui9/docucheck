@@ -49,8 +49,10 @@ class CaseOut(BaseModel):
 class CaseDeletionOut(BaseModel):
     case_id: str
     revision: int
-    status: Literal["deleting"]
-    requested_at: str
+    status: Literal["active", "deleting", "deleted"]
+    requested_at: str | None
+    completed_at: str | None = None
+    error_code: str | None = None
 
 
 class ConversationOut(BaseModel):
