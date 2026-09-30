@@ -36,6 +36,8 @@
 
 > **M3-12e 当前进度（2026-09-30）**：[停机积压删除恢复](m3-12e-cleaner-restart-acceptance-2026-09-30.md)已验证正常停止 cleaner 期间形成的待删 Case 会在原容器重启后清理，定向 **1 passed**，队列归零。清理中途强杀和真实大 Case 时延仍待验收；前端仍在设计讨论暂停点。
 
+> **M3-12f 当前进度（2026-09-30）**：[文件删除后异常退出恢复](m3-12f-interrupted-cleanup-acceptance-2026-09-30.md)已通过独立子进程异常退出验证长驻 cleaner 的租约到期重领与未完成文件清单处理，定向 **1 passed**，领取次数为 2。未直接强杀 Docker 容器；前端仍在设计讨论暂停点。
+
 > **M3 第一小步（2026-09-28，历史进度）**：按[运行生命周期计划](superpowers/plans/2026-09-28-m3-run-lifecycle.md)新增不可变 Run 状态及 attempt/fence/快照归属规则；当时定向 6 项、后端合计 **275 项测试**和 Ruff 通过。数据库原子更新仍未实现；这一小步未运行 Docker 或模型 API。
 
 > **M3 第二小步（2026-09-28，迁移验收完成）**：[核心表与迁移记录](m3-2-persistence-schema-2026-09-28.md)定义 12 张业务表、Alembic `0001_core` 和依赖锁；后端 **280 项测试**、Ruff、临时 SQLite 升降迁移通过，MySQL 方言 SQL 可生成。用户本机 Docker MySQL 8.4 显示 `healthy`，Alembic 升级无报错，`current` 为 `0001_core (head)`。事务 repository、API、worker 与正式上传仍未实现。
@@ -123,6 +125,8 @@ M1 使用本机 CLI 和显式输入快照建立业务闭环；M3 将相同服务
 **2026-09-30 M3-12d 进度：** [网络 API 删除闭环](m3-12d-network-cleanup-acceptance-2026-09-30.md)已完成真实 loopback HTTP 到长驻 cleaner 的合成删除验收；重启恢复及真实资料仍待验证。
 
 **2026-09-30 M3-12e 进度：** [停机积压删除恢复](m3-12e-cleaner-restart-acceptance-2026-09-30.md)已完成正常停机期间积压删除的重启领取与清理验收；中途强杀及真实资料仍待验证。
+
+**2026-09-30 M3-12f 进度：** [文件删除后异常退出恢复](m3-12f-interrupted-cleanup-acceptance-2026-09-30.md)已完成精确故障窗口的子进程异常退出及长驻 cleaner 接管验收；Docker 容器本身的强杀与真实资料仍待验证。
 
 - [ ] 数据模型与 Alembic 迁移；MySQL repository 实现 M1 接口。
 - [ ] API 实现 Case/文档/会话/messages/agent-runs/证据，错误与幂等约定统一。
