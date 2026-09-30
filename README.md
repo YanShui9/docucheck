@@ -44,6 +44,8 @@
 
 > M3-12d 的 [网络 API 删除闭环](docs/m3-12d-network-cleanup-acceptance-2026-09-30.md)已用临时 Uvicorn 与长驻 Docker cleaner 验证同一合成 Case 流程，定向 **1 passed**；Uvicorn 测试进程已关闭，清理后无待删记录。服务重启恢复、真实大 Case 和 Agent 链路仍待验收。
 
+> M3-12e 的 [停机积压删除恢复](docs/m3-12e-cleaner-restart-acceptance-2026-09-30.md)已验证：停止 `cleaner` 后请求删除合成 Case，超过轮询周期仍待处理；重新启动原容器后完成删除，定向 **1 passed**，文件清理 1 个、队列归零。清理中途强杀恢复和真实大 Case 时延仍待验收。
+
 > 最新协作状态（2026-09-25）：[M1 最小真实 Agent](docs/m1-acceptance-2026-09-25.md)在模拟包与内存字段范围内完成验收；真实模型连续两问通过，后端离线测试 90/90、全目录 Ruff 与依赖检查通过。正式上传、其他七字段和独立质量评测尚未完成。后续仍按[分步协作计划](docs/step-by-step-plan.md)一次做一个小步骤。任何前端工作开始前须先暂停并讨论设计规范与样式。
 
 > 2026-09-26：[M2-0 XLSX 内存分列证据修正](docs/m2-0-acceptance-2026-09-26.md)和 [M2-1 答复引用范围修正](docs/m2-1-acceptance-2026-09-26.md)已通过离线回归（当前 110 项测试）。下一小步为 M2-2 解析覆盖；M2 完整采购审查尚未完成。
