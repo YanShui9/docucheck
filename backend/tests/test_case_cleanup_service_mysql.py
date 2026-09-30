@@ -3,11 +3,13 @@
 import os
 import time
 from pathlib import Path
+from urllib.parse import urlsplit
 from uuid import uuid4
 
+import httpx
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine, delete, func, select
+from sqlalchemy import Engine, create_engine, delete, func, select
 
 from backend.app.api.main import create_app
 from backend.app.db.case_deletion import CaseDeletion
@@ -24,7 +26,19 @@ ROOT = Path(__file__).resolve().parents[2]
 SAMPLE = ROOT / "examples" / "dev-pack-001" / "requirements.pdf"
 
 
-def _await_deleted(client: TestClient, case_id: str, timeout: float = 15) -> dict:
+def _client(engine: Engine) -> httpx.Client:
+    base_url = os.getenv("DOCUCHECK_API_BASE_URL")
+    if base_url is None:
+        return TestClient(create_app(engine))
+    parsed = urlsplit(base_url)
+    if (parsed.scheme != "http" or parsed.hostname not in {"127.0.0.1", "localhost"}
+            or parsed.port is None or parsed.path not in {"", "/"}
+            or parsed.query or parsed.fragment or parsed.username or parsed.password):
+        raise ValueError("DOCUCHECK_API_BASE_URL must be a loopback HTTP origin")
+    return httpx.Client(base_url=base_url, timeout=10, trust_env=False)
+
+
+def _await_deleted(client: httpx.Client, case_id: str, timeout: float = 15) -> dict:
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         response = client.get(f"/api/v1/cases/{case_id}/deletion")
@@ -46,7 +60,9 @@ def test_running_cleaner_removes_uploaded_case_after_api_delete(monkeypatch):
                            hide_parameters=True)
     case_id = None
     try:
-        with TestClient(create_app(engine)) as client:
+        with _client(engine) as client:
+            ready = client.get("/health/ready")
+            assert ready.status_code == 200, ready.text
             created = client.post("/api/v1/cases")
             assert created.status_code == 201, created.text
             case_id = created.json()["id"]
