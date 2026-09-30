@@ -48,6 +48,8 @@
 
 > M3-12f 的 [文件删除后异常退出恢复](docs/m3-12f-interrupted-cleanup-acceptance-2026-09-30.md)已验证：独立清理子进程在删除合成原件后异常退出，长驻 Docker cleaner 等待 30 秒租约到期并重新领取，定向 **1 passed**、队列归零。该测试未直接强杀 Docker 容器；真实大 Case 时延与 Agent 链路仍待验收。
 
+> [M3 Agent 镜像同步与无模型派发验收](docs/m3-agent-deployment-sync-2026-09-30.md)发现并修正了运行镜像早于当前源码的问题：worker/dispatcher 已同步，空快照 MySQL/Redis/Celery 自动派发 **1 passed**、模型调用 0 次。真实资料修正 Run 的 Celery 闭环仍待验收。
+
 > 最新协作状态（2026-09-25）：[M1 最小真实 Agent](docs/m1-acceptance-2026-09-25.md)在模拟包与内存字段范围内完成验收；真实模型连续两问通过，后端离线测试 90/90、全目录 Ruff 与依赖检查通过。正式上传、其他七字段和独立质量评测尚未完成。后续仍按[分步协作计划](docs/step-by-step-plan.md)一次做一个小步骤。任何前端工作开始前须先暂停并讨论设计规范与样式。
 
 > 2026-09-26：[M2-0 XLSX 内存分列证据修正](docs/m2-0-acceptance-2026-09-26.md)和 [M2-1 答复引用范围修正](docs/m2-1-acceptance-2026-09-26.md)已通过离线回归（当前 110 项测试）。下一小步为 M2-2 解析覆盖；M2 完整采购审查尚未完成。
