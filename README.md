@@ -38,7 +38,7 @@
 
 > M3-12a 的 [Case 删除请求与运行栅栏](docs/m3-12a-case-deletion-request-2026-09-29.md)已实现：`DELETE /cases/{id}` 标记待清理，终止活跃 Run 并撤销解析及待派发任务，后续写入返回 `case_deleting`。本机迁移到 `0008_case_deletion_request`，离线 **406 passed, 12 skipped**，MySQL 无模型竞争测试 **1 passed**。实际数据及共享原件清理、长驻服务重启和前端仍待后续。
 
-> M3-12b 的 [Case 受控清理](docs/m3-12b-case-cleanup-2026-09-30.md)已实现数据库租约、持久文件清单、共享原件引用检查及删除状态查询；本机 MySQL 迁移到 `0009_case_cleanup`，离线 **415 passed, 13 skipped**，合成 MySQL 清理测试 **1 passed**。长驻 `cleaner` 尚未启动；启动后会物理清理已请求删除的 Case。前端仍须先讨论设计规范与样式。
+> M3-12b 的 [Case 受控清理](docs/m3-12b-case-cleanup-2026-09-30.md)已实现数据库租约、持久文件清单、共享原件引用检查及删除状态查询；本机 MySQL 迁移到 `0009_case_cleanup`，离线 **415 passed, 13 skipped**，合成 MySQL 清理测试 **1 passed**。长驻 `cleaner` 已于 2026-09-30 启动，会物理清理今后请求删除的 Case；启动后待清理 Case 为 0。前端仍须先讨论设计规范与样式。
 
 > 最新协作状态（2026-09-25）：[M1 最小真实 Agent](docs/m1-acceptance-2026-09-25.md)在模拟包与内存字段范围内完成验收；真实模型连续两问通过，后端离线测试 90/90、全目录 Ruff 与依赖检查通过。正式上传、其他七字段和独立质量评测尚未完成。后续仍按[分步协作计划](docs/step-by-step-plan.md)一次做一个小步骤。任何前端工作开始前须先暂停并讨论设计规范与样式。
 
@@ -121,8 +121,8 @@ python.exe -m backend.app.parse_background --mineru-executable 'E:\developTools\
 
 Compose 启动 MySQL 8.4、Redis 7.4；显式启用 `agent` profile 后启动 Linux Celery worker 和 Outbox dispatcher。dispatcher 会自动处理新提交的 Run，资料就绪时 worker 可调用 `.env` 中配置的模型服务。MySQL 仅映射到本机 `127.0.0.1:3307`，Redis 仅映射到 `127.0.0.1:6379`；项目文件共享目录是 `data/`，在 worker 内为 `/data`。MySQL 和 Redis 使用各自的 Docker 卷；Redis 开启 AOF，每秒刷盘。首次配置的详细验证见 [环境记录](docs/environment/2026-09-24.md)。
 
-`cleaner` 需要单独启动：`docker compose --profile agent up -d --build cleaner`。它会自动物理清理已通过 Case DELETE 接口标记的资料、历史记录及无其他 Case 引用的上传原件；操作不可恢复。本次开发验证没有启动长驻 `cleaner`。可先用 `python.exe -m backend.app.cleanup_cases --once --case-id <Case ID>` 对指定已标记 Case 执行一次清理。
+`cleaner` 已单独启动；通常用 `docker compose --profile agent up -d --build cleaner` 部署或更新。它会自动物理清理已通过 Case DELETE 接口标记的资料、历史记录及无其他 Case 引用的上传原件；操作不可恢复。当前本机因 Docker Hub 鉴权地址不可达，复用了本地 worker 镜像并复制当前 `app` 源码离线构建，随后以 `--no-build` 启动；其他环境仍应按标准 Dockerfile 构建。可用 `docker compose --profile agent ps cleaner` 查看状态，或用 `python.exe -m backend.app.cleanup_cases --once --case-id <Case ID>` 对指定已标记 Case 执行一次清理。
 
-仅停止自动处理可运行 `docker compose --profile agent stop dispatcher worker`；停止全部服务可运行 `docker compose --profile agent stop`，这两个命令都保留数据库卷。
+仅停止 Run 自动处理可运行 `docker compose --profile agent stop dispatcher worker`；停止自动删除可运行 `docker compose --profile agent stop cleaner`。停止全部服务可运行 `docker compose --profile agent stop`，这些命令都保留数据库卷。
 
 当前已有 Case/会话/Run、上传及证据读取 API 和数据库迁移；本机解析进程运行时会自动处理上传文档，手动解析 CLI 可用于排障。Outbox、Redis 发布、Celery Run 自动执行、失联回收和跨进程多轮追问已接通；失联后的模型结果标为未知，只能显式重试。前端尚未实现。

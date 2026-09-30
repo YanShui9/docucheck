@@ -40,7 +40,7 @@
 
 > **M3-12a（2026-09-29，Case 删除请求）**：新增 `DELETE /cases/{id}` 删除标记与同事务 Run/解析/Outbox 栅栏，拒绝后续写入并保留数据供受控清理。迁移 `0008_case_deletion_request` 已在本机 MySQL 应用；离线 **406 passed, 12 skipped**，MySQL 无模型竞争测试 **1 passed**。实际数据库及共享原件清理、长驻服务重启和前端尚未完成。见 [M3-12a 记录](docs/m3-12a-case-deletion-request-2026-09-29.md)。
 
-> **M3-12b（2026-09-30，Case 受控清理）**：数据库租约与文件清单支持重试，跨 Case 共享原件有引用时保留，最终保留删除墓碑。MySQL 迁移 `0009_case_cleanup`，离线 **415 passed, 13 skipped**，合成 MySQL 定向 **1 passed**；待清理真实 Case 检查为 0。长驻 cleaner 未启动，启动后会物理删除已请求删除的资料；前端仍未开始。见 [M3-12b 记录](docs/m3-12b-case-cleanup-2026-09-30.md)。
+> **M3-12b（2026-09-30，Case 受控清理）**：数据库租约与文件清单支持重试，跨 Case 共享原件有引用时保留，最终保留删除墓碑。MySQL 迁移 `0009_case_cleanup`，离线 **415 passed, 13 skipped**，合成 MySQL 定向 **1 passed**。长驻 cleaner 已启动，启动后待清理 Case 和清单均为 0；之后请求删除的资料会自动物理清理。前端仍未开始。见 [M3-12b 记录](docs/m3-12b-case-cleanup-2026-09-30.md)。
 
 ## 最新协作约定（2026-09-25，优先执行）
 

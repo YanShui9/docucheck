@@ -20,4 +20,6 @@
 
 本次没有启动长驻 `cleaner`，因此真实已标记删除的 Case 不会由新服务自动清理；检查时待清理 Case 为 0。启动 `cleaner` 后，今后通过 DELETE 标记的 Case 会被物理清理，原件和历史记录不可恢复。现有长驻 API、worker 和 dispatcher 若未重启，仍可能运行旧代码；本次验收限于当前源码、MySQL 迁移和合成数据定向测试。
 
+**2026-09-30 部署更新：** 经确认后已启动长驻 `cleaner`，`docker compose --profile agent ps cleaner` 显示 `Up`，启动日志无错误；启动后 `pending_deletion_cases=0`、`cleanup_ledger_rows=0`。标准 `--build` 因本机连接 Docker Hub 鉴权地址被拒绝而失败，本机改用已有的 `docucheck-worker:latest` 镜像作为基础，复制当前 `backend/app` 离线构建 `docucheck-cleaner:latest`，确认清理模块可导入后以 `--no-build` 启动。这个本地镜像包含当前代码；后续在其他环境部署或需要更新依赖时，应按 `backend/Dockerfile.worker` 正常重新构建。现在新 DELETE 请求会自动触发物理清理；尚未以真实已删除 Case 测量清理时延。
+
 文件系统与数据库没有跨资源原子事务，因此清单设计允许“文件已删除但数据库标记尚未提交”的重试。长时间清理可能因租约过期中断，下一轮继续；真实大 Case 的清理时延尚未测量。队列锁使用场景参考 [MySQL 8.4 锁定读文档](https://dev.mysql.com/doc/refman/8.4/en/innodb-locking-reads.html)，事务边界参考 [SQLAlchemy 2.0 文档](https://docs.sqlalchemy.org/en/20/core/connections.html)。
