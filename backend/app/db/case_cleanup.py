@@ -10,12 +10,20 @@ from sqlalchemy import Engine, delete, func, insert, or_, select, update
 
 from .models import (
     agent_runs,
+    assistant_runs,
     case_cleanup_files,
     cases,
+    checklist_heads,
+    checklist_operations,
+    checklist_versions,
+    conversation_summaries,
     conversations,
     correction_reviews,
     corrections,
     document_versions,
+    dynamic_batches,
+    dynamic_corrections,
+    dynamic_runs,
     evidence_blocks,
     idempotency_records,
     input_snapshots,
@@ -24,6 +32,7 @@ from .models import (
     run_attempts,
     run_events,
     suppliers,
+    task_memory,
 )
 
 _MANAGED_KEY = re.compile(r"uploads/[0-9a-f]{2}/[0-9a-f]{32}\.(?:pdf|xlsx)\Z")
@@ -216,9 +225,21 @@ class CaseCleanup:
                 )),
                 (idempotency_records.c.resource_type == "attempt")
                 & idempotency_records.c.resource_id.in_(attempt_ids),
+                (idempotency_records.c.resource_type == "run")
+                & idempotency_records.c.resource_id.in_(run_ids),
             )))
             connection.execute(delete(correction_reviews).where(
                 correction_reviews.c.case_id == claim.case_id))
+            dynamic_ids = select(dynamic_runs.c.run_id).where(dynamic_runs.c.case_id == claim.case_id)
+            for table in (dynamic_batches, dynamic_corrections):
+                connection.execute(delete(table).where(table.c.run_id.in_(dynamic_ids)))
+            connection.execute(delete(dynamic_runs).where(dynamic_runs.c.case_id == claim.case_id))
+            connection.execute(delete(assistant_runs).where(assistant_runs.c.case_id == claim.case_id))
+            connection.execute(delete(checklist_operations).where(checklist_operations.c.case_id == claim.case_id))
+            connection.execute(delete(checklist_heads).where(checklist_heads.c.case_id == claim.case_id))
+            connection.execute(delete(checklist_versions).where(checklist_versions.c.case_id == claim.case_id))
+            connection.execute(delete(conversation_summaries).where(conversation_summaries.c.case_id == claim.case_id))
+            connection.execute(delete(task_memory).where(task_memory.c.case_id == claim.case_id))
             connection.execute(delete(corrections).where(
                 corrections.c.case_id == claim.case_id))
             connection.execute(delete(run_events).where(

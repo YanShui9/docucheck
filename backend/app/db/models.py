@@ -25,9 +25,31 @@ from sqlalchemy.dialects import mysql
 metadata = MetaData()
 precise_datetime = DateTime().with_variant(mysql.DATETIME(fsp=6), "mysql")
 
+projects = Table(
+    "projects", metadata,
+    Column("id", String(32), primary_key=True),
+    Column("name", String(120), nullable=False),
+    Column("created_at", DateTime, nullable=False),
+    mysql_engine="InnoDB",
+)
+
+project_members = Table(
+    "project_members", metadata,
+    Column("project_id", String(32), ForeignKey("projects.id"), primary_key=True),
+    Column("principal_key", String(64), primary_key=True),
+    Column("role", String(16), nullable=False),
+    Column("created_at", DateTime, nullable=False),
+    CheckConstraint("role IN ('owner', 'editor', 'viewer')",
+                    name="ck_project_members_role"),
+    Index("ix_project_members_principal", "principal_key"),
+    mysql_engine="InnoDB",
+)
+
 cases = Table(
     "cases", metadata,
     Column("id", String(32), primary_key=True),
+    Column("project_id", String(32),
+           ForeignKey("projects.id", name="fk_cases_project")),
     Column("revision", Integer, nullable=False),
     Column("deletion_requested_at", precise_datetime),
     Column("deletion_cleanup_started_at", precise_datetime),
@@ -43,6 +65,7 @@ cases = Table(
 )
 Index("ix_cases_cleanup_due", cases.c.deletion_completed_at,
       cases.c.deletion_requested_at, cases.c.deletion_lease_until)
+Index("ix_cases_project_created", cases.c.project_id, cases.c.created_at)
 
 suppliers = Table(
     "suppliers", metadata,
@@ -62,7 +85,7 @@ input_snapshots = Table(
     Column("case_id", String(32), ForeignKey("cases.id"), nullable=False),
     Column("revision", Integer, nullable=False),
     Column("created_at", DateTime, nullable=False),
-    CheckConstraint("revision >= 1", name="ck_snapshots_revision"),
+    CheckConstraint("revision >= 0", name="ck_snapshots_revision"),
     UniqueConstraint("case_id", "revision", name="uq_snapshots_case_revision"),
     UniqueConstraint("case_id", "id", name="uq_snapshots_case_id"),
     UniqueConstraint("case_id", "id", "revision", name="uq_snapshots_case_id_revision"),
@@ -75,6 +98,7 @@ document_versions = Table(
     Column("case_id", String(32), nullable=False),
     Column("snapshot_id", String(64), nullable=False),
     Column("supplier_id", String(32)),
+    Column("model_name", String(120)),
     Column("role", String(20), nullable=False),
     Column("original_name", String(255), nullable=False),
     Column("storage_key", String(512), nullable=False),
@@ -99,6 +123,7 @@ document_versions = Table(
         name="ck_documents_role_supplier",
     ),
     UniqueConstraint("snapshot_id", "id", name="uq_documents_snapshot_id"),
+    UniqueConstraint("case_id", "snapshot_id", "id", name="uq_documents_case_snapshot_id"),
     mysql_engine="InnoDB",
 )
 Index("ix_documents_parse_lease", document_versions.c.parse_status,
@@ -134,10 +159,13 @@ messages = Table(
     "messages", metadata,
     Column("id", String(32), primary_key=True),
     Column("conversation_id", String(32), ForeignKey("conversations.id"), nullable=False),
+    Column("sequence", Integer),
     Column("role", String(20), nullable=False),
     Column("content", Text, nullable=False),
     Column("created_at", DateTime, nullable=False),
     CheckConstraint("role IN ('user', 'assistant')", name="ck_messages_role"),
+    CheckConstraint("sequence IS NULL OR sequence >= 1", name="ck_message_sequence"),
+    UniqueConstraint("conversation_id", "sequence", name="uq_message_sequence"),
     UniqueConstraint("conversation_id", "id", name="uq_messages_conversation_id"),
     mysql_engine="InnoDB",
 )
@@ -157,6 +185,8 @@ agent_runs = Table(
     Column("answer_text", Text),
     Column("error_code", String(64)),
     Column("memory_json", JSON),
+    Column("context_manifest_json", JSON),
+    Column("requester_key", String(64)),
     Column("created_at", DateTime, nullable=False),
     Column("updated_at", precise_datetime, nullable=False),
     ForeignKeyConstraint(["case_id", "conversation_id"],
@@ -172,6 +202,7 @@ agent_runs = Table(
     CheckConstraint("fence >= 0", name="ck_runs_fence"),
     CheckConstraint("mode IN ('standard', 'thorough')", name="ck_runs_mode"),
     UniqueConstraint("message_id", name="uq_runs_message"),
+    UniqueConstraint("case_id", "conversation_id", "snapshot_id", "id", name="uq_run_memory_scope"),
     mysql_engine="InnoDB",
 )
 Index("ix_runs_case_created", agent_runs.c.case_id, agent_runs.c.created_at)
@@ -308,3 +339,25 @@ case_cleanup_files = Table(
     UniqueConstraint("case_id", "storage_key", name="uq_cleanup_case_storage"),
     mysql_engine="InnoDB",
 )
+
+from .index_schema_v1 import (
+    define_index_tables,
+)
+
+document_index_jobs, index_manifests = define_index_tables(metadata)
+
+from .memory_schema_v1 import define_memory_tables
+
+memory_profiles, memory_records, task_memory, conversation_summaries = define_memory_tables(metadata)
+
+from .checklist_schema_v1 import define_checklist_tables
+
+checklist_versions, checklist_heads, checklist_operations = define_checklist_tables(metadata)
+
+from .dynamic_schema_v1 import define_dynamic_tables
+
+dynamic_runs, dynamic_batches, dynamic_corrections = define_dynamic_tables(metadata)
+
+from .assistant_schema_v1 import define_assistant_table
+
+assistant_runs = define_assistant_table(metadata)

@@ -189,12 +189,16 @@ def test_named_supplier_question_cannot_read_other_supplier_source():
 
 
 def test_full_review_cannot_complete_from_only_memory_check():
+    from backend.app.field_contract import FieldKey
+
     module = import_module("backend.app.agent.graph")
-    result = module.AgentSession(load_case(PACK), ScenarioProvider(),
-                                 mode="thorough").ask("请完整审查供应商 A 的八项指标")
+    session = module.AgentSession(load_case(PACK), ScenarioProvider(), mode="thorough")
+    result = session.ask("请完整审查供应商 A 的八项指标")
     assert result.status != "completed"
-    assert any(event.get("tool") == "submit_answer" and event["status"] != "completed"
-               for event in result.events)
+    # The server can now correct a premature submission into the required full
+    # review. It still cannot publish eight complete checks from memory alone.
+    assert (len(session.tools.results) < len(FieldKey)
+            or any(item.processing_status != "complete" for item in session.tools.results.values()))
 
 
 def test_cancel_and_clarification_terminate():
@@ -285,20 +289,20 @@ def test_document_instruction_cannot_grant_shell_tool():
 def test_invalid_extract_records_safe_validation_category_without_source_text():
     module = import_module("backend.app.agent.graph")
 
-    class WrongComparator(ScenarioProvider):
+    class WrongValue(ScenarioProvider):
         def extract(self, messages, schema, **kwargs):
             reply = super().extract(messages, schema, **kwargs)
             if "已装内存 16 GB" in messages[-1].content:
                 for fact in reply.tool_calls[0]["args"]["facts"]:
-                    fact["comparator"] = "gte"
+                    fact["raw_value"] = "999"
             return reply
 
-    result = module.AgentSession(load_case(PACK), WrongComparator()).ask(
+    result = module.AgentSession(load_case(PACK), WrongValue()).ask(
         "供应商 A 的内存是否达标？")
     assert result.status == "failed"
     assert result.error == "invalid_tool_result"
     failed = next(event for event in result.events if event.get("error") == "invalid_tool_result")
-    assert failed["failure_detail"] == "fact_comparator"
+    assert failed["failure_detail"] == "fact_value"
     assert "已装内存" not in str(failed)
 
 

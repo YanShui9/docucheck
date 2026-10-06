@@ -38,10 +38,12 @@ class EvidenceRepository:
     def __init__(self, case_id: str, revision: int, documents: list[Document],
                  *, snapshot_id: str | None = None,
                  scoped_blocks: tuple[ScopedEvidence, ...] | None = None,
-                 document_names: dict[str, str] | None = None):
+                 document_names: dict[str, str] | None = None,
+                 allow_empty: bool = False):
         if (snapshot_id is None) != (scoped_blocks is None):
             raise ValueError("invalid_snapshot")
-        if not documents or len(documents) > 7 or revision < 1:
+        empty = allow_empty and revision == 0 and not documents and not scoped_blocks
+        if not empty and (not documents or len(documents) > 7 or revision < 1):
             raise ValueError("invalid_snapshot")
         if len({d.document_id for d in documents}) != len(documents):
             raise ValueError("duplicate_document")
@@ -84,6 +86,11 @@ class EvidenceRepository:
             raise ValueError("duplicate_evidence")
         self.blocks = tuple(blocks)
         self._by_id = {b.evidence_id: b for b in blocks}
+
+    @classmethod
+    def empty(cls, case_id: str, snapshot_id: str):
+        return cls(case_id, 0, [], snapshot_id=snapshot_id,
+                   scoped_blocks=(), allow_empty=True)
 
     def read(self, ids: list[str]) -> list[ScopedEvidence]:
         if any(key not in self._by_id for key in ids):

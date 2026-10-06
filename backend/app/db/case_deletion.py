@@ -5,6 +5,7 @@ from uuid import uuid4
 
 from sqlalchemy import Engine, func, insert, select, update
 
+from .index_repository import invalidate_case_indexes
 from .models import (
     agent_runs,
     cases,
@@ -121,4 +122,5 @@ class CaseDeletion:
                 document_versions.c.parse_status.in_(("pending", "processing")),
             ).values(parse_status="cancelled", parse_claim_id=None,
                      parse_lease_until=None))
+            invalidate_case_indexes(connection, case_id, now=now)
             return _receipt(case_id, case["revision"], now)

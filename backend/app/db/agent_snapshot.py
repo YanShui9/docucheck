@@ -20,7 +20,11 @@ class SnapshotLoadError(ValueError):
 
 
 def load_agent_snapshot(engine: Engine, case_id: str,
-                        snapshot_id: str) -> EvidenceRepository:
+                        snapshot_id: str, *, document_ids: tuple[str, ...] | None = None,
+                        allow_empty: bool = False) -> EvidenceRepository:
+    if document_ids is not None and (not 1 <= len(document_ids) <= 7
+            or len(set(document_ids)) != len(document_ids)):
+        raise SnapshotLoadError("snapshot_document_scope")
     with engine.connect() as connection:
         revision = connection.scalar(select(input_snapshots.c.revision).where(
             input_snapshots.c.case_id == case_id,
@@ -35,7 +39,12 @@ def load_agent_snapshot(engine: Engine, case_id: str,
         )).where(
             document_versions.c.case_id == case_id,
             document_versions.c.snapshot_id == snapshot_id,
+            document_versions.c.id.in_(document_ids) if document_ids is not None else True,
         ).order_by(document_versions.c.id)).mappings().all()
+        if document_ids is not None and {r["id"] for r in document_rows} != set(document_ids):
+            raise SnapshotLoadError("snapshot_document_scope")
+        if allow_empty and revision == 0 and not document_rows and document_ids is None:
+            return EvidenceRepository.empty(case_id, snapshot_id)
         if not document_rows or any(row["parse_status"] not in {"complete", "partial"}
                                     for row in document_rows):
             raise SnapshotLoadError("snapshot_not_ready")
@@ -80,7 +89,7 @@ def load_agent_snapshot(engine: Engine, case_id: str,
             blocks.append(EvidenceBlock(**values))
             scoped.append(ScopedEvidence(
                 **values, role=row["role"], supplier=row["supplier_handle"],
-                model=None, source_hash=row["source_sha256"],
+                model=row["model_name"], source_hash=row["source_sha256"],
                 parser_version=version, ordinal=item["ordinal"],
             ))
         parsed = ParseResult(
@@ -95,7 +104,7 @@ def load_agent_snapshot(engine: Engine, case_id: str,
         documents.append(Document(
             document_id=row["id"], source_hash=row["source_sha256"],
             role=row["role"], supplier=row["supplier_handle"],
-            model=None, parsed=parsed,
+            model=row["model_name"], parsed=parsed,
         ))
     try:
         return EvidenceRepository(case_id, revision, documents,

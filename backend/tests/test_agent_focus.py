@@ -65,3 +65,17 @@ def test_clarification_question_is_bound_into_next_turn_context() -> None:
     assert session.ask("请检查").status == "waiting_user"
     assert session.ask("供应商 A").status == "waiting_user"
     assert "上轮等待用户回答的澄清问题：请指定供应商。" in provider.contexts[-1][0].content
+
+
+def test_unknown_explicit_supplier_requests_clarification_before_model_call() -> None:
+    class NoCalls:
+        def decide(self, *args, **kwargs):
+            raise AssertionError("unknown_supplier_should_be_resolved_before_call")
+
+    session = AgentSession(load_case(PACK), NoCalls())
+    result = session.ask("供应商 D 的内存是否达标？")
+    assert result.status == "waiting_user"
+    assert result.error is None
+    assert "vendor-a" in result.answer
+    assert session.pending_clarification == result.answer
+    assert result.usage["model_calls"] == 0

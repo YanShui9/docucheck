@@ -65,6 +65,48 @@ def _count(connection, table):
     return connection.scalar(select(func.count()).select_from(table))
 
 
+def test_finish_records_only_allowlisted_diagnostics_in_owned_transaction(repository):
+    receipt = _submit(repository)
+    claim = repository.claim(receipt.run_id, receipt.attempt_id)
+    repository.finish(receipt.run_id, receipt.attempt_id, claim.fence, claim.snapshot_id,
+                      RunStatus.FAILED, error_code="invalid_output", trace_events=[{
+                          "kind": "model", "operation": "extract", "sequence": 1,
+                          "status": "failed", "error": "invalid_output",
+                          "failure_detail": "tool_schema", "outcome_unknown": True,
+                          "usage": {"input_tokens": 10, "output_tokens": True,
+                                    "total_tokens": -1, "other": "SECRET"},
+                          "request_id": "SECRET", "headers": {"Authorization": "SECRET"},
+                          "prompt": "SECRET", "arguments": {"secret": "SECRET"},
+                      }])
+    with repository.engine.connect() as connection:
+        rows = connection.execute(select(run_events).where(
+            run_events.c.run_id == receipt.run_id).order_by(run_events.c.seq)).mappings().all()
+    diagnostic = next(row for row in rows if row["kind"] == "agent_model")
+    assert diagnostic["summary_json"] == {
+        "operation": "extract", "sequence": 1, "status": "failed",
+        "error": "invalid_output", "failure_detail": "tool_schema",
+        "outcome_unknown": True, "usage": {"input_tokens": 10},
+    }
+    assert diagnostic["attempt_id"] == receipt.attempt_id
+    assert rows[-1]["kind"] == "finished"
+
+
+def test_stale_worker_cannot_append_diagnostics_after_cancel(repository):
+    receipt = _submit(repository)
+    claim = repository.claim(receipt.run_id, receipt.attempt_id)
+    repository.cancel(receipt.run_id)
+    with repository.engine.connect() as connection:
+        before = _count(connection, run_events)
+    with pytest.raises(RepositoryError, match="stale_attempt"):
+        repository.finish(receipt.run_id, receipt.attempt_id, claim.fence, claim.snapshot_id,
+                          RunStatus.FAILED, trace_events=[{
+                              "kind": "tool", "tool": "extract_facts", "sequence": 1,
+                              "status": "failed", "error": "invalid_tool_result",
+                          }])
+    with repository.engine.connect() as connection:
+        assert _count(connection, run_events) == before
+
+
 def test_submit_is_atomic_and_same_payload_reuses_first_run(repository):
     first = _submit(repository)
     second = _submit(repository)
@@ -229,6 +271,49 @@ def test_conversation_accepts_only_one_active_run(repository):
                       claimed.snapshot_id, RunStatus.COMPLETED, "已完成")
     second = _submit(repository, idempotency_key="question-5")
     assert second.run_id != first.run_id
+
+
+def test_retry_cannot_queue_beside_another_active_run(repository):
+    first = _submit(repository)
+    running = repository.claim(first.run_id, first.attempt_id)
+    repository.finish(first.run_id, first.attempt_id, running.fence,
+                      "snapshot-a", RunStatus.FAILED, error_code="model_failed")
+    second = _submit(repository, idempotency_key="question-2")
+
+    with pytest.raises(RepositoryError, match="conversation_busy"):
+        repository.retry(first.run_id, "snapshot-a", 1, "retry-1")
+
+    assert repository.get(second.run_id).status == RunStatus.QUEUED
+    assert repository.get(first.run_id).status == RunStatus.FAILED
+
+
+def test_old_queued_run_becomes_interrupted_after_snapshot_revision_changes(repository):
+    submitted = _submit(repository)
+    with repository.engine.begin() as connection:
+        connection.execute(cases.update().where(cases.c.id == "case-a")
+                           .values(revision=2))
+
+    assert repository.recover_stale() == 1
+    assert repository.get(submitted.run_id).status == RunStatus.INTERRUPTED
+    with repository.engine.connect() as connection:
+        run = connection.execute(select(agent_runs).where(
+            agent_runs.c.id == submitted.run_id)).mappings().one()
+        attempt = connection.execute(select(run_attempts).where(
+            run_attempts.c.id == submitted.attempt_id)).mappings().one()
+    assert run["error_code"] == "snapshot_changed"
+    assert attempt["status"] == "interrupted"
+
+
+def test_running_attempt_is_no_longer_current_after_case_revision_changes(repository):
+    submitted = _submit(repository)
+    running = repository.claim(submitted.run_id, submitted.attempt_id)
+    assert repository.is_current(submitted.run_id, submitted.attempt_id,
+                                 running.fence)
+    with repository.engine.begin() as connection:
+        connection.execute(cases.update().where(cases.c.id == "case-a")
+                           .values(revision=2))
+    assert not repository.is_current(submitted.run_id, submitted.attempt_id,
+                                     running.fence)
 
 
 def test_claim_rejects_run_after_case_revision_changes(repository):

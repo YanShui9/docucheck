@@ -6,8 +6,13 @@ from dataclasses import asdict
 from decimal import Decimal
 
 from ..evidence.repository import EvidenceRepository, digest
-from ..extraction.fields import FieldCandidate, _validate_candidate
-from ..extraction.memory import FactSet
+from ..extraction.fields import (
+    FieldCandidate,
+    _validate_candidate,
+    field_source_coverage_issues,
+    memory_as_field,
+)
+from ..extraction.memory import FactSet, memory_source_coverage_complete
 from ..extraction.validation import Candidate, validate_memory
 from ..field_contract import FieldFactSet, FieldKey
 
@@ -89,6 +94,28 @@ def _field_fact(repo: EvidenceRepository, supplier: str,
     return validated
 
 
+def _field_memory_fact(repo: EvidenceRepository, supplier: str, value: dict):
+    """Rebuild a full-review memory fact through the dedicated source validator."""
+    if not isinstance(value, dict):
+        raise TypeError("memory_scope")
+    refs = _strings(value["evidence_refs"], limit=2)
+    text = " ".join(block.text for block in repo.read(list(refs)))
+    for raw, unit in _CAPACITY.findall(text):
+        try:
+            canonical_unit = {"gb": "GB", "gib": "GiB", "mib": "MiB"}[unit.casefold()]
+            candidate = Candidate(raw_value=raw, raw_unit=canonical_unit,
+                                  qualifier=value["qualifier"],
+                                  comparator=value["comparator"],
+                                  evidence_refs=list(refs))
+            legacy = validate_memory(candidate, repo, supplier)
+        except (ValueError, TypeError):
+            continue
+        restored = memory_as_field(repo, supplier, legacy)
+        if _plain(asdict(restored)) == value:
+            return restored, legacy
+    raise ValueError("memory_scope")
+
+
 def _memory_fact(repo: EvidenceRepository, supplier: str, value: dict):
     if not isinstance(value, dict):
         raise TypeError("memory_scope")
@@ -147,12 +174,24 @@ def decode_fact_sets(repo: EvidenceRepository, data: object) -> dict[str, FactSe
                 issues = _strings(item["coverage_issues"], limit=MAX_SCANNED_PER_SET)
                 if item["complete"] and issues:
                     raise ValueError("memory_scope")
-                facts = tuple(_field_fact(repo, supplier, field, fact)
-                              for fact in facts_json)
-                identity = digest([
-                    repo.snapshot_id, supplier, field.value, scanned, item["complete"],
-                    [asdict(fact) | {"value": str(fact.value)} for fact in facts],
-                ])
+                if field == FieldKey.MEMORY:
+                    pairs = tuple(_field_memory_fact(repo, supplier, fact)
+                                  for fact in facts_json)
+                    facts = tuple(fact for fact, _ in pairs)
+                    legacy_facts = tuple(legacy for _, legacy in pairs)
+                    legacy_id = digest([
+                        repo.snapshot_id, supplier, scanned, item["complete"],
+                        [asdict(fact) | {"value": str(fact.value)}
+                         for fact in legacy_facts],
+                    ])
+                    identity = digest([repo.snapshot_id, supplier, "memory", legacy_id])
+                else:
+                    facts = tuple(_field_fact(repo, supplier, field, fact)
+                                  for fact in facts_json)
+                    identity = digest([
+                        repo.snapshot_id, supplier, field.value, scanned, item["complete"],
+                        [asdict(fact) | {"value": str(fact.value)} for fact in facts],
+                    ])
                 fact_set = FieldFactSet(
                     fact_set_id=identity, snapshot_id=repo.snapshot_id,
                     supplier=supplier, field_key=field, facts=facts,
@@ -171,6 +210,12 @@ def decode_fact_sets(repo: EvidenceRepository, data: object) -> dict[str, FactSe
                 fact_set = FactSet(identity, supplier, facts, scanned, item["complete"])
             if item["fact_set_id"] != identity or _payload(fact_set) != item:
                 raise ValueError("memory_scope")
+            if item["complete"]:
+                covered = (memory_source_coverage_complete(repo, supplier, facts)
+                           if field == FieldKey.MEMORY else
+                           not field_source_coverage_issues(repo, supplier, field, facts))
+                if not covered:
+                    raise ValueError("memory_scope")
             restored[identity] = fact_set
     except (KeyError, TypeError, ValueError) as exc:
         raise ValueError("memory_scope") from exc

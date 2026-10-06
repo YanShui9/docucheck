@@ -658,7 +658,49 @@ def test_model_timeout_records_unknown_outcome_without_formal_answer(uploaded_ca
     assert attempt["model_id"] == "timeout-model"
 
 
-def test_cancelled_run_rejects_late_agent_result(uploaded_case):
+def test_failed_extraction_persists_safe_diagnostic_events(uploaded_case):
+    from backend.app.db.run_executor import execute_run
+
+    client, engine, storage, case_id, uploaded = uploaded_case
+    DocumentIngestion(engine, storage).process_document(
+        case_id, uploaded["snapshot_id"], uploaded["document_id"])
+    with engine.connect() as connection:
+        evidence_id = connection.scalar(select(evidence_blocks.c.id).where(
+            evidence_blocks.c.document_version_id == uploaded["document_id"],
+            evidence_blocks.c.cell == "B6"))
+    submitted, _ = _submit_question(client, case_id)
+
+    class BadValue:
+        model_id = "scripted-bad-value"
+        context_window = 32_768
+
+        def decide(self, messages, tools, **kwargs):
+            return _call("extract_facts", {"supplier": "vendor-a", "field_keys": ["memory"]})
+
+        def extract(self, messages, schema, **kwargs):
+            reply = _call("MemoryCandidates", {"facts": [{
+                "raw_value": "999", "raw_unit": "GB", "qualifier": "installed",
+                "comparator": "eq", "evidence_refs": [evidence_id],
+            }]})
+            reply.response_metadata["request_id"] = "SECRET-do-not-store"
+            return reply
+
+    report = execute_run(engine, submitted["run_id"], submitted["attempt_id"], BadValue())
+    assert report.error_code == "invalid_tool_result"
+    events = client.get(f"/api/v1/agent-runs/{report.run_id}/events").json()["events"]
+    trace = [event for event in events if event["kind"].startswith("agent_")]
+    assert len(trace) == 3
+    failed_tool = next(event for event in trace if event["kind"] == "agent_tool")
+    assert failed_tool["summary"]["failure_detail"] == "fact_value"
+    assert failed_tool["summary"]["tool"] == "extract_facts"
+    assert [event["summary"]["sequence"] for event in trace] == [1, 2, 3]
+    assert {event["attempt_id"] for event in trace} == {submitted["attempt_id"]}
+    assert "SECRET" not in json.dumps(trace)
+    assert "evidence_refs" not in json.dumps(trace)
+    assert events[-1]["kind"] == "finished"
+
+
+def test_cancelled_run_stops_before_another_model_call(uploaded_case):
     from backend.app.db.run_executor import execute_run
 
     client, engine, storage, case_id, uploaded = uploaded_case
@@ -673,16 +715,33 @@ def test_cancelled_run_rejects_late_agent_result(uploaded_case):
 
     class Cancels(SourceProvider):
         def decide(self, messages, tools, **kwargs):
-            if self.calls == 2:
+            if self.calls == 1:
                 RunRepository(engine).cancel(submitted["run_id"])
             return super().decide(messages, tools, **kwargs)
 
-    with pytest.raises(RepositoryError, match="stale_attempt"):
-        execute_run(engine, submitted["run_id"], submitted["attempt_id"],
-                    Cancels(evidence_id))
+    provider = Cancels(evidence_id)
+    report = execute_run(engine, submitted["run_id"], submitted["attempt_id"],
+                         provider)
+    assert report.status == "cancelled"
+    assert provider.calls == 2
     persisted = client.get(f"/api/v1/agent-runs/{submitted['run_id']}").json()
     assert persisted["status"] == "cancelled"
     assert persisted["answer_text"] is None
+
+
+def test_message_over_agent_limit_is_rejected_before_queueing(uploaded_case):
+    client, engine, storage, case_id, uploaded = uploaded_case
+    DocumentIngestion(engine, storage).process_document(
+        case_id, uploaded["snapshot_id"], uploaded["document_id"])
+    conversation = client.post(f"/api/v1/cases/{case_id}/conversations").json()
+    response = client.post(
+        f"/api/v1/conversations/{conversation['id']}/messages",
+        headers={"Idempotency-Key": "too-long"},
+        json={"content": "内" * 2001, "mode": "standard", "expected_revision": 1},
+    )
+    assert response.status_code == 422
+    with engine.connect() as connection:
+        assert connection.scalar(select(agent_runs.c.id)) is None
 
 
 def test_run_once_preview_never_claims_or_creates_provider(uploaded_case, capsys):

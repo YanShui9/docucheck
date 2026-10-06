@@ -154,7 +154,14 @@ def test_complete_fact_set_rechecks_with_existing_rule(prepared):
         field_key=FieldKey.STORAGE, raw_value="512", raw_unit="GB",
         evidence_refs=[requirement.evidence_id],
     ), repo, "vendor-a")
-    facts = (required, original, alternative)
+    # A complete set must also retain the spec source, not just the two values
+    # in the quote. The correction must still preserve both quote alternatives.
+    spec = next(item for item in repo.blocks if item.role == "spec")
+    specified = _validate_candidate(FieldCandidate(
+        field_key=FieldKey.STORAGE, raw_value="1", raw_unit="TB",
+        evidence_refs=[spec.evidence_id],
+    ), repo, "vendor-a")
+    facts = (required, original, alternative, specified)
     scanned = tuple(item.evidence_id for item in repo.supplier_blocks("vendor-a"))
     identity = digest([
         repo.snapshot_id, "vendor-a", "storage", scanned, True,

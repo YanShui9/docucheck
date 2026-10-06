@@ -33,7 +33,7 @@ def execute_queued_run(engine: Engine, run_id: str, attempt_id: str,
         try:
             claimed = runs.claim(run_id, attempt_id)
         except RepositoryError as claim_error:
-            if claim_error.code in {"stale_attempt", "snapshot_changed"}:
+            if claim_error.code in {"stale_attempt", "snapshot_changed", "source_access_changed", "checklist_changed"}:
                 return _ignored(run_id, attempt_id, claim_error.code)
             raise
         answer = "模型服务准备失败，请检查配置后重试。"
@@ -42,7 +42,7 @@ def execute_queued_run(engine: Engine, run_id: str, attempt_id: str,
                         RunStatus.FAILED, answer_text=answer,
                         error_code=code)
         except RepositoryError as finish_error:
-            if finish_error.code in {"stale_attempt", "snapshot_changed"}:
+            if finish_error.code in {"stale_attempt", "snapshot_changed", "source_access_changed", "checklist_changed"}:
                 return _ignored(run_id, attempt_id, finish_error.code)
             raise
         return ExecutionReport(run_id, attempt_id, "failed", answer,
@@ -50,6 +50,6 @@ def execute_queued_run(engine: Engine, run_id: str, attempt_id: str,
     try:
         return execute_run(engine, run_id, attempt_id, provider)
     except RepositoryError as exc:
-        if exc.code in {"stale_attempt", "snapshot_changed"}:
+        if exc.code in {"stale_attempt", "snapshot_changed", "source_access_changed", "memory_context_changed", "checklist_changed", "dynamic_source_changed", "batch_source_changed"}:
             return _ignored(run_id, attempt_id, exc.code)
         raise

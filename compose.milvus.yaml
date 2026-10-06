@@ -1,0 +1,31 @@
+# Independent stack: never reuses the user's old Milvus bind mounts.
+name: docucheck-vector
+
+services:
+  milvus:
+    build:
+      context: ./deploy/milvus
+      dockerfile: Dockerfile
+    image: docucheck-milvus:2.6.25
+    command: ["milvus", "run", "standalone"]
+    restart: unless-stopped
+    environment:
+      ETCD_USE_EMBED: "true"
+      ETCD_DATA_DIR: /var/lib/milvus/etcd
+      ETCD_CONFIG_PATH: /milvus/configs/embedEtcd.yaml
+      COMMON_STORAGETYPE: local
+      DEPLOY_MODE: STANDALONE
+    ports:
+      - "127.0.0.1:19530:19530"
+      - "127.0.0.1:9091:9091"
+    volumes:
+      - milvus_data:/var/lib/milvus
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:9091/healthz"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+      start_period: 90s
+
+volumes:
+  milvus_data:

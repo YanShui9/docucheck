@@ -1,4 +1,5 @@
 """Whitelisted tools: model arguments cannot set server scope or mutate inputs."""
+from collections.abc import Callable
 from dataclasses import asdict
 from typing import Literal
 
@@ -35,6 +36,12 @@ class Supplier(Empty):
     supplier: str = Field(min_length=1, max_length=100)
 
 
+class HistoryRead(Empty):
+    message_ids: list[str] = Field(min_length=1, max_length=4)
+    part: Literal["question", "answer"]
+    start_char: int = Field(default=0, ge=0)
+
+
 class Extract(Supplier):
     field_keys: list[FieldKey] = Field(default_factory=lambda: [FieldKey.MEMORY],
                                       min_length=1, max_length=8)
@@ -61,6 +68,7 @@ class Clarification(Empty):
 
 
 DEFINITIONS = {
+    "read_conversation_history": (HistoryRead, "Read original historical question/answer by message_id in this conversation and snapshot. Not procurement evidence. Continue one message with start_char=next_char."),
     "list_case_sources": (Empty, "List the server-bound documents, supplier handles and coverage."),
     "search_evidence": (Search, "Find relevant original evidence. No hit does not prove absence."),
     "read_source": (
@@ -76,16 +84,21 @@ DEFINITIONS = {
 }
 
 
-def tool_schemas() -> list[dict]:
+def tool_schemas(*, history_enabled: bool = False) -> list[dict]:
     return [{"type": "function", "function": {"name": name, "description": description,
              "parameters": schema.model_json_schema()}}
-            for name, (schema, description) in DEFINITIONS.items()]
+            for name, (schema, description) in DEFINITIONS.items()
+            if name != "read_conversation_history" or history_enabled]
 
 
 class ToolExecutor:
-    def __init__(self, repo: EvidenceRepository):
+    def __init__(self, repo: EvidenceRepository, *, retriever: Retriever | None = None,
+                 history_reader: Callable | None = None):
         self.repo = repo
-        self.retriever = Retriever(repo)
+        self.history_reader = history_reader
+        if retriever is not None and retriever.repository is not repo:
+            raise ValueError("retriever_repository")
+        self.retriever = retriever if retriever is not None else Retriever(repo)
         self.fact_sets: dict[str, FactSet | FieldFactSet] = {}
         self.results: dict[str, CheckResult | FieldCheckResult] = {}
         self.seen: set[str] = set()
@@ -118,6 +131,11 @@ class ToolExecutor:
         self.review_result_ids[pair] = result.check_result_id
         self.seen.update(result.evidence_refs)
 
+    def revalidate_sources(self):
+        callback = getattr(self.retriever, "revalidate", None)
+        if callback is not None:
+            callback()
+
     def execute(self, name: str, arguments: dict, model_call) -> dict:
         if name not in DEFINITIONS:
             raise ValueError("unknown_tool")
@@ -133,6 +151,10 @@ class ToolExecutor:
                 args.evidence_ids, neighbors=args.neighbors, start_char=args.start_char
             )
             refs = [item["evidence_id"] for item in data]
+        elif name == "read_conversation_history":
+            if self.history_reader is None:
+                raise ValueError("history_scope")
+            data = self.history_reader(args.message_ids, part=args.part, start_char=args.start_char)
         elif name == "extract_facts":
             self.repo.assert_supplier(args.supplier)
             if args.field_keys == [FieldKey.MEMORY]:
@@ -240,5 +262,9 @@ class ToolExecutor:
         else:
             raise ValueError("control_action_not_tool")
         self.seen.update(refs)
-        return {"status": "ok", "data": data, "evidence_refs": refs,
-                "coverage_ref": self.repo.snapshot_id, "error": None}
+        observation = {"status": "ok", "data": data, "evidence_refs": refs,
+                       "coverage_ref": self.repo.snapshot_id, "error": None}
+        if name == "search_evidence" and hasattr(self.retriever, "last_diagnostics"):
+            # Include failure/coverage semantics even when the hit list is empty.
+            observation["retrieval"] = dict(self.retriever.last_diagnostics)
+        return observation

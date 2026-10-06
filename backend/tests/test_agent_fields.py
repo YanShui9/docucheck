@@ -283,7 +283,7 @@ def test_partial_full_review_trace_records_only_safe_field_coverage_categories()
     delivery_pair = {block.evidence_id for block in repo.blocks
                      if block.role == "quote" and block.cell in {"A9", "B9"}}
 
-    class MissingDelivery(ScriptedProvider):
+    class MissingDelivery(RepeatsFirstSupplier):
         def extract(self, messages, schema, **kwargs):
             reply = super().extract(messages, schema, **kwargs)
             if schema["function"]["name"] == "FieldCandidates":
@@ -293,7 +293,7 @@ def test_partial_full_review_trace_records_only_safe_field_coverage_categories()
                 ]
             return reply
 
-    result = AgentSession(repo, MissingDelivery(("vendor-a",)), mode="thorough").ask(
+    result = AgentSession(repo, MissingDelivery(), mode="thorough").ask(
         "完整审查供应商 A 的八项指标")
     assert result.status == "partial"
     extraction = next(event for event in result.events if event.get("tool") == "extract_facts")

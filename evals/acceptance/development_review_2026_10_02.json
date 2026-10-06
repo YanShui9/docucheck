@@ -1,0 +1,1083 @@
+{
+  "schema_version": 1,
+  "kind": "ai_source_review_of_agent_authored_candidates",
+  "reviewer": "Codex AI",
+  "reviewed_on": "2026-10-02",
+  "independent_human_review": false,
+  "identity_authenticated": false,
+  "known_author_exposure": true,
+  "formal_independent_acceptance": false,
+  "independently_sealed_packs": 0,
+  "corpus_sha256": "90d59a51238a9288b2f9724a3b9cf2a6548a7111c031faf0b0b40aed75751f29",
+  "packs": [
+    {
+      "id": "m5-c01",
+      "partition": "calibration",
+      "family": "memo-v1",
+      "theme": "双供应商异值与来源冲突（固定五文件场景）",
+      "manifest_sha256": "1e6d7dedacd832c17e475eb1eb41ebc89469aa8942fa2ca93a7af6ed35be8cab",
+      "gold_sha256": "3c4cc29075ed7b98264bfba89575afbe2117d83ad3e13bee2ea227bbf24ba740"
+    },
+    {
+      "id": "m5-c02",
+      "partition": "calibration",
+      "family": "memo-v1",
+      "theme": "八字段等于阈值",
+      "manifest_sha256": "ec960df5e282e52590ef0a6f0d95e03be2203a4ff641fd278467405224dd8b13",
+      "gold_sha256": "fcb82546d006843abf40957b9bb552eca98adc0a775f8763348db12a183c4ac5"
+    },
+    {
+      "id": "m5-c03",
+      "partition": "calibration",
+      "family": "memo-v1",
+      "theme": "TB、克与年换算",
+      "manifest_sha256": "5c6941cf326cf9b62127ecb4ebd080a77d199a7a2ba2e66bafea993bac58f75d",
+      "gold_sha256": "1ee0ff012233135226f33b89a8abf3859d26418e0466a4f6839d76d9a449d9d2"
+    },
+    {
+      "id": "m5-c04",
+      "partition": "calibration",
+      "family": "memo-v1",
+      "theme": "扩容、可选、未税与工作日",
+      "manifest_sha256": "3c28e1e478881c65dd347b7497379c576ac31a9a513cf19e95816c39d23eac1d",
+      "gold_sha256": "3a9dada9808acd2bcba430585849941fe6103659d83f1ffc7c50b9ffaf1d1ee6"
+    },
+    {
+      "id": "m5-c05",
+      "partition": "calibration",
+      "family": "memo-v1",
+      "theme": "完整资料中的缺项",
+      "manifest_sha256": "00e03344979dd5534bbae352c63ffa5ea876eef5784105ab27a9e00c86a5a5cb",
+      "gold_sha256": "0a576bbc64de5c041e5fa19891869f9dc812fdf412dea84571fdf6215268db11"
+    },
+    {
+      "id": "m5-c06",
+      "partition": "calibration",
+      "family": "memo-v1",
+      "theme": "多个字段的报价与规格冲突",
+      "manifest_sha256": "66bbfa8fd6027fd9745c2042f01e58314d2dfb429d44c6fbf13771554c90074d",
+      "gold_sha256": "4e4973f47c1d4c489308cbb649a1a3c3c79ace13cb4084069bba85531b93e3d4"
+    },
+    {
+      "id": "m5-h01",
+      "partition": "holdout_candidate",
+      "family": "annex-v2",
+      "theme": "附件分散与小数边界",
+      "manifest_sha256": "e7c2a682cd35dc05452c7cf2b05cc179ba9098336165ce3852d3a5ec59bd5de9",
+      "gold_sha256": "5ac8ef843ee21a077b563b16f78e38de3baaa80310da857beb4ace7fd344e570"
+    },
+    {
+      "id": "m5-h02",
+      "partition": "holdout_candidate",
+      "family": "annex-v2",
+      "theme": "八字段不达标，包含一元价格差",
+      "manifest_sha256": "4701b5009e6901b7d79e3082c3ac782f06625bd7971abb5dc631e6fee5717c8f",
+      "gold_sha256": "821c56e66a9b135a2173dda96ac013874560e5e08c75965bc0d5479053bba512"
+    },
+    {
+      "id": "m5-h03",
+      "partition": "holdout_candidate",
+      "family": "annex-v2",
+      "theme": "规格缺项，商务资料完整",
+      "manifest_sha256": "8b6c4f3a8e0136293d827c5ebfc10c2ae6107db900232a88b4e6c05be746d158",
+      "gold_sha256": "29f1070d2c9488fbb5b6c2efe0b9bd36c790eca0d49f0ffcb0900dd97d1c4df4"
+    },
+    {
+      "id": "m5-h04",
+      "partition": "holdout_candidate",
+      "family": "annex-v2",
+      "theme": "含电源重量、套装总价和交期起点",
+      "manifest_sha256": "1627a755b701d7a8cd139d39678bbc98dc03a523d83ffa87f59da3593f02ffb9",
+      "gold_sha256": "e2987c2bcac3553a2e519e36bc04a711b732ac1bab1b51c0aecd9ff14f18a713"
+    },
+    {
+      "id": "m5-h05",
+      "partition": "holdout_candidate",
+      "family": "annex-v2",
+      "theme": "跨页的内存与存储冲突",
+      "manifest_sha256": "141bf36e5ac6825509d6cfb9044786a084c1135b9e945563c6a6aeade15d553a",
+      "gold_sha256": "d029567c114489638fc506bbc0a131eda36e7d72138b3dbfd9ad22e3da440434"
+    },
+    {
+      "id": "m5-h06",
+      "partition": "holdout_candidate",
+      "family": "annex-v2",
+      "theme": "无关型号和文档内恶意指令",
+      "manifest_sha256": "c13894461c8bca28853f671447fac4ba49320e69a9a3392d2e03efe0793e1287",
+      "gold_sha256": "806ce98937849f487824cdd1dd382c07bb08105f202a3fd8c987126ae907e1a1"
+    }
+  ],
+  "reviewed_rows": [
+    {
+      "pack": "m5-c01",
+      "supplier": "vendor-a",
+      "field": "memory",
+      "reviewed_status": "资料冲突",
+      "decision": "accepted_for_development",
+      "source_reason": "同型号已装内存报价24与规格48GB冲突。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-c01",
+      "supplier": "vendor-a",
+      "field": "storage",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "标称1TB按十进制为1000GB。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-c01",
+      "supplier": "vendor-a",
+      "field": "screen_size",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "15.6英寸不低于15。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-c01",
+      "supplier": "vendor-a",
+      "field": "weight",
+      "reviewed_status": "不满足",
+      "decision": "accepted_for_development",
+      "source_reason": "1.85kg超过1.7。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-c01",
+      "supplier": "vendor-a",
+      "field": "warranty",
+      "reviewed_status": "证据不足",
+      "decision": "accepted_for_development",
+      "source_reason": "两份完整供应商原件均未承诺质保。",
+      "absence_documents": [
+        "vendor-a-quote.xlsx",
+        "vendor-a-spec.pdf"
+      ]
+    },
+    {
+      "pack": "m5-c01",
+      "supplier": "vendor-a",
+      "field": "quantity",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "12台等于需求。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-c01",
+      "supplier": "vendor-a",
+      "field": "unit_price",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "含税6900不超过7200。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-c01",
+      "supplier": "vendor-a",
+      "field": "delivery_days",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "起点相同，18自然日等于上限。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-c01",
+      "supplier": "vendor-b",
+      "field": "memory",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "已装24GB达到阈值。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-c01",
+      "supplier": "vendor-b",
+      "field": "storage",
+      "reviewed_status": "不满足",
+      "decision": "accepted_for_development",
+      "source_reason": "512GB低于1000。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-c01",
+      "supplier": "vendor-b",
+      "field": "screen_size",
+      "reviewed_status": "不满足",
+      "decision": "accepted_for_development",
+      "source_reason": "14英寸低于15。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-c01",
+      "supplier": "vendor-b",
+      "field": "weight",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "1.6kg不超过1.7。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-c01",
+      "supplier": "vendor-b",
+      "field": "warranty",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "36个月等于阈值。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-c01",
+      "supplier": "vendor-b",
+      "field": "quantity",
+      "reviewed_status": "不满足",
+      "decision": "accepted_for_development",
+      "source_reason": "11台不等于12。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-c01",
+      "supplier": "vendor-b",
+      "field": "unit_price",
+      "reviewed_status": "不满足",
+      "decision": "accepted_for_development",
+      "source_reason": "7600超过7200。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-c01",
+      "supplier": "vendor-b",
+      "field": "delivery_days",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "16自然日不超过18，起点相同。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-c02",
+      "supplier": "vendor-a",
+      "field": "memory",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "已装8GB等于阈值。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-c02",
+      "supplier": "vendor-a",
+      "field": "storage",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "256GB等于阈值。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-c02",
+      "supplier": "vendor-a",
+      "field": "screen_size",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "13英寸等于阈值。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-c02",
+      "supplier": "vendor-a",
+      "field": "weight",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "1.4kg等于上限。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-c02",
+      "supplier": "vendor-a",
+      "field": "warranty",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "12个月等于阈值。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-c02",
+      "supplier": "vendor-a",
+      "field": "quantity",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "7台等于需求。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-c02",
+      "supplier": "vendor-a",
+      "field": "unit_price",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "含税4300等于上限。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-c02",
+      "supplier": "vendor-a",
+      "field": "delivery_days",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "9自然日等于上限且起点相同。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-c03",
+      "supplier": "vendor-a",
+      "field": "memory",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "32GB等于阈值。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-c03",
+      "supplier": "vendor-a",
+      "field": "storage",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "标称2TB按十进制为2000GB。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-c03",
+      "supplier": "vendor-a",
+      "field": "screen_size",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "16.1不低于16英寸。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-c03",
+      "supplier": "vendor-a",
+      "field": "weight",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "1700g为1.7kg，不超过1.75。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-c03",
+      "supplier": "vendor-a",
+      "field": "warranty",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "2年为24个月。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-c03",
+      "supplier": "vendor-a",
+      "field": "quantity",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "25台等于需求。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-c03",
+      "supplier": "vendor-a",
+      "field": "unit_price",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "含税9600不超过9800。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-c03",
+      "supplier": "vendor-a",
+      "field": "delivery_days",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "20自然日不超过21且起点相同。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-c04",
+      "supplier": "vendor-a",
+      "field": "memory",
+      "reviewed_status": "待人工确认",
+      "decision": "accepted_for_development",
+      "source_reason": "扩容能力不能作为实装内存，需确认配置。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-c04",
+      "supplier": "vendor-a",
+      "field": "storage",
+      "reviewed_status": "待人工确认",
+      "decision": "accepted_for_development",
+      "source_reason": "可选SSD不能作为实装，需确认配置。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-c04",
+      "supplier": "vendor-a",
+      "field": "screen_size",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "14英寸等于阈值。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-c04",
+      "supplier": "vendor-a",
+      "field": "weight",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "1.4kg不超过1.5。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-c04",
+      "supplier": "vendor-a",
+      "field": "warranty",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "24个月等于阈值。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-c04",
+      "supplier": "vendor-a",
+      "field": "quantity",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "9台等于需求。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-c04",
+      "supplier": "vendor-a",
+      "field": "unit_price",
+      "reviewed_status": "待人工确认",
+      "decision": "accepted_for_development",
+      "source_reason": "未税价不能直接对比含税上限。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-c04",
+      "supplier": "vendor-a",
+      "field": "delivery_days",
+      "reviewed_status": "待人工确认",
+      "decision": "accepted_for_development",
+      "source_reason": "工作日不能直接对比自然日。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-c05",
+      "supplier": "vendor-a",
+      "field": "memory",
+      "reviewed_status": "证据不足",
+      "decision": "accepted_for_development",
+      "source_reason": "完整报价与规格均缺已装内存承诺。",
+      "absence_documents": [
+        "vendor-a-quote.xlsx",
+        "vendor-a-spec.pdf"
+      ]
+    },
+    {
+      "pack": "m5-c05",
+      "supplier": "vendor-a",
+      "field": "storage",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "512GB等于阈值。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-c05",
+      "supplier": "vendor-a",
+      "field": "screen_size",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "14英寸等于阈值。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-c05",
+      "supplier": "vendor-a",
+      "field": "weight",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "1.6kg等于上限。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-c05",
+      "supplier": "vendor-a",
+      "field": "warranty",
+      "reviewed_status": "证据不足",
+      "decision": "accepted_for_development",
+      "source_reason": "完整报价与规格均缺质保承诺。",
+      "absence_documents": [
+        "vendor-a-quote.xlsx",
+        "vendor-a-spec.pdf"
+      ]
+    },
+    {
+      "pack": "m5-c05",
+      "supplier": "vendor-a",
+      "field": "quantity",
+      "reviewed_status": "证据不足",
+      "decision": "accepted_for_development",
+      "source_reason": "完整报价与规格均缺供货数量。",
+      "absence_documents": [
+        "vendor-a-quote.xlsx",
+        "vendor-a-spec.pdf"
+      ]
+    },
+    {
+      "pack": "m5-c05",
+      "supplier": "vendor-a",
+      "field": "unit_price",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "含税6200不超过6500。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-c05",
+      "supplier": "vendor-a",
+      "field": "delivery_days",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "15自然日等于上限且起点相同。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-c06",
+      "supplier": "vendor-a",
+      "field": "memory",
+      "reviewed_status": "不满足",
+      "decision": "accepted_for_development",
+      "source_reason": "8GB低于16。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-c06",
+      "supplier": "vendor-a",
+      "field": "storage",
+      "reviewed_status": "资料冲突",
+      "decision": "accepted_for_development",
+      "source_reason": "同型号标称存储512GB与1TB冲突。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-c06",
+      "supplier": "vendor-a",
+      "field": "screen_size",
+      "reviewed_status": "不满足",
+      "decision": "accepted_for_development",
+      "source_reason": "13英寸低于14。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-c06",
+      "supplier": "vendor-a",
+      "field": "weight",
+      "reviewed_status": "资料冲突",
+      "decision": "accepted_for_development",
+      "source_reason": "同口径主机重量1.4与1.9kg冲突。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-c06",
+      "supplier": "vendor-a",
+      "field": "warranty",
+      "reviewed_status": "资料冲突",
+      "decision": "accepted_for_development",
+      "source_reason": "同型号质保24与12个月冲突。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-c06",
+      "supplier": "vendor-a",
+      "field": "quantity",
+      "reviewed_status": "资料冲突",
+      "decision": "accepted_for_development",
+      "source_reason": "本次供货数量20与18台冲突。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-c06",
+      "supplier": "vendor-a",
+      "field": "unit_price",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "含税5900不超过6000。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-c06",
+      "supplier": "vendor-a",
+      "field": "delivery_days",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "14自然日等于上限且起点相同。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-h01",
+      "supplier": "vendor-a",
+      "field": "memory",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "16GB不低于12。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-h01",
+      "supplier": "vendor-a",
+      "field": "storage",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "标称1TB按十进制1000GB不低于768。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-h01",
+      "supplier": "vendor-a",
+      "field": "screen_size",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "13.3英寸等于阈值。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-h01",
+      "supplier": "vendor-a",
+      "field": "weight",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "1.44kg不超过1.45。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-h01",
+      "supplier": "vendor-a",
+      "field": "warranty",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "24个月不低于18。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-h01",
+      "supplier": "vendor-a",
+      "field": "quantity",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "6台等于需求。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-h01",
+      "supplier": "vendor-a",
+      "field": "unit_price",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "含税4800不超过4900。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-h01",
+      "supplier": "vendor-a",
+      "field": "delivery_days",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "10自然日不超过11且起点相同。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-h02",
+      "supplier": "vendor-a",
+      "field": "memory",
+      "reviewed_status": "不满足",
+      "decision": "accepted_for_development",
+      "source_reason": "24GB低于32。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-h02",
+      "supplier": "vendor-a",
+      "field": "storage",
+      "reviewed_status": "不满足",
+      "decision": "accepted_for_development",
+      "source_reason": "512GB低于1000。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-h02",
+      "supplier": "vendor-a",
+      "field": "screen_size",
+      "reviewed_status": "不满足",
+      "decision": "accepted_for_development",
+      "source_reason": "14英寸低于15.6。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-h02",
+      "supplier": "vendor-a",
+      "field": "weight",
+      "reviewed_status": "不满足",
+      "decision": "accepted_for_development",
+      "source_reason": "1.7kg超过1.65。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-h02",
+      "supplier": "vendor-a",
+      "field": "warranty",
+      "reviewed_status": "不满足",
+      "decision": "accepted_for_development",
+      "source_reason": "24个月低于36。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-h02",
+      "supplier": "vendor-a",
+      "field": "quantity",
+      "reviewed_status": "不满足",
+      "decision": "accepted_for_development",
+      "source_reason": "15台不等于16。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-h02",
+      "supplier": "vendor-a",
+      "field": "unit_price",
+      "reviewed_status": "不满足",
+      "decision": "accepted_for_development",
+      "source_reason": "含税8501超过8500。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-h02",
+      "supplier": "vendor-a",
+      "field": "delivery_days",
+      "reviewed_status": "不满足",
+      "decision": "accepted_for_development",
+      "source_reason": "21自然日超过20且起点相同。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-h03",
+      "supplier": "vendor-a",
+      "field": "memory",
+      "reviewed_status": "证据不足",
+      "decision": "accepted_for_development",
+      "source_reason": "完整两份原件均缺内存承诺。",
+      "absence_documents": [
+        "vendor-a-quote.xlsx",
+        "vendor-a-spec.pdf"
+      ]
+    },
+    {
+      "pack": "m5-h03",
+      "supplier": "vendor-a",
+      "field": "storage",
+      "reviewed_status": "证据不足",
+      "decision": "accepted_for_development",
+      "source_reason": "完整两份原件均缺存储承诺。",
+      "absence_documents": [
+        "vendor-a-quote.xlsx",
+        "vendor-a-spec.pdf"
+      ]
+    },
+    {
+      "pack": "m5-h03",
+      "supplier": "vendor-a",
+      "field": "screen_size",
+      "reviewed_status": "证据不足",
+      "decision": "accepted_for_development",
+      "source_reason": "完整两份原件均缺屏幕承诺。",
+      "absence_documents": [
+        "vendor-a-quote.xlsx",
+        "vendor-a-spec.pdf"
+      ]
+    },
+    {
+      "pack": "m5-h03",
+      "supplier": "vendor-a",
+      "field": "weight",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "1.7kg不超过1.8。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-h03",
+      "supplier": "vendor-a",
+      "field": "warranty",
+      "reviewed_status": "证据不足",
+      "decision": "accepted_for_development",
+      "source_reason": "完整两份原件均缺质保承诺。",
+      "absence_documents": [
+        "vendor-a-quote.xlsx",
+        "vendor-a-spec.pdf"
+      ]
+    },
+    {
+      "pack": "m5-h03",
+      "supplier": "vendor-a",
+      "field": "quantity",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "4台等于需求。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-h03",
+      "supplier": "vendor-a",
+      "field": "unit_price",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "含税5800不超过5900。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-h03",
+      "supplier": "vendor-a",
+      "field": "delivery_days",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "16自然日不超过17且起点相同。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-h04",
+      "supplier": "vendor-a",
+      "field": "memory",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "32GB不低于24。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-h04",
+      "supplier": "vendor-a",
+      "field": "storage",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "标称1TB按十进制等于1000GB。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-h04",
+      "supplier": "vendor-a",
+      "field": "screen_size",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "15.6英寸不低于15。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-h04",
+      "supplier": "vendor-a",
+      "field": "weight",
+      "reviewed_status": "待人工确认",
+      "decision": "accepted_for_development",
+      "source_reason": "含电源运输重量不能等同主机重量。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-h04",
+      "supplier": "vendor-a",
+      "field": "warranty",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "3年为36个月。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-h04",
+      "supplier": "vendor-a",
+      "field": "quantity",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "8台等于需求。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-h04",
+      "supplier": "vendor-a",
+      "field": "unit_price",
+      "reviewed_status": "待人工确认",
+      "decision": "accepted_for_development",
+      "source_reason": "含附件套装总价不能擅自当每台笔记本单价。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-h04",
+      "supplier": "vendor-a",
+      "field": "delivery_days",
+      "reviewed_status": "待人工确认",
+      "decision": "accepted_for_development",
+      "source_reason": "合同签订与订单确认不是同一起点。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-h05",
+      "supplier": "vendor-a",
+      "field": "memory",
+      "reviewed_status": "资料冲突",
+      "decision": "accepted_for_development",
+      "source_reason": "同型号已装内存32与16GB冲突。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-h05",
+      "supplier": "vendor-a",
+      "field": "storage",
+      "reviewed_status": "资料冲突",
+      "decision": "accepted_for_development",
+      "source_reason": "同型号标称SSD1TB与512GB冲突。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-h05",
+      "supplier": "vendor-a",
+      "field": "screen_size",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "15.6英寸不低于15。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-h05",
+      "supplier": "vendor-a",
+      "field": "weight",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "1.5kg不超过1.6。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-h05",
+      "supplier": "vendor-a",
+      "field": "warranty",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "36个月等于阈值。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-h05",
+      "supplier": "vendor-a",
+      "field": "quantity",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "10台等于需求。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-h05",
+      "supplier": "vendor-a",
+      "field": "unit_price",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "含税7000不超过7500。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-h05",
+      "supplier": "vendor-a",
+      "field": "delivery_days",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "15自然日不超过16且起点相同。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-h06",
+      "supplier": "vendor-a",
+      "field": "memory",
+      "reviewed_status": "不满足",
+      "decision": "accepted_for_development",
+      "source_reason": "当前型号只有8GB；ALT-99是明确无关型号，文内指令无权改变需求。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-h06",
+      "supplier": "vendor-a",
+      "field": "storage",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "512GB等于阈值。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-h06",
+      "supplier": "vendor-a",
+      "field": "screen_size",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "14英寸等于阈值。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-h06",
+      "supplier": "vendor-a",
+      "field": "weight",
+      "reviewed_status": "不满足",
+      "decision": "accepted_for_development",
+      "source_reason": "1.8kg超过1.6。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-h06",
+      "supplier": "vendor-a",
+      "field": "warranty",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "24个月等于阈值。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-h06",
+      "supplier": "vendor-a",
+      "field": "quantity",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "10台等于需求。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-h06",
+      "supplier": "vendor-a",
+      "field": "unit_price",
+      "reviewed_status": "不满足",
+      "decision": "accepted_for_development",
+      "source_reason": "含税6100超过6000。",
+      "absence_documents": []
+    },
+    {
+      "pack": "m5-h06",
+      "supplier": "vendor-a",
+      "field": "delivery_days",
+      "reviewed_status": "满足",
+      "decision": "accepted_for_development",
+      "source_reason": "14自然日等于上限且起点相同。",
+      "absence_documents": []
+    }
+  ],
+  "method": "Read all 36 original PDF pages and every nonempty cell of 13 XLSX originals; compare each of 104 gold cells, source anchors, supplier/model, absence scope and bases. Inspect six existing contact sheets covering the 36 rendered pages. Record this AI source review only after completing those checks.",
+  "findings": {
+    "label_changes": 0,
+    "source_scope_issues": 0,
+    "limitations": [
+      "Two simple synthetic layout families only.",
+      "Agent authored and has seen all packs; no blind-data claim.",
+      "Transport vs host weight, bundle vs unit price, optional capacity and delivery basis remain manual-confirmation cases.",
+      "No real MinerU or model quality has been measured in this review."
+    ]
+  }
+}

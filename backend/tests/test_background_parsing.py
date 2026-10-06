@@ -162,14 +162,23 @@ def test_lease_loss_during_pdf_parse_discards_late_result(uploaded):
     assert completed["evidence_count"] > 0
 
 
-def test_pdf_without_parser_marks_failure_for_operator(uploaded, monkeypatch):
+def test_pdf_waits_for_parser_configuration_without_losing_attempt(uploaded, monkeypatch):
     client, engine, data_root, case_id = uploaded
-    _upload(client, case_id, "requirements.pdf", "requirement", 0,
-            "requirement-1")
+    receipt = _upload(client, case_id, "requirements.pdf", "requirement", 0,
+                      "requirement-1")
     monkeypatch.delenv("DOCUCHECK_MINERU_EXECUTABLE", raising=False)
     results = process_once(engine, data_root, limit=1)
-    assert results[0]["parse_status"] == "failed"
-    assert results[0]["coverage_issues"] == ["parser_not_configured"]
-    assert process_once(engine, data_root, limit=1) == []
+    assert results == []
     assert client.get(f"/api/v1/cases/{case_id}/documents").json()[
-        "documents"][0]["parse_status"] == "failed"
+        "documents"][0]["parse_status"] == "pending"
+    with engine.connect() as connection:
+        assert connection.scalar(select(document_versions.c.parse_attempts).where(
+            document_versions.c.id == receipt["document_id"])) == 0
+
+    def cached_pdf(source: Path, document_id: str):
+        parsed = parse_mineru_middle(EXAMPLES / "parsed" / "requirements.middle.json",
+                                     document_id=document_id)
+        return verify_pdf_source_coverage(parsed, source)
+
+    parsed = process_once(engine, data_root, limit=1, pdf_parser=cached_pdf)
+    assert parsed[0]["parse_status"] in {"complete", "partial"}

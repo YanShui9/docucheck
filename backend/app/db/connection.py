@@ -15,16 +15,17 @@ def database_url(override: str | URL | None = None) -> str | URL:
     explicit = os.getenv("DOCUCHECK_DATABASE_URL")
     if explicit:
         return explicit
-    password = os.getenv("DOCUCHECK_MYSQL_PASSWORD")
-    if not password:
-        password = dotenv_values(ROOT / ".env").get("DOCUCHECK_MYSQL_PASSWORD")
+    local_values = dotenv_values(ROOT / ".env")
+    password = (os.getenv("DOCUCHECK_MYSQL_PASSWORD")
+                or local_values.get("DOCUCHECK_MYSQL_PASSWORD"))
     if not password:
         raise RuntimeError("database_password_missing")
     host = os.getenv("DOCUCHECK_MYSQL_HOST", "127.0.0.1").strip()
     if not host:
         raise RuntimeError("database_host_invalid")
     try:
-        port = int(os.getenv("DOCUCHECK_MYSQL_PORT", "3307"))
+        port = int(os.getenv("DOCUCHECK_MYSQL_PORT")
+                   or local_values.get("DOCUCHECK_MYSQL_PORT") or "3307")
     except ValueError:
         raise RuntimeError("database_port_invalid") from None
     if not 1 <= port <= 65535:

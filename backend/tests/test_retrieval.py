@@ -38,6 +38,69 @@ def test_alias_retrieval_recalls_requirement_and_both_conflicting_sources():
         retriever.search("内存", supplier="foreign")
 
 
+@pytest.mark.parametrize("query", ["存储", "SSD", "ssd", "硬盘", "存照片和文件的硬盘有多大？"])
+def test_storage_alias_recalls_original_ssd_source_without_other_supplier(query):
+    from dataclasses import replace
+
+    from backend.app.evidence.repository import EvidenceRepository
+
+    original = load_case(PACK)
+    spec = next(document for document in original.documents if document.role == "spec")
+    foreign = replace(spec, document_id="foreign-spec", supplier="vendor-b",
+                      parsed=replace(spec.parsed, document_id="foreign-spec"))
+    repo = EvidenceRepository(original.case_id, original.revision + 1,
+                              [*original.documents, foreign])
+    refs = {ref for hit in Retriever(repo).search(query, supplier="vendor-a")
+            for ref in hit["evidence_refs"]}
+    expected = {block.evidence_id for block in repo.blocks
+                if block.supplier in {None, "vendor-a"}
+                and ("标称存储" in block.text or "标称 SSD" in block.text)}
+    assert len(expected) == 2
+    assert expected <= refs
+    assert all(block.supplier in {None, "vendor-a"} for block in repo.read(list(refs)))
+
+
+def test_hard_disk_question_recalls_actual_ssd_capacity_and_source_location():
+    repo = load_case(PACK)
+    retriever = Retriever(repo)
+    hits = retriever.search("存照片和文件的硬盘有多大？", supplier="vendor-a", limit=6)
+    storage = next(block for block in repo.blocks
+                   if block.role == "spec" and block.text == "标称 SSD 1 TB")
+    assert hits and storage.evidence_id in hits[0]["evidence_refs"]
+    source = retriever.read_source([storage.evidence_id])[0]
+    assert source["text"] == "标称 SSD 1 TB"
+    assert source["document_id"] == "vendor-a-spec.pdf"
+    assert source["role"] == "spec" and source["supplier"] == "vendor-a"
+    assert source["page_idx"] == 0 and source["bbox"] == storage.bbox
+    assert source["source_hash"] == storage.source_hash
+    refs = {ref for hit in hits for ref in hit["evidence_refs"]}
+    assert any(block.role == "requirement" and "512 GB" in block.text
+               for block in repo.read(list(refs)))
+
+
+@pytest.mark.parametrize("query, label, count", [("硬盘", "storage", 2), ("内存", "memory", 3)])
+def test_hard_disk_and_memory_queries_keep_their_original_sources_distinct(query, label, count):
+    repo = load_case(PACK)
+    refs = {ref for hit in Retriever(repo).search(query, supplier="vendor-a")
+            for ref in hit["evidence_refs"]}
+    storage = {block.evidence_id for block in repo.blocks
+               if "标称存储" in block.text or "标称 SSD" in block.text}
+    memory = {block.evidence_id for block in repo.blocks
+              if "已装内存" in block.text and "GB" in block.text}
+    expected, excluded = (storage, memory) if label == "storage" else (memory, storage)
+    assert len(expected) == count and expected <= refs
+    assert not refs.intersection(excluded)
+
+
+@pytest.mark.parametrize("query", ["供应商答应免费维修几年？", "这台电脑能防水吗？"])
+def test_no_answer_questions_do_not_gain_storage_sources_from_hard_disk_alias(query):
+    repo = load_case(PACK)
+    refs = {ref for hit in Retriever(repo).search(query, supplier="vendor-a", limit=6)
+            for ref in hit["evidence_refs"]}
+    assert all("标称 SSD" not in block.text and "标称存储" not in block.text
+               for block in repo.read(list(refs)))
+
+
 def test_read_source_preserves_cells_and_neighbors_without_invented_locations():
     repo = load_case(PACK)
     retriever = Retriever(repo)

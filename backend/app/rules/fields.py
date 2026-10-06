@@ -8,7 +8,7 @@ from decimal import Decimal, InvalidOperation
 from ..evidence.repository import EvidenceRepository, digest
 from ..field_contract import FieldCheckResult, FieldFact, FieldKey
 
-RULE_VERSION = "fields-v1"
+RULE_VERSION = "fields-v4"
 _NUMBER = re.compile(r"\d+(?:\.\d+)?\Z")
 _COMPARATORS = {"gte", "lte", "eq", "gt", "lt", "unknown"}
 _ATTRIBUTE_KEYS = {
@@ -18,7 +18,7 @@ _ATTRIBUTE_KEYS = {
 
 
 def normalize_field_value(
-    field_key: FieldKey | str, raw_value: str, raw_unit: str,
+    field_key: FieldKey | str, raw_value: str, raw_unit: str, *, allow_unpriced: bool = True,
 ) -> tuple[Decimal, str]:
     """Return a comparable decimal and unit without guessing an ambiguous basis."""
     field = FieldKey(field_key)
@@ -68,6 +68,8 @@ def normalize_field_value(
         if unit in {"台", "件", "个", "套"}:
             return value, unit
     elif field == FieldKey.UNIT_PRICE:
+        if allow_unpriced and folded in {"元", "人民币", "cny", "usd", "美元"}:
+            return value, {"元": "CNY", "人民币": "CNY", "美元": "USD"}.get(unit, unit.upper())
         parts = re.fullmatch(r"(元|人民币|CNY|USD|美元)[/／]([^/／\s]+)", unit, re.IGNORECASE)
         if parts:
             currency = {"元": "CNY", "人民币": "CNY", "美元": "USD"}.get(parts[1], parts[1].upper())
@@ -98,7 +100,7 @@ def _known(value: str | None) -> bool:
 
 
 def _validate_fact(
-    repo: EvidenceRepository, supplier: str, field: FieldKey, fact: FieldFact,
+    repo: EvidenceRepository, supplier: str, field: FieldKey, fact: FieldFact, *, allow_unpriced: bool,
 ) -> None:
     if fact.snapshot_id != repo.snapshot_id:
         raise ValueError("fact_snapshot")
@@ -110,7 +112,9 @@ def _validate_fact(
         raise ValueError("supplier_scope")
     if not fact.evidence_refs or fact.comparator not in _COMPARATORS:
         raise ValueError("fact_scope")
-    expected_value, expected_unit = normalize_field_value(field, fact.raw_value, fact.raw_unit)
+    expected_value, expected_unit = normalize_field_value(
+        field, fact.raw_value, fact.raw_unit, allow_unpriced=allow_unpriced,
+    )
     if (not isinstance(fact.value, Decimal)
             or fact.value != expected_value or fact.unit != expected_unit):
         raise ValueError("fact_normalization")
@@ -173,6 +177,28 @@ def _passes(comparator: str, actual: Decimal, required: Decimal) -> bool:
     }[comparator]
 
 
+def _delivery_upper_bound_meets(required: FieldFact, offered: FieldFact) -> bool:
+    """Every value allowed by the supplier promise must meet the requirement.
+
+    Compare the supplier's guaranteed commitment, not the eventual arrival.
+    A looser promise does not guarantee the procurement deadline.
+    """
+    return required.comparator in {"lt", "lte"} and (
+        offered.value < required.value
+        or (offered.value == required.value
+            and (required.comparator == "lte" or offered.comparator == "lt"))
+    )
+
+
+def _delivery_commitments_conflict(offered: Sequence[FieldFact]) -> bool:
+    points = {fact.value for fact in offered if fact.comparator == "eq"}
+    bounds = [fact for fact in offered if fact.comparator in {"lt", "lte"}]
+    return len(points) > 1 or any(
+        not _passes(bound.comparator, point, bound.value)
+        for point in points for bound in bounds
+    )
+
+
 def evaluate_field(
     repo: EvidenceRepository,
     supplier: str,
@@ -181,6 +207,59 @@ def evaluate_field(
     *,
     scan_complete: bool,
     failed: bool = False,
+) -> FieldCheckResult:
+    """Evaluate source-bound facts using the current business rule version."""
+    return _evaluate_field(repo, supplier, field_key, facts,
+                           scan_complete=scan_complete, failed=failed,
+                           rule_version=RULE_VERSION)
+
+
+def _evaluate_field_v1(
+    repo: EvidenceRepository,
+    supplier: str,
+    field_key: FieldKey | str,
+    facts: Sequence[FieldFact],
+    *,
+    scan_complete: bool,
+    failed: bool = False,
+) -> FieldCheckResult:
+    """Reproduce archived v1 results solely to verify immutable review records."""
+    return _evaluate_field(repo, supplier, field_key, facts,
+                           scan_complete=scan_complete, failed=failed,
+                           rule_version="fields-v1")
+
+
+def _evaluate_field_v2(
+    repo: EvidenceRepository,
+    supplier: str,
+    field_key: FieldKey | str,
+    facts: Sequence[FieldFact],
+    *,
+    scan_complete: bool,
+    failed: bool = False,
+) -> FieldCheckResult:
+    """Verify archived v2 audits with their original upper-bound review policy."""
+    return _evaluate_field(repo, supplier, field_key, facts,
+                           scan_complete=scan_complete, failed=failed,
+                           rule_version="fields-v2")
+
+
+def _evaluate_field_v3(repo, supplier, field_key, facts, *, scan_complete, failed=False):
+    """Replay v3 commitments while retaining its original priced-unit contract."""
+    return _evaluate_field(repo, supplier, field_key, facts,
+                           scan_complete=scan_complete, failed=failed,
+                           rule_version="fields-v3")
+
+
+def _evaluate_field(
+    repo: EvidenceRepository,
+    supplier: str,
+    field_key: FieldKey | str,
+    facts: Sequence[FieldFact],
+    *,
+    scan_complete: bool,
+    failed: bool,
+    rule_version: str,
 ) -> FieldCheckResult:
     """Evaluate one snapshot/supplier/field only after source-bound extraction.
 
@@ -191,7 +270,7 @@ def evaluate_field(
         raise ValueError("invalid_processing_state")
     coverage = repo.coverage(supplier)
     for fact in facts:
-        _validate_fact(repo, supplier, field, fact)
+        _validate_fact(repo, supplier, field, fact, allow_unpriced=rule_version == "fields-v4")
     refs = tuple(dict.fromkeys(ref for fact in facts for ref in fact.evidence_refs))
     requirements = [fact for fact in facts if fact.role == "requirement"]
     offered = [fact for fact in facts if fact.role != "requirement"]
@@ -209,7 +288,12 @@ def evaluate_field(
             status, reason = "待人工确认", "requirement_unclear"
         elif not offered:
             status, reason = "证据不足", "supplier_fact_missing"
-        elif (any(_basis(fact) is None or fact.comparator != "eq" or not fact.model
+        elif (any(_basis(fact) is None or not fact.model
+                  or (fact.comparator != "eq" and not (
+                      rule_version in {"fields-v2", "fields-v3", "fields-v4"}
+                      and field == FieldKey.DELIVERY_DAYS
+                      and fact.comparator in {"lt", "lte"}
+                  ))
                   for fact in offered)
               or len({fact.model for fact in offered}) != 1
               or any(fact.model is not None and fact.model != offered[0].model
@@ -218,6 +302,20 @@ def evaluate_field(
               or _basis(requirements[0]) != _basis(offered[0])
               or any(fact.unit != requirements[0].unit for fact in offered)):
             status, reason = "待人工确认", "semantics_unclear"
+        elif any(fact.comparator != "eq" for fact in offered):
+            # The previous guard admits non-exact offers only for delivery.
+            # Different commitments cannot be silently reduced to the best one.
+            if _delivery_commitments_conflict(offered):
+                status, reason = "资料冲突", "conflicting_supplier_values"
+            elif (len({(fact.value, fact.comparator) for fact in offered}) == 1
+                    and _delivery_upper_bound_meets(requirements[0], offered[0])):
+                status, reason = "满足", "threshold_met"
+            elif (rule_version in {"fields-v3", "fields-v4"}
+                    and requirements[0].comparator in {"lt", "lte"}
+                    and len({(fact.value, fact.comparator) for fact in offered}) == 1):
+                status, reason = "不满足", "threshold_failed"
+            else:
+                status, reason = "待人工确认", "semantics_unclear"
         elif len({fact.value for fact in offered}) != 1:
             status, reason = "资料冲突", "conflicting_supplier_values"
         else:
@@ -230,7 +328,7 @@ def evaluate_field(
                    if reason == "conflicting_supplier_values" else refs)
     fact_payloads = [asdict(fact) | {"value": str(fact.value)} for fact in facts]
     identity = digest([
-        repo.snapshot_id, supplier, field.value, RULE_VERSION,
+        repo.snapshot_id, supplier, field.value, rule_version,
         sorted(fact_payloads, key=lambda fact: (fact["fact_id"], fact["raw_value"])),
         processing, status, reason,
         sorted(refs),
@@ -246,5 +344,5 @@ def evaluate_field(
         evidence_refs=refs,
         reason_evidence_refs=reason_refs,
         fact_ids=tuple(fact.fact_id for fact in facts),
-        rule_version=RULE_VERSION,
+        rule_version=rule_version,
     )

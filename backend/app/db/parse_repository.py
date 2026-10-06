@@ -28,7 +28,7 @@ class ParseRepository:
         self.engine = engine
 
     def claim(self, *, limit: int = 1, lease_seconds: int = 240,
-              now: datetime | None = None) -> list[ParseClaim]:
+              now: datetime | None = None, include_pdf: bool = True) -> list[ParseClaim]:
         if (type(limit) is not int or not 1 <= limit <= 20
                 or type(lease_seconds) is not int or not 210 <= lease_seconds <= 3600):
             raise ValueError("invalid_parse_limits")
@@ -47,6 +47,8 @@ class ParseRepository:
                 .join(cases, input_snapshots.c.case_id == cases.c.id)
                 .where(input_snapshots.c.revision == cases.c.revision,
                        cases.c.deletion_requested_at.is_(None),
+                       (document_versions.c.media_type != "application/pdf"
+                        if not include_pdf else True),
                        or_(document_versions.c.parse_status == "pending",
                            and_(document_versions.c.parse_status == "processing",
                                 document_versions.c.parse_lease_until <= current)))

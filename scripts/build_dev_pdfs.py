@@ -7,7 +7,6 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
 
-
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT / "examples" / "dev-pack-001"
 FONT_CANDIDATES = (

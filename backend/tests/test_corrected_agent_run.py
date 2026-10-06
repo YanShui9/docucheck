@@ -6,6 +6,8 @@ from sqlalchemy import select, update
 
 from backend.app.agent.answer import render_answer
 from backend.app.agent.tools import AnswerDraft, ToolExecutor
+from backend.app.db.agent_snapshot import load_agent_snapshot
+from backend.app.db.correction_recheck import CorrectionRecheck
 from backend.app.db.models import (
     agent_runs,
     correction_reviews,
@@ -92,6 +94,57 @@ def test_reviewed_correction_allows_run_and_exposes_review_state(prepared):
     assert run.status_code == 200, run.text
     assert run.json()["correction_id"] == receipt["correction_id"]
     assert run.json()["correction_review_status"] == "needs_review"
+
+
+def _legacy_reviewed(prepared, monkeypatch, rule_version):
+    # Storage semantics are unchanged; retain each archived audit identity.
+    with monkeypatch.context() as legacy:
+        legacy.setattr("backend.app.rules.fields.RULE_VERSION", rule_version)
+        reviewed = _reviewed(prepared)
+    assert reviewed[4]["check_result"]["rule_version"] == rule_version
+    return reviewed
+
+
+@pytest.mark.parametrize("rule_version", ["fields-v1", "fields-v2", "fields-v3"])
+def test_legacy_review_is_verified_then_recomputed_for_new_run_without_audit_rewrite(
+    prepared, monkeypatch, rule_version,
+):
+    client, engine, case_id, receipt, old = _legacy_reviewed(prepared, monkeypatch, rule_version)
+    with engine.connect() as connection:
+        original = dict(connection.execute(select(correction_reviews)).mappings().one())
+    repo = load_agent_snapshot(engine, case_id, receipt["snapshot_id"])
+    current = CorrectionRecheck(engine).load_for_run(case_id, receipt["snapshot_id"], repo)
+    assert current["check_result_json"]["rule_version"] == "fields-v4"
+    assert current["check_result_json"]["check_result_id"] != old["check_result"]["check_result_id"]
+    assert current["fact_set_json"] == original["fact_set_json"]
+    response = _submit(client, engine, case_id, receipt["revision"])
+    assert response.status_code == 202, response.text
+    provider = ReviewedProvider(current["fact_set_json"]["fact_set_id"],
+                                current["check_result_json"]["check_result_id"])
+    result = execute_run(engine, response.json()["run_id"], response.json()["attempt_id"], provider)
+    assert result.status == "partial"  # the source fixture is deliberately incomplete
+    assert result.error_code is None
+    assert provider.extractions == 0
+    with engine.connect() as connection:
+        assert dict(connection.execute(select(correction_reviews)).mappings().one()) == original
+        memory = connection.scalar(select(agent_runs.c.memory_json).where(agent_runs.c.id == result.run_id))
+    assert memory["check_results"][0]["rule_version"] == "fields-v4"
+    assert client.get(f"/api/v1/cases/{case_id}/corrections/{receipt['correction_id']}").json() == old
+
+
+@pytest.mark.parametrize("key,value", [
+    ("business_status", "满足"), ("check_result_id", "modified"),
+    ("rule_version", "unrecognized-version"),
+])
+@pytest.mark.parametrize("rule_version", ["fields-v1", "fields-v2", "fields-v3"])
+def test_legacy_review_replay_still_refuses_tampered_or_unknown_results(prepared, monkeypatch, key, value, rule_version):
+    client, engine, case_id, receipt, _ = _legacy_reviewed(prepared, monkeypatch, rule_version)
+    with engine.begin() as connection:
+        stored = connection.scalar(select(correction_reviews.c.check_result_json))
+        connection.execute(update(correction_reviews).values(check_result_json={**stored, key: value}))
+    rejected = _submit(client, engine, case_id, receipt["revision"])
+    assert rejected.status_code == 409
+    assert rejected.json()["error"]["code"] == "correction_source_changed"
 
 
 def test_corrected_run_uses_both_reviewed_values_without_reextracting(prepared):

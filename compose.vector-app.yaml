@@ -1,0 +1,53 @@
+# Optional application overlay. Start the existing Milvus stack before using it.
+# Ollama stays on the host; Docker Desktop's host bridge was verified locally.
+x-vector-environment: &vector-environment
+  DOCUCHECK_VECTOR_RETRIEVAL_ENABLED: "1"
+  DOCUCHECK_INDEX_EMBEDDING_REVISION: ${DOCUCHECK_INDEX_EMBEDDING_REVISION:?Set the verified BGE revision in .env}
+  DOCUCHECK_EMBEDDING_BASE_URL: ${DOCUCHECK_DOCKER_EMBEDDING_BASE_URL:-http://host.docker.internal:11434}
+  DOCUCHECK_EMBEDDING_MODEL: bge-m3:latest
+  DOCUCHECK_MILVUS_URI: http://milvus:19530
+  DOCUCHECK_MILVUS_DATABASE: ${DOCUCHECK_MILVUS_DATABASE:?Set the application Milvus database}
+  DOCUCHECK_MILVUS_TOKEN: ${DOCUCHECK_MILVUS_TOKEN:?Set the scoped Milvus credential}
+  DOCUCHECK_MILVUS_DIMENSION: "1024"
+
+services:
+  worker:
+    build:
+      args:
+        INSTALL_VECTOR: "1"
+    environment:
+      <<: *vector-environment
+    networks: [default, vector]
+
+  indexer:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.worker
+      args:
+        INSTALL_VECTOR: "1"
+    profiles: [agent]
+    restart: unless-stopped
+    command: ["python", "-m", "app.index_worker", "--poll"]
+    environment:
+      <<: *vector-environment
+      DOCUCHECK_MYSQL_HOST: mysql
+      DOCUCHECK_MYSQL_PORT: "3306"
+      DOCUCHECK_MYSQL_PASSWORD: ${DOCUCHECK_MYSQL_PASSWORD:?Set DOCUCHECK_MYSQL_PASSWORD in .env}
+      DOCUCHECK_DATA_DIR: /data
+    volumes:
+      - ./data:/data
+    networks: [default, vector]
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-m", "app.index_worker"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    mem_limit: 512m
+
+networks:
+  vector:
+    external: true
+    name: ${DOCUCHECK_MILVUS_DOCKER_NETWORK:-docucheck-vector_default}

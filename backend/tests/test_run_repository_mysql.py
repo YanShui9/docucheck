@@ -4,15 +4,13 @@ import os
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
-from pathlib import Path
 from threading import Barrier
 from uuid import uuid4
 
 import pytest
-from dotenv import dotenv_values
 from sqlalchemy import create_engine, delete, insert, select, update
-from sqlalchemy.engine import URL
 
+from backend.app.db.connection import database_url
 from backend.app.db.models import (
     agent_runs,
     cases,
@@ -28,20 +26,12 @@ from backend.app.db.outbox_repository import OutboxRepository
 from backend.app.db.run_repository import RepositoryError, RunRepository, SubmitRun
 from backend.app.runtime.lifecycle import RunState, RunStatus
 
-ROOT = Path(__file__).resolve().parents[2]
-
 
 @pytest.fixture
 def mysql_repository():
     if os.getenv("DOCUCHECK_RUN_MYSQL_TESTS") != "1":
         pytest.skip("set DOCUCHECK_RUN_MYSQL_TESTS=1 for live MySQL race checks")
-    password = (os.getenv("DOCUCHECK_MYSQL_PASSWORD")
-                or dotenv_values(ROOT / ".env").get("DOCUCHECK_MYSQL_PASSWORD"))
-    if not password:
-        pytest.fail("database_password_missing")
-    url = URL.create("mysql+pymysql", username="docucheck", password=password,
-                     host="127.0.0.1", port=3307, database="docucheck")
-    engine = create_engine(url, pool_size=4, pool_pre_ping=True,
+    engine = create_engine(database_url(), pool_size=4, pool_pre_ping=True,
                            hide_parameters=True)
     case_id, snapshot_id, conversation_id = _ids = (
         uuid4().hex, uuid4().hex, uuid4().hex,
@@ -60,7 +50,16 @@ def mysql_repository():
                 id=conversation_id, case_id=case_id, created_at=now,
             ))
         created = True
-        yield RunRepository(engine), _ids
+        class IsolatedRunRepository(RunRepository):
+            def _dispatch(self, connection, run_id, attempt_id, timestamp):
+                super()._dispatch(connection, run_id, attempt_id, timestamp)
+                # Isolate inside the creation transaction. Updating only after
+                # submit commits races the user's running production dispatcher.
+                connection.execute(update(outbox).where(
+                    outbox.c.run_id == run_id, outbox.c.attempt_id == attempt_id,
+                ).values(event_type=f"test.fixture.{case_id[:16]}"))
+
+        yield IsolatedRunRepository(engine), _ids
     finally:
         try:
             if created:
@@ -161,6 +160,49 @@ def test_mysql_idempotency_claim_and_terminal_races(mysql_repository):
     with repository.engine.connect() as connection:
         assert len(connection.scalars(select(run_attempts.c.id).where(
             run_attempts.c.run_id == retry_run.run_id)).all()) == 2
+
+
+def test_mysql_retry_and_new_message_race_keep_one_active_run(mysql_repository):
+    repository, (case_id, snapshot_id, conversation_id) = mysql_repository
+    request = SubmitRun(case_id=case_id, conversation_id=conversation_id,
+                        snapshot_id=snapshot_id, expected_revision=1,
+                        content="检查供应商 A", mode="standard",
+                        idempotency_key="first")
+    first = repository.submit(request)
+    running = repository.claim(first.run_id, first.attempt_id)
+    repository.finish(first.run_id, first.attempt_id, running.fence,
+                      snapshot_id, RunStatus.FAILED, error_code="model_failed")
+
+    retry, new_message = _race(
+        lambda: repository.retry(first.run_id, snapshot_id, 1, "retry-first"),
+        lambda: repository.submit(replace(request, idempotency_key="second")),
+    )
+    assert sum(item == "conversation_busy" for item in (retry, new_message)) == 1
+    with repository.engine.connect() as connection:
+        active = connection.scalars(select(agent_runs.c.id).where(
+            agent_runs.c.conversation_id == conversation_id,
+            agent_runs.c.status == RunStatus.QUEUED.value,
+        )).all()
+    assert len(active) == 1
+
+
+def test_mysql_old_queued_run_recovery_after_revision_change(mysql_repository):
+    repository, (case_id, snapshot_id, conversation_id) = mysql_repository
+    submitted = repository.submit(SubmitRun(
+        case_id=case_id, conversation_id=conversation_id,
+        snapshot_id=snapshot_id, expected_revision=1,
+        content="检查供应商 A", mode="standard", idempotency_key="first",
+    ))
+    with repository.engine.begin() as connection:
+        connection.execute(update(cases).where(cases.c.id == case_id)
+                           .values(revision=2))
+
+    assert repository.recover_stale() == 1
+    assert repository.get(submitted.run_id).status == RunStatus.INTERRUPTED
+    with repository.engine.connect() as connection:
+        row = connection.execute(select(agent_runs.c.error_code).where(
+            agent_runs.c.id == submitted.run_id)).one()
+    assert row.error_code == "snapshot_changed"
 
 
 def test_mysql_outbox_claim_skips_locked_row(mysql_repository):

@@ -1,0 +1,113 @@
+[
+  {
+    "repo": "amgdy/rfp-analyzer",
+    "head": "1d42067b5ad8504d055400acf0a41e8213234ba4",
+    "stars": 6,
+    "license": {
+      "key": "mit",
+      "name": "MIT License",
+      "spdx_id": "MIT",
+      "url": "https://api.github.com/licenses/mit",
+      "node_id": "MDc6TGljZW5zZTEz"
+    },
+    "file_count": 98,
+    "relevant_files": [
+      "LICENSE",
+      "app/.env.example"
+    ],
+    "truncated": false
+  },
+  {
+    "repo": "CopelandBEC/openrfp",
+    "head": "ad9811bbf9e0efb996f9d2a61488ebe9999e6499",
+    "stars": 0,
+    "license": {
+      "key": "mit",
+      "name": "MIT License",
+      "spdx_id": "MIT",
+      "url": "https://api.github.com/licenses/mit",
+      "node_id": "MDc6TGljZW5zZTEz"
+    },
+    "file_count": 101,
+    "relevant_files": [
+      ".env.example",
+      "LICENSE"
+    ],
+    "truncated": false
+  },
+  {
+    "repo": "microsoft/dstoolkit-adaptiveprompting",
+    "head": "3b819fe3af5b4294e1d725de6213f238eef38b02",
+    "stars": 0,
+    "license": null,
+    "file_count": 24,
+    "relevant_files": [
+      "data/optimizer_comparison_bars.png",
+      "data/optimizer_radar_chart.png",
+      "data/rfp_02_cybersecurity_soc.txt",
+      "data/rfp_03_climate_adaptation.txt",
+      "data/rfp_04_erp_migration.txt",
+      "data/rfp_05_pharmaceutical_cmo.txt",
+      "data/rfp_06_smart_city_iot.txt",
+      "data/rfp_07_legal_ediscovery.txt",
+      "data/rfp_08_humanitarian_logistics.txt",
+      "data/rfp_09_biobank_lims.txt",
+      "data/rfp_benchmark_index.json",
+      "data/rfp_example.txt"
+    ],
+    "truncated": false
+  },
+  {
+    "repo": "kundanshar-cell/procurement-benchmarks",
+    "head": "42775deb11283edd5cfc0cf732dabd4e72e20892",
+    "stars": 1,
+    "license": {
+      "key": "other",
+      "name": "Other",
+      "spdx_id": "NOASSERTION",
+      "url": null,
+      "node_id": "MDc6TGljZW5zZTA="
+    },
+    "file_count": 11,
+    "relevant_files": [
+      "LICENSE",
+      "benchmarks/invoice_processing.json",
+      "benchmarks/po_interpretation.json",
+      "benchmarks/spend_categorisation.json",
+      "benchmarks/three_way_match.json",
+      "benchmarks/vendor_risk.json",
+      "schema/benchmark_schema.json"
+    ],
+    "truncated": false
+  },
+  {
+    "repo": "18F/Head_Start_TTA_RFQ",
+    "head": "95cd8592f7cf891422c92f480494777951885581",
+    "stars": 5,
+    "license": {
+      "key": "other",
+      "name": "Other",
+      "spdx_id": "NOASSERTION",
+      "url": null,
+      "node_id": "MDc6TGljZW5zZTA="
+    },
+    "file_count": 20,
+    "relevant_files": [
+      "appendices/Appendix-1-Terms-and-Conditions.docx",
+      "appendices/Appendix-2-OHS-RFQ-Response-Template.docx",
+      "appendices/Appendix-3-OHS-RFQ-Pricing-Sheet.xlsx",
+      "appendices/Appendix-4-OHS-PWS-Template.docx",
+      "appendices/Appendix-5-Conflict-of-Interest.docx",
+      "appendices/Appendix-6-FAR-52.204-24-Provision.docx",
+      "appendices/Appendix-7-CTA.docx",
+      "assets/ohsttamvp-deck.pdf",
+      "assets/reports/EXAMPLE_Activity_Report.pdf",
+      "assets/reports/exp-1-AR-timeline.pdf",
+      "assets/reports/exp-2-AR-content.pdf",
+      "assets/reports/exp-3-AR-tracker.pdf",
+      "assets/reports/exp-4-task-tracker.pdf",
+      "license.md"
+    ],
+    "truncated": false
+  }
+]

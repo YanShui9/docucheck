@@ -186,6 +186,18 @@ def test_source_question_naming_two_suppliers_requires_both_sources():
     assert "vendor-a-quote.xlsx" in answer and "vendor-b-quote" in answer
 
 
+@pytest.mark.parametrize("question", [
+    "供应商 D 的内存是否达标？",
+    "比较供应商 A 和 D 的内存",
+    "供应商 vendor-d 的内存是否达标？",
+])
+def test_unknown_named_supplier_cannot_be_replaced_with_a_known_result(question):
+    tools, result_id = _checked_tools(load_case(PACK))
+    with pytest.raises(ValueError, match="answer_invalid"):
+        render_answer(AnswerDraft(kind="check", check_result_ids=[result_id]),
+                      tools, question)
+
+
 def test_evidence_only_answer_cannot_show_another_named_supplier():
     repo = _two_supplier_repo()
     tools, _ = _checked_tools(repo)

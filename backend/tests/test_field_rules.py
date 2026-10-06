@@ -287,3 +287,22 @@ def test_normalization_rejects_unbounded_numeric_input():
 
     with pytest.raises(ValueError, match="fact_value"):
         normalize_field_value("unit_price", "9" * 1000, "元/台")
+
+
+@pytest.mark.parametrize("field,unit,qualifier,comparator", [
+    ("memory", "GB", "installed", "gte"),
+    ("storage", "GB", "nominal", "gte"),
+    ("weight", "kg", "device", "lte"),
+])
+def test_non_delivery_supplier_bounds_remain_outside_supported_comparison(
+    field, unit, qualifier, comparator,
+):
+    from backend.app.rules.fields import evaluate_field
+
+    repo = _repo()
+    facts = [
+        _fact(repo, "requirement", field, "9", unit, comparator, qualifier),
+        _fact(repo, "quote", field, "9", unit, comparator, qualifier),
+    ]
+    result = evaluate_field(repo, "vendor-a", field, facts, scan_complete=True)
+    assert result.business_status == "待人工确认"

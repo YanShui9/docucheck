@@ -2,10 +2,20 @@ FROM python:3.12-slim
 
 WORKDIR /opt/docucheck/backend
 
-COPY requirements-worker.txt ./
-RUN python -m pip install --no-cache-dir -r requirements-worker.txt
+COPY requirements-worker.lock.txt ./
+COPY requirements-vector.lock.txt ./
+ARG INSTALL_VECTOR=0
+RUN python -m pip install --no-cache-dir --no-deps -r requirements-worker.lock.txt \
+    && if [ "$INSTALL_VECTOR" = "1" ]; then \
+         python -m pip install --no-cache-dir --no-deps -r requirements-vector.lock.txt; \
+       elif [ "$INSTALL_VECTOR" != "0" ]; then exit 2; fi \
+    && python -m pip check
 
 COPY app ./app
+
+# Check import-time application dependencies without contacting Redis, MySQL or
+# a model. pip check alone cannot detect imports outside package metadata.
+RUN DOCUCHECK_CELERY_BROKER_URL=memory:// python -c "import app.celery_app; import app.cleanup_cases; import app.dispatch_outbox; import app.index_worker"
 
 RUN groupadd --system docucheck && useradd --system --gid docucheck --create-home docucheck
 USER docucheck

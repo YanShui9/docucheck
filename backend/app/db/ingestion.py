@@ -6,12 +6,19 @@ from collections.abc import Callable
 from dataclasses import asdict
 from datetime import UTC, datetime
 from hashlib import sha256
+from io import BytesIO
 from pathlib import Path, PurePosixPath
+from zipfile import BadZipFile, ZipFile
 
+from openpyxl import load_workbook
+from openpyxl.utils.cell import coordinate_to_tuple, get_column_letter
 from sqlalchemy import Engine, func, insert, select, update
 
 from ..parsing import (
+    MAX_COLUMNS,
     MAX_FILE_BYTES,
+    MAX_ROWS,
+    MAX_XLSX_UNCOMPRESSED_BYTES,
     DocumentParsingError,
     ParseResult,
     UnsupportedContentError,
@@ -102,6 +109,70 @@ class DocumentIngestion:
         if digest.hexdigest() != row["source_sha256"]:
             raise IngestionError("source_hash_mismatch")
         return path
+
+    def original(self, case_id: str, snapshot_id: str,
+                 document_id: str) -> tuple[bytes, str]:
+        """Return one bounded, verified original from the requested snapshot."""
+        self._require_readable(case_id)
+        row = self._document(case_id, snapshot_id, document_id)
+        path = self._source(row)
+        content = path.read_bytes()
+        if not content or len(content) > MAX_FILE_BYTES:
+            raise IngestionError("source_limit")
+        if sha256(content).hexdigest() != row["source_sha256"]:
+            raise IngestionError("source_hash_mismatch")
+        media_type = row["media_type"]
+        if media_type not in {
+            "application/pdf",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        }:
+            raise IngestionError("source_type_mismatch")
+        return content, media_type
+
+    def sheet_window(self, case_id: str, snapshot_id: str,
+                     document_id: str, sheet: str, cell: str) -> dict:
+        """Read a small, literal cell neighborhood from the verified XLSX bytes."""
+        content, media_type = self.original(case_id, snapshot_id, document_id)
+        if media_type != ("application/vnd.openxmlformats-officedocument."
+                          "spreadsheetml.sheet"):
+            raise IngestionError("source_type_mismatch")
+        try:
+            row_number, column_number = coordinate_to_tuple(cell.upper())
+        except ValueError as exc:
+            raise IngestionError("invalid_cell") from exc
+        if not (1 <= row_number <= MAX_ROWS and
+                1 <= column_number <= MAX_COLUMNS):
+            raise IngestionError("invalid_cell")
+        try:
+            with ZipFile(BytesIO(content)) as archive:
+                if sum(item.file_size for item in archive.infolist()) > MAX_XLSX_UNCOMPRESSED_BYTES:
+                    raise IngestionError("source_limit")
+            workbook = load_workbook(BytesIO(content), read_only=True,
+                                     data_only=False, keep_links=False)
+        except (BadZipFile, ValueError) as exc:
+            raise IngestionError("source_type_mismatch") from exc
+        try:
+            if sheet not in workbook.sheetnames:
+                raise IngestionError("not_found")
+            worksheet = workbook[sheet]
+            first_row = max(1, row_number - 3)
+            last_row = min(MAX_ROWS, row_number + 3)
+            first_column = max(1, column_number - 2)
+            last_column = min(MAX_COLUMNS, column_number + 2)
+            rows = []
+            for index, cells in enumerate(worksheet.iter_rows(
+                    min_row=first_row, max_row=last_row,
+                    min_col=first_column, max_col=last_column)):
+                cell_row = first_row + index
+                rows.append({"number": cell_row, "cells": [{
+                    "address": f"{get_column_letter(column)}{cell_row}",
+                    "text": "" if item.value is None else str(item.value)[:2000],
+                    "highlight": cell_row == row_number and
+                                 column == column_number,
+                } for column, item in enumerate(cells, start=first_column)]})
+            return {"sheet": sheet, "cell": cell.upper(), "rows": rows}
+        finally:
+            workbook.close()
 
     def _parse(self, row, path: Path) -> ParseResult:
         if row["media_type"] == "application/pdf" and path.suffix == ".pdf":
@@ -256,6 +327,9 @@ class DocumentIngestion:
                         page_idx=block.page_idx, bbox_json=_bbox_payload(block),
                         sheet=block.sheet, cell=block.cell, created_at=now,
                     ))
+                from .index_repository import enqueue_document
+                if parsed.status in {"complete", "partial"}:
+                    enqueue_document(connection, document_id, now=now)
         return self._current_receipt(case_id, snapshot_id, document_id)
 
     def process_snapshot(self, case_id: str, snapshot_id: str) -> list[dict]:

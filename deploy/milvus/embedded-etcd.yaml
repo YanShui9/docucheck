@@ -1,0 +1,7 @@
+# Based on the upstream standalone embedded-etcd configuration.
+# Port 2379 is private to this container, without a host mapping.
+listen-client-urls: http://0.0.0.0:2379
+advertise-client-urls: http://0.0.0.0:2379
+quota-backend-bytes: 4294967296
+auto-compaction-mode: revision
+auto-compaction-retention: '1000'

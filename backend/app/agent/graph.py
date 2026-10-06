@@ -1,6 +1,7 @@
 """A model-directed LangGraph loop over bounded, source-backed tools."""
 import json
 import re
+from collections.abc import Callable
 from uuid import uuid4
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
@@ -8,6 +9,8 @@ from langgraph.graph import END, START, StateGraph
 from langsmith import tracing_context
 from pydantic import ValidationError
 
+from ..evidence.repository import digest
+from ..evidence.retrieval import Retriever
 from ..field_contract import FieldKey
 from ..providers import ProviderError
 from .answer import render_answer, resolve_question_scope
@@ -16,28 +19,24 @@ from .context import (
     assemble,
     compact_observation,
     compact_tools,
+    fit_decision_history,
     verified_result_handles,
 )
-from .policy import MODE_LIMITS, Budget, RunStopped
+from .diagnostics import SAFE_COVERAGE_TYPES, SAFE_VALIDATION_DETAILS
+from .policy import MODE_LIMITS, Budget, RunStopped, input_bound
 from .state import AgentState, RunContext, RunResult
 from .tools import AnswerDraft, Clarification, ToolExecutor, tool_schemas
-
-SAFE_VALIDATION_DETAILS = frozenset({
-    "fact_field", "fact_value", "fact_qualifier", "fact_comparator",
-    "candidate_scope", "candidate_pair", "candidate_field", "candidate_value",
-    "extraction_schema", "extraction_block_too_large",
-})
-SAFE_COVERAGE_TYPES = frozenset({
-    "batch_too_large", "batch_schema", "unexpected_field",
-    "candidate_invalid_scope", "candidate_invalid_uncovered",
-    "unverified_source", "unverified_value", "memory_coverage_incomplete",
-})
 
 
 class AgentSession:
     """One CLI conversation pinned to an immutable repository snapshot."""
     def __init__(self, repo, provider, *, max_decisions: int | None = None,
-                 mode: str = "standard", conversation_id: str | None = None):
+                 mode: str = "standard", conversation_id: str | None = None,
+                 cancelled: Callable[[], bool] | None = None,
+                 retriever: Retriever | None = None,
+                 memory_layers: dict | None = None,
+                 context_validator: Callable[[], None] | None = None,
+                 history_reader: Callable | None = None):
         if mode not in MODE_LIMITS:
             raise ValueError("invalid_mode")
         if max_decisions is not None and max_decisions < 1:
@@ -45,13 +44,22 @@ class AgentSession:
         self.repo, self.provider = repo, provider
         self.mode = mode
         self.max_decisions = max_decisions or MODE_LIMITS[mode]["max_decisions"]
-        self.tools = ToolExecutor(repo)
+        self.tools = ToolExecutor(repo, retriever=retriever, history_reader=history_reader)
+        self.memory_layers = memory_layers
+        self.context_audit: dict = {}
+        self._context_validator = context_validator
         self.history = []
         self.focus: dict[str, str] | None = None
         self.pending_clarification: str | None = None
         self.conversation_id = conversation_id or uuid4().hex
         self._cancelled = False
-        self.schemas = tool_schemas()
+        self._external_cancelled = cancelled or (lambda: False)
+        self.schemas = tool_schemas(history_enabled=history_reader is not None)
+
+    def _revalidate_context(self) -> None:
+        self.tools.revalidate_sources()
+        if self._context_validator is not None:
+            self._context_validator()
 
     def cancel(self) -> None:
         self._cancelled = True
@@ -74,20 +82,14 @@ class AgentSession:
             attempt_id: str | None = None) -> RunResult:
         if not question.strip() or len(question) > 2000:
             raise ValueError("invalid_question")
+        self._revalidate_context()
         implicit_supplier = self._implicit_supplier(question)
         question_scope = resolve_question_scope(question, self.tools, implicit_supplier)
         allowed_suppliers = question_scope.suppliers
-        compact_question = re.sub(r"\s+", "", question)
-        matrix_suppliers = (tuple(sorted({source["supplier"] for source in self.repo.sources()
-                                          if source["supplier"]}))
-                            if ("完整审查" in compact_question
-                                and ("全部供应商" in compact_question
-                                     or "所有供应商" in compact_question)
-                                and ("八项" in compact_question
-                                     or "所有字段" in compact_question
-                                     or "全部字段" in compact_question)) else ())
-        if len(matrix_suppliers) < 2:
-            matrix_suppliers = ()
+        matrix_suppliers = (tuple(sorted(question_scope.suppliers))
+                            if (question_scope.full_review and question_scope.suppliers
+                                and question_scope.fields == frozenset(field.value for field in FieldKey))
+                            else ())
         matrix_started = False
         matrix_fact_sets: dict[str, list[dict]] = {}
         matrix_attempts: dict[str, int] = {}
@@ -98,7 +100,15 @@ class AgentSession:
                              getattr(self.provider, "model_id", None), self.mode)
         budget = Budget(**(MODE_LIMITS[self.mode] | {"max_decisions": self.max_decisions}),
                         context_window=getattr(self.provider, "context_window", 32768),
-                        cancelled=lambda: self._cancelled)
+                        cancelled=lambda: self._cancelled or self._external_cancelled())
+        if question_scope.unresolved_suppliers:
+            available = sorted({source["supplier"] for source in self.repo.sources()
+                                if source["supplier"]})
+            answer = ("当前资料中没有找到你指定的供应商。请确认供应商标识："
+                      + ("、".join(available) if available else "尚未上传供应商资料") + "。")
+            self.pending_clarification = answer
+            self.history.append((HumanMessage(content=question), AIMessage(content=answer)))
+            return RunResult(context, "waiting_user", answer, None, budget.summary(), ())
         capacity = review_capacity(self.repo, question_scope,
                                    max_calls=budget.max_calls,
                                    max_decisions=budget.max_decisions)
@@ -115,27 +125,59 @@ class AgentSession:
             schemas = schema if operation == "decide" else [schema]
             output_cap = (1536 if operation == "extract"
                           and schema["function"]["name"] == "FieldCandidates" else 512)
-            options, reserved_input = budget.reserve(messages, schemas, output_cap=output_cap)
-            event = {"kind": "model", "operation": operation, "sequence": len(events) + 1,
-                     "status": "started"}
-            events.append(event)
-            try:
-                response = (self.provider.decide(messages, schema, **options) if operation == "decide"
-                            else self.provider.extract(messages, schema, **options))
-                if not isinstance(response, AIMessage):
-                    raise ProviderError("invalid_output")
-                event.update(status="completed", usage=response.usage_metadata,
-                             request_id=response.response_metadata.get("request_id"))
-                if operation == "decide":
-                    event["tool_call_count"] = len(response.tool_calls)
-                budget.record(response, reserved_input, options["max_output_tokens"])
-                return response
-            except ProviderError as exc:
-                budget.unknown_usage_calls += 1
-                event.update(status="failed", error=exc.code, outcome_unknown=exc.outcome_unknown)
-                if exc.detail:
-                    event["failure_detail"] = exc.detail
-                raise
+            dropped_turns = 0
+            if operation == "decide":
+                messages, dropped_turns = fit_decision_history(
+                    messages, schemas, max_prompt=budget.max_prompt,
+                    context_window=budget.context_window, output_cap=output_cap,
+                )
+            for repair in range(2):
+                try:
+                    self._revalidate_context()
+                except ValueError as exc:
+                    code = "memory_context_changed" if str(exc) == "memory_context_changed" else "source_access_changed"
+                    raise RunStopped(code) from None
+                request_messages = messages
+                if repair:
+                    request_messages = [messages[0], SystemMessage(content=(
+                        "上次抽取响应不符合指定工具的 schema。仅纠正输出格式，调用该工具一次，"
+                        "保留全部必填字段、原文数值与证据ID；无事实时返回空facts，不编造值或来源。"
+                    )), *messages[1:]]
+                options, reserved_input = budget.reserve(request_messages, schemas, output_cap=output_cap)
+                self.context_audit.setdefault("model_inputs", []).append({
+                    "operation": operation,
+                    "history_message_ids": [m.id for m in request_messages if m.type == "human" and m.id],
+                    "input_upper_bound": input_bound(request_messages, schemas),
+                    "input_digest": digest([m.model_dump(mode="json") for m in request_messages]),
+                    "history_turns_dropped": dropped_turns,
+                })
+                event = {"kind": "model", "operation": operation, "sequence": len(events) + 1,
+                         "status": "started"}
+                if repair:
+                    event["structured_repair"] = True
+                if dropped_turns:
+                    event["history_turns_dropped"] = dropped_turns
+                events.append(event)
+                try:
+                    response = (self.provider.decide(request_messages, schema, **options) if operation == "decide"
+                                else self.provider.extract(request_messages, schema, **options))
+                    if not isinstance(response, AIMessage):
+                        raise ProviderError("invalid_output")
+                    event.update(status="completed", usage=response.usage_metadata,
+                                 request_id=response.response_metadata.get("request_id"))
+                    if operation == "decide":
+                        event["tool_call_count"] = len(response.tool_calls)
+                    budget.record(response, reserved_input, options["max_output_tokens"])
+                    return response
+                except ProviderError as exc:
+                    budget.unknown_usage_calls += 1
+                    event.update(status="failed", error=exc.code, outcome_unknown=exc.outcome_unknown)
+                    if exc.detail:
+                        event["failure_detail"] = exc.detail
+                    if (not repair and operation == "extract" and exc.code == "invalid_output"
+                            and exc.detail == "tool_schema" and not exc.outcome_unknown):
+                        continue
+                    raise
 
         def stop(exc):
             code = exc.code if isinstance(exc, (RunStopped, ProviderError)) else "tool_error"
@@ -170,15 +212,34 @@ class AgentSession:
             try:
                 budget.decision()
                 messages = compact_tools(state["messages"])
-                handles = verified_result_handles(self.tools.results)
+                planned = matrix_next_call()
+                if planned is not None and planned[0] == "submit_answer":
+                    # These handles were produced by server-side evaluation in
+                    # this run. Submission still passes the normal answer,
+                    # scope, coverage, cancellation and tool-budget checks.
+                    events.append({"kind": "policy", "action": "submit_answer",
+                                   "reason": "full_review_evaluated", "status": "completed",
+                                   "sequence": len(events) + 1})
+                    reply = AIMessage(content="", tool_calls=[{
+                        "id": uuid4().hex, "name": planned[0], "args": planned[1],
+                    }])
+                    return {"messages": [*messages, reply], "next_node": "act"}
+                handles = verified_result_handles(
+                    self.tools.results, suppliers=question_scope.suppliers,
+                    fields=question_scope.fields)
                 guidance = [SystemMessage(content=(
                     "上一轮没有调用工具。继续当前用户问题时必须只调用一个可用工具，"
                     "不得直接回答；如范围不清，调用 request_clarification。"
                 ))] if state["tool_repairs"] else []
+                if planned is not None:
+                    guidance.append(SystemMessage(content=(
+                        "当前完整八字段审查的下一步已按原文覆盖与已验证结果确定："
+                        + json.dumps({"tool": planned[0], "args": planned[1]}, ensure_ascii=False)
+                        + "。仅调用该工具；不得重复检索、跳过覆盖或直接编写结论。"
+                    )))
                 decision_messages = [messages[0], *guidance,
                                      *([handles] if handles else []), *messages[1:]]
                 reply = model_call("decide", decision_messages, self.schemas)
-                planned = matrix_next_call()
                 if not reply.tool_calls:
                     if planned is None:
                         if state["tool_repairs"] >= 1:
@@ -216,6 +277,7 @@ class AgentSession:
             events.append(event)
             try:
                 budget.tool()
+                self._revalidate_context()
                 if name == "submit_answer":
                     try:
                         draft = AnswerDraft.model_validate(args)
@@ -231,6 +293,7 @@ class AgentSession:
                                 "messages": [*state["messages"], ToolMessage(tool_call_id=call["id"],
                                     content=json.dumps({"status": "error", "error": "answer_invalid",
                                                         "instruction": "Use one verified result; extra evidence IDs must belong to it."}))]}
+                    self._revalidate_context()
                     event.update(status="completed")
                     if status == "completed" and len(draft.check_result_ids) == 1:
                         result = self.tools.results[draft.check_result_ids[0]]
@@ -305,7 +368,7 @@ class AgentSession:
                     event["failure_detail"] = exc.detail
                 return stop(exc)
             except (ValueError, ValidationError) as exc:
-                code = str(exc) if str(exc) in {"evidence_scope", "supplier_scope", "fact_set_scope", "unknown_tool"} else "invalid_tool_result"
+                code = str(exc) if str(exc) in {"evidence_scope", "supplier_scope", "fact_set_scope", "unknown_tool", "history_scope", "memory_context_changed"} else "invalid_tool_result"
                 detail = "schema_validation" if isinstance(exc, ValidationError) else "other_validation"
                 if (len(exc.args) == 1 and isinstance(exc.args[0], str)
                         and exc.args[0] in SAFE_VALIDATION_DETAILS):
@@ -323,7 +386,9 @@ class AgentSession:
         with tracing_context(enabled=False):
             state = builder.compile().invoke({"messages": assemble(self.repo, self.history, question,
                 self.schemas, budget.context_window, self.focus,
-                self.pending_clarification), "status": "running", "answer": "", "error": None,
+                self.pending_clarification, memory_layers=self.memory_layers,
+                context_audit=self.context_audit, max_prompt=budget.max_prompt,
+                output_cap=512), "status": "running", "answer": "", "error": None,
                 "repairs": 0, "tool_repairs": 0, "next_node": "decide"},
                 {"recursion_limit": 2 * self.max_decisions + 4,
                                                         "callbacks": []})

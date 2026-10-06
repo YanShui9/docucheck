@@ -12,9 +12,9 @@ from sqlalchemy import Engine, insert, select, update
 from sqlalchemy.exc import IntegrityError
 
 from ..agent.fact_memory import decode_fact_sets, encode_fact_sets
-from ..agent.session_memory import _repository_fingerprint
+from ..agent.session_memory import _binding_fingerprint, _repository_fingerprint
 from ..evidence.repository import digest
-from ..extraction.fields import FieldCandidate, _validate_candidate
+from ..extraction.fields import FieldCandidate, _validate_candidate, memory_as_field
 from ..extraction.memory import FactSet
 from ..extraction.validation import Candidate, validate_memory
 from ..field_contract import FieldFactSet, FieldKey
@@ -131,7 +131,7 @@ class CorrectionRepository:
 
     def _facts(self, run: dict):
         memory = run["memory_json"]
-        if not isinstance(memory, dict) or memory.get("version") != 2:
+        if not isinstance(memory, dict) or memory.get("version") not in {2, 3}:
             return None, {}
         try:
             repo = load_agent_snapshot(self.engine, run["case_id"], run["snapshot_id"])
@@ -139,6 +139,8 @@ class CorrectionRepository:
                     or memory.get("repository_fingerprint") != _repository_fingerprint(repo)
                     or type(memory.get("fact_sets_available")) is not bool
                     or not isinstance(memory.get("fact_sets"), list)):
+                raise ValueError("memory_scope")
+            if memory["version"] == 3 and memory.get("binding_fingerprint") != _binding_fingerprint(repo):
                 raise ValueError("memory_scope")
             if not memory["fact_sets_available"]:
                 if memory["fact_sets"]:
@@ -228,7 +230,7 @@ class CorrectionRepository:
     @staticmethod
     def _corrected_fact(request: SubmitCorrection, fact_set, old_fact, repo):
         try:
-            if isinstance(fact_set, FieldFactSet):
+            if isinstance(fact_set, FieldFactSet) and fact_set.field_key != FieldKey.MEMORY:
                 candidate = FieldCandidate(
                     field_key=fact_set.field_key, raw_value=request.raw_value,
                     raw_unit=request.raw_unit,
@@ -237,7 +239,7 @@ class CorrectionRepository:
                 corrected = _validate_candidate(candidate, repo, fact_set.supplier)
                 stable = ("field_key", "qualifier", "comparator", "role", "supplier",
                           "model", "attributes", "evidence_refs")
-            elif isinstance(fact_set, FactSet):
+            elif isinstance(fact_set, (FactSet, FieldFactSet)):
                 if request.raw_unit not in {"GB", "GiB", "MiB"}:
                     raise ValueError("candidate_unit")
                 candidate = Candidate(
@@ -245,9 +247,13 @@ class CorrectionRepository:
                     qualifier=old_fact.qualifier, comparator=old_fact.comparator,
                     evidence_refs=list(old_fact.evidence_refs),
                 )
-                corrected = validate_memory(candidate, repo, fact_set.supplier)
+                legacy = validate_memory(candidate, repo, fact_set.supplier)
+                corrected = (memory_as_field(repo, fact_set.supplier, legacy)
+                             if isinstance(fact_set, FieldFactSet) else legacy)
                 stable = ("qualifier", "comparator", "role", "supplier", "model",
                           "evidence_refs")
+                if isinstance(fact_set, FieldFactSet):
+                    stable += ("field_key", "attributes")
             else:
                 raise TypeError("fact_set_kind")
         except (TypeError, ValueError, ValidationError) as exc:
@@ -327,6 +333,7 @@ class CorrectionRepository:
                     connection.execute(insert(document_versions).values(
                         id=document_map[item["id"]], case_id=request.case_id,
                         snapshot_id=snapshot_id, supplier_id=item["supplier_id"],
+                        model_name=item["model_name"],
                         role=item["role"], original_name=item["original_name"],
                         storage_key=item["storage_key"],
                         source_sha256=item["source_sha256"],
@@ -350,6 +357,10 @@ class CorrectionRepository:
                          "created_at": now}
                         for item in source_blocks
                     ])
+                from .index_repository import enqueue_document
+                for item in source_docs:
+                    if item["parse_status"] in {"complete", "partial"}:
+                        enqueue_document(connection, document_map[item["id"]], now=now)
                 try:
                     target_refs = [evidence_map[ref] for ref in old_fact.evidence_refs]
                 except KeyError as exc:

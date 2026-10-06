@@ -142,7 +142,7 @@ def parse_mineru_middle(path: Path, *, document_id: str) -> ParseResult:
             content = block.get("content", [])
             if not isinstance(content, list) or any(not isinstance(item, dict) for item in content):
                 raise UnsupportedContentError("PDF block content is malformed")
-            if (block.get("type") not in {"text", "doc_title", "page_number"}
+            if (block.get("type") not in {"text", "doc_title", "paragraph_title", "footer", "page_number"}
                     or not content or any(item.get("type") != "text" for item in content)):
                 coverage_issues.append(f"page:{page_idx}:block:{block_index}:unsupported_content")
             text = " ".join(
@@ -184,7 +184,10 @@ def parse_mineru_middle(path: Path, *, document_id: str) -> ParseResult:
     producer = metadata.get("producer", {})
     parser_config = source.get("extensions", {}).get("mineru", {})
     config_hash = sha256(json.dumps(parser_config, sort_keys=True).encode()).hexdigest()[:16]
-    parser_version = f"{producer.get('name', 'mineru')}:{producer.get('version', 'unknown')}/middle:2.0/config:{config_hash}"
+    parser_version = (
+        f"{producer.get('name', 'mineru')}:{producer.get('version', 'unknown')}"
+        f"/middle:2.0/plain-blocks:2/config:{config_hash}"
+    )
     return ParseResult(
         document_id=document_id,
         parser_version=parser_version,
@@ -219,7 +222,7 @@ def verify_pdf_source_coverage(parsed: ParseResult, source_pdf: Path) -> ParseRe
             issues.extend(
                 f"page:{page_idx}:{issue}" for issue in sorted(_pdf_graphics_issues(page, pdf))
             )
-            layout_issue = _pdf_layout_issue(page)
+            layout_issue = _pdf_layout_issue(page, page_idx=page_idx, total_pages=len(pdf.pages))
             if layout_issue is not None:
                 issues.append(f"page:{page_idx}:{layout_issue}")
             try:
@@ -256,8 +259,8 @@ def verify_pdf_source_coverage(parsed: ParseResult, source_pdf: Path) -> ParseRe
         version += "/vector-graphics:1"
     if "/annotations:1" not in version:
         version += "/annotations:1"
-    if "/layout-columns:1" not in version:
-        version += "/layout-columns:1"
+    if "/layout-columns:2" not in version:
+        version += "/layout-columns:2"
     issues = list(dict.fromkeys(issues))
     return replace(parsed, parser_version=version,
                    status="partial" if issues else parsed.status,
@@ -269,7 +272,7 @@ def _normalize_pdf_text(text: str) -> str:
                    if not character.isspace())
 
 
-def _pdf_layout_issue(page: PageObject) -> str | None:
+def _pdf_layout_issue(page: PageObject, *, page_idx: int, total_pages: int) -> str | None:
     """Conservatively flag aligned text columns whose row meaning is unchecked."""
     try:
         layout = page.extract_text(extraction_mode="layout")
@@ -277,11 +280,20 @@ def _pdf_layout_issue(page: PageObject) -> str | None:
         return "layout_unverified"
     if not layout:
         return "layout_unverified"
-    column_rows = sum(
-        len(re.split(r" {3,}", line.strip())) >= 2
-        for line in layout.splitlines()
+    lines = [line.strip() for line in layout.splitlines() if line.strip()]
+    # A complete, matching page counter at the edge is not a business column.
+    # Other footer text remains evidence and remains subject to source coverage.
+    pagination = re.compile(
+        rf"(?:第\s*{page_idx + 1}\s*页\s*/\s*共\s*{total_pages}\s*页"
+        rf"|Page\s+{page_idx + 1}\s+of\s+{total_pages})", re.IGNORECASE,
     )
-    return "layout_columns_unverified" if column_rows else None
+    for index, line in enumerate(lines):
+        columns = re.split(r" {3,}", line)
+        if index in {0, len(lines) - 1}:
+            columns = [column for column in columns if not pagination.fullmatch(column.strip())]
+        if len(columns) >= 2:
+            return "layout_columns_unverified"
+    return None
 
 
 def _pdf_graphics_issues(page: PageObject, pdf: PdfReader) -> set[str]:

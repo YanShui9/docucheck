@@ -10,6 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from ..evidence.models import ScopedEvidence
 from ..evidence.repository import EvidenceRepository, digest
 from ..rules.fields import normalize_field_value
+from .applicability import excluded_memory_source
 
 MEMORY_LABEL = re.compile(r"内存|\bRAM\b", re.IGNORECASE)
 PAIR_LABEL = re.compile(r"\s*(?:已装|安装|标配)?\s*(?:内存|RAM)(?:容量)?\s*", re.IGNORECASE)
@@ -88,9 +89,9 @@ def _memory_pair(label: ScopedEvidence, value: ScopedEvidence,
                  context: MemoryCellContext) -> bool:
     left = context.positions.get(label.evidence_id)
     right = context.positions.get(value.evidence_id)
-    repeated_label_value = bool(
+    qualified_label_value = bool(
         re.fullmatch(
-            rf"\s*{re.escape(label.text.strip())}\s*{CAPACITY.pattern}\s*",
+            rf"{PAIR_LABEL.pattern}{CAPACITY.pattern}\s*",
             value.text,
             re.IGNORECASE,
         )
@@ -102,7 +103,7 @@ def _memory_pair(label: ScopedEvidence, value: ScopedEvidence,
             and PAIR_LABEL.fullmatch(label.text) is not None
             and OTHER_CAPACITY.search(label.text) is None
             and CAPACITY.search(label.text) is None
-            and (NUMERIC_CELL.fullmatch(value.text) is not None or repeated_label_value)):
+            and (NUMERIC_CELL.fullmatch(value.text) is not None or qualified_label_value)):
         return False
     other_capacities = context.row_capacities.get((label.document_id, label.sheet, right[1]), set())
     header_row = context.first_column_header.get((label.document_id, label.sheet, right[0]))
@@ -137,6 +138,8 @@ def validate_memory(candidate: dict | Candidate, repo: EvidenceRepository, suppl
     item = candidate if isinstance(candidate, Candidate) else Candidate.model_validate(candidate)
     repo.assert_supplier(supplier)
     selected = repo.read(item.evidence_refs)
+    if any(excluded_memory_source(block) for block in selected):
+        raise ValueError("fact_not_applicable")
     if len(selected) == 2:
         cell_context = cell_context or build_memory_cell_context(repo.supplier_blocks(supplier))
         selected.sort(key=lambda block: cell_context.positions.get(block.evidence_id, (0, 0)))
@@ -147,29 +150,17 @@ def validate_memory(candidate: dict | Candidate, repo: EvidenceRepository, suppl
     if block.role != "requirement" and block.supplier != supplier:
         raise ValueError("supplier_scope")
     text = " ".join(source.text for source in selected)
-    clauses = re.split(r"[;；。\n]", text)
-    candidates = [clause for clause in clauses if MEMORY_LABEL.search(clause)
-                  and not OTHER_CAPACITY.search(clause)
-                  and re.search(r"\d\s*(?:MiB|GiB|GB)\b", clause, re.IGNORECASE)]
-    if len(candidates) != 1:
-        raise ValueError("fact_field")
-    text = candidates[0]
+    text = _memory_clause(text)
     values = re.findall(r"(?<![\d.])(\d+(?:\.\d+)?)\s*(MiB|GiB|GB)\b", text, re.IGNORECASE)
     value = Decimal(item.raw_value)
     if value <= 0 or not any(Decimal(v) == value and u.casefold() == item.raw_unit.casefold() for v, u in values):
         raise ValueError("fact_value")
     # Multiple capacities or approximation in one evidence span require review.
-    ambiguous = len(values) != 1 or bool(re.search(r"约|可选|可升级|或|approximately", text, re.IGNORECASE))
-    observed_qualifier = ("maximum" if re.search(r"最大|最高|max", text, re.IGNORECASE)
-                          else "installed" if re.search(r"已装|installed", text, re.IGNORECASE) else "unknown")
+    ambiguous = _ambiguous_memory(text, len(values))
+    observed_qualifier = _source_qualifier(text)
     if item.qualifier != "unknown" and item.qualifier != observed_qualifier:
         raise ValueError("fact_qualifier")
-    observed_comparator = (
-        "gte" if re.search(r"至少|不低于|>=|≥", text) else
-        "lte" if re.search(r"不超过|不高于|至多|<=|≤", text) else
-        "gt" if re.search(r"(?<![<>])>(?!=)|大于|多于|超过|高于", text) else
-        "lt" if re.search(r"(?<![<>])<(?!=)|小于|少于|低于", text) else "eq"
-    )
+    observed_comparator = _source_comparator(text)
     if item.comparator != "unknown" and item.comparator != observed_comparator:
         raise ValueError("fact_comparator")
     qualifier = "unknown" if ambiguous else item.qualifier
@@ -177,3 +168,50 @@ def validate_memory(candidate: dict | Candidate, repo: EvidenceRepository, suppl
     return VerifiedFact(digest([repo.snapshot_id, item.model_dump()]), normalized_value, normalized_unit,
                         qualifier, item.comparator, block.role, block.supplier, block.model,
                         tuple(item.evidence_refs))
+
+
+def _memory_clause(text: str) -> str:
+    candidates = [clause for clause in re.split(r"[;；。\n]", text)
+                  if MEMORY_LABEL.search(clause) and not OTHER_CAPACITY.search(clause)
+                  and re.search(r"\d\s*(?:MiB|GiB|GB)\b", clause, re.IGNORECASE)]
+    if len(candidates) != 1:
+        raise ValueError("fact_field")
+    return candidates[0]
+
+
+def _source_qualifier(text: str) -> str:
+    return ("maximum" if re.search(r"最大|最高|max", text, re.IGNORECASE) else
+            "installed" if re.search(r"已装|installed", text, re.IGNORECASE) else "unknown")
+
+
+def _source_comparator(text: str) -> str:
+    return (
+        "gte" if re.search(r"至少|不低于|>=|≥", text) else
+        "lte" if re.search(r"不超过|不高于|至多|<=|≤", text) else
+        "gt" if re.search(r"(?<![<>])>(?!=)|大于|多于|超过|高于", text) else
+        "lt" if re.search(r"(?<![<>])<(?!=)|小于|少于|低于", text) else "eq"
+    )
+
+
+def _ambiguous_memory(text: str, value_count: int) -> bool:
+    return value_count != 1 or bool(re.search(r"约|可选|可升级|或|approximately", text, re.IGNORECASE))
+
+
+def validate_memory_extraction(candidate: Candidate, repo: EvidenceRepository, supplier: str,
+                               *, cell_context: MemoryCellContext | None = None) -> VerifiedFact:
+    """The model proposes spans; source text determines semantic metadata.
+
+    Keep validate_memory strict for persisted facts and correction replay. This
+    extraction boundary first validates numeric value/unit/scope without trusting
+    semantic hints, then validates the metadata deterministically read from that
+    same source. Multiple values/optional wording still become unknown.
+    """
+    scoped = validate_memory(candidate.model_copy(update={"qualifier": "unknown", "comparator": "unknown"}),
+                             repo, supplier, cell_context=cell_context)
+    text = _memory_clause(" ".join(b.text for b in repo.read(list(scoped.evidence_refs))))
+    count = len(re.findall(r"(?<![\d.])\d+(?:\.\d+)?\s*(?:MiB|GiB|GB)\b", text, re.IGNORECASE))
+    qualifier = "unknown" if _ambiguous_memory(text, count) else _source_qualifier(text)
+    canonical = candidate.model_copy(update={"qualifier": qualifier,
+                                            "comparator": _source_comparator(text),
+                                            "evidence_refs": list(scoped.evidence_refs)})
+    return validate_memory(canonical, repo, supplier, cell_context=cell_context)

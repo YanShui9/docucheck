@@ -4,6 +4,9 @@ from typing import TypedDict
 
 from langchain_core.messages import BaseMessage
 
+from ..rules.fields import RULE_VERSION as FIELDS_RULE_VERSION
+from ..rules.memory import RULE_VERSION as MEMORY_RULE_VERSION
+
 
 @dataclass(frozen=True)
 class RunContext:
@@ -16,7 +19,7 @@ class RunContext:
     model_id: str | None
     mode: str = "standard"
     prompt_version: str = "agent-m2-v2"
-    rule_version: str = "fields-v1+memory-v1"
+    rule_version: str = f"{FIELDS_RULE_VERSION}+{MEMORY_RULE_VERSION}"
 
 
 class AgentState(TypedDict):

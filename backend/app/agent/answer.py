@@ -39,6 +39,7 @@ class QuestionScope:
     fields: frozenset[str] | None
     required_pairs: frozenset[tuple[str, str]] | None
     full_review: bool
+    unresolved_suppliers: frozenset[str]
 
 
 def resolve_question_scope(question: str, tools: ToolExecutor,
@@ -74,6 +75,14 @@ def resolve_question_scope(question: str, tools: ToolExecutor,
         r"(?<![A-Za-z])([A-Za-z])的(?:报价|资料|来源|原文|证据|内存|存储|屏幕|重量|质保|数量|单价|交付)",
         compact, re.IGNORECASE,
     ))
+    explicit_handles = {name.casefold() for name in re.findall(
+        r"供应商([A-Za-z0-9][A-Za-z0-9_-]*)(?![A-Za-z0-9_-])", compact,
+    )}
+    known_references = {supplier.casefold() for supplier in all_suppliers}
+    known_references.update(supplier.rsplit("-", 1)[-1].casefold()
+                            for supplier in all_suppliers
+                            if len(supplier.rsplit("-", 1)[-1]) == 1)
+    unresolved = frozenset((aliases | explicit_handles) - known_references)
     for supplier in all_suppliers:
         suffix = supplier.rsplit("-", 1)[-1]
         if (re.search(rf"(?<![A-Za-z0-9_-]){re.escape(supplier)}(?![A-Za-z0-9_-])",
@@ -91,12 +100,14 @@ def resolve_question_scope(question: str, tools: ToolExecutor,
     fields = frozenset(requested_fields) if requested_fields else None
     pairs = (frozenset((supplier, field) for supplier in suppliers for field in fields)
              if suppliers and fields else None)
-    return QuestionScope(suppliers, fields, pairs, full)
+    return QuestionScope(suppliers, fields, pairs, full, unresolved)
 
 
 def _answer_scope(question: str, tools: ToolExecutor, results: list,
                   required_supplier: str | None = None) -> QuestionScope:
     scope = resolve_question_scope(question, tools, required_supplier)
+    if scope.unresolved_suppliers:
+        raise ValueError("answer_invalid")
     if scope.suppliers and any(result.supplier not in scope.suppliers for result in results):
         raise ValueError("answer_invalid")
     if scope.fields and any(str(result.field_key) not in scope.fields for result in results):

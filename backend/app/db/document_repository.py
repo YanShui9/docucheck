@@ -7,7 +7,7 @@ from datetime import UTC, datetime
 from hashlib import sha256
 from uuid import uuid4
 
-from sqlalchemy import Engine, insert, select, update
+from sqlalchemy import Engine, func, insert, select, update
 from sqlalchemy.exc import IntegrityError
 
 from .models import (
@@ -39,6 +39,7 @@ class UploadCommand:
     source_sha256: str
     media_type: str
     pdf_pages: int
+    model_name: str | None = None
 
 
 def _now() -> datetime:
@@ -50,6 +51,7 @@ def _hash(command: UploadCommand) -> str:
         "case_id": command.case_id, "expected_revision": command.expected_revision,
         "role": command.role, "supplier_handle": command.supplier_handle,
         "supplier_name": command.supplier_name, "original_name": command.original_name,
+        "model_name": command.model_name,
         "source_sha256": command.source_sha256,
     }
     return sha256(json.dumps(payload, sort_keys=True, ensure_ascii=False,
@@ -60,7 +62,8 @@ def _validate(command: UploadCommand) -> None:
     if command.expected_revision < 0 or not 1 <= len(command.idempotency_key) <= 255:
         raise DocumentError("invalid_request")
     if command.role == "requirement":
-        if command.supplier_handle is not None or command.supplier_name is not None:
+        if (command.supplier_handle is not None or command.supplier_name is not None
+                or command.model_name is not None):
             raise DocumentError("invalid_supplier_binding")
     elif command.role in {"quote", "spec"}:
         if (not command.supplier_handle or not command.supplier_name
@@ -68,7 +71,11 @@ def _validate(command: UploadCommand) -> None:
                                     command.supplier_handle)
                 or not 1 <= len(command.supplier_name) <= 255
                 or command.supplier_name != command.supplier_name.strip()
-                or any(ord(char) < 32 for char in command.supplier_name)):
+                or any(ord(char) < 32 for char in command.supplier_name)
+                or (command.model_name is not None and
+                    (not 1 <= len(command.model_name) <= 120
+                     or command.model_name != command.model_name.strip()
+                     or any(ord(char) < 32 for char in command.model_name)))):
             raise DocumentError("invalid_supplier_binding")
     else:
         raise DocumentError("invalid_role")
@@ -186,6 +193,7 @@ class DocumentRepository:
                     connection.execute(insert(document_versions).values(
                         id=uuid4().hex, case_id=command.case_id,
                         snapshot_id=snapshot_id, supplier_id=doc["supplier_id"],
+                        model_name=doc["model_name"],
                         role=doc["role"], original_name=doc["original_name"],
                         storage_key=doc["storage_key"],
                         source_sha256=doc["source_sha256"],
@@ -197,6 +205,7 @@ class DocumentRepository:
                 connection.execute(insert(document_versions).values(
                     id=command.document_id, case_id=command.case_id,
                     snapshot_id=snapshot_id, supplier_id=supplier_id,
+                    model_name=command.model_name,
                     role=command.role, original_name=command.original_name,
                     storage_key=command.storage_key,
                     source_sha256=command.source_sha256,
@@ -255,7 +264,8 @@ class DocumentRepository:
             rows = connection.execute(select(
                 document_versions.c.id, document_versions.c.original_name,
                 document_versions.c.role, document_versions.c.parse_status,
-                document_versions.c.source_sha256, suppliers.c.handle,
+                document_versions.c.source_sha256, document_versions.c.model_name,
+                suppliers.c.handle,
             ).select_from(document_versions.outerjoin(
                 suppliers, document_versions.c.supplier_id == suppliers.c.id,
             )).where(document_versions.c.snapshot_id == snapshot_id)
@@ -264,6 +274,65 @@ class DocumentRepository:
                     "snapshot_id": snapshot_id,
                     "documents": [{"id": row.id, "original_name": row.original_name,
                                    "role": row.role, "supplier_handle": row.handle,
+                                   "model_name": row.model_name,
                                    "parse_status": row.parse_status,
                                    "source_sha256": row.source_sha256}
                                   for row in rows]}
+
+    def list_snapshots(self, case_id: str, *, before_revision: int | None = None,
+                       limit: int = 50) -> dict:
+        self.list_current(case_id)
+        with self.engine.connect() as connection:
+            query = select(
+                input_snapshots.c.id, input_snapshots.c.revision,
+                input_snapshots.c.created_at,
+                func.count(document_versions.c.id).label("document_count"),
+            ).select_from(input_snapshots.outerjoin(
+                document_versions,
+                (document_versions.c.case_id == input_snapshots.c.case_id) &
+                (document_versions.c.snapshot_id == input_snapshots.c.id),
+            )).where(input_snapshots.c.case_id == case_id)
+            if before_revision is not None:
+                query = query.where(input_snapshots.c.revision < before_revision)
+            rows = connection.execute(query.group_by(
+                input_snapshots.c.id, input_snapshots.c.revision,
+                input_snapshots.c.created_at,
+            ).order_by(input_snapshots.c.revision.desc())
+                .limit(limit + 1)).all()
+        page = rows[:limit]
+        return {"case_id": case_id,
+                "snapshots": [{"id": row.id, "revision": row.revision,
+                               "created_at": row.created_at.replace(
+                                   tzinfo=UTC).isoformat().replace("+00:00", "Z"),
+                               "document_count": row.document_count}
+                              for row in page],
+                "next_before_revision": (page[-1].revision
+                                         if len(rows) > limit else None)}
+
+    def list_snapshot(self, case_id: str, snapshot_id: str) -> dict:
+        self.list_current(case_id)
+        with self.engine.connect() as connection:
+            revision = connection.scalar(select(input_snapshots.c.revision).where(
+                input_snapshots.c.case_id == case_id,
+                input_snapshots.c.id == snapshot_id,
+            ))
+            if revision is None:
+                raise DocumentError("not_found")
+            rows = connection.execute(select(
+                document_versions.c.id, document_versions.c.original_name,
+                document_versions.c.role, document_versions.c.parse_status,
+                document_versions.c.source_sha256, document_versions.c.model_name,
+                suppliers.c.handle,
+            ).select_from(document_versions.outerjoin(
+                suppliers, document_versions.c.supplier_id == suppliers.c.id,
+            )).where(document_versions.c.case_id == case_id,
+                     document_versions.c.snapshot_id == snapshot_id)
+                .order_by(document_versions.c.role, suppliers.c.handle)).all()
+        return {"case_id": case_id, "revision": revision,
+                "snapshot_id": snapshot_id,
+                "documents": [{"id": row.id, "original_name": row.original_name,
+                               "role": row.role, "supplier_handle": row.handle,
+                               "model_name": row.model_name,
+                               "parse_status": row.parse_status,
+                               "source_sha256": row.source_sha256}
+                              for row in rows]}

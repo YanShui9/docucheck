@@ -1,5 +1,6 @@
 """Execute leased document parses without holding a database transaction."""
 
+import os
 from collections.abc import Callable
 from pathlib import Path
 
@@ -12,7 +13,8 @@ from .parse_repository import ParseRepository
 
 def process_once(engine: Engine, data_root: Path, *, limit: int = 1,
                  pdf_parser: Callable[[Path, str], ParseResult] | None = None) -> list[dict]:
-    claims = ParseRepository(engine).claim(limit=limit)
+    pdf_available = pdf_parser is not None or bool(os.getenv("DOCUCHECK_MINERU_EXECUTABLE"))
+    claims = ParseRepository(engine).claim(limit=limit, include_pdf=pdf_available)
     ingestion = DocumentIngestion(engine, data_root, pdf_parser=pdf_parser)
     results = []
     for claim in claims:

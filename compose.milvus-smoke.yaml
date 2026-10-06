@@ -1,0 +1,7 @@
+# Bounded local startup trial, not a production capacity configuration.
+# Run with: docker compose -f compose.milvus.yaml -f compose.milvus-smoke.yaml up -d --build
+services:
+  milvus:
+    restart: "no"
+    mem_limit: 2g
+    memswap_limit: 2g

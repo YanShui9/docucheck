@@ -1,0 +1,604 @@
+"""Uploaded buyer requirements -> candidate -> confirmation -> versioned review."""
+
+from copy import deepcopy
+from io import BytesIO
+
+import pytest
+from openpyxl import Workbook, load_workbook
+from sqlalchemy import select, update
+
+from backend.app.db.dynamic_repository import DynamicRepository
+from backend.app.db.ingestion import DocumentIngestion
+from backend.app.db.models import document_versions, dynamic_runs, task_memory
+from backend.app.db.run_executor import execute_run
+from backend.app.db.run_repository import RepositoryError
+from backend.tests import test_document_ingestion
+from backend.tests.test_dynamic_agent import ScriptProvider
+
+ingestion_case = test_document_ingestion.ingestion_case
+
+
+def workbook(text):
+    book = Workbook()
+    book.active.title = "采购资料"
+    book.active["A1"] = text
+    output = BytesIO()
+    book.save(output)
+    return output.getvalue()
+
+
+@pytest.fixture
+def dynamic_case(ingestion_case, request):
+    client, engine, storage, case_id = ingestion_case
+    for revision, (role, supplier, text) in enumerate(
+        [
+            ("requirement", None, "苹果 数量不低于10箱"),
+            ("quote", "vendor-a", getattr(request, "param", "苹果 数量12箱")),
+            ("quote", "vendor-b", "苹果 数量8箱"),
+        ]
+    ):
+        data = {"role": role, "expected_revision": str(revision)}
+        if supplier:
+            data.update(supplier_handle=supplier, supplier_name=supplier)
+        response = client.post(
+            f"/api/v1/cases/{case_id}/documents",
+            data=data,
+            headers={"Idempotency-Key": f"upload-{revision}"},
+            files={
+                "file": (
+                    f"{supplier or 'buyer'}.xlsx",
+                    workbook(text),
+                    "application/octet-stream",
+                )
+            },
+        )
+        assert response.status_code == 201, response.text
+        snapshot = response.json()["snapshot_id"]
+    with engine.connect() as connection:
+        ids = list(
+            connection.scalars(
+                select(document_versions.c.id).where(
+                    document_versions.c.snapshot_id == snapshot
+                )
+            )
+        )
+    ingestion = DocumentIngestion(engine, storage)
+    for document_id in ids:
+        assert (
+            ingestion.process_document(case_id, snapshot, document_id)["parse_status"]
+            == "complete"
+        )
+    conversation = client.post(f"/api/v1/cases/{case_id}/conversations").json()["id"]
+    return client, engine, case_id, snapshot, conversation
+
+
+def message(case, *, proposal=False, key="message-1", content="完整审查"):
+    client, _, _, _, conversation = case
+    response = client.post(
+        f"/api/v1/conversations/{conversation}/messages",
+        headers={"Idempotency-Key": key},
+        json={
+            "content": content,
+            "expected_revision": 3,
+            "operation": "propose_checklist" if proposal else "review",
+        },
+    )
+    assert response.status_code == 202, response.text
+    return response.json()["run_id"]
+
+
+def run(case, run_id, provider):
+    attempt_id = case[0].get(f"/api/v1/agent-runs/{run_id}").json()["active_attempt_id"]
+    return execute_run(
+        case[1], run_id, attempt_id, provider, heartbeat_interval_seconds=60
+    )
+
+
+def confirm(case):
+    client, _, case_id, snapshot, _ = case
+    proposal_id = message(case, proposal=True)
+    result = run(case, proposal_id, ScriptProvider(decision="propose_checklist"))
+    assert result.status == "completed", result
+    preview = client.get(f"/api/v1/agent-runs/{proposal_id}/proposal")
+    assert preview.status_code == 200, preview.text
+    preview = preview.json()
+    assert preview["requires_user_confirmation"] is True
+    assert (
+        client.get(f"/api/v1/cases/{case_id}/snapshots/{snapshot}/checklist").json()[
+            "confirmed_version"
+        ]
+        is None
+    )
+    url = f"/api/v1/cases/{case_id}/snapshots/{snapshot}/checklist"
+    saved = client.put(
+        url,
+        headers={"Idempotency-Key": "draft-1"},
+        json={
+            **preview["definition"],
+            "expected_revision": 3,
+            "expected_checklist_revision": 0,
+            "reason": "核对需求原文",
+        },
+    )
+    assert saved.status_code == 200, saved.text
+    accepted = client.post(
+        url + "/confirm",
+        headers={"Idempotency-Key": "confirm-1"},
+        json={
+            "expected_revision": 3,
+            "expected_checklist_revision": saved.json()["checklist_revision"],
+            "criterion_ids": [
+                c["criterion_id"] for c in preview["definition"]["criteria"]
+            ],
+            "confirmed": True,
+            "reason": "买方确认",
+        },
+    )
+    assert accepted.status_code == 200, accepted.text
+    return accepted.json(), preview["definition"]
+
+
+def test_proposal_confirmation_review_export_and_task_memory(dynamic_case):
+    confirmed, _ = confirm(dynamic_case)
+    client, engine, _, _, _ = dynamic_case
+    run_id = message(dynamic_case, key="review-1")
+    report = run(dynamic_case, run_id, ScriptProvider())
+    assert report.status == "completed"
+    response = client.get(f"/api/v1/agent-runs/{run_id}/checks")
+    assert response.status_code == 200, response.text
+    checks = response.json()
+    assert checks["checklist_version_id"] == confirmed["confirmed_version"]["id"]
+    assert {c["business_status"] for c in checks["checks"]} == {"满足", "不满足"}
+    assert all(
+        c["is_formal"] and c["criterion_name"] == "数量" and c["item_name"] == "苹果" for c in checks["checks"]
+    )
+    facts = client.get(f"/api/v1/agent-runs/{run_id}/facts").json()
+    assert len(facts["fact_sets"]) == 2 and facts["payload_digest"]
+    exported = client.get(f"/api/v1/agent-runs/{run_id}/export").json()
+    assert exported["result"]["checklist_version_id"] == checks["checklist_version_id"]
+    excel = client.get(f"/api/v1/agent-runs/{run_id}/export?format=xlsx")
+    assert excel.status_code == 200
+    book = load_workbook(BytesIO(excel.content))
+    assert book["核验结果"]["B2"].value == "数量"
+    assert "清单版本" in {book["运行信息"].cell(i, 1).value for i in range(1, 12)}
+    with engine.connect() as connection:
+        state = connection.scalar(
+            select(task_memory.c.state_json).where(
+                task_memory.c.source_run_id == run_id
+            )
+        )
+    assert (
+        state["checkpoint"]["version"] == 4
+        and state["checkpoint"]["source_run_id"] == run_id
+    )
+    assert state["checkpoint"]["checklist_version_id"] == checks["checklist_version_id"]
+    progress = client.get(f"/api/v1/agent-runs/{run_id}/progress")
+    assert progress.status_code == 200 and progress.json()["validated_batches"] == 2
+
+
+def test_result_tampering_and_checklist_change_cannot_promote_results(dynamic_case):
+    _, definition = confirm(dynamic_case)
+    client, engine, case_id, snapshot, _ = dynamic_case
+    run_id = message(dynamic_case, key="review-1")
+    run(dynamic_case, run_id, ScriptProvider())
+    saved = client.put(
+        f"/api/v1/cases/{case_id}/snapshots/{snapshot}/checklist",
+        headers={"Idempotency-Key": "change-1"},
+        json={
+            **definition,
+            "expected_revision": 3,
+            "expected_checklist_revision": 2,
+            "reason": "重新核对",
+        },
+    )
+    assert saved.status_code == 200, saved.text
+    checks = client.get(f"/api/v1/agent-runs/{run_id}/checks").json()
+    assert not checks["is_current"] and not any(
+        c["is_formal"] for c in checks["checks"]
+    )
+    with engine.begin() as connection:
+        payload = deepcopy(
+            connection.scalar(
+                select(dynamic_runs.c.payload_json).where(
+                    dynamic_runs.c.run_id == run_id
+                )
+            )
+        )
+        payload["facts"][0]["value"] = "999"
+        connection.execute(
+            update(dynamic_runs)
+            .where(dynamic_runs.c.run_id == run_id)
+            .values(payload_json=payload)
+        )
+    with pytest.raises(RepositoryError, match="dynamic_source_changed"):
+        DynamicRepository(engine).checks(run_id)
+
+
+def test_impossible_correction_rejected_without_writes(dynamic_case):
+    confirm(dynamic_case)
+    client, _, _, _, _ = dynamic_case
+    run_id = message(dynamic_case, key="review-1")
+    run(dynamic_case, run_id, ScriptProvider())
+    facts = client.get(f"/api/v1/agent-runs/{run_id}/facts").json()
+    old = facts["fact_sets"][0]["facts"][0]
+    from backend.app.criteria.facts import FactCandidate
+
+    candidate = {k: old[k] for k in FactCandidate.model_fields}
+    candidate["value"] = "999"
+    response = client.post(
+        f"/api/v1/agent-runs/{run_id}/fact-corrections",
+        headers={"Idempotency-Key": "correct-1"},
+        json={
+            "fact_id": old["fact_id"],
+            "candidate": candidate,
+            "reason": "复核",
+            "expected_revision": 3,
+            "expected_payload_digest": facts["payload_digest"],
+        },
+    )
+    assert response.status_code == 422, response.text
+    assert (
+        client.get(f"/api/v1/agent-runs/{run_id}/facts").json()["payload_digest"]
+        == facts["payload_digest"]
+    )
+
+
+@pytest.mark.parametrize("dynamic_case", ["苹果 数量12箱或8箱"], indirect=True)
+def test_same_source_two_values_keep_conflict_and_correction_audit(dynamic_case):
+    confirm(dynamic_case)
+    client, _, _, _, _ = dynamic_case
+    run_id = message(dynamic_case, key="review-1")
+
+    class AlternativeProvider(ScriptProvider):
+        def extract(self, *args, **kwargs):
+            output = super().extract(*args, **kwargs)
+            for fact in output.tool_calls[0]["args"].get("facts", []):
+                fact["unit"] = "箱"
+            return output
+
+    run(dynamic_case, run_id, AlternativeProvider())
+    facts = client.get(f"/api/v1/agent-runs/{run_id}/facts").json()
+    group = next(g for g in facts["fact_sets"] if g["supplier"] == "vendor-a")
+    old = group["facts"][0]
+    from backend.app.criteria.facts import FactCandidate
+
+    candidate = {k: old[k] for k in FactCandidate.model_fields}
+    candidate["value"] = "8"
+    body = {
+        "fact_id": old["fact_id"],
+        "candidate": candidate,
+        "reason": "原文也支持另一值",
+        "expected_revision": 3,
+        "expected_payload_digest": facts["payload_digest"],
+    }
+    url = f"/api/v1/agent-runs/{run_id}/fact-corrections"
+    headers = {"Idempotency-Key": "correct-1"}
+    response = client.post(url, headers=headers, json=body)
+    assert response.status_code == 201, response.text
+    assert response.json()["review_status"] == "needs_review"
+    assert client.post(url, headers=headers, json=body).json() == response.json()
+    changed = client.get(f"/api/v1/agent-runs/{run_id}/facts").json()
+    assert {
+        f["value"]
+        for g in changed["fact_sets"]
+        if g["supplier"] == "vendor-a"
+        for f in g["facts"]
+    } == {"12", "8"}
+    checks = client.get(f"/api/v1/agent-runs/{run_id}/checks").json()
+    assert (
+        next(c for c in checks["checks"] if c["supplier"] == "vendor-a")[
+            "business_status"
+        ]
+        == "资料冲突"
+    )
+    assert not any(c["is_formal"] for c in checks["checks"])
+    assert client.get(url).json()["corrections"][0]["old_fact"]["value"] == "12"
+    assert (
+        client.post(url, headers={"Idempotency-Key": "stale"}, json=body).status_code
+        == 409
+    )
+    review_id = message(dynamic_case, key="review-after-correction")
+    assert run(dynamic_case, review_id, AlternativeProvider()).status == "completed"
+    rereview = client.get(f"/api/v1/agent-runs/{review_id}/checks").json()
+    assert (
+        next(c for c in rereview["checks"] if c["supplier"] == "vendor-a")[
+            "business_status"
+        ]
+        == "资料冲突"
+    )
+    assert not any(c["is_formal"] for c in rereview["checks"])
+
+
+def test_source_followup_reuses_validated_report_only_in_same_conversation(
+    dynamic_case,
+):
+    confirm(dynamic_case)
+    client, _, case_id, _, _ = dynamic_case
+    run_id = message(dynamic_case, key="review-1")
+    run(dynamic_case, run_id, ScriptProvider())
+    followup = message(
+        dynamic_case, key="followup", content="为什么数量不满足？依据在哪里？"
+    )
+    provider = ScriptProvider(decision="get_checklist")
+    assert run(dynamic_case, followup, provider).status == "completed"
+    assert provider.extractions == 0
+    assert (
+        len(client.get(f"/api/v1/agent-runs/{followup}/checks").json()["checks"]) == 2
+    )
+    new_conversation = client.post(f"/api/v1/cases/{case_id}/conversations").json()[
+        "id"
+    ]
+    other = (*dynamic_case[:4], new_conversation)
+    new_id = message(other, key="new-conversation")
+    isolated = ScriptProvider(decision="get_checklist")
+    run(other, new_id, isolated)
+    assert isolated.extractions == 2
+
+
+def test_retry_keeps_verified_batches_and_source_manifest_is_not_optional(dynamic_case):
+    from backend.app.evidence.repository import digest
+    from backend.app.providers.base import ProviderError
+
+    confirm(dynamic_case)
+    client, engine, _, _, _ = dynamic_case
+
+    class SecondBatchFails(ScriptProvider):
+        def extract(self, *args, **kwargs):
+            if self.extractions == 1:
+                self.failure = ProviderError("unavailable")
+            return super().extract(*args, **kwargs)
+
+    run_id = message(dynamic_case, key="partial")
+    assert run(dynamic_case, run_id, SecondBatchFails()).status == "partial"
+    retry = client.post(
+        f"/api/v1/agent-runs/{run_id}/retry",
+        headers={"Idempotency-Key": "retry"},
+        json={"expected_revision": 3},
+    )
+    assert retry.status_code == 202, retry.text
+    provider = ScriptProvider()
+    assert run(dynamic_case, run_id, provider).status == "completed"
+    assert provider.extractions == 1
+    with engine.begin() as connection:
+        payload = deepcopy(
+            connection.scalar(
+                select(dynamic_runs.c.payload_json).where(
+                    dynamic_runs.c.run_id == run_id
+                )
+            )
+        )
+        payload["batch_manifest"].pop()
+        connection.execute(
+            update(dynamic_runs)
+            .where(dynamic_runs.c.run_id == run_id)
+            .values(payload_json=payload, payload_digest=digest(payload))
+        )
+    assert client.get(f"/api/v1/agent-runs/{run_id}/export").status_code == 409
+
+
+def test_concurrent_cancel_keeps_known_usage_without_publishing(dynamic_case):
+    from backend.app.db.models import run_attempts
+
+    confirm(dynamic_case)
+    client, engine, _, _, _ = dynamic_case
+    run_id = message(dynamic_case, key="cancel")
+
+    class CancellingProvider(ScriptProvider):
+        def extract(self, *args, **kwargs):
+            reply = super().extract(*args, **kwargs)
+            assert client.post(f"/api/v1/agent-runs/{run_id}/cancel").status_code == 200
+            return reply
+
+    report = run(dynamic_case, run_id, CancellingProvider())
+    assert report.status == "cancelled"
+    with engine.connect() as connection:
+        usage = connection.scalar(
+            select(run_attempts.c.usage_json).where(run_attempts.c.run_id == run_id)
+        )
+        assert (
+            connection.scalar(
+                select(dynamic_runs.c.payload_json).where(
+                    dynamic_runs.c.run_id == run_id
+                )
+            )
+            is None
+        )
+    assert usage["model_calls"] == 2 and usage["actual_input"] == 200
+
+
+def test_cancel_after_first_terminal_check_still_retains_usage(
+    dynamic_case, monkeypatch
+):
+    from backend.app.db.models import run_attempts
+
+    confirm(dynamic_case)
+    client, engine, _, _, _ = dynamic_case
+    run_id = message(dynamic_case, key="late-cancel")
+    original = DynamicRepository.retain_cancelled_usage
+    calls = 0
+
+    def cancel_after_check(self, claim, result, provider):
+        nonlocal calls
+        retained = original(self, claim, result, provider)
+        calls += 1
+        if calls == 1:
+            assert not retained
+            assert client.post(f"/api/v1/agent-runs/{run_id}/cancel").status_code == 200
+        return retained
+
+    monkeypatch.setattr(DynamicRepository, "retain_cancelled_usage", cancel_after_check)
+    report = run(dynamic_case, run_id, ScriptProvider())
+    assert report.status == "cancelled" and calls == 2
+    with engine.connect() as connection:
+        usage = connection.scalar(
+            select(run_attempts.c.usage_json).where(run_attempts.c.run_id == run_id)
+        )
+    assert usage["model_calls"] == 3 and usage["actual_input"] == 300
+
+
+def test_first_model_failure_preserves_readable_incomplete_matrix_and_can_retry(
+    dynamic_case,
+):
+    from backend.app.providers.base import ProviderError
+
+    confirm(dynamic_case)
+    client, _, _, _, _ = dynamic_case
+    run_id = message(dynamic_case, key="first-failure")
+
+    class FailedDecision(ScriptProvider):
+        def decide(self, *args, **kwargs):
+            raise ProviderError("timeout", outcome_unknown=True)
+
+    assert run(dynamic_case, run_id, FailedDecision()).status == "partial"
+    checks = client.get(f"/api/v1/agent-runs/{run_id}/checks")
+    assert checks.status_code == 200, checks.text
+    assert len(checks.json()["checks"]) == 2
+    assert all(
+        not c["is_formal"] and c["business_status"] is None
+        for c in checks.json()["checks"]
+    )
+    assert (
+        client.post(
+            f"/api/v1/agent-runs/{run_id}/retry",
+            headers={"Idempotency-Key": "retry-first"},
+            json={"expected_revision": 3},
+        ).status_code
+        == 202
+    )
+    assert run(dynamic_case, run_id, ScriptProvider()).status == "completed"
+
+
+def test_completed_batch_facts_cannot_be_omitted_from_recomputed_payload(dynamic_case):
+    from backend.app.criteria.facts import evaluate_checklist
+    from backend.app.evidence.repository import digest
+
+    confirm(dynamic_case)
+    client, engine, _, _, _ = dynamic_case
+    run_id = message(dynamic_case, key="missing-fact")
+    run(dynamic_case, run_id, ScriptProvider())
+    row, payload, repo = DynamicRepository(engine).verified(run_id)
+    payload = deepcopy(payload)
+    payload["facts"].pop()
+    payload["checks"] = evaluate_checklist(
+        payload["definition"],
+        payload["facts"],
+        payload["coverage"],
+        snapshot_id=repo.snapshot_id,
+    )
+    with engine.begin() as connection:
+        connection.execute(
+            update(dynamic_runs)
+            .where(dynamic_runs.c.run_id == row["id"])
+            .values(payload_json=payload, payload_digest=digest(payload))
+        )
+    response = client.get(f"/api/v1/agent-runs/{run_id}/checks")
+    assert response.status_code == 409, response.text
+
+
+def test_export_rejects_copied_source_even_if_database_changes_back(
+    dynamic_case, monkeypatch
+):
+    from backend.app.db.models import evidence_blocks
+
+    confirm(dynamic_case)
+    client, engine, _, _, _ = dynamic_case
+    run_id = message(dynamic_case, key="export-aba")
+    run(dynamic_case, run_id, ScriptProvider())
+    original = DynamicRepository.verified
+    calls, evidence_id = 0, None
+
+    def source_aba(self, requested_id):
+        nonlocal calls, evidence_id
+        calls += 1
+        if calls == 2:
+            with engine.begin() as connection:
+                connection.execute(
+                    update(evidence_blocks)
+                    .where(evidence_blocks.c.id == evidence_id)
+                    .values(source_text="苹果 数量12箱")
+                )
+        result = original(self, requested_id)
+        if calls == 1:
+            _, payload, _ = result
+            evidence_id = next(
+                f for f in payload["facts"] if f["supplier"] == "vendor-a"
+            )["evidence_refs"][0]
+            with engine.begin() as connection:
+                connection.execute(
+                    update(evidence_blocks)
+                    .where(evidence_blocks.c.id == evidence_id)
+                    .values(source_text="苹果 数量8箱")
+                )
+        return result
+
+    monkeypatch.setattr(DynamicRepository, "verified", source_aba)
+    response = client.get(f"/api/v1/agent-runs/{run_id}/export")
+    assert response.status_code == 409, response.text
+
+
+def test_cancel_before_interrupt_cas_keeps_usage(dynamic_case, monkeypatch):
+    from backend.app.db.models import run_attempts
+
+    confirm(dynamic_case)
+    client, engine, _, _, _ = dynamic_case
+    run_id = message(dynamic_case, key="interrupt-cancel")
+    retain, validate = (
+        DynamicRepository.retain_cancelled_usage,
+        DynamicRepository.validate,
+    )
+    calls = 0
+
+    def retain_then_cancel(self, claim, result, provider):
+        nonlocal calls
+        kept = retain(self, claim, result, provider)
+        calls += 1
+        if calls == 2:
+            assert client.post(f"/api/v1/agent-runs/{run_id}/cancel").status_code == 200
+        return kept
+
+    def fail_terminal_validation(self, claim):
+        if calls:
+            raise RepositoryError("memory_context_changed")
+        return validate(self, claim)
+
+    monkeypatch.setattr(DynamicRepository, "retain_cancelled_usage", retain_then_cancel)
+    monkeypatch.setattr(DynamicRepository, "validate", fail_terminal_validation)
+    assert run(dynamic_case, run_id, ScriptProvider()).status == "cancelled"
+    assert calls == 3
+    with engine.connect() as connection:
+        usage = connection.scalar(
+            select(run_attempts.c.usage_json).where(run_attempts.c.run_id == run_id)
+        )
+    assert usage["model_calls"] == 3 and usage["actual_input"] == 300
+
+
+def test_export_rejects_source_drift_between_checks_and_source_read(
+    dynamic_case, monkeypatch
+):
+    from backend.app.db.models import evidence_blocks
+
+    confirm(dynamic_case)
+    client, engine, _, _, _ = dynamic_case
+    run_id = message(dynamic_case, key="export-race")
+    run(dynamic_case, run_id, ScriptProvider())
+    original = DynamicRepository.verified
+    calls = 0
+
+    def change_after_verification(self, requested_id):
+        nonlocal calls
+        result = original(self, requested_id)
+        calls += 1
+        if calls == 1:
+            _, payload, _ = result
+            fact = next(f for f in payload["facts"] if f["supplier"] == "vendor-a")
+            with engine.begin() as connection:
+                connection.execute(
+                    update(evidence_blocks)
+                    .where(evidence_blocks.c.id == fact["evidence_refs"][0])
+                    .values(source_text="苹果 数量8箱")
+                )
+        return result
+
+    monkeypatch.setattr(DynamicRepository, "verified", change_after_verification)
+    response = client.get(f"/api/v1/agent-runs/{run_id}/export")
+    assert response.status_code == 409, response.text

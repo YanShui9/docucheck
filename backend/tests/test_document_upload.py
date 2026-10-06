@@ -1,10 +1,12 @@
 """HTTP upload makes immutable input revisions from real PDF/XLSX files."""
 
+import asyncio
 from io import BytesIO
 from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
+from httpx import ASGITransport, AsyncClient
 from pypdf import PdfWriter
 from sqlalchemy import create_engine, event, select
 
@@ -55,6 +57,47 @@ def _pdf(pages):
     stream = BytesIO()
     writer.write(stream)
     return stream.getvalue()
+
+
+@pytest.mark.parametrize("declared_length", [None, "10"])
+def test_upload_stops_oversized_stream_before_spooling_the_whole_body(
+    uploaded_api, declared_length,
+):
+    client, engine, storage = uploaded_api
+    case_id = _case(client)
+    chunks_read = 0
+
+    async def body():
+        nonlocal chunks_read
+        yield (b'--test-boundary\r\nContent-Disposition: form-data; name="role"\r\n\r\n'
+               b'requirement\r\n--test-boundary\r\nContent-Disposition: form-data; '
+               b'name="expected_revision"\r\n\r\n0\r\n'
+               b'--test-boundary\r\nContent-Disposition: form-data; name="file"; '
+               b'filename="huge.pdf"\r\nContent-Type: application/pdf\r\n\r\n%PDF-')
+        for _ in range(12):
+            chunks_read += 1
+            yield b"x" * (1024 * 1024)
+        yield b"\r\n--test-boundary--\r\n"
+
+    async def upload():
+        headers = {"Content-Type": "multipart/form-data; boundary=test-boundary",
+                   "Idempotency-Key": "stream-limit"}
+        if declared_length is not None:
+            headers["Content-Length"] = declared_length
+        async with AsyncClient(transport=ASGITransport(app=client.app),
+                               base_url="http://127.0.0.1") as remote:
+            return await remote.post(f"/api/v1/cases/{case_id}/documents",
+                                     headers=headers, content=body())
+
+    response = asyncio.run(upload())
+    assert response.status_code == 413, response.text
+    assert response.json()["error"]["code"] == "file_limit"
+    assert response.headers["X-Request-ID"] == response.json()["error"]["request_id"]
+    assert chunks_read < 12
+    assert not list(storage.rglob("*.pdf"))
+    with engine.connect() as connection:
+        assert connection.scalar(select(input_snapshots.c.id).where(
+            input_snapshots.c.case_id == case_id)) is None
 
 
 def test_upload_preserves_prior_snapshot_and_replay_is_stable(uploaded_api):

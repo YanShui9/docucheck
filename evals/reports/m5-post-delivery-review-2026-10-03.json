@@ -1,0 +1,231 @@
+{
+  "schema_version": 1,
+  "generated_at_utc": "2026-10-03T05:07:14.985834+00:00",
+  "kind": "m5_post_delivery_development_review",
+  "milestone": "M5-C",
+  "review_scope": "agent_memory_fact_corrections_historical_reads_offline_gates_and_development_delivery",
+  "reviewed_fixes_complete": true,
+  "formal_independent_acceptance": false,
+  "independently_sealed_packs": 0,
+  "new_real_model_calls": 0,
+  "docker_started_or_changed": false,
+  "frontend_source_changed": false,
+  "frontend_started": false,
+  "git_head": "efcc62ab25e9e06dc4b4bba4a16d04fcfcd8c867",
+  "git_branch": "phase-0-foundation",
+  "uncommitted_work_preserved": true,
+  "app_source_manifest_sha256": "8f696a670171a972e1e2af78029cee2411008ec56b1fbf5d6276ab91bbfc2b2d",
+  "app_file_count": 76,
+  "changed_app_files": [
+    "agent/fact_memory.py",
+    "agent/session_memory.py",
+    "db/api_queries.py",
+    "db/correction_recheck.py",
+    "db/correction_repository.py",
+    "extraction/fields.py"
+  ],
+  "historical_measured_app_source_manifest_sha256": "f3938cda07b0b365ed3477b6ede3ae11fbdea4c08fe7b2483a1e85a264e9ce71",
+  "historical_model_scores_retested_for_current_source": false,
+  "regressions_added": {
+    "offline_guard_and_environment": 5,
+    "archive_validation": 17,
+    "legacy_eight_field_session_restore": 3,
+    "api_business_lifecycle": 16,
+    "total": 41
+  },
+  "offline_final_gates": [
+    {
+      "path": "data/m5-c-recheck/offline-reviewed-final.json",
+      "python": "3.12.14",
+      "passed": 765,
+      "skipped": 22,
+      "network_attempts": 0,
+      "pytest_reported_seconds": 130.92,
+      "subprocess_seconds": 134.797,
+      "pip_check_passed": true,
+      "ruff_passed": true
+    },
+    {
+      "path": "data/m5-c-recheck/offline-clean-windows-reviewed-final.json",
+      "python": "3.12.14",
+      "passed": 765,
+      "skipped": 22,
+      "network_attempts": 0,
+      "pytest_reported_seconds": 142.12,
+      "subprocess_seconds": 146.032,
+      "pip_check_passed": true,
+      "ruff_passed": true
+    }
+  ],
+  "clean_runtime_reinstalled_this_review": false,
+  "clean_runtime_note": "Fresh source tree uses the previously installed isolated 97-package M5-C development runtime; the lock is rechecked.",
+  "live_integrations_skipped_per_gate": 22,
+  "findings": [
+    {
+      "id": "R1",
+      "severity": "P2",
+      "issue": "Offline child processes inherited project tokens, identity credentials and live storage/parser settings.",
+      "resolution": "Remove every DOCUCHECK_* setting except the explicit CJK test font.",
+      "status": "closed"
+    },
+    {
+      "id": "R2",
+      "severity": "P2",
+      "issue": "Four public DNS resolvers bypassed the offline attempt counter.",
+      "resolution": "Block all five public resolver entry points and restore the original functions; keep strict stdlib socketpair IPC.",
+      "status": "closed"
+    },
+    {
+      "id": "R3",
+      "severity": "P2",
+      "issue": "Internally rehashed ZIPs could carry contradictory version or source-manifest declarations.",
+      "resolution": "Validate exact version contract, canonical source-manifest digest/count and dependency hashes.",
+      "status": "closed"
+    },
+    {
+      "id": "R4",
+      "severity": "P2",
+      "issue": "Known legacy rule results blocked historical checks/export and same-snapshot followups.",
+      "resolution": "Verify exact saved rule outcomes/IDs, retain immutable archived results, recompute current handles only for the new Run.",
+      "status": "closed"
+    },
+    {
+      "id": "R5",
+      "severity": "P2",
+      "issue": "Eight-field memory facts could not be corrected or rebound through the generic validator.",
+      "resolution": "Use the dedicated source-bound memory validator, consistent conversion and nested set identity for correction/recheck.",
+      "status": "closed"
+    },
+    {
+      "id": "R6",
+      "severity": "P3",
+      "issue": "Literal boolean/integer declarations accepted 0/1, floats or bools through equality.",
+      "resolution": "Require exact booleans before validation and strict bounded integers; ten ZIP regressions.",
+      "status": "closed"
+    },
+    {
+      "id": "R7",
+      "severity": "P3",
+      "issue": "A valid current result could lend formal status to a same-pair legacy result.",
+      "resolution": "Track verified current result IDs individually; mixed-version read/export/followup regression.",
+      "normal_serializer_produces_this_payload": false,
+      "external_exploit_demonstrated": false,
+      "status": "closed"
+    }
+  ],
+  "documentation_fixes": [
+    "Separate sender preview/build from receiver verify/restore.",
+    "Use unique archive/restore paths.",
+    "Bind historical build to explicitly preserved measured source rather than changed live source."
+  ],
+  "targeted_validation": {
+    "passed": 55,
+    "files": [
+      "backend/tests/test_delivery_bundle.py",
+      "backend/tests/test_post_delivery_business.py"
+    ],
+    "tool_chunk_id": "d55bdd"
+  },
+  "observed_red_regressions": [
+    {
+      "case": "environment leakage",
+      "failed": 1,
+      "chunk_id": "6178a5"
+    },
+    {
+      "case": "DNS aliases",
+      "failed": 4,
+      "chunk_id": "9c6f22"
+    },
+    {
+      "case": "ZIP metadata coherence",
+      "failed": 7,
+      "chunk_id": "9bdc96"
+    },
+    {
+      "case": "real archived session outcomes",
+      "failed": 3,
+      "chunk_id": "97f45a"
+    },
+    {
+      "case": "historical API and memory corrections",
+      "failed": 6,
+      "passed": 9,
+      "chunk_id": "f3091a"
+    },
+    {
+      "case": "exact numeric/boolean ZIP types",
+      "failed": 10,
+      "passed": 7,
+      "chunk_id": "205c36"
+    },
+    {
+      "case": "mixed-version formal status",
+      "failed": 1,
+      "chunk_id": "068351"
+    }
+  ],
+  "review_method": {
+    "implementer": "root Codex agent",
+    "separate_readonly_ai_reviewers": [
+      {
+        "task": "recheck_business",
+        "scope": "R4/R5 and focused R7 fix review",
+        "remaining_findings_in_scope": 0
+      },
+      {
+        "task": "recheck_delivery",
+        "scope": "R2/R3 and focused R6 fix review",
+        "remaining_findings_in_scope": 0
+      }
+    ],
+    "independent_human_business_review": false
+  },
+  "archive": {
+    "path": "data/m5-c-recheck/docucheck-m5-development.zip",
+    "sha256": "ff2a7c9001035f3f933159d878b05d5e892175165dbb06d49d7e0547d10dc2cb",
+    "payload_files": 227,
+    "restored_files": 228,
+    "restored_bytes_match": true,
+    "candidate_packs": 12,
+    "suppliers": 13,
+    "supplier_field_cases": 104,
+    "documents": 38,
+    "pdf_pages": 36,
+    "asset_validation_errors": 0,
+    "preserved_failed_task_records": true,
+    "historical_app_identity": "f3938cda07b0b365ed3477b6ede3ae11fbdea4c08fe7b2483a1e85a264e9ce71",
+    "contains_current_app_source": false
+  },
+  "unchanged_historical_m5_c_report_sha256": "34ec1fbd27708c93db3ca6df8b5f4deb11bcd106a51b0fb5914bdd2f85418f8c",
+  "unchanged_historical_final_audit_sha256": "715eedfa48e847132e230641e27d52616498f92519ad7d9092104cacab62dbb3",
+  "artifact_sha256": {
+    "data/m5-c-recheck/offline-final.json": "acdeacc14d7b8a4ac185e807761e0a9abaeeedee204e9adecd7daadfd7828910",
+    "data/m5-c-recheck/offline-reviewed-final.json": "db20194a1724d194ea75bd775b63affd82c06dfdea12527e21f4c248e5825cf8",
+    "data/m5-c-recheck/offline-clean-windows-reviewed-final.json": "68a10cf20e1e2a088bd06a0136143209532637c1e16444e3955d226549fb8aca",
+    "data/m5-c-recheck/runtime-readback.json": "2f3a728ffc3b3b6f3e98eaec0d12decb7fe36c3ff6bb597e3f603c534be611ff",
+    "data/m5-c-recheck/clean-source-provenance.json": "e1e780bc5616e4cea19004400d01974fabd859eccfaad38579ee9b1b443c1f9f",
+    "data/m5-c-recheck/measured-source-preservation.json": "ef46150c91eb81668a39370747c7c90a1bc82fe00b8c48452ebfe68da194f650",
+    "data/m5-c-recheck/rechecked-bundle-source.json": "8987ee67b5a47fd882df84588de709256c5a9b80d0d1d075b89fb74ab16c2429",
+    "data/m5-c-recheck/source-as-reviewed.json": "96b73174a89ecd70ebefe78e1d8e7d7b0cf0f142286ea6ce1a40bbd8e87705db",
+    "data/m5-c-recheck/bundle-verification.json": "f686d280d48b2bd09278fb7ac9e18c40ffc9ee1d802a4f784641f6bcc1e87b2f",
+    "data/m5-c-recheck/docucheck-m5-development.zip": "ff2a7c9001035f3f933159d878b05d5e892175165dbb06d49d7e0547d10dc2cb",
+    "evals/reports/m5-b-development-2026-10-03.json": "0d5addd2a96b54d0b9292f6e706a5ab55b02cd4d7223331e7123ded5f528e145",
+    "evals/reports/m5-c-delivery-2026-10-03.json": "34ec1fbd27708c93db3ca6df8b5f4deb11bcd106a51b0fb5914bdd2f85418f8c",
+    "data/m5-c/final-audit.json": "715eedfa48e847132e230641e27d52616498f92519ad7d9092104cacab62dbb3",
+    "data/m5-c/docucheck-m5-development.zip": "7627a71b702237eb4b9722569918505fb9f5fa3c7ee480387dc6d9bfa3b55b8d"
+  },
+  "followup_audit_path": "data/m5-c-recheck/final-audit.json",
+  "sources_consulted": [
+    "https://docs.langchain.com/oss/python/langgraph/persistence",
+    "https://pydantic.dev/docs/validation/latest/concepts/strict_mode/"
+  ],
+  "remaining_acceptance_gates": [
+    "Independent human corpus review and sealing",
+    "Actual model billing and cache breakdown",
+    "Retest real-model quality/performance after source changes when authorized",
+    "Live MySQL/Redis/Celery/MinerU integration for the deployment version",
+    "Cloud CI execution",
+    "Business DB/files/OIDC disaster recovery and production deployment"
+  ]
+}

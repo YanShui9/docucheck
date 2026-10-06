@@ -307,6 +307,51 @@ def test_repeated_label_in_adjacent_value_cell_can_be_cited_as_a_pair():
     assert fact.value == 16
 
 
+@pytest.mark.parametrize("label_text", ["内存", "内存容量", "RAM", "已装内存"])
+@pytest.mark.parametrize("reversed_refs", [False, True])
+def test_qualified_memory_value_does_not_require_identical_label_text(label_text, reversed_refs):
+    from backend.app.extraction.validation import validate_memory
+
+    original = load_case(PACK)
+    documents = [replace(document, parsed=replace(document.parsed, blocks=tuple(
+        replace(block, text=label_text) if block.cell == "A6" else block
+        for block in document.parsed.blocks
+    ))) if document.role == "quote" else document for document in original.documents]
+    repo = EvidenceRepository(original.case_id, original.revision + 1, documents)
+    label = next(block for block in repo.blocks if block.cell == "A6")
+    value = next(block for block in repo.blocks if block.cell == "B6")
+    refs = [label.evidence_id, value.evidence_id]
+    fact = validate_memory(
+        {"raw_value": "16", "raw_unit": "GB", "qualifier": "installed",
+         "comparator": "eq", "evidence_refs": refs[::-1] if reversed_refs else refs},
+        repo, "vendor-a",
+    )
+    assert fact.evidence_refs == tuple(refs)
+    assert fact.value == 16 and fact.qualifier == "installed" and fact.comparator == "eq"
+
+
+@pytest.mark.parametrize("value_text", [
+    "已装存储 16 GB", "已装内存 16 GB 或 32 GB", "最大支持内存 16 GB",
+    "已装内存 16 GB；已装内存 32 GB",
+])
+def test_qualified_memory_pair_still_rejects_other_field_or_ambiguous_value(value_text):
+    from backend.app.extraction.validation import validate_memory
+
+    original = _split_quote_repo(value_text)
+    documents = [replace(document, parsed=replace(document.parsed, blocks=tuple(
+        replace(block, text="内存") if block.cell == "A6" else block
+        for block in document.parsed.blocks
+    ))) if document.role == "quote" else document for document in original.documents]
+    repo = EvidenceRepository(original.case_id, original.revision + 1, documents)
+    refs = [next(block.evidence_id for block in repo.blocks if block.cell == cell)
+            for cell in ("A6", "B6")]
+    with pytest.raises(ValueError, match="fact_field"):
+        validate_memory(
+            {"raw_value": "16", "raw_unit": "GB", "qualifier": "installed",
+             "comparator": "eq", "evidence_refs": refs}, repo, "vendor-a",
+        )
+
+
 def test_full_memory_extraction_accepts_original_quote_label_and_value_pair():
     import json
 

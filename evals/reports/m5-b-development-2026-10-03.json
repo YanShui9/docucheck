@@ -1,0 +1,1071 @@
+{
+  "schema_version": 1,
+  "generated_at_utc": "2026-10-03T01:06:22.707766+00:00",
+  "milestone": "M5-B",
+  "scope": "ai_reviewed_author_seen_development_corpus",
+  "development_validation_complete": true,
+  "formal_independent_acceptance": false,
+  "independently_sealed_packs": 0,
+  "M5_C_started": false,
+  "corpus_baseline": {
+    "corpus_sha256": "90d59a51238a9288b2f9724a3b9cf2a6548a7111c031faf0b0b40aed75751f29",
+    "formal_independent_acceptance": false,
+    "independently_sealed_packs": 0,
+    "review_sha256": "3aa62955e49f0c396ee7079a33a61662c442139aba17109d17f4552035282d11",
+    "reviewed_rows": 104,
+    "scope": "ai_reviewed_development_corpus"
+  },
+  "code_identity": {
+    "host_source_manifest_sha256": "f3938cda07b0b365ed3477b6ede3ae11fbdea4c08fe7b2483a1e85a264e9ce71",
+    "host_app_file_count": 76,
+    "source_manifest_method": "SHA256 of sorted relative Python paths and per-file SHA256, canonical JSON",
+    "source_manifest": {
+      "__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "agent/__init__.py": "f71c5abd1c6f7425261449a722f6aeefeb4fab25da2bd6cff1b65f5fde1fbe06",
+      "agent/answer.py": "9ee1a1692c57e996a4ca9b7612291953af36034609e97cc95b45f1b79b39009e",
+      "agent/capacity.py": "556e68041dfd16bbeb31f2dead4bf2ee905dfc72b044511a97733c2fba43deba",
+      "agent/context.py": "e1bd02f596ce825a8162fcac42bdba6bf3b9f949c728b51d059bdb916a060c4e",
+      "agent/diagnostics.py": "0a5a6c1ff861a65d6d5641f66ed8d371fa0b3a23ee5a597a656580a9e83846fb",
+      "agent/fact_memory.py": "9139adf9ebe8ee90bba4d84eaf683e73b9b9c527c171ec980701748aa08e554d",
+      "agent/graph.py": "a96f77268e5cbda2f62acfde507757f62b2820c6d21a1104e892dc533159e1af",
+      "agent/policy.py": "c3fc19b827a52b8a7eec3bee289672631dc5f42aca1bf84d0f8086840b8c25c8",
+      "agent/session_memory.py": "7125bc08b5d93ea2c12f06f41d8502e4e9c69a8216bc4287ae02a6b56c01245c",
+      "agent/state.py": "9a5c05b08d6189f9c02380fb421733b6705885e64f4869c78607315557fb3293",
+      "agent/tools.py": "f4316a80b1d4c45f1457a9f28fc9e0c133a678eccefdda5446c5456a10ee143b",
+      "agent_demo.py": "46c0c3e14111c9a853ddd95a8ece054c2630d1b8e66b6c6be4a77155c4add670",
+      "api/__init__.py": "568a59eecacf4bd18b7b815aaec0325df1186200cbd702ba3ff779d6f5f84137",
+      "api/auth.py": "b2504997654e4056712431dcd116c55ec9048a3836dadcd30df2ad06491aee86",
+      "api/body_limit.py": "fd80b250f355488a2e484b207ce080cc959367ab52ac8fd5e1e969de9d1adfc9",
+      "api/main.py": "7e711228d87f24a92fb68bf48e759b0ec69a2783d96522b7ac791354a8180669",
+      "api/route_auth.py": "9954c75533c2e18dae0ef752c86c9356643d7fe7d8e57cbdf44f8e31ecb57361",
+      "api/run_export.py": "11e531bd703aed7a3b567c2af172940d77e1cfc5dbe0a2713010a6df210a5edb",
+      "api/schemas.py": "54557ba99f12dd45cd4743b4c1b16ba140eb8b051c6b65e84b77602e51ba57ae",
+      "api/upload.py": "043529c6eb933bc9b7673feeec6b1901824258401ebf41f00ed296a12517e76e",
+      "celery_app.py": "c4c40ad2b1d98952ed80764e9a45f526ed0c6b83426fd0c9e5de01e19df1549f",
+      "cleanup_cases.py": "4f578fb6b37955d422d09159b3b3138aa56fe54b17f521347c818886578a974f",
+      "db/__init__.py": "4444ffbf84596f02a9689f3fae0b844a223702efee4dd29c575a1b997154920a",
+      "db/agent_snapshot.py": "7659bf0f0da6772a3aa2ebd1e96ddf3f6ab21f7ccd10a5c4119aef1799822fa6",
+      "db/api_queries.py": "e13f11d8f593d979db8f488949affddafe43b31e83e33612c0cf9fcfb26a37e8",
+      "db/case_cleanup.py": "17773943068b1e3c45fc72f06465df0eaa009452315d8f6627cd805cb68fa4ba",
+      "db/case_deletion.py": "932561a3d9140040217c7c238282478a1fe349f945be897d034b15df71abbd72",
+      "db/connection.py": "311ece61c9e2376493f1975fc8841d24e880b66784bf97dd08169dc798f52058",
+      "db/conversation_context.py": "60925240edc307cc110720a7793ea80f49436608e72ce5e5c6d6b3a9e35ffc52",
+      "db/correction_recheck.py": "adc8fa399862e1bdd3fe1aa4ac18d9cc1398868a2665db95ba8b1905f19b2d73",
+      "db/correction_repository.py": "76715eeefa413d88da9ae7b93400afedef57b2a800a4c931fc8aa748de4d16f1",
+      "db/document_repository.py": "fb4ad884f76a1ed3eedeb4baa84ad0e284d3d2e21bbd9fa82c8b1bfaf8bff4a9",
+      "db/ingestion.py": "13e6263fc4594c432f89a827e7e66e54f4889310386e8c61ec9abe0e7b2cfb2e",
+      "db/models.py": "fc9074d82229a91f2550728a9a12702d17c42ca38f0ba40c5188a734bd148881",
+      "db/outbox_dispatcher.py": "de26d2628301db6db24aea5754df587c42ca4da7cd7c80512e8373d7263e14e1",
+      "db/outbox_repository.py": "3aa7c42e2b834ed10725cad81bf7f42bcdd67069010041c27da7fcfe1f344c2c",
+      "db/parse_repository.py": "78910f4d73b04c9193a1f756a798a72619d14b0756f62eeb878d6598022b9e6a",
+      "db/parse_worker.py": "002d142fdbfc0a91bf87b7084bc7e073b493d7194700a9094a5469cbde6f50f1",
+      "db/run_executor.py": "2c64363858e81801de765a665cf665098abe54a48c1fd38910e0eb27571e6ed4",
+      "db/run_heartbeat.py": "4f228628e96ca5f8342aff5b7afc8f561398cdde037d0c220f90d6188bd818c2",
+      "db/run_repository.py": "63ce9ee9d0abd51fad06d718393196c395ec5664a0a002b82bc527fc0cb17ed4",
+      "db/worker_runner.py": "77806552c76bef8b4936878ca1b90adbbf23cf19f46f65adb7142544c9d27e28",
+      "db/workspace.py": "90e064f791876d3bdaf4b4e0c1e461fa97a5833aa1e976bbcd8e864b85bea7f7",
+      "dev_oidc_realm.py": "9cac9ff7158d8e11e845b150dbc4bf6f0bd2521c526524ad0edce01f2f55814e",
+      "dispatch_outbox.py": "4358fda087f614b4f2da76ae97363073bde4b67c0c034a69db451ff5c13a754c",
+      "evidence/__init__.py": "d4d877b57b35f8f5d26b3aad4fe40c968a183b61f92e972bdad62e5383bbbe19",
+      "evidence/models.py": "ccf32b011e0233b5366deb2a7bf230adad864d8adecc4c26e43ed1920d9ebd83",
+      "evidence/repository.py": "85e8fe3e9d6f9c63f88c41d7777daa400630b3e3360a328bcab324102c5ac424",
+      "evidence/retrieval.py": "6fd23cd007fe47ff9bf6d0a5a0727b47665a206be3acf0c5642d05b70d890ae9",
+      "extraction/__init__.py": "cb4df59597370fe0c972fa193e6535bc163fdd199420b57c2cafbe5f73f94829",
+      "extraction/applicability.py": "cb3f979fa592c6df14a958987ecbac45e130f2d70ec25b67eabc0656dd03fdd0",
+      "extraction/fields.py": "b9b1850dc49b2458f5b0b214785516e1c9d3e4c7b7c0956fdf383d0fc2a26d92",
+      "extraction/memory.py": "5e267859a7cfa3a82b8948a6a8b11c78b6592d4948c47ab237d9fec72ccb87bf",
+      "extraction/validation.py": "841f3b8a6a5b768af650d02d36594e7411bf7a3ecac8f7baa9b61dfaed5554c8",
+      "field_contract.py": "685af8d28dfce88bad5db70eeb87d07e50e6ee0afbc139fa7747f6faea60eedb",
+      "ingest_snapshot.py": "6d648bc7cf88b2cc8da227d0f11070d481d7fd176189bb01438bdc6371fb9833",
+      "memory_extract_probe.py": "655c0506a38fd1a3e21b4792d32f45b8af42e102e5869b4e528b6ed515289a46",
+      "parse_background.py": "a9aa651f188964b54dae9c1bd23c523511a134ec6807375aa21a468b3c1d06af",
+      "parse_dev_pack.py": "ab0d32fc150e44e76ac7176777c4c97c5571c292041cab4385512124958eaf08",
+      "parsing.py": "99b0f7c7f2c902a4adeb87987a812dfb896013bf16ea1f91cd2e0d1950300f60",
+      "provider_probe.py": "dac40712b50d4ae2bd8dbca6c0568d217fe5c5a039f82b39d8641ae5ef3c7fa9",
+      "providers/__init__.py": "bd0e0707af82905082cedf012df983f7d88e626b7bc162e65ebf63c541f6cce5",
+      "providers/base.py": "1bb7fdb62c9db3d1ec3788193bdbbed021dd5c92fd87c1fac407358e2c02bd8c",
+      "providers/chat_model.py": "20fe8471a7f860cd550e640c1a2fc27dcc5274a1d6f2f3222bd14e61073a3103",
+      "providers/config.py": "32bab9fe90bf390ef1040594ff2bf14905a4acc9fb1c519f72741627c4610e81",
+      "providers/deepseek.py": "a0d25c7fbe562639e834ceb9c750ced5096a33506884f64b8be0a9f8984ba2d5",
+      "providers/fake.py": "d7ceb298e367ac6480437164fa743dab81e780dc273f6f536c3b57ea178f60c7",
+      "rules/__init__.py": "8646e5e2a7ed362148563b07c60416bb3c70bc9d62c22647d978b94ea49ee4a7",
+      "rules/fields.py": "76c557ac719c39cec61d4fd48192cfd09d18b5f9008841bc08a5cd5029020eb2",
+      "rules/memory.py": "156db19dc2862792c568062863c8459aecb19cdf8a1b95204078b4a46dc26a47",
+      "run_once.py": "f202e172e98b793e30ccb25c97cac27b9ce677d1c3b093190f33b1a592c4982b",
+      "runtime/__init__.py": "42e2b16378864d623c937b7dd735e178b5ed0996c904e3d1e4e1d7f7b3bb8f7d",
+      "runtime/lifecycle.py": "79065864028c52c7a1c3b09692927b472857b7afde474721763cd0fed92685fb",
+      "worker_health.py": "fe52c4a343e92460bca00fca61be85188834ce128ea8ef24b5cb14b354e6f856",
+      "worker_tasks.py": "291fe1ceb5d7a5adfb165e18ac781785f0a9cccbe9f704d2ca185b88178d0c72"
+    },
+    "worker_image_digest": "sha256:80965e9ed93b66739a1603d9e6a275a92fcd8d7cd856d623f9063aee2e433346",
+    "rule_version": "fields-v4",
+    "host_python": "3.12.14",
+    "host_dependencies": {
+      "openai": "3.19.2",
+      "langchain-openai": "1.6.6",
+      "langgraph": "1.2.12",
+      "SQLAlchemy": "2.0.54",
+      "pypdf": "6.19.0",
+      "langsmith": "0.14.0"
+    },
+    "worker": {
+      "source_manifest_sha256": "f3938cda07b0b365ed3477b6ede3ae11fbdea4c08fe7b2483a1e85a264e9ce71",
+      "app_file_count": 76,
+      "python": "3.12.15",
+      "dependencies": {
+        "openai": "3.23.0",
+        "langchain-openai": "1.6.6",
+        "langgraph": "1.2.12",
+        "SQLAlchemy": "2.0.54",
+        "pypdf": "6.19.0",
+        "langsmith": "0.14.3"
+      },
+      "rule_version": "fields-v4",
+      "ca_bundle_sha256": "3a1fbef8757f29e99c69ff68c4da91b8412f562e4dbed865ce21c8ea0dae3f5c"
+    },
+    "api_docs_status": 200,
+    "api_protected_unauthenticated_status": 401
+  },
+  "verification": {
+    "schema_version": 1,
+    "scope": "M5-B development validation closing checks",
+    "recorded_on": "2026-10-03",
+    "formal_independent_acceptance": false,
+    "app_source_manifest_sha256": "f3938cda07b0b365ed3477b6ede3ae11fbdea4c08fe7b2483a1e85a264e9ce71",
+    "full_backend_regression": {
+      "executed_on": "2026-10-02",
+      "passed": 690,
+      "skipped": 22,
+      "seconds": 126.43,
+      "command": "python -X utf8 -m pytest backend/tests -q --basetemp data/pytest-m5-b-source-handles-final-20261002",
+      "evidence_service_record": "data/m5-b-source-coverage-20261002/service-fields-v4-source-handles.json",
+      "previous_completed_result_not_claimed_rerun_today": true,
+      "closing_source_unchanged": true
+    },
+    "mysql_targeted_regression": {
+      "executed_on": "2026-10-02",
+      "passed": 6,
+      "seconds": 3.28,
+      "scope": "correction/recheck and Run repository",
+      "previous_completed_result_not_claimed_rerun_today": true
+    },
+    "all_closing_checks_passed": true,
+    "closing_checks": {
+      "focused_regression": {
+        "command": "& 'E:/developTools/miniconda3/envs/docucheck/python.exe' -X utf8 -m pytest backend/tests/test_m5_source_coverage.py backend/tests/test_m5_review_progress.py backend/tests/test_m5_context_budget.py backend/tests/test_agent_diagnostics.py -q --basetemp data/pytest-m5-b-closing-20261003",
+        "exit_code": 0,
+        "output": "..............................................................           [100%]\r\n62 passed in 3.22s",
+        "passed": 62,
+        "seconds": 3.22
+      },
+      "retrieval": {
+        "command": "& 'E:/developTools/miniconda3/envs/docucheck/python.exe' -X utf8 data/m5-local-tls/measure_source_handles_retrieval.py",
+        "exit_code": 0,
+        "output": "Building prefix dict from the default dictionary ...\r\nLoading model from cache C:\\Users\\LUANMI~1\\AppData\\Local\\Temp\\jieba.cache\r\nLoading model cost 0.663 seconds.\r\nPrefix dict has been built successfully.\r\n{\"planned_queries\": 104, \"necessary_sources_recall_at_12\": {\"numerator\": 207, \"denominator\": 207}, \"foreign_supplier_source_refs\": 0}"
+      },
+      "performance_provenance": {
+        "command": "& 'E:/developTools/miniconda3/envs/docucheck/python.exe' -X utf8 data/m5-local-tls/collect_suite_provenance.py --folder data/m5-b-live-performance-20261002-source-handles --service-record data/m5-b-source-coverage-20261002/service-fields-v4-source-handles.json",
+        "exit_code": 0,
+        "output": "{\"rule_version\": \"fields-v4\", \"documents_complete\": 45, \"documents_total\": 45, \"model_calls\": 136, \"fully_known_usage_tasks_input\": 335959, \"fully_known_usage_tasks_output\": 35090, \"unknown_usage_tasks\": [\"m5-c01-05\"]}"
+      },
+      "service_version": {
+        "command": "& 'E:/developTools/miniconda3/envs/docucheck/python.exe' -X utf8 data/m5-local-tls/collect_service_version.py --output data/m5-b-source-coverage-20261002/service-source-handles-end-20261003.json --passed 690 --skipped 22 --regression-seconds 126.43",
+        "exit_code": 0,
+        "output": "{\"host_source_manifest_sha256\": \"f3938cda07b0b365ed3477b6ede3ae11fbdea4c08fe7b2483a1e85a264e9ce71\", \"worker_image_digest\": \"sha256:80965e9ed93b66739a1603d9e6a275a92fcd8d7cd856d623f9063aee2e433346\", \"worker_health\": \"healthy\", \"api_docs_status\": 200, \"api_protected_unauthenticated_status\": 401}"
+      },
+      "ruff": {
+        "command": "& 'E:/developTools/miniconda3/envs/docucheck/python.exe' -m ruff check backend evals",
+        "exit_code": 0,
+        "output": "All checks passed!"
+      },
+      "host_pip": {
+        "command": "& 'E:/developTools/miniconda3/envs/docucheck/python.exe' -m pip check",
+        "exit_code": 0,
+        "output": "No broken requirements found."
+      },
+      "worker_pip": {
+        "command": "docker compose -f compose.yaml -f data/m5-local-tls/compose.tls.yaml exec -T worker python -m pip check",
+        "exit_code": 0,
+        "output": "No broken requirements found."
+      },
+      "alembic": {
+        "command": "& 'E:/developTools/miniconda3/envs/docucheck/python.exe' -X utf8 -m alembic -c backend/alembic.ini current",
+        "exit_code": 0,
+        "output": "0011_document_model_binding (head)"
+      },
+      "git_diff_check": {
+        "command": "git diff --check",
+        "exit_code": 0,
+        "output": "warning: in the working copy of '.env.example', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'backend/app/agent/answer.py', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'backend/app/agent/context.py', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'backend/app/agent/fact_memory.py', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'backend/app/agent/graph.py', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'backend/app/agent/session_memory.py', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'backend/app/agent/state.py', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'backend/app/api/main.py', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'backend/app/api/schemas.py', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'backend/app/db/agent_snapshot.py', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'backend/app/db/api_queries.py', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'backend/app/db/connection.py', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'backend/app/db/correction_recheck.py', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'backend/app/db/correction_repository.py', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'backend/app/db/document_repository.py', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'backend/app/db/ingestion.py', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'backend/app/db/models.py', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'backend/app/db/parse_repository.py', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'backend/app/db/parse_worker.py', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'backend/app/db/run_executor.py', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'backend/app/db/run_repository.py', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'backend/app/evidence/retrieval.py', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'backend/app/extraction/fields.py', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'backend/app/extraction/memory.py', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'backend/app/extraction/validation.py', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'backend/app/parsing.py', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'backend/app/rules/fields.py', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'backend/environment.yml', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'backend/tests/test_agent_fields.py', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'backend/tests/test_agent_focus.py', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'backend/tests/test_agent_graph.py', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'backend/tests/test_answer_scope.py', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'backend/tests/test_background_parsing.py', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'backend/tests/test_corrected_agent_run.py', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'backend/tests/test_correction_recheck.py', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'backend/tests/test_database_connection.py', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'backend/tests/test_document_upload.py', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'backend/tests/test_field_rules.py', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'backend/tests/test_memory_checks.py', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'backend/tests/test_persisted_agent_run.py', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'backend/tests/test_retrieval.py', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'backend/tests/test_run_repository.py', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'backend/tests/test_run_repository_mysql.py', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'backend/tests/test_session_memory.py', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'compose.yaml', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'evals/README.md', LF will be replaced by CRLF the next time Git touches it"
+      }
+    },
+    "git_line_ending_warnings_are_not_errors": true,
+    "independent_code_review_completed": false,
+    "independent_code_review_failure": "account_usage_limit"
+  },
+  "quality": {
+    "agent_tasks": {
+      "denominator": 12,
+      "numerator": 12
+    },
+    "status_accuracy": {
+      "denominator": 104,
+      "numerator": 104
+    },
+    "necessary_evidence": {
+      "denominator": 89,
+      "numerator": 89
+    },
+    "dangerous_meets": 0,
+    "citation_errors": {
+      "denominator": 247,
+      "numerator": 0
+    },
+    "confusion_matrix": {
+      "不满足": {
+        "不满足": 18
+      },
+      "待人工确认": {
+        "待人工确认": 7
+      },
+      "满足": {
+        "满足": 64
+      },
+      "证据不足": {
+        "证据不足": 8
+      },
+      "资料冲突": {
+        "资料冲突": 7
+      }
+    }
+  },
+  "quality_tasks": [
+    {
+      "task_id": "m5-c01-01",
+      "case_id": "69f8caf9ffb44c728243a0cfec5c214e",
+      "snapshot_id": "b9b705c4dcc1437c9365283de64e201a",
+      "run_id": "3215fe7faa324efdbb41b88dc11cb308",
+      "status": "completed",
+      "usage": {
+        "actual_input": 37102,
+        "actual_output": 3861,
+        "decisions": 6,
+        "input_reserved": 37102,
+        "model_calls": 15,
+        "output_reserved": 3861,
+        "tools": 6,
+        "unknown_usage_calls": 0
+      },
+      "model_id": "deepseek-flash",
+      "upload_to_result_ms": 52781.0,
+      "upload_and_parse_ms": 31328.0,
+      "agent_and_export_ms": 21422.0
+    },
+    {
+      "task_id": "m5-c02-01",
+      "case_id": "cff386b289db4056b9cacc21de493d45",
+      "snapshot_id": "dfe5cc9272454e7fb307e70e449a7f0d",
+      "run_id": "441287eb90de48e79eaf638adc88d7aa",
+      "status": "completed",
+      "usage": {
+        "actual_input": 16755,
+        "actual_output": 1838,
+        "decisions": 4,
+        "input_reserved": 16755,
+        "model_calls": 8,
+        "output_reserved": 1838,
+        "tools": 4,
+        "unknown_usage_calls": 0
+      },
+      "model_id": "deepseek-flash",
+      "upload_to_result_ms": 32218.0,
+      "upload_and_parse_ms": 19062.0,
+      "agent_and_export_ms": 13125.0
+    },
+    {
+      "task_id": "m5-c03-01",
+      "case_id": "9f9bedd686724fb280ac7921a366231a",
+      "snapshot_id": "d0c1c97dcc3c4b6095aef90c7205ae2a",
+      "run_id": "6fecd634770e41dcbfe901e9b60e1d4f",
+      "status": "completed",
+      "usage": {
+        "actual_input": 16805,
+        "actual_output": 1859,
+        "decisions": 4,
+        "input_reserved": 16805,
+        "model_calls": 8,
+        "output_reserved": 1859,
+        "tools": 4,
+        "unknown_usage_calls": 0
+      },
+      "model_id": "deepseek-flash",
+      "upload_to_result_ms": 31187.0,
+      "upload_and_parse_ms": 19078.0,
+      "agent_and_export_ms": 12078.0
+    },
+    {
+      "task_id": "m5-c04-01",
+      "case_id": "72e1a4967edc40039dec2a17fdc6e264",
+      "snapshot_id": "5f11cf9b82be48ec86683f6b62b2d162",
+      "run_id": "e21b4c0ebb404876b83dca1e7ffce1e1",
+      "status": "completed",
+      "usage": {
+        "actual_input": 16915,
+        "actual_output": 1855,
+        "decisions": 4,
+        "input_reserved": 16915,
+        "model_calls": 8,
+        "output_reserved": 1855,
+        "tools": 4,
+        "unknown_usage_calls": 0
+      },
+      "model_id": "deepseek-flash",
+      "upload_to_result_ms": 33360.0,
+      "upload_and_parse_ms": 20125.0,
+      "agent_and_export_ms": 13203.0
+    },
+    {
+      "task_id": "m5-c05-01",
+      "case_id": "167bf36e54c647dcbb5cba14aebb7468",
+      "snapshot_id": "f733e19b3b5a44eb87ea146b6e05a847",
+      "run_id": "a86405b388ec46e283f89166575ddc77",
+      "status": "completed",
+      "usage": {
+        "actual_input": 16155,
+        "actual_output": 1610,
+        "decisions": 4,
+        "input_reserved": 16155,
+        "model_calls": 8,
+        "output_reserved": 1610,
+        "tools": 4,
+        "unknown_usage_calls": 0
+      },
+      "model_id": "deepseek-flash",
+      "upload_to_result_ms": 30641.0,
+      "upload_and_parse_ms": 19063.0,
+      "agent_and_export_ms": 11547.0
+    },
+    {
+      "task_id": "m5-c06-01",
+      "case_id": "3ce0554980954c1b9af86f17addf7ac7",
+      "snapshot_id": "269ae9bae00f46c5be7b31acadd839dd",
+      "run_id": "d13cdcb1bac248a9a6026f3cc3bfd2e6",
+      "status": "completed",
+      "usage": {
+        "actual_input": 18698,
+        "actual_output": 2260,
+        "decisions": 4,
+        "input_reserved": 18698,
+        "model_calls": 9,
+        "output_reserved": 2260,
+        "tools": 4,
+        "unknown_usage_calls": 0
+      },
+      "model_id": "deepseek-flash",
+      "upload_to_result_ms": 33250.0,
+      "upload_and_parse_ms": 19078.0,
+      "agent_and_export_ms": 14140.0
+    },
+    {
+      "task_id": "m5-h01-01",
+      "case_id": "4fefdcf1c34d4a9d80b25bd8fd1c6563",
+      "snapshot_id": "5f0b8bcdfe66454286c6c1922be26cb4",
+      "run_id": "c8c5c8b3c98b436cbc49c48d63c40e24",
+      "status": "completed",
+      "usage": {
+        "actual_input": 20487,
+        "actual_output": 1879,
+        "decisions": 4,
+        "input_reserved": 20487,
+        "model_calls": 9,
+        "output_reserved": 1879,
+        "tools": 4,
+        "unknown_usage_calls": 0
+      },
+      "model_id": "deepseek-flash",
+      "upload_to_result_ms": 35921.0,
+      "upload_and_parse_ms": 22265.0,
+      "agent_and_export_ms": 13625.0
+    },
+    {
+      "task_id": "m5-h02-01",
+      "case_id": "f376ae4e30ac430dbd54aa3a7c53d8ea",
+      "snapshot_id": "bd0525f43cce4680959be4d71d188500",
+      "run_id": "d5fd1d3426b54010b6b21a5a6817bd8c",
+      "status": "completed",
+      "usage": {
+        "actual_input": 20445,
+        "actual_output": 1937,
+        "decisions": 4,
+        "input_reserved": 20445,
+        "model_calls": 9,
+        "output_reserved": 1937,
+        "tools": 4,
+        "unknown_usage_calls": 0
+      },
+      "model_id": "deepseek-flash",
+      "upload_to_result_ms": 35922.0,
+      "upload_and_parse_ms": 22266.0,
+      "agent_and_export_ms": 13625.0
+    },
+    {
+      "task_id": "m5-h03-01",
+      "case_id": "3bd68442fb8c46be9d9ebf35b61e49ca",
+      "snapshot_id": "3e92732249f64cf0aafcb71856de623d",
+      "run_id": "43e4249609ef46eb9e7942a0776aad45",
+      "status": "completed",
+      "usage": {
+        "actual_input": 18862,
+        "actual_output": 1568,
+        "decisions": 4,
+        "input_reserved": 18862,
+        "model_calls": 9,
+        "output_reserved": 1568,
+        "tools": 4,
+        "unknown_usage_calls": 0
+      },
+      "model_id": "deepseek-flash",
+      "upload_to_result_ms": 33297.0,
+      "upload_and_parse_ms": 21203.0,
+      "agent_and_export_ms": 12062.0
+    },
+    {
+      "task_id": "m5-h04-01",
+      "case_id": "53de4fe9f79c4276809156e1ecab87e7",
+      "snapshot_id": "66a5e90da180473eb5ec23a40b14041b",
+      "run_id": "27cec132320c4041b89e4b9d8715efb5",
+      "status": "completed",
+      "usage": {
+        "actual_input": 20551,
+        "actual_output": 1903,
+        "decisions": 4,
+        "input_reserved": 20551,
+        "model_calls": 9,
+        "output_reserved": 1903,
+        "tools": 4,
+        "unknown_usage_calls": 0
+      },
+      "model_id": "deepseek-flash",
+      "upload_to_result_ms": 33344.0,
+      "upload_and_parse_ms": 21766.0,
+      "agent_and_export_ms": 11562.0
+    },
+    {
+      "task_id": "m5-h05-01",
+      "case_id": "f9d91963aec74749811bec1a293c7685",
+      "snapshot_id": "5077ffecd2864799a1d83e8c331730c8",
+      "run_id": "16a41e3352284a9eb299b33988337651",
+      "status": "completed",
+      "usage": {
+        "actual_input": 21204,
+        "actual_output": 2121,
+        "decisions": 4,
+        "input_reserved": 21204,
+        "model_calls": 9,
+        "output_reserved": 2121,
+        "tools": 4,
+        "unknown_usage_calls": 0
+      },
+      "model_id": "deepseek-flash",
+      "upload_to_result_ms": 34344.0,
+      "upload_and_parse_ms": 21719.0,
+      "agent_and_export_ms": 12594.0
+    },
+    {
+      "task_id": "m5-h06-01",
+      "case_id": "346a180c32984d5eb6b1375eabb789f5",
+      "snapshot_id": "4f44e22e38d540c28c7227ed1b6d05a0",
+      "run_id": "5e2e4f2c88d643a4b1805b43bba55ba6",
+      "status": "completed",
+      "usage": {
+        "actual_input": 20845,
+        "actual_output": 1776,
+        "decisions": 4,
+        "input_reserved": 20845,
+        "model_calls": 9,
+        "output_reserved": 1776,
+        "tools": 4,
+        "unknown_usage_calls": 0
+      },
+      "model_id": "deepseek-flash",
+      "upload_to_result_ms": 34375.0,
+      "upload_and_parse_ms": 21750.0,
+      "agent_and_export_ms": 12593.0
+    }
+  ],
+  "quality_execution": {
+    "documents_complete": 38,
+    "documents_total": 38,
+    "model_calls": 110,
+    "fully_known_usage_tasks_input": 244824,
+    "fully_known_usage_tasks_output": 24467,
+    "unknown_usage_tasks": []
+  },
+  "performance": {
+    "denominator": 10,
+    "formal_independent_acceptance": false,
+    "numerator": 9,
+    "required_successes": 9,
+    "seconds_limit": 120,
+    "threshold_met": true
+  },
+  "performance_agent_tasks": {
+    "denominator": 10,
+    "numerator": 9
+  },
+  "performance_tasks": [
+    {
+      "task_id": "m5-c01-01",
+      "stage": "finished",
+      "error_code": null,
+      "run_status": "completed",
+      "case_id": "60ce9e5cac4842cd8d6eda2f6d672014",
+      "run_id": "3878f72072ae41db97aab90a9a9cd976",
+      "upload_to_result_ms": 51734.0,
+      "upload_and_parse_ms": 30796.0,
+      "agent_and_export_ms": 20922.0,
+      "model_calls": 15
+    },
+    {
+      "task_id": "m5-c01-02",
+      "stage": "finished",
+      "error_code": null,
+      "run_status": "completed",
+      "case_id": "998a806d76cb4c1ca750d2c97884abe8",
+      "run_id": "73fa9d7fed304c7f98239d33938bf7c6",
+      "upload_to_result_ms": 54328.0,
+      "upload_and_parse_ms": 30812.0,
+      "agent_and_export_ms": 23500.0,
+      "model_calls": 16
+    },
+    {
+      "task_id": "m5-c01-03",
+      "stage": "finished",
+      "error_code": null,
+      "run_status": "completed",
+      "case_id": "49936f22d813424f81d43ba063c092bd",
+      "run_id": "b86cf06d90fd40d8a404592eb3afa235",
+      "upload_to_result_ms": 61125.0,
+      "upload_and_parse_ms": 39187.0,
+      "agent_and_export_ms": 21922.0,
+      "model_calls": 15
+    },
+    {
+      "task_id": "m5-c01-04",
+      "stage": "finished",
+      "error_code": null,
+      "run_status": "completed",
+      "case_id": "cd46e41fae4f487bb5680275da2513fc",
+      "run_id": "173b5912d9c14db5a5813f67f3a2cbf3",
+      "upload_to_result_ms": 53453.0,
+      "upload_and_parse_ms": 31906.0,
+      "agent_and_export_ms": 21531.0,
+      "model_calls": 15
+    },
+    {
+      "task_id": "m5-c01-05",
+      "stage": "driver_interrupted_before_agent",
+      "error_code": "execution_interrupted",
+      "run_status": null,
+      "case_id": "85738b3b4efd42f9a049bfbdeba7835f",
+      "run_id": null,
+      "upload_to_result_ms": null,
+      "upload_and_parse_ms": null,
+      "agent_and_export_ms": null,
+      "model_calls": null
+    },
+    {
+      "task_id": "m5-c01-06",
+      "stage": "finished",
+      "error_code": null,
+      "run_status": "completed",
+      "case_id": "0bef16209d1e4ca0a376ac080cbc4e64",
+      "run_id": "f5db4280ab3a440fb38da34309c79c30",
+      "upload_to_result_ms": 61422.0,
+      "upload_and_parse_ms": 40406.0,
+      "agent_and_export_ms": 20984.0,
+      "model_calls": 15
+    },
+    {
+      "task_id": "m5-c01-07",
+      "stage": "finished",
+      "error_code": null,
+      "run_status": "completed",
+      "case_id": "0f6a11e99d384aa49fbf3e95a9ee37aa",
+      "run_id": "ce1446f18562427291a8318a53ac7c92",
+      "upload_to_result_ms": 59218.0,
+      "upload_and_parse_ms": 39250.0,
+      "agent_and_export_ms": 19937.0,
+      "model_calls": 15
+    },
+    {
+      "task_id": "m5-c01-08",
+      "stage": "finished",
+      "error_code": null,
+      "run_status": "completed",
+      "case_id": "8ecf9995975a476d9aadd7cd79c20802",
+      "run_id": "9271da1b20af4c5ab99dcf6c805a3b27",
+      "upload_to_result_ms": 52360.0,
+      "upload_and_parse_ms": 31375.0,
+      "agent_and_export_ms": 20953.0,
+      "model_calls": 15
+    },
+    {
+      "task_id": "m5-c01-09",
+      "stage": "finished",
+      "error_code": null,
+      "run_status": "completed",
+      "case_id": "9fbc2b6e5d1b4a658e8bcce4d72b3ddc",
+      "run_id": "38be38b414c14bfc94333aabd091f41e",
+      "upload_to_result_ms": 50703.0,
+      "upload_and_parse_ms": 30797.0,
+      "agent_and_export_ms": 19891.0,
+      "model_calls": 15
+    },
+    {
+      "task_id": "m5-c01-10",
+      "stage": "finished",
+      "error_code": null,
+      "run_status": "completed",
+      "case_id": "493459231d4443628df41c0b892b6d87",
+      "run_id": "77c8d7e3679646738244c7446d7c7561",
+      "upload_to_result_ms": 52750.0,
+      "upload_and_parse_ms": 31844.0,
+      "agent_and_export_ms": 20890.0,
+      "model_calls": 15
+    }
+  ],
+  "performance_latency": {
+    "population": "completed tasks with observed upload-to-result latency only",
+    "sample_count": 9,
+    "failed_or_unmeasured_tasks_excluded": 1,
+    "p50_ms": 53453.0,
+    "p95_ms": 61422.0,
+    "maximum_ms": 61422.0,
+    "p95_method": "nearest_rank"
+  },
+  "performance_recovery": {
+    "already_finished_tasks": [
+      "m5-c01-01",
+      "m5-c01-02",
+      "m5-c01-03",
+      "m5-c01-04"
+    ],
+    "api_and_parser_processes_restarted": true,
+    "application_source_changed": false,
+    "automatic_agent_retry": false,
+    "continuous_batch": false,
+    "driver_sha256": "3be45fe223b096d2a6d7269d439dbe0168bacff6ccb5d4ab46296f5b8b960cd9",
+    "formal_independent_acceptance": false,
+    "fresh_cases_for_remaining_tasks": true,
+    "interrupted_case_id": "85738b3b4efd42f9a049bfbdeba7835f",
+    "interrupted_input_documents_after_parser_recovery": [
+      {
+        "original_name": "vendor-b-spec.pdf",
+        "parse_status": "complete",
+        "source_sha256": "4dee1433aa9ca9e223b476b6db53e58afe9a9731a39626ea225731c79e39829d"
+      },
+      {
+        "original_name": "vendor-a-quote.xlsx",
+        "parse_status": "complete",
+        "source_sha256": "6e08c14615993d28625439232dc5970dd9fef76206d8c7f29c8a12b6f78ded43"
+      },
+      {
+        "original_name": "vendor-b-quote.xlsx",
+        "parse_status": "complete",
+        "source_sha256": "83d89a38c27b23721c577cd1ef4b98f54b51421698d0b26ba6c5d56e69659e24"
+      },
+      {
+        "original_name": "vendor-a-spec.pdf",
+        "parse_status": "complete",
+        "source_sha256": "947e2912062cf6321e6d1c93031f68b882d3591de3f48eb046988a7a38e13e0b"
+      },
+      {
+        "original_name": "requirements.pdf",
+        "parse_status": "complete",
+        "source_sha256": "49eb1093c7ae9547e802d81ccd8b39135293ac8b98c1a434a3e8f1bf00dfcf12"
+      }
+    ],
+    "interrupted_run_ids_observed": [],
+    "interrupted_task_retained_as_failure": "m5-c01-05",
+    "interruption_cause": "not_observed",
+    "maximum_additional_model_requests": 160,
+    "never_started_tasks_to_execute": [
+      "m5-c01-06",
+      "m5-c01-07",
+      "m5-c01-08",
+      "m5-c01-09",
+      "m5-c01-10"
+    ],
+    "original_protocol_sha256": "8d850e434909ade7164c8826f53706a9e462fa0b54a1dec17798b67c6d5ce4c4",
+    "original_task_observations_overwritten": false,
+    "recorded_at": "2026-10-03T00:52:23.646139+00:00",
+    "service_version_record_sha256": "958ad5373133acddd9d4461d2e2155e4d50e8c3467c73fafeb8a34b0cfe0baa4"
+  },
+  "performance_execution": {
+    "documents_complete": 45,
+    "documents_total": 45,
+    "model_calls": 136,
+    "fully_known_usage_tasks_input": 335959,
+    "fully_known_usage_tasks_output": 35090,
+    "unknown_usage_tasks": [
+      "m5-c01-05"
+    ]
+  },
+  "retrieval": {
+    "planned_queries": 104,
+    "necessary_sources_recall_at_12": {
+      "numerator": 207,
+      "denominator": 207
+    },
+    "foreign_supplier_source_refs": 0,
+    "scope": "all gold evidence locations after real parsing; absence cannot be established by retrieval"
+  },
+  "retrieval_does_not_measure_agent_query_selection": true,
+  "boundary_tests": [
+    {
+      "passed": true,
+      "run_id": "36cd80f7ea8048288ef72124933350d0",
+      "test": "scoped_followup",
+      "usage": {
+        "actual_input": 11393,
+        "actual_output": 403,
+        "decisions": 3,
+        "input_reserved": 11393,
+        "model_calls": 3,
+        "output_reserved": 403,
+        "tools": 3,
+        "unknown_usage_calls": 0
+      }
+    },
+    {
+      "cancel_ms": 45.75,
+      "passed": true,
+      "run_id": "d2517da3a85b41809251d7201bbed611",
+      "running_inference_latency_measured": false,
+      "test": "queued_cancel",
+      "usage": null
+    },
+    {
+      "passed": true,
+      "run_id": "d2afc28c48d547688e72d1864947cb5f",
+      "test": "unknown_supplier_clarified",
+      "usage": {
+        "actual_input": 0,
+        "actual_output": 0,
+        "decisions": 0,
+        "input_reserved": 0,
+        "model_calls": 0,
+        "output_reserved": 0,
+        "tools": 0,
+        "unknown_usage_calls": 0
+      }
+    },
+    {
+      "business_status": "资料冲突",
+      "passed": true,
+      "recheck_model_calls": 0,
+      "recheck_ms": 139.44,
+      "review_status": "needs_review",
+      "run_id": "fd271d35b01743e9ad95db1aaf68eb91",
+      "source_run_usage": {
+        "actual_input": 18631,
+        "actual_output": 2104,
+        "decisions": 4,
+        "input_reserved": 18631,
+        "model_calls": 9,
+        "output_reserved": 2104,
+        "tools": 4,
+        "unknown_usage_calls": 0
+      },
+      "test": "source_supported_correction"
+    }
+  ],
+  "historical_result_unchanged_after_correction": true,
+  "historical_facts_retained": true,
+  "boundary_unknown_usage_tests": [
+    "queued_cancel"
+  ],
+  "quality_version_history": [
+    {
+      "label": "fields-v2 首轮",
+      "folder": "data/m5-b-live-quality-20261002-fields-v2",
+      "source_manifest_sha256": null,
+      "legacy_source_file_hashes": "7130b067098a57c8bc9a6f3f1d4729f7eec5c50e4df87d85c394c14564bb2a8d",
+      "rule_version": "fields-v2",
+      "agent_tasks": {
+        "denominator": 12,
+        "numerator": 5
+      },
+      "status_accuracy": {
+        "denominator": 104,
+        "numerator": 47
+      },
+      "necessary_evidence": {
+        "denominator": 89,
+        "numerator": 44
+      },
+      "dangerous_meets": 0,
+      "citation_errors": {
+        "denominator": 169,
+        "numerator": 0
+      },
+      "model_calls": 124,
+      "unknown_usage_tasks": null,
+      "report_sha256": "b4378c79d0ee560eaa0846ed8607b122b8c49120268a65f3ee1a2bb2c55fc69c",
+      "provenance_sha256": "d5407765f17a00884b9587107e67a4f32062f7b3101b57fb0463d47d4892824c"
+    },
+    {
+      "label": "v4 原件覆盖",
+      "folder": "data/m5-b-live-quality-20261002-fields-v4",
+      "source_manifest_sha256": "f8baa86b8f8c4beb780e003bcdfce8e53dcdb4f43c9a984687635c038f6dfdbd",
+      "legacy_source_file_hashes": null,
+      "rule_version": "fields-v4",
+      "agent_tasks": {
+        "denominator": 12,
+        "numerator": 10
+      },
+      "status_accuracy": {
+        "denominator": 104,
+        "numerator": 88
+      },
+      "necessary_evidence": {
+        "denominator": 89,
+        "numerator": 77
+      },
+      "dangerous_meets": 0,
+      "citation_errors": {
+        "denominator": 230,
+        "numerator": 0
+      },
+      "model_calls": 141,
+      "unknown_usage_tasks": [
+        "m5-c02-01"
+      ],
+      "report_sha256": "03f0f549ed9af4140dfdb5f145499fab67fea1abd1f60528965635eb22eaa323",
+      "provenance_sha256": "40252042f03e675d69460412cc40d170c3f54d00298a4a01a61ef484a0a45c7e"
+    },
+    {
+      "label": "v4 审查进度",
+      "folder": "data/m5-b-live-quality-20261002-fields-v4-progress",
+      "source_manifest_sha256": "37a836654c8a5b63e0f474ce760a14701dd88b072c18147c36b8f087ddd7830a",
+      "legacy_source_file_hashes": null,
+      "rule_version": "fields-v4",
+      "agent_tasks": {
+        "denominator": 12,
+        "numerator": 11
+      },
+      "status_accuracy": {
+        "denominator": 104,
+        "numerator": 96
+      },
+      "necessary_evidence": {
+        "denominator": 89,
+        "numerator": 85
+      },
+      "dangerous_meets": 0,
+      "citation_errors": {
+        "denominator": 222,
+        "numerator": 0
+      },
+      "model_calls": 117,
+      "unknown_usage_tasks": [],
+      "report_sha256": "55499a5eface127fa3f036bb18bc01abd9de4030c2147ff81106be0a7ce64393",
+      "provenance_sha256": "4d86eb512c8b16e57bd5929785bd0752534c8b2478aaab9ef73da01a0541e4a7"
+    },
+    {
+      "label": "v4 内存语义",
+      "folder": "data/m5-b-live-quality-20261002-memory-source",
+      "source_manifest_sha256": "be6aff4208919fafebec9d014a9064bbdc28ba6a8617dceba33b95ef61454e68",
+      "legacy_source_file_hashes": null,
+      "rule_version": "fields-v4",
+      "agent_tasks": {
+        "denominator": 12,
+        "numerator": 10
+      },
+      "status_accuracy": {
+        "denominator": 104,
+        "numerator": 80
+      },
+      "necessary_evidence": {
+        "denominator": 89,
+        "numerator": 69
+      },
+      "dangerous_meets": 0,
+      "citation_errors": {
+        "denominator": 197,
+        "numerator": 0
+      },
+      "model_calls": 120,
+      "unknown_usage_tasks": [
+        "m5-c01-01",
+        "m5-c05-01"
+      ],
+      "report_sha256": "87eefad1f01a26f57cf66a507421b401ee0c34753cb2b5f21dd5cb66e3bbbdac",
+      "provenance_sha256": "263afb38508cb7d3a5bcc05fabc4de4a68944ac56a3fe85fe4c90b155d5d00b6"
+    },
+    {
+      "label": "v4 提交与 schema 修复",
+      "folder": "data/m5-b-live-quality-20261002-finalization",
+      "source_manifest_sha256": "71fb3aff4a205c0fddead6d256a6afc7c47d13a8bf8ac3509606b533184ada06",
+      "legacy_source_file_hashes": null,
+      "rule_version": "fields-v4",
+      "agent_tasks": {
+        "denominator": 12,
+        "numerator": 12
+      },
+      "status_accuracy": {
+        "denominator": 104,
+        "numerator": 104
+      },
+      "necessary_evidence": {
+        "denominator": 89,
+        "numerator": 89
+      },
+      "dangerous_meets": 0,
+      "citation_errors": {
+        "denominator": 249,
+        "numerator": 0
+      },
+      "model_calls": 111,
+      "unknown_usage_tasks": [],
+      "report_sha256": "d49542c8a2c26c20a18f6e62307792190c4bdeeb6737dc699e78f3e2ca820c7d",
+      "provenance_sha256": "48a132d93f0d4581d1b93f0aa23a1a2fc528ba920015774bd03bbb2bede69db2"
+    },
+    {
+      "label": "v4 上下文与来源句柄，最终",
+      "folder": "data/m5-b-live-quality-20261002-source-handles",
+      "source_manifest_sha256": "f3938cda07b0b365ed3477b6ede3ae11fbdea4c08fe7b2483a1e85a264e9ce71",
+      "legacy_source_file_hashes": null,
+      "rule_version": "fields-v4",
+      "agent_tasks": {
+        "denominator": 12,
+        "numerator": 12
+      },
+      "status_accuracy": {
+        "denominator": 104,
+        "numerator": 104
+      },
+      "necessary_evidence": {
+        "denominator": 89,
+        "numerator": 89
+      },
+      "dangerous_meets": 0,
+      "citation_errors": {
+        "denominator": 247,
+        "numerator": 0
+      },
+      "model_calls": 110,
+      "unknown_usage_tasks": [],
+      "report_sha256": "c68de6487fbb39e8c6889606a65de95d5a2790ab8fcd7208ca8e47f43a99e000",
+      "provenance_sha256": "86c1df8891a78915850cf40a2c70b0c1923829561523f1c249099ffbf2a2d0e9"
+    }
+  ],
+  "earlier_boundary_failures": [
+    {
+      "folder": "data/m5-b-live-boundaries-20261002-finalization",
+      "run_id": "7733c5cc43194d6cb113e77dd3a881a9",
+      "status": "partial",
+      "error_code": "context_budget",
+      "usage": null,
+      "record_sha256": "c3a165490f83de7e9a9bf23ebc0d3352d61b931fbc3f8f24759ceaa247dfd97d"
+    },
+    {
+      "folder": "data/m5-b-live-boundaries-20261002-context",
+      "run_id": "8154618ce9b24b6e984f456d79d297a9",
+      "status": "failed",
+      "error_code": "evidence_scope",
+      "usage": null,
+      "record_sha256": "97c1780f338fe2848b77b6945f90762f8d5cabb89b09ee12637ae59928eed08c"
+    }
+  ],
+  "actual_money_cost": null,
+  "provider_cache_tokens": null,
+  "pricing_reference": {
+    "retrieved_at_utc": "2026-10-02T13:48:33.362568+00:00",
+    "source_url": "https://api-docs.deepseek.com/quick_start/pricing/",
+    "source_title": "DeepSeek API Models & Pricing",
+    "configured_model_name": "deepseek-flash",
+    "published_model_version": "DeepSeek-V4.1-Flash",
+    "published_openai_base_url": "https://api.deepseek.com",
+    "currency": "USD",
+    "unit": "per_1_million_tokens",
+    "peak": {
+      "input_cache_hit": 0.006,
+      "input_cache_miss": 0.3,
+      "output": 1.2
+    },
+    "off_peak": {
+      "input_cache_hit": 0.003,
+      "input_cache_miss": 0.15,
+      "output": 0.6
+    },
+    "published_timing_rule": "Peak 01:00-04:00 and 06:00-10:00 UTC, Monday-Friday excluding Chinese public holidays; all other times off-peak.",
+    "actual_money_cost": null,
+    "actual_provider_cache_token_classes_recorded": false,
+    "response_model_version_independently_recorded": false,
+    "historical_billing_prices_verified": false,
+    "purpose": "Current official reference, not a billing receipt or assumed zero cost.",
+    "formal_independent_acceptance": false
+  },
+  "independent_code_review_completed": false,
+  "independent_code_review_failure": "account_usage_limit",
+  "remaining_limits": [
+    "no independent unseen sealed corpus",
+    "only two synthetic document families",
+    "no enterprise concurrency/load or public procurement quality certification",
+    "unknown actual invoice and provider cache token classes",
+    "running-inference cancellation latency not measured",
+    "live model document prompt-injection adversarial corpus not systematically validated",
+    "host/worker dependency versions are recorded but not identical",
+    "M5-C clean-environment reproduction and offline CI not started"
+  ],
+  "raw_artifact_sha256": {
+    "data/m5-b-live-quality-20261002-source-handles/execution-driver.json": "303444ce1c4e99bba3212ee12112932f1c2ec976839b4d3fe0deb9f7f6c8d1fc",
+    "data/m5-b-live-quality-20261002-source-handles/execution-provenance.json": "86c1df8891a78915850cf40a2c70b0c1923829561523f1c249099ffbf2a2d0e9",
+    "data/m5-b-live-quality-20261002-source-handles/m5-c01-01.json": "bbddc1730e133b7e94b21b09b90d50276e606edbadaa0c7c0764054b09c4f0e8",
+    "data/m5-b-live-quality-20261002-source-handles/m5-c02-01.json": "3bb5c6d3a8a77a4db15fe386300ff5912b407e9fa77fed79543afa4c6a117a2b",
+    "data/m5-b-live-quality-20261002-source-handles/m5-c03-01.json": "b65c6168ccc37e58f5f477ed328ab06f78abe0bd35d5b164c38c922919d0ea50",
+    "data/m5-b-live-quality-20261002-source-handles/m5-c04-01.json": "b0ff73a905bc3f4d94f9968db2fb4318e28c4ce4a2a9d855f83a6f91b845b8ec",
+    "data/m5-b-live-quality-20261002-source-handles/m5-c05-01.json": "39325f4ee7ea8054804fe272d28a118b75fa56aaddf2ee4ff349ab9854ef0bdd",
+    "data/m5-b-live-quality-20261002-source-handles/m5-c06-01.json": "9eec59c6fd03b05295521e54cbe41e3f07c7cf7b42d388d06f352624bdf7b559",
+    "data/m5-b-live-quality-20261002-source-handles/m5-h01-01.json": "19bfb9e89dbfe81e39b0c08089172ab8d4c26ab2fa8fae47055cc0a941cda2b0",
+    "data/m5-b-live-quality-20261002-source-handles/m5-h02-01.json": "ed3725e20f3fe363a83ac4d250a882e29e26c84fa6ef4ea8d9a302b678538951",
+    "data/m5-b-live-quality-20261002-source-handles/m5-h03-01.json": "6d515ae497cb8336423048d48c3b5f56b77a0735ee4102d8218facb7cd7ec951",
+    "data/m5-b-live-quality-20261002-source-handles/m5-h04-01.json": "44b03682a674662c95b150a55f0181b66a53f7a207f018c098a6a01a58f97b1e",
+    "data/m5-b-live-quality-20261002-source-handles/m5-h05-01.json": "771383e53611750bbe6250181c7691e0ed5fc184161968f13b2a59b56ef0a37e",
+    "data/m5-b-live-quality-20261002-source-handles/m5-h06-01.json": "99a96a4335485cf052dd29678cc20313b6612ce64abdc063e6f92810e49374a4",
+    "data/m5-b-live-quality-20261002-source-handles/protocol.json": "8de2645e46cd75fef4a44fd5dbf0dfa89754f9b9cdb7e5692b1ce0573a15799e",
+    "data/m5-b-live-quality-20261002-source-handles/report.json": "c68de6487fbb39e8c6889606a65de95d5a2790ab8fcd7208ca8e47f43a99e000",
+    "data/m5-b-live-performance-20261002-source-handles/execution-driver.json": "faa2fa3b678506d47d617a7b37fcbd1e06e00b3ad2cef096b2a352cb46b00a05",
+    "data/m5-b-live-performance-20261002-source-handles/execution-provenance.json": "9d53f47defaabaa541bfb8a4a5365be34397dc225eeb4a604f382e6b45606a3d",
+    "data/m5-b-live-performance-20261002-source-handles/execution-recovery.json": "80bd92c5fe0b63cfcb9544fef2460f474a3fcfcb0de8b1b75f91345bf613317c",
+    "data/m5-b-live-performance-20261002-source-handles/m5-c01-01.json": "7a9daa8539d68696b8910aa90090a97031ba657733c1d4000285139fa25aaa37",
+    "data/m5-b-live-performance-20261002-source-handles/m5-c01-02.json": "3e59351e4bf1cc49a1e7d81c02e8d9ad55f9a5d5c0f5b1b473eca2251e2686d3",
+    "data/m5-b-live-performance-20261002-source-handles/m5-c01-03.json": "3179aa6379d744b873a7c8d4059722ffa98b2b1943fa08e3f3617183c1e5688a",
+    "data/m5-b-live-performance-20261002-source-handles/m5-c01-04.json": "6997e63277e1c0e13de21c48565f4d99fb14b054ac9f82514e6b62b1a97748e5",
+    "data/m5-b-live-performance-20261002-source-handles/m5-c01-05.json": "170b6c42c26b6e97d50e75e29df417b60804220bbe871cc043a4adccde86efd9",
+    "data/m5-b-live-performance-20261002-source-handles/m5-c01-06.json": "5bf801f807fa255e38dc8d175362a9b06b61d03446cc31a73af472b0f8a1c322",
+    "data/m5-b-live-performance-20261002-source-handles/m5-c01-07.json": "0c2327a68327f2a1d44b11363dc4fcc099cac3f9b101e7052f93ff2236de9b5d",
+    "data/m5-b-live-performance-20261002-source-handles/m5-c01-08.json": "49170eb13a10bc1213d3720a59429c7a3cd894a1162cdb1eb2a330bcc2653d09",
+    "data/m5-b-live-performance-20261002-source-handles/m5-c01-09.json": "ba177ef49133fe7bad2af2115169a891294c3a47a0145c57fccaedd8e8c62510",
+    "data/m5-b-live-performance-20261002-source-handles/m5-c01-10.json": "f25352a9621ac42ea3342f02604fca09d3e58061039b88702c19f4213a3525c3",
+    "data/m5-b-live-performance-20261002-source-handles/protocol.json": "8d850e434909ade7164c8826f53706a9e462fa0b54a1dec17798b67c6d5ce4c4",
+    "data/m5-b-live-performance-20261002-source-handles/report.json": "2b147732b9234eb598755bb89fb0ef74d165d56b3c218af7c2d35ef09757a48a",
+    "data/m5-b-live-boundaries-20261002-source-handles/correction-receipt.json": "4f23688defd1d7395a57e9016f3ac1737ca1c1f11b342893629a36ea4e5b8400",
+    "data/m5-b-live-boundaries-20261002-source-handles/correction-source-run.json": "0636abfa1b20b0df2ac69dde98046506cf9d9bb0d269e9dcee9b088cd5f843e8",
+    "data/m5-b-live-boundaries-20261002-source-handles/correction.json": "97019f70d783328fd7cdcf9b17c8cfec8e79252028aba9f490af700432fe6100",
+    "data/m5-b-live-boundaries-20261002-source-handles/execution-provenance.json": "866e4faf1602ef5569f99261468040a9c1f5ff16c39f801763e264533d6c7f79",
+    "data/m5-b-live-boundaries-20261002-source-handles/followup-receipt.json": "3955e595a31dffcb54189442efadbf528171209a4d00a5b1ee7472bdbbe18f6d",
+    "data/m5-b-live-boundaries-20261002-source-handles/followup-run.json": "614580ef3bb6ae838e5f0ac4ae60173c96d2c711357fc75ef2f0575983cd19c0",
+    "data/m5-b-live-boundaries-20261002-source-handles/followup.json": "c5f00fa556ac597e1db796ed91d3f160179864fe215a6dec93a3b61253c98c00",
+    "data/m5-b-live-boundaries-20261002-source-handles/protocol.json": "a2c0e5e68d7c96b00f63e11dcd0e35b9c61f7088134815cb484e9f2bc90774b2",
+    "data/m5-b-live-boundaries-20261002-source-handles/queued-cancel-receipt.json": "ffed174099ee3d34c2ebf4dfa1a1295aafbc3f5b535d44ba977a51b4bf67e496",
+    "data/m5-b-live-boundaries-20261002-source-handles/queued-cancel.json": "1420248d9f364f534cccf842444daabdd74a7de83cd1e55fa7a68f2d37f6caf5",
+    "data/m5-b-live-boundaries-20261002-source-handles/report.json": "4df1b6ec59270d3f5fb21b2e48793db38177bd46b0515f3f6b8c51d777e8ed54",
+    "data/m5-b-live-boundaries-20261002-source-handles/unknown-supplier-receipt.json": "735f9ca5a20ad4284b162f147d92bcda2c9307171128818cfcc726b09fb7536e",
+    "data/m5-b-live-boundaries-20261002-source-handles/unknown-supplier.json": "15641b0637a8f72c4ba01fc9d79d3936722aa586cb2ce313df1fb24c8ad249ed",
+    "data/m5-b-retrieval-source-handles-20261003/protocol.json": "c7c76486240f997062ab524f8593ac95b3da4eb9b37f9295bfa2c2ceffa1b5ad",
+    "data/m5-b-retrieval-source-handles-20261003/report.json": "7a2a9334cb4d8cb201493c29f72e521482b53577b8bfb5a9be8d22e43de31ff2"
+  }
+}

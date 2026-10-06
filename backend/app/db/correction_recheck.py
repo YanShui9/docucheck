@@ -1,19 +1,24 @@
 """Revalidate a corrected source fact and run the existing deterministic rule."""
 
 import re
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from datetime import UTC, datetime
 
 from sqlalchemy import Engine, insert, select
 from sqlalchemy.exc import IntegrityError
 
-from ..agent.fact_memory import decode_fact_sets, encode_fact_sets
+from ..agent.fact_memory import _field_memory_fact, decode_fact_sets, encode_fact_sets
 from ..evidence.repository import EvidenceRepository, digest
-from ..extraction.fields import FieldCandidate, _validate_candidate
+from ..extraction.fields import FieldCandidate, _validate_candidate, memory_as_field
 from ..extraction.memory import FactSet
 from ..extraction.validation import Candidate, validate_memory
-from ..field_contract import FieldFactSet
-from ..rules.fields import evaluate_field
+from ..field_contract import FieldFactSet, FieldKey
+from ..rules.fields import (
+    _evaluate_field_v1,
+    _evaluate_field_v2,
+    _evaluate_field_v3,
+    evaluate_field,
+)
 from ..rules.memory import evaluate_memory
 from .agent_snapshot import SnapshotLoadError, load_agent_snapshot
 from .correction_repository import (
@@ -98,10 +103,13 @@ def _memory_rebind(old, refs, new_repo, supplier):
 def _rebind(old, refs, new_repo, supplier):
     if hasattr(old, "field_key"):
         try:
-            fact = _validate_candidate(FieldCandidate(
-                field_key=old.field_key, raw_value=old.raw_value,
-                raw_unit=old.raw_unit, evidence_refs=list(refs),
-            ), new_repo, supplier)
+            if old.field_key == FieldKey.MEMORY:
+                fact = memory_as_field(new_repo, supplier, _memory_rebind(old, refs, new_repo, supplier))
+            else:
+                fact = _validate_candidate(FieldCandidate(
+                    field_key=old.field_key, raw_value=old.raw_value,
+                    raw_unit=old.raw_unit, evidence_refs=list(refs),
+                ), new_repo, supplier)
         except (TypeError, ValueError) as exc:
             raise CorrectionError("correction_source_changed") from exc
         stable = ("field_key", "raw_value", "raw_unit", "value", "unit",
@@ -112,7 +120,7 @@ def _rebind(old, refs, new_repo, supplier):
     return _memory_rebind(old, refs, new_repo, supplier)
 
 
-def _prepared(correction, source_run, old_repo, sets, new_repo):
+def _prepared(correction, source_run, old_repo, sets, new_repo, *, field_evaluator=None):
     if (source_run["case_id"] != correction["case_id"]
             or source_run["snapshot_id"] != correction["from_snapshot_id"]
             or source_run["status"] not in {"completed", "partial"}
@@ -149,18 +157,8 @@ def _prepared(correction, source_run, old_repo, sets, new_repo):
                 or candidate["validated_unit"] != corrected_old.unit
                 or correction["target_evidence_ids_json"] != expected_refs):
             raise CorrectionError("correction_source_changed")
-        if isinstance(fact_set, FieldFactSet):
-            corrected = _validate_candidate(FieldCandidate(
-                field_key=fact_set.field_key,
-                raw_value=request.raw_value, raw_unit=request.raw_unit,
-                evidence_refs=expected_refs,
-            ), new_repo, fact_set.supplier)
-        else:
-            corrected = validate_memory(Candidate(
-                raw_value=request.raw_value, raw_unit=request.raw_unit,
-                qualifier=old.qualifier, comparator=old.comparator,
-                evidence_refs=expected_refs,
-            ), new_repo, fact_set.supplier)
+        corrected = CorrectionRepository._corrected_fact(
+            request, fact_set, replace(old, evidence_refs=tuple(expected_refs)), new_repo)
         stable = ("value", "unit", "qualifier", "comparator", "role", "supplier", "model")
         if isinstance(fact_set, FieldFactSet):
             stable += ("field_key", "attributes")
@@ -175,11 +173,18 @@ def _prepared(correction, source_run, old_repo, sets, new_repo):
     # Retain both, so a human correction cannot erase a conflicting source fact.
     facts = tuple({fact.fact_id: fact for fact in [*old_facts, corrected]}.values())
     if isinstance(fact_set, FieldFactSet):
-        identity = digest([
-            new_repo.snapshot_id, fact_set.supplier, fact_set.field_key.value,
-            scanned, fact_set.complete,
-            [asdict(fact) | {"value": str(fact.value)} for fact in facts],
-        ])
+        if fact_set.field_key == FieldKey.MEMORY:
+            legacy_facts = [_field_memory_fact(new_repo, fact_set.supplier, _plain(asdict(fact)))[1]
+                            for fact in facts]
+            legacy_id = digest([new_repo.snapshot_id, fact_set.supplier, scanned, fact_set.complete,
+                [asdict(fact) | {"value": str(fact.value)} for fact in legacy_facts]])
+            identity = digest([new_repo.snapshot_id, fact_set.supplier, "memory", legacy_id])
+        else:
+            identity = digest([
+                new_repo.snapshot_id, fact_set.supplier, fact_set.field_key.value,
+                scanned, fact_set.complete,
+                [asdict(fact) | {"value": str(fact.value)} for fact in facts],
+            ])
         rebound = FieldFactSet(
             fact_set_id=identity, snapshot_id=new_repo.snapshot_id,
             supplier=fact_set.supplier, field_key=fact_set.field_key,
@@ -201,8 +206,9 @@ def _prepared(correction, source_run, old_repo, sets, new_repo):
     except ValueError as exc:
         raise CorrectionError("correction_source_changed") from exc
     if isinstance(rebound, FieldFactSet):
-        result = evaluate_field(new_repo, rebound.supplier, rebound.field_key,
-                                rebound.facts, scan_complete=rebound.complete)
+        evaluator = field_evaluator or evaluate_field
+        result = evaluator(new_repo, rebound.supplier, rebound.field_key,
+                           rebound.facts, scan_complete=rebound.complete)
     else:
         result = evaluate_memory(new_repo, rebound.supplier,
                                  list(rebound.facts), scan_complete=rebound.complete)
@@ -247,8 +253,20 @@ class CorrectionRecheck:
         if old_repo is None:
             raise CorrectionError("correction_source_changed")
         expected = _prepared(correction, source_run, old_repo, sets, new_repo)
-        if any(review[key] != value for key, value in expected.items()):
+        # Verify the complete archived result with its actual rule semantics.
+        # Never relabel an old ID or bypass old result/identity comparisons.
+        archived = expected
+        saved_result = review["check_result_json"]
+        legacy_evaluators = {"fields-v1": _evaluate_field_v1, "fields-v2": _evaluate_field_v2,
+                             "fields-v3": _evaluate_field_v3}
+        saved_version = saved_result.get("rule_version") if isinstance(saved_result, dict) else None
+        if isinstance(saved_version, str) and saved_version in legacy_evaluators:
+            archived = _prepared(correction, source_run, old_repo, sets, new_repo,
+                                 field_evaluator=legacy_evaluators[saved_version])
+        if any(review[key] != value for key, value in archived.items()):
             raise CorrectionError("correction_source_changed")
+        # The immutable audit stays at its original version; this Run uses a
+        # freshly computed current result from the same verified source facts.
         return {"correction_id": correction["id"], **expected}
 
     def recheck(self, case_id: str, correction_id: str) -> dict:

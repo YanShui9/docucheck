@@ -1,0 +1,783 @@
+{
+  "schema_version": 1,
+  "kind": "current_version_development_integration",
+  "recorded_at_utc": "2026-10-03T08:20:38.865347+00:00",
+  "step": 1,
+  "step_scope_completed": true,
+  "formal_independent_acceptance": false,
+  "production_acceptance": false,
+  "source": {
+    "git_head": "efcc62ab25e9e06dc4b4bba4a16d04fcfcd8c867",
+    "dirty_checkout": true,
+    "backend_files": 76,
+    "backend_manifest_sha256": "8f696a670171a972e1e2af78029cee2411008ec56b1fbf5d6276ab91bbfc2b2d",
+    "protocol_version_files_verified": {
+      "quality": 182,
+      "performance": 182
+    },
+    "frontend_files_sha256": {
+      "frontend/src/App.vue": "c9ef4b032a544d5cbecc56f798cefd26319f855c1613a0436c071fab03120c17",
+      "frontend/src/App.test.ts": "fb2f23cdd00f8c0876d608702995f3f5aab9f7541376b6c61d9db08ef836480c",
+      "frontend/package-lock.json": "6799fb5a470f26af7becfa022158de7bd15f3eba0ae494b7b15a718b578f5b5c"
+    }
+  },
+  "services": {
+    "recorded_at_utc": "2026-10-03T07:07:17.532307+00:00",
+    "host_python": "3.12.14",
+    "host_openai": "3.19.2",
+    "source_sha256": "8f696a670171a972e1e2af78029cee2411008ec56b1fbf5d6276ab91bbfc2b2d",
+    "services": {
+      "worker": {
+        "source_sha256": "8f696a670171a972e1e2af78029cee2411008ec56b1fbf5d6276ab91bbfc2b2d",
+        "python": "3.12.15",
+        "packages": {
+          "amqp": "5.4.0",
+          "annotated-types": "0.8.0",
+          "anyio": "4.15.1",
+          "attrs": "26.1.0",
+          "billiard": "4.3.0",
+          "celery": "5.6.3",
+          "certifi": "2026.7.22",
+          "charset-normalizer": "3.5.2",
+          "click": "8.5.0",
+          "click-didyoumean": "0.3.1",
+          "click-plugins": "1.1.1.2",
+          "click-repl": "0.4.0",
+          "defusedxml": "0.7.1",
+          "distro": "1.9.0",
+          "et-xmlfile": "2.0.0",
+          "greenlet": "3.5.6",
+          "h11": "0.16.0",
+          "httpcore": "1.0.9",
+          "httpcore2": "2.13.1",
+          "httpx": "0.28.1",
+          "httpx2": "2.13.1",
+          "idna": "3.20",
+          "jieba": "0.42.1",
+          "jiter": "0.17.0",
+          "jsonpatch": "1.33",
+          "jsonpointer": "3.1.1",
+          "jsonschema": "4.26.0",
+          "jsonschema-specifications": "2025.9.1",
+          "kombu": "5.6.2",
+          "langchain-core": "1.6.5",
+          "langchain-openai": "1.6.6",
+          "langchain-protocol": "0.0.19",
+          "langgraph": "1.2.12",
+          "langgraph-checkpoint": "4.2.0",
+          "langgraph-prebuilt": "1.1.0",
+          "langgraph-sdk": "0.4.5",
+          "langsmith": "0.14.3",
+          "numpy": "2.5.3",
+          "openai": "3.23.0",
+          "openpyxl": "3.1.5",
+          "orjson": "3.12.0",
+          "ormsgpack": "1.12.2",
+          "packaging": "26.3",
+          "prompt-toolkit": "3.0.53",
+          "pydantic": "2.13.5",
+          "pydantic-core": "2.46.5",
+          "pymysql": "1.2.3",
+          "pypdf": "6.19.0",
+          "python-dateutil": "2.9.0.post0",
+          "python-dotenv": "1.2.3",
+          "pyyaml": "6.0.3",
+          "rank-bm25": "0.2.2",
+          "redis": "6.4.0",
+          "referencing": "0.37.0",
+          "regex": "2026.9.29",
+          "requests": "2.34.2",
+          "requests-toolbelt": "1.0.0",
+          "rpds-py": "2026.6.3",
+          "six": "1.17.0",
+          "sniffio": "1.3.1",
+          "sqlalchemy": "2.0.54",
+          "tenacity": "9.1.4",
+          "tiktoken": "0.14.0",
+          "truststore": "0.10.4",
+          "typing-extensions": "4.16.0",
+          "typing-inspection": "0.4.4",
+          "tzdata": "2026.4",
+          "tzlocal": "5.4.4",
+          "urllib3": "2.8.0",
+          "uuid-utils": "0.17.1",
+          "vine": "5.1.0",
+          "wcwidth": "0.9.1",
+          "websockets": "16.1.1",
+          "xxhash": "4.0.1",
+          "zstandard": "0.25.0"
+        },
+        "lock_count": 75,
+        "lock_mismatches": [],
+        "image_id": "sha256:c82173b4b1ef547ee35beb5e79ea76b7f640ff883eb66d1c9a499a1894aa2363"
+      },
+      "dispatcher": {
+        "source_sha256": "8f696a670171a972e1e2af78029cee2411008ec56b1fbf5d6276ab91bbfc2b2d",
+        "python": "3.12.15",
+        "packages": {
+          "amqp": "5.4.0",
+          "annotated-types": "0.8.0",
+          "anyio": "4.15.1",
+          "attrs": "26.1.0",
+          "billiard": "4.3.0",
+          "celery": "5.6.3",
+          "certifi": "2026.7.22",
+          "charset-normalizer": "3.5.2",
+          "click": "8.5.0",
+          "click-didyoumean": "0.3.1",
+          "click-plugins": "1.1.1.2",
+          "click-repl": "0.4.0",
+          "defusedxml": "0.7.1",
+          "distro": "1.9.0",
+          "et-xmlfile": "2.0.0",
+          "greenlet": "3.5.6",
+          "h11": "0.16.0",
+          "httpcore": "1.0.9",
+          "httpcore2": "2.13.1",
+          "httpx": "0.28.1",
+          "httpx2": "2.13.1",
+          "idna": "3.20",
+          "jieba": "0.42.1",
+          "jiter": "0.17.0",
+          "jsonpatch": "1.33",
+          "jsonpointer": "3.1.1",
+          "jsonschema": "4.26.0",
+          "jsonschema-specifications": "2025.9.1",
+          "kombu": "5.6.2",
+          "langchain-core": "1.6.5",
+          "langchain-openai": "1.6.6",
+          "langchain-protocol": "0.0.19",
+          "langgraph": "1.2.12",
+          "langgraph-checkpoint": "4.2.0",
+          "langgraph-prebuilt": "1.1.0",
+          "langgraph-sdk": "0.4.5",
+          "langsmith": "0.14.3",
+          "numpy": "2.5.3",
+          "openai": "3.23.0",
+          "openpyxl": "3.1.5",
+          "orjson": "3.12.0",
+          "ormsgpack": "1.12.2",
+          "packaging": "26.3",
+          "prompt-toolkit": "3.0.53",
+          "pydantic": "2.13.5",
+          "pydantic-core": "2.46.5",
+          "pymysql": "1.2.3",
+          "pypdf": "6.19.0",
+          "python-dateutil": "2.9.0.post0",
+          "python-dotenv": "1.2.3",
+          "pyyaml": "6.0.3",
+          "rank-bm25": "0.2.2",
+          "redis": "6.4.0",
+          "referencing": "0.37.0",
+          "regex": "2026.9.29",
+          "requests": "2.34.2",
+          "requests-toolbelt": "1.0.0",
+          "rpds-py": "2026.6.3",
+          "six": "1.17.0",
+          "sniffio": "1.3.1",
+          "sqlalchemy": "2.0.54",
+          "tenacity": "9.1.4",
+          "tiktoken": "0.14.0",
+          "truststore": "0.10.4",
+          "typing-extensions": "4.16.0",
+          "typing-inspection": "0.4.4",
+          "tzdata": "2026.4",
+          "tzlocal": "5.4.4",
+          "urllib3": "2.8.0",
+          "uuid-utils": "0.17.1",
+          "vine": "5.1.0",
+          "wcwidth": "0.9.1",
+          "websockets": "16.1.1",
+          "xxhash": "4.0.1",
+          "zstandard": "0.25.0"
+        },
+        "lock_count": 75,
+        "lock_mismatches": [],
+        "image_id": "sha256:c82173b4b1ef547ee35beb5e79ea76b7f640ff883eb66d1c9a499a1894aa2363"
+      },
+      "cleaner": {
+        "source_sha256": "8f696a670171a972e1e2af78029cee2411008ec56b1fbf5d6276ab91bbfc2b2d",
+        "python": "3.12.15",
+        "packages": {
+          "amqp": "5.4.0",
+          "annotated-types": "0.8.0",
+          "anyio": "4.15.1",
+          "attrs": "26.1.0",
+          "billiard": "4.3.0",
+          "celery": "5.6.3",
+          "certifi": "2026.7.22",
+          "charset-normalizer": "3.5.2",
+          "click": "8.5.0",
+          "click-didyoumean": "0.3.1",
+          "click-plugins": "1.1.1.2",
+          "click-repl": "0.4.0",
+          "defusedxml": "0.7.1",
+          "distro": "1.9.0",
+          "et-xmlfile": "2.0.0",
+          "greenlet": "3.5.6",
+          "h11": "0.16.0",
+          "httpcore": "1.0.9",
+          "httpcore2": "2.13.1",
+          "httpx": "0.28.1",
+          "httpx2": "2.13.1",
+          "idna": "3.20",
+          "jieba": "0.42.1",
+          "jiter": "0.17.0",
+          "jsonpatch": "1.33",
+          "jsonpointer": "3.1.1",
+          "jsonschema": "4.26.0",
+          "jsonschema-specifications": "2025.9.1",
+          "kombu": "5.6.2",
+          "langchain-core": "1.6.5",
+          "langchain-openai": "1.6.6",
+          "langchain-protocol": "0.0.19",
+          "langgraph": "1.2.12",
+          "langgraph-checkpoint": "4.2.0",
+          "langgraph-prebuilt": "1.1.0",
+          "langgraph-sdk": "0.4.5",
+          "langsmith": "0.14.3",
+          "numpy": "2.5.3",
+          "openai": "3.23.0",
+          "openpyxl": "3.1.5",
+          "orjson": "3.12.0",
+          "ormsgpack": "1.12.2",
+          "packaging": "26.3",
+          "prompt-toolkit": "3.0.53",
+          "pydantic": "2.13.5",
+          "pydantic-core": "2.46.5",
+          "pymysql": "1.2.3",
+          "pypdf": "6.19.0",
+          "python-dateutil": "2.9.0.post0",
+          "python-dotenv": "1.2.3",
+          "pyyaml": "6.0.3",
+          "rank-bm25": "0.2.2",
+          "redis": "6.4.0",
+          "referencing": "0.37.0",
+          "regex": "2026.9.29",
+          "requests": "2.34.2",
+          "requests-toolbelt": "1.0.0",
+          "rpds-py": "2026.6.3",
+          "six": "1.17.0",
+          "sniffio": "1.3.1",
+          "sqlalchemy": "2.0.54",
+          "tenacity": "9.1.4",
+          "tiktoken": "0.14.0",
+          "truststore": "0.10.4",
+          "typing-extensions": "4.16.0",
+          "typing-inspection": "0.4.4",
+          "tzdata": "2026.4",
+          "tzlocal": "5.4.4",
+          "urllib3": "2.8.0",
+          "uuid-utils": "0.17.1",
+          "vine": "5.1.0",
+          "wcwidth": "0.9.1",
+          "websockets": "16.1.1",
+          "xxhash": "4.0.1",
+          "zstandard": "0.25.0"
+        },
+        "lock_count": 75,
+        "lock_mismatches": [],
+        "image_id": "sha256:c82173b4b1ef547ee35beb5e79ea76b7f640ff883eb66d1c9a499a1894aa2363"
+      }
+    },
+    "base_image_resolved_during_build": "python:3.12-slim@sha256:dddfd7e07f9d15aeeca61529320492139d21cac7f0070c00609243e51e4e0016",
+    "build_tool_chunks": [
+      "626f32",
+      "fd3186"
+    ],
+    "future_build_base_image_pinning_configured": false
+  },
+  "runtime": {
+    "recorded_at_utc": "2026-10-03T08:16:00.749737+00:00",
+    "http_statuses": {
+      "api_live": 200,
+      "api_ready": 200,
+      "frontend": 200,
+      "unauthed_projects": 401
+    },
+    "validation_services": [
+      {
+        "Image": "docucheck-current-validation:20261003",
+        "Names": "docucheck-validate-20261003-worker-1",
+        "Ports": "",
+        "Status": "Up About an hour (healthy)"
+      },
+      {
+        "Image": "docucheck-current-validation:20261003",
+        "Names": "docucheck-validate-20261003-cleaner-1",
+        "Ports": "",
+        "Status": "Up About an hour"
+      },
+      {
+        "Image": "docucheck-current-validation:20261003",
+        "Names": "docucheck-validate-20261003-dispatcher-1",
+        "Ports": "",
+        "Status": "Up About an hour"
+      },
+      {
+        "Image": "redis:7.4-alpine",
+        "Names": "docucheck-validate-20261003-redis-1",
+        "Ports": "127.0.0.1:26380->6379/tcp",
+        "Status": "Up About an hour (healthy)"
+      },
+      {
+        "Image": "mysql:8.4",
+        "Names": "docucheck-validate-20261003-mysql-1",
+        "Ports": "127.0.0.1:23308->3306/tcp",
+        "Status": "Up About an hour (healthy)"
+      }
+    ],
+    "ports": {
+      "validation_mysql": 23308,
+      "validation_redis": 26380,
+      "api": 8000,
+      "frontend": 5173,
+      "existing_oidc": 8080
+    },
+    "validation_services_left_running": true,
+    "original_stack_replaced": false,
+    "model_suites_finished": true,
+    "original_database_mutated": false,
+    "browser_cli_late_capture": "Additional optional screenshot capture failed with bridge read timeout; prior successful browser checks retained."
+  },
+  "rule_version": "fields-v4",
+  "model": {
+    "configured_id": "deepseek-flash",
+    "configured_base_url": "https://api.deepseek.com",
+    "upstream_identity_independently_authenticated": false
+  },
+  "service_tests": {
+    "passed": 22,
+    "skipped": 0,
+    "failed": 0,
+    "pytest_wall_seconds": 131.49,
+    "junit_seconds": 131.425
+  },
+  "quality": {
+    "agent_tasks": {
+      "denominator": 12,
+      "numerator": 12
+    },
+    "citation_error_rate": 0.0,
+    "citation_errors": {
+      "denominator": 244,
+      "numerator": 0
+    },
+    "confusion_matrix": {
+      "不满足": {
+        "不满足": 18
+      },
+      "待人工确认": {
+        "待人工确认": 7
+      },
+      "满足": {
+        "满足": 64
+      },
+      "证据不足": {
+        "证据不足": 8
+      },
+      "资料冲突": {
+        "资料冲突": 7
+      }
+    },
+    "dangerous_meets": 0,
+    "formal_independent_acceptance": false,
+    "necessary_evidence": {
+      "denominator": 89,
+      "numerator": 89
+    },
+    "protocol_kind": "quality",
+    "scope": "ai_reviewed_development_corpus",
+    "status_accuracy": {
+      "denominator": 104,
+      "numerator": 104
+    }
+  },
+  "performance": {
+    "completed_within_limit": 10,
+    "attempts": 10,
+    "seconds_limit": 120,
+    "required_successes": 9,
+    "seconds": [
+      50.531,
+      55.641,
+      62.125,
+      52.39,
+      52.468,
+      53.625,
+      52.625,
+      53.484,
+      53.703,
+      62.0
+    ],
+    "median_seconds": 53.554500000000004,
+    "p95_method": "nearest rank; n=10",
+    "p95_seconds": 62.125,
+    "warmed_parser_assets": true,
+    "repeated_cells_not_independent_quality_samples": true
+  },
+  "boundaries": {
+    "all_passed": true,
+    "fixed_quality_score_modified": false,
+    "formal_independent_acceptance": false,
+    "model_price_and_cache_classes": null,
+    "records": [
+      {
+        "passed": true,
+        "run_id": "8d451ca916d641b9b15050b253182f4b",
+        "test": "scoped_followup",
+        "usage": {
+          "actual_input": 11423,
+          "actual_output": 430,
+          "decisions": 3,
+          "input_reserved": 11423,
+          "model_calls": 3,
+          "output_reserved": 430,
+          "tools": 3,
+          "unknown_usage_calls": 0
+        }
+      },
+      {
+        "cancel_ms": 39.0,
+        "passed": true,
+        "run_id": "4763be20b8b74b2dbcc8efc635caf17e",
+        "running_inference_latency_measured": false,
+        "test": "queued_cancel",
+        "usage": null
+      },
+      {
+        "passed": true,
+        "run_id": "3c965dd399d34a63aeb5b5e081c8454c",
+        "test": "unknown_supplier_clarified",
+        "usage": {
+          "actual_input": 0,
+          "actual_output": 0,
+          "decisions": 0,
+          "input_reserved": 0,
+          "model_calls": 0,
+          "output_reserved": 0,
+          "tools": 0,
+          "unknown_usage_calls": 0
+        }
+      },
+      {
+        "business_status": "资料冲突",
+        "passed": true,
+        "recheck_model_calls": 0,
+        "recheck_ms": 74.33,
+        "review_status": "needs_review",
+        "run_id": "d84323a88cca4db7a6862f83195942ad",
+        "source_run_usage": {
+          "actual_input": 19495,
+          "actual_output": 2322,
+          "decisions": 4,
+          "input_reserved": 19495,
+          "model_calls": 10,
+          "output_reserved": 2322,
+          "tools": 4,
+          "unknown_usage_calls": 0
+        },
+        "test": "source_supported_correction"
+      }
+    ]
+  },
+  "frontend": {
+    "recorded_at_utc": "2026-10-03T08:10:11.073970+00:00",
+    "stage": "after_case_revision_display_fix",
+    "tests_passed": 19,
+    "test_files_passed": 4,
+    "vitest_seconds": 1.56,
+    "type_check_exit_code": 0,
+    "vite_build_exit_code": 0,
+    "node": "24.14.1",
+    "npm": "11.11.0",
+    "tool_chunks": {
+      "red": "8ce0e9",
+      "green": "755dd6",
+      "browser": "821b4d"
+    },
+    "red": {
+      "tests_failed": 1,
+      "tests_passed": 4,
+      "failure": "Case list kept revision 1 while current documents changed to revision 2"
+    },
+    "source_changed": true,
+    "files_sha256": {
+      "frontend/src/App.vue": "c9ef4b032a544d5cbecc56f798cefd26319f855c1613a0436c071fab03120c17",
+      "frontend/src/App.test.ts": "fb2f23cdd00f8c0876d608702995f3f5aab9f7541376b6c61d9db08ef836480c",
+      "frontend/package-lock.json": "6799fb5a470f26af7becfa022158de7bd15f3eba0ae494b7b15a718b578f5b5c"
+    },
+    "scope": "existing approved M4 behavior; revision synchronization only",
+    "backend_source_changed": false
+  },
+  "browser": {
+    "matrix": {
+      "headers": [
+        "指标",
+        "vendor-a",
+        "vendor-b"
+      ],
+      "rows": [
+        {
+          "label": "内存",
+          "states": [
+            "资料冲突 · 正式",
+            "满足 · 正式"
+          ]
+        },
+        {
+          "label": "存储",
+          "states": [
+            "满足 · 正式",
+            "不满足 · 正式"
+          ]
+        },
+        {
+          "label": "屏幕尺寸",
+          "states": [
+            "满足 · 正式",
+            "不满足 · 正式"
+          ]
+        },
+        {
+          "label": "重量",
+          "states": [
+            "不满足 · 正式",
+            "满足 · 正式"
+          ]
+        },
+        {
+          "label": "质保",
+          "states": [
+            "证据不足 · 正式",
+            "满足 · 正式"
+          ]
+        },
+        {
+          "label": "采购数量",
+          "states": [
+            "满足 · 正式",
+            "不满足 · 正式"
+          ]
+        },
+        {
+          "label": "单价",
+          "states": [
+            "满足 · 正式",
+            "不满足 · 正式"
+          ]
+        },
+        {
+          "label": "交付期限",
+          "states": [
+            "满足 · 正式",
+            "满足 · 正式"
+          ]
+        }
+      ],
+      "checked_cells": 16,
+      "matches_browser_download": true,
+      "matches_original_quality_observation": true
+    },
+    "export": {
+      "checks": 16,
+      "formal_checks": 16,
+      "sources": 31,
+      "xlsx_json_results_match": true,
+      "xlsx_json_source_count_match": true,
+      "sheets": [
+        "运行信息",
+        "核验结果",
+        "原文来源"
+      ],
+      "native_browser_save_verified": false,
+      "actual_ui_blob_bytes_saved_and_opened": true
+    },
+    "bob": {
+      "projectCount": 0,
+      "statuses": {
+        "/api/v1/cases/648683461220455b9ba769ad9411b59d": 404,
+        "/api/v1/cases/648683461220455b9ba769ad9411b59d/snapshots/2c9b92e962d94cb9829c871c2e284cf6/documents/f860b71ba8dd4b8697c9717c9fa40f28/original": 404,
+        "/api/v1/cases/648683461220455b9ba769ad9411b59d/snapshots/2c9b92e962d94cb9829c871c2e284cf6/evidence/16b408f8636dfdc917ce0d61d90e12d92db99d0ffabd8a27c2f05f1cc51cdc1d": 404,
+        "/api/v1/projects": 200
+      }
+    },
+    "new_case_documents_parsed_and_hash_matched": 3,
+    "unsupported_correction_rejected_without_revision_change": true,
+    "history_answer_and_statuses_preserved": true,
+    "corrected_current_run_completed": true,
+    "current_corrected_formal_cells": 0,
+    "current_corrected_review_status": "needs_review",
+    "same_source_old_and_new_quote_values_retained": true,
+    "native_download_save_verified": false,
+    "late_additional_screenshot_bridge_timed_out": true
+  },
+  "reported_model_usage": {
+    "buckets": {
+      "quality": {
+        "model_calls": 110,
+        "actual_input": 245081,
+        "actual_output": 24491,
+        "unknown_usage_calls": 0
+      },
+      "performance": {
+        "model_calls": 151,
+        "actual_input": 371870,
+        "actual_output": 38166,
+        "unknown_usage_calls": 0
+      },
+      "boundaries": {
+        "model_calls": 13,
+        "actual_input": 30918,
+        "actual_output": 2752,
+        "unknown_usage_calls": 0
+      },
+      "browser": {
+        "model_calls": 19,
+        "actual_input": 38346,
+        "actual_output": 4391,
+        "unknown_usage_calls": 0
+      }
+    },
+    "total_reported": {
+      "model_calls": 293,
+      "actual_input": 686215,
+      "actual_output": 69800,
+      "unknown_usage_calls": 0
+    },
+    "queued_cancel_usage": null,
+    "billing_amount": null,
+    "verified_model_price": null,
+    "cache_hit_miss_usage": null,
+    "unreported_usage_not_assumed_zero": true
+  },
+  "review": {
+    "method": "separate read-only AI review of this change and evidence",
+    "reviewer": "/root/current_validation_review",
+    "application_findings_p0_p1_p2": [],
+    "evidence_followups": [
+      {
+        "item": "initial 18-test record must not stand in for final 19 tests",
+        "resolution": "preserved initial file and added frontend-final-verification.json"
+      },
+      {
+        "item": "XLSX screenshot does not clearly show source panel",
+        "resolution": "limit stated; use export/source readback rather than screenshot-only proof"
+      }
+    ],
+    "independent_human_review": false
+  },
+  "verification": {
+    "ruff_exit_code": 0,
+    "ruff_tool_chunk": "c09b8d",
+    "pip_check_exit_code": 0,
+    "pip_check_tool_chunk": "dbf140",
+    "prior_full_offline_regression_not_rerun_in_this_step": true
+  },
+  "remaining_steps": [
+    {
+      "step": 2,
+      "name": "independent corpus review and at least 6 sealed packs",
+      "complete": false
+    },
+    {
+      "step": 3,
+      "name": "verified model price, cache usage and actual billing",
+      "complete": false
+    },
+    {
+      "step": 4,
+      "name": "source delivery and first remote CI run",
+      "complete": false
+    },
+    {
+      "step": 5,
+      "name": "full cold installation and pinned deployment",
+      "complete": false,
+      "worker_locked_image_built_in_step_1": true
+    },
+    {
+      "step": 6,
+      "name": "business database/uploads/OIDC recovery and production acceptance",
+      "complete": false
+    }
+  ],
+  "human_report": "docs/m5-current-version-integration-2026-10-03.md",
+  "evidence_files_sha256": {
+    "data/m5-current-validation-20261003/boundaries/correction-receipt.json": "2365e09ae7a344c3ab11f7a317d19454d05489dc5fceb07484135b880cefb49a",
+    "data/m5-current-validation-20261003/boundaries/correction-source-run.json": "ca5606b7cd76881437e122652b92b40587f57800ab0cb44069548c6bbe2eec36",
+    "data/m5-current-validation-20261003/boundaries/correction.json": "ee1a66d5c1b04623c3211abf615581c15cf8298b6a94f9c3536419a3e3f8f71a",
+    "data/m5-current-validation-20261003/boundaries/followup-receipt.json": "9792b438eba501a6261201daf8696fe9898ed3703ff9e7ddc09a0cb0129848f6",
+    "data/m5-current-validation-20261003/boundaries/followup-run.json": "082b4a370834488bc0be4771c69bf735a9e8e8d0b9b9b3cb067b8f52d9b22442",
+    "data/m5-current-validation-20261003/boundaries/followup.json": "94b6b6d0ace3697ee29b6c698336687298988f9c15aad5cf9f6806f31dfd0b4b",
+    "data/m5-current-validation-20261003/boundaries/inputs/manifest.json": "7b979f0c421905414b9bb4546ceb3382206bb53f025c584faa5bfc8c23379cf4",
+    "data/m5-current-validation-20261003/boundaries/inputs/requirements.pdf": "478bdeb0ffe1752532b26890526130e535826657d491aa9f6e3055a6477f5ce2",
+    "data/m5-current-validation-20261003/boundaries/inputs/vendor-a-quote.xlsx": "377a4a2f36d4ac5100957fa82b773d23a633d1f5008719d7a215d985a66d7168",
+    "data/m5-current-validation-20261003/boundaries/inputs/vendor-a-spec.pdf": "769fa3caea885f2eabc748864475b10f505a90395b7bfb6e04ace2e31729d3f6",
+    "data/m5-current-validation-20261003/boundaries/protocol.json": "b5c5c0583d6e20fc3ab1d5228120df5e890becec4336e6c19f4773cdbd55036b",
+    "data/m5-current-validation-20261003/boundaries/queued-cancel-receipt.json": "e4ba3794d091a4dcf7f13f6f805ff38199f5250854bdcdc7370350df0cfdd25b",
+    "data/m5-current-validation-20261003/boundaries/queued-cancel.json": "2829a459a898de828cc05947ae3c667d6fdd4540ffcc801c78ef487fd817d580",
+    "data/m5-current-validation-20261003/boundaries/report.json": "f20e2cbed5ff630df1ff843df62d0101166bcf17decc8acc6d141b0cf48bdb6d",
+    "data/m5-current-validation-20261003/boundaries/unknown-supplier-receipt.json": "df6140311a2824f3e3f5b5e525fccbc032f5b7f3fd3370d94920d5a08bfac323",
+    "data/m5-current-validation-20261003/boundaries/unknown-supplier.json": "f35a844b29a1273b22f1a2dda906015f98da3096f9c5bb4450d8815c63fc21c3",
+    "data/m5-current-validation-20261003/browser-bob-isolation.json": "f76a1c5fd16a35edaa69a894b153365d143731ccde4dbe4ad6f5cc4799f7ec98",
+    "data/m5-current-validation-20261003/browser-case-after-correction.json": "0f21163571d977bedb99aa286f4f67a316e83db8e238479ae5b90e33f550799a",
+    "data/m5-current-validation-20261003/browser-case-after-recheck.json": "b6b293cad9db3e51650f1a4d221c93750e799739e04027a353221d2c41cd1200",
+    "data/m5-current-validation-20261003/browser-case-before-correction.json": "7384ef184649149cafd76fc43101735d7f5ae5ebd9443a3f5618777d341c8c6c",
+    "data/m5-current-validation-20261003/browser-current-reviewed.png": "91d03b07412821c390f9d85679c3a75acea756e33550673843230a0f2c484400",
+    "data/m5-current-validation-20261003/browser-export-consistency.json": "e805a24360be7434e323b26c863949fbcf796e6570985f6b545a6799be4694f2",
+    "data/m5-current-validation-20261003/browser-export-json-proof.json": "a6a96182265a68f88a0f715f7ac7015627b4b031a5ac4001938d1fabc874400c",
+    "data/m5-current-validation-20261003/browser-export-xlsx-proof.json": "32725e595a17167447fc13786d7094eef2dac5f53543dbd5a7131f255db7aa5c",
+    "data/m5-current-validation-20261003/browser-export.json": "adfa2aaafbb090f529581b49e9867396722c6074f658c3db448ebeb6c889633f",
+    "data/m5-current-validation-20261003/browser-export.xlsx": "189cbd0fd29d5a68beebf675236df04c9c06b8cadc02d1226dff65225ca1c057",
+    "data/m5-current-validation-20261003/browser-history-and-correction.json": "48f3ad9e95d7b8ce5ee8bf16bf28077d997636516d5e3a277a0abba95e71b399",
+    "data/m5-current-validation-20261003/browser-history-correction.png": "d05ee2b61f48717fd9f4e91d7e7961b164f74ee5f1adcde570133e3c1b64bec9",
+    "data/m5-current-validation-20261003/browser-matrix-readback.json": "d5a1502c6d2ccb0752384d0cad08f2be0ca8d03fef6ee31e0935595e47b0ac18",
+    "data/m5-current-validation-20261003/browser-matrix.png": "af9c5eecd94080cd72fd99e1d12c3a7d36b86db50f6d0085f7b46a5ec0f1209a",
+    "data/m5-current-validation-20261003/browser-pdf-source.png": "b5d88ed888ab58553afbeee8e96ed4aa96beeccad29b3e8be36b468e9521400f",
+    "data/m5-current-validation-20261003/browser-unsupported-correction.json": "26d2a41efae610169cb994fb20d50414942c6d2d01d2f966efbd32f0cad2bcd9",
+    "data/m5-current-validation-20261003/browser-xlsx-source.png": "3ff37fcdaed19d019fe9b1c2b7e0b31d2eefa97299e7b82dde9e9371d41d320a",
+    "data/m5-current-validation-20261003/frontend-app-before-fix.vue": "e8dd68a762a52d8f71ecf978308cde4bb0cca76406b8c48db2235f9e7744117b",
+    "data/m5-current-validation-20261003/frontend-final-verification.json": "e2c8db385c0f79ea1d11a751b6e930ae7a370f8d71f29972a4342b64d56817c4",
+    "data/m5-current-validation-20261003/frontend-test-red.ts": "fb2f23cdd00f8c0876d608702995f3f5aab9f7541376b6c61d9db08ef836480c",
+    "data/m5-current-validation-20261003/frontend-verification.json": "d6cca06de3bed107a9bb1733d92044bbd74b0e7a48f4d9b3f9786fc7674b37c7",
+    "data/m5-current-validation-20261003/http-preflight.json": "ba1d87174da99471b1a9fa46d7f7709f9bb170f2cce7f9d74849353c1cae9d75",
+    "data/m5-current-validation-20261003/performance/execution-driver.json": "7ae7faa816030bb9395760bc1acfa2328cd031adeb926b1bb9090143dd3b7b80",
+    "data/m5-current-validation-20261003/performance/m5-c01-01.json": "17ddd8df81efcf4fe86285ba9481ee78f8509facdc058af824cc4285cc2c3dd3",
+    "data/m5-current-validation-20261003/performance/m5-c01-02.json": "7037e366c18266894b8c1779411cd9ae5c20d326cebd5750a768077860f78bb5",
+    "data/m5-current-validation-20261003/performance/m5-c01-03.json": "b6b3af688fa7af512a0050cde5797a09a67a20b485d6f261f3fdcb021ed540d0",
+    "data/m5-current-validation-20261003/performance/m5-c01-04.json": "2062811bff43b5dde81c8c69d818c51a3f5f2b5de64c152c25ebfaf74e75194b",
+    "data/m5-current-validation-20261003/performance/m5-c01-05.json": "6979156638f7deb10e87789615e7b4e3bf2465f8d58f504f650f678a0731d1e7",
+    "data/m5-current-validation-20261003/performance/m5-c01-06.json": "5b04dfc07c9fafaccb6f18ac8dfad62c9dddb3e84ef05aba628535ede00788e0",
+    "data/m5-current-validation-20261003/performance/m5-c01-07.json": "0abd9bc96dce88cc8a5ab1cc5f65118a57e173442fe38ac39f1d0877283abee7",
+    "data/m5-current-validation-20261003/performance/m5-c01-08.json": "ba21e57267c2f441b93b6da88e82e4e4d8a68c2dec3428d53d6aabcffe0d6a02",
+    "data/m5-current-validation-20261003/performance/m5-c01-09.json": "29233f29c115757dde0910509fd069fa8e0546ee5c39a80018e4c1c7120a54c3",
+    "data/m5-current-validation-20261003/performance/m5-c01-10.json": "67f6d34faaa6843deb460cdf1827618fb660940a5fe24875829babe406754385",
+    "data/m5-current-validation-20261003/performance/protocol.json": "c12da64f98c71c1d14bd54f6598b72f89d6094c915463d235d1edf6596125dec",
+    "data/m5-current-validation-20261003/performance/report.json": "a103d34f9c9093e985716b24c200dee1b7312e1645bb3bc91bc443b00e9d674e",
+    "data/m5-current-validation-20261003/preflight.json": "a71b733d99e25e1f42bbf97f22f80ffd4ed2cc4f882846b4ad183609748ff5f0",
+    "data/m5-current-validation-20261003/quality/execution-driver.json": "6fef319939042bbb60e888b02572915345b416bc82c15aca4d95b10cd6945957",
+    "data/m5-current-validation-20261003/quality/m5-c01-01.json": "87ecd172e6628ecc340458b45e2806faa61c12f4ae4671d1929f1b015f0980b4",
+    "data/m5-current-validation-20261003/quality/m5-c02-01.json": "f886a3e2a489f35be238cb2bd6dd61a1db2111f25584948eeb5abdc2ca2cc04e",
+    "data/m5-current-validation-20261003/quality/m5-c03-01.json": "a4054521a39090a041488963e52f5d7988545c7ccd58b79a30f482b4c648754c",
+    "data/m5-current-validation-20261003/quality/m5-c04-01.json": "7445223634959cc1b3aafbc4f9a5465e90d610f7456c5a7e64dc8cca785c505f",
+    "data/m5-current-validation-20261003/quality/m5-c05-01.json": "1deb0a686ba91cd22c3b1a44f9e096e4da9cac82f6f841736e12f9cd1a3456e5",
+    "data/m5-current-validation-20261003/quality/m5-c06-01.json": "41a977e8c31618285537254a08784fe23e6f3f7cc9240830b108a538ab872586",
+    "data/m5-current-validation-20261003/quality/m5-h01-01.json": "08aedeeaf959265a254e4f3eceb3b0054815edad72643ddf5bd7010bde61a858",
+    "data/m5-current-validation-20261003/quality/m5-h02-01.json": "254ad68660eb081744c3c9c0f45fcbada70ac70d5c014eb1f968f82a8c5023a0",
+    "data/m5-current-validation-20261003/quality/m5-h03-01.json": "a88e8c920fc52e7b70a23af943f03a5f32a0ddf2fa9f56a301c570407fbe5e61",
+    "data/m5-current-validation-20261003/quality/m5-h04-01.json": "fabfc824e7911791a545bf9663f11f00ea942e2a68f672d351fd4fb6562ed01a",
+    "data/m5-current-validation-20261003/quality/m5-h05-01.json": "5822eb14d2aeb3c5f30a73324d5c99842e25bfee839b0661f2544c239678c4b3",
+    "data/m5-current-validation-20261003/quality/m5-h06-01.json": "2896d4db4bf61989725b8ee3d6374376e9f564e8936c893990536a8ffaf4e27d",
+    "data/m5-current-validation-20261003/quality/protocol.json": "3e70a03a69192b20c551c5824a58fb84ba3dbcd4e50da2eefa6d3b0bcd0d8c88",
+    "data/m5-current-validation-20261003/quality/report.json": "bb230fa61695552806d04571b11d7d84d6e683caaba8ef15183e8a62902cfb68",
+    "data/m5-current-validation-20261003/readonly-review.json": "f28e2328f20af1ebb50b957363514a1df03c39fe9ce57d2186f2ac75065a35e5",
+    "data/m5-current-validation-20261003/runtime-final-state.json": "7cea1be485c03a95be23aa05db2125cca48bc35fffcc6506320968c7c1238616",
+    "data/m5-current-validation-20261003/service-test-exit.json": "ca0a681bca0a35cbe249fcbe763082b98bec663f315ff514be4aa412f6600841",
+    "data/m5-current-validation-20261003/service-tests.log": "b403bf79467ebb6090c297dd9cfebb9fa6c48ad679f527224f4b2728b00f6589",
+    "data/m5-current-validation-20261003/service-tests.xml": "8fa5087feabb121e332ad4e4f68a3292510ec133f0173ca3615ad12bc6d3a91f",
+    "data/m5-current-validation-20261003/service-versions.json": "36ffc2a94f6253b1ca3e2892f8a26f1bf942f10a7ebc4fa2c32a11dcfc95c12c",
+    "data/m5-current-validation-20261003/usage-summary.json": "9543b880890f2ff295c610caf3e077769554dd1e1f0691f54639113d98aef358"
+  },
+  "raw_evidence_location": "local ignored directory; not automatically delivered to remote Git"
+}
