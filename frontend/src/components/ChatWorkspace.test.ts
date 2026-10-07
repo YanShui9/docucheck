@@ -56,6 +56,74 @@ test('restores stored questions and verified assistant answers instead of manufa
   expect(wrapper.text()).toContain('先明确品种、等级和交付日期。')
 })
 
+test.each([false, true])('report correction refreshes cached chat answers, failed=%s', async failed => {
+  let refreshing = false
+  apiRequest.mockImplementation((path: string) => {
+    if (path.includes('/conversations?')) return Promise.resolve({ conversations: [{ id: 'conv-a', created_at: '' }], next_offset: null })
+    if (path.includes('/messages?')) return Promise.resolve({ messages: [{ id: 'message-a', role: 'user', content: '审查苹果', run_id: 'run-a', created_at: '' }], next_offset: null })
+    if (path === '/agent-runs/run-a') return Promise.resolve({ id: 'run-a', conversation_id: 'conv-a',
+      status: 'completed', workflow: 'assistant', snapshot_id: 'snap-1', answer_text: '旧正式答案' })
+    if (path.endsWith('/assistant-result')) {
+      if (refreshing && failed) return Promise.reject(new Error('offline'))
+      return Promise.resolve({ run_id: 'run-a', case_id: 'case-a', snapshot_id: 'snap-1',
+        result: { kind: 'review', answer: refreshing ? '修正后的待人工复核结果' : '旧正式答案', citations: [] } })
+    }
+    return reads(path)
+  })
+  const wrapper = setup()
+  await flushPromises()
+  expect(wrapper.text()).toContain('旧正式答案')
+  refreshing = true
+  const target = { caseId: 'case-a', runId: 'run-a', snapshotId: 'snap-1', count: 1 }
+  await wrapper.setProps({ pendingReportCorrections: { 'run-a': target } })
+  await flushPromises()
+  expect(wrapper.text()).not.toContain('旧正式答案')
+  expect(wrapper.text()).toContain('正在保存事实修正')
+  // Reopening the conversation while the POST is pending must not bring the old answer back.
+  const count = apiRequest.mock.calls.filter(([path]) => path.endsWith('/assistant-result')).length
+  await wrapper.get('[aria-label="选择对话"]').trigger('change')
+  await flushPromises()
+  expect(apiRequest.mock.calls.filter(([path]) => path.endsWith('/assistant-result'))).toHaveLength(count)
+  await wrapper.setProps({ pendingReportCorrections: {} })
+  await flushPromises()
+  expect(wrapper.text()).not.toContain('旧正式答案')
+  expect(wrapper.text()).toContain(failed ? '暂时无法完成请求' : '修正后的待人工复核结果')
+  expect(apiRequest.mock.calls.some(([, , init]) => init?.method === 'POST')).toBe(false)
+})
+
+test.each(['normal', 'fast'])('two report corrections completing in one update restore both answers (%s)', async timing => {
+  let updated = false
+  apiRequest.mockImplementation((path: string) => {
+    if (path.includes('/conversations?')) return Promise.resolve({ conversations: [{ id: 'conv-a', created_at: '' }], next_offset: null })
+    if (path.includes('/messages?')) return Promise.resolve({ messages: ['run-a', 'run-b'].map(id => ({
+      id: `message-${id}`, role: 'user', content: id, run_id: id, created_at: '',
+    })), next_offset: null })
+    const runId = path.includes('run-b') ? 'run-b' : 'run-a'
+    if (path.endsWith('/assistant-result')) return Promise.resolve({ run_id: runId, case_id: 'case-a', snapshot_id: 'snap-1',
+      result: { kind: 'review', answer: `${updated ? '新' : '旧'}${runId}`, citations: [] } })
+    if (path.startsWith('/agent-runs/')) return Promise.resolve({ id: runId, conversation_id: 'conv-a',
+      status: 'completed', workflow: 'assistant', snapshot_id: 'snap-1' })
+    return reads(path)
+  })
+  const wrapper = setup()
+  await flushPromises()
+  if (timing === 'normal') {
+    await wrapper.setProps({ pendingReportCorrections: {
+      'run-a': { caseId: 'case-a', snapshotId: 'snap-1', count: 1 }, 'run-b': { caseId: 'case-a', snapshotId: 'snap-1', count: 1 },
+    } })
+    expect(wrapper.text()).not.toContain('旧run-a')
+    expect(wrapper.text()).not.toContain('旧run-b')
+  }
+  updated = true
+  await wrapper.setProps({ pendingReportCorrections: {
+    'run-a': { caseId: 'case-a', snapshotId: 'snap-1', count: 0 }, 'run-b': { caseId: 'case-a', snapshotId: 'snap-1', count: 0 },
+  } })
+  await flushPromises()
+  expect(wrapper.text()).toContain('新run-a')
+  expect(wrapper.text()).toContain('新run-b')
+  expect(wrapper.text()).not.toContain('正在保存事实修正')
+})
+
 test('a late send response cannot display an old task result or clear the new task draft', async () => {
   let resolve!: (value: object) => void
   const pending = new Promise<object>(yes => { resolve = yes })

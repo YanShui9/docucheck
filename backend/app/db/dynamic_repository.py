@@ -14,6 +14,7 @@ from ..evidence.repository import digest
 from .checklist_repository import ChecklistError, _version, ensure_legacy_run_allowed
 from .models import (
     agent_runs,
+    assistant_runs,
     cases,
     checklist_heads,
     dynamic_batches,
@@ -564,6 +565,7 @@ class DynamicRepository:
             "is_current": current,
             "checklist_version_id": row["checklist_version_id"],
             "checks": [],
+            "payload_digest": row["payload_digest"],
         }
         if (
             payload
@@ -596,6 +598,12 @@ class DynamicRepository:
     def facts(self, run_id):
         row, payload, _ = self.verified(run_id)
         checks = self.checks(run_id)
+        if checks["payload_digest"] != row["payload_digest"]:
+            _error("run_changed")
+        rules = {
+            c["criterion_id"]: c["rule"]
+            for c in row.get("definition", {}).get("criteria", [])
+        }
         groups = {}
         for fact in (payload or {}).get("facts", []):
             key = (fact["supplier"], fact["criterion_id"])
@@ -617,6 +625,7 @@ class DynamicRepository:
                     "supplier": key[0],
                     "field_key": key[1],
                     "criterion_id": key[1],
+                    "rule": rules[key[1]],
                     "facts": facts,
                 }
                 for key, facts in groups.items()
@@ -669,6 +678,7 @@ class DynamicRepository:
     def correction(self, run_id, body, *, actor, key):
         """Append source-supported alternatives; never overwrite originals or auto resolve."""
         from ..criteria.facts import FactCandidate, evaluate_checklist, validate_fact
+        from .assistant_repository import AssistantRepository
         from .checklist_repository import _scope
         from .memory_repository import save_checkpoint
 
@@ -677,6 +687,15 @@ class DynamicRepository:
         row, payload, repo = self.verified(run_id)
         if row["workflow"] != "review" or payload is None:
             _error("facts_unavailable")
+        assistant = AssistantRepository(self.engine)
+        assistant_row, assistant_payload, _ = (
+            assistant.verified(run_id) if assistant.exists(run_id) else (None, None, None)
+        )
+        if assistant_row is not None and (
+            assistant_payload is None or assistant_payload["kind"] != "review"
+            or assistant_payload["dynamic_payload_digest"] != row["payload_digest"]
+        ):
+            _error("assistant_source_changed")
         candidate = FactCandidate.model_validate(body["candidate"])
         old = next(
             (f for f in payload["facts"] if f["fact_id"] == body["fact_id"]), None
@@ -786,7 +805,8 @@ class DynamicRepository:
                     principal_key=actor,
                     idempotency_key=key,
                     request_digest=fingerprint,
-                    old_payload_json=payload,
+                    # Audit-only metadata; the original Run payload is unchanged.
+                    old_payload_json=payload | {"correction_target_fact_id": old["fact_id"]},
                     new_payload_json=changed,
                     reason=body["reason"],
                     created_at=now,
@@ -803,14 +823,28 @@ class DynamicRepository:
             }
             from ..agent.dynamic import render_review
 
+            answer = render_review(changed["checks"], complete=False, needs_review=True, repo=repo)
+            if assistant_row is not None:
+                live_assistant = connection.execute(select(assistant_runs).where(
+                    assistant_runs.c.run_id == run_id).with_for_update()).mappings().one()
+                if any(live_assistant[k] != assistant_row[k] for k in (
+                    "payload_digest", "base_digest", "payload_json", "base_json",
+                )):
+                    _error("run_changed")
+                updated_assistant = assistant_payload | {
+                    "answer": answer, "dynamic_payload_digest": digest(changed),
+                }
+                connection.execute(update(assistant_runs).where(
+                    assistant_runs.c.run_id == run_id).values(
+                        payload_json=updated_assistant, payload_digest=digest(updated_assistant)))
+                # Version 5 checkpoints refer to the assistant envelope, not its nested report.
+                checkpoint["payload_digest"] = digest(updated_assistant)
             connection.execute(
                 update(agent_runs)
                 .where(agent_runs.c.id == run_id)
                 .values(
                     memory_json=checkpoint,
-                    answer_text=render_review(
-                        changed["checks"], complete=False, needs_review=True, repo=repo
-                    ),
+                    answer_text=answer,
                     updated_at=now,
                 )
             )
@@ -823,7 +857,7 @@ class DynamicRepository:
             }
 
     def corrections(self, run_id):
-        self.verified(run_id)
+        verified_row, _, _ = self.verified(run_id)
         with self.engine.connect() as connection:
             rows = (
                 connection.execute(
@@ -842,7 +876,7 @@ class DynamicRepository:
             new_fact = next(
                 f for f in row["new_payload_json"]["facts"] if f not in old_facts
             )
-            old = next(
+            matches = [
                 f
                 for f in old_facts
                 if all(
@@ -855,6 +889,12 @@ class DynamicRepository:
                         "quote",
                     )
                 )
+            ]
+            target = row["old_payload_json"].get("correction_target_fact_id")
+            # Legacy audits did not store the chosen ID. Never guess among alternatives.
+            old = (
+                next((f for f in matches if f["fact_id"] == target), None)
+                if target else matches[0] if len(matches) == 1 else None
             )
             output.append(
                 {
@@ -865,4 +905,11 @@ class DynamicRepository:
                     "review_status": "needs_review",
                 }
             )
-        return {"run_id": run_id, "corrections": output}
+        latest, _, _ = self.verified(run_id)
+        if latest["payload_digest"] != verified_row["payload_digest"]:
+            _error("run_changed")
+        return {
+            "run_id": run_id,
+            "payload_digest": verified_row["payload_digest"],
+            "corrections": output,
+        }

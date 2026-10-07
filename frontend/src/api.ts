@@ -193,6 +193,7 @@ export interface RunDynamicChecksResult {
   run_status: string
   is_current: boolean
   checklist_version_id: string
+  payload_digest: string | null
   checks: DynamicCheckResult[]
 }
 
@@ -204,7 +205,7 @@ export function isDynamicChecks(result: AnyRunChecksResult): result is RunDynami
 
 export interface DynamicFactRecord {
   fact_id: string
-  raw_value: string
+  raw_value: string | boolean
   raw_unit: string
   value: string | boolean
   unit: string
@@ -228,6 +229,7 @@ export interface DynamicFactSet {
   supplier: string
   field_key: string
   criterion_id: string
+  rule: ChecklistRule
   facts: DynamicFactRecord[]
 }
 
@@ -239,7 +241,7 @@ export interface DynamicFactsResult {
   is_current: boolean
   available: boolean
   checklist_version_id: string
-  payload_digest: string
+  payload_digest: string | null
   fact_sets: DynamicFactSet[]
 }
 

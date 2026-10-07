@@ -9,7 +9,12 @@ from sqlalchemy import select, update
 
 from backend.app.db.dynamic_repository import DynamicRepository
 from backend.app.db.ingestion import DocumentIngestion
-from backend.app.db.models import document_versions, dynamic_runs, task_memory
+from backend.app.db.models import (
+    document_versions,
+    dynamic_corrections,
+    dynamic_runs,
+    task_memory,
+)
 from backend.app.db.run_executor import execute_run
 from backend.app.db.run_repository import RepositoryError
 from backend.tests import test_document_ingestion
@@ -154,6 +159,10 @@ def test_proposal_confirmation_review_export_and_task_memory(dynamic_case):
     )
     facts = client.get(f"/api/v1/agent-runs/{run_id}/facts").json()
     assert len(facts["fact_sets"]) == 2 and facts["payload_digest"]
+    assert checks["payload_digest"] == facts["payload_digest"]
+    assert all(g["rule"]["type"] == "numeric" for g in facts["fact_sets"])
+    audit = client.get(f"/api/v1/agent-runs/{run_id}/fact-corrections").json()
+    assert audit["payload_digest"] == facts["payload_digest"]
     exported = client.get(f"/api/v1/agent-runs/{run_id}/export").json()
     assert exported["result"]["checklist_version_id"] == checks["checklist_version_id"]
     excel = client.get(f"/api/v1/agent-runs/{run_id}/export?format=xlsx")
@@ -293,6 +302,10 @@ def test_same_source_two_values_keep_conflict_and_correction_audit(dynamic_case)
     )
     assert not any(c["is_formal"] for c in checks["checks"])
     assert client.get(url).json()["corrections"][0]["old_fact"]["value"] == "12"
+    assert checks["payload_digest"] == changed["payload_digest"]
+    assert client.get(url).json()["payload_digest"] == response.json()["payload_digest"]
+    exported = client.get(f"/api/v1/agent-runs/{run_id}/export").json()
+    assert not any(c["is_formal"] for c in exported["result"]["checks"])
     assert (
         client.post(url, headers={"Idempotency-Key": "stale"}, json=body).status_code
         == 409
@@ -307,6 +320,90 @@ def test_same_source_two_values_keep_conflict_and_correction_audit(dynamic_case)
         == "资料冲突"
     )
     assert not any(c["is_formal"] for c in rereview["checks"])
+
+
+@pytest.mark.parametrize("dynamic_case", ["苹果 数量12箱或8箱或10箱"], indirect=True)
+def test_consecutive_corrections_record_the_selected_old_fact(dynamic_case):
+    from backend.app.criteria.facts import FactCandidate
+
+    confirm(dynamic_case)
+    client, engine, _, _, _ = dynamic_case
+    run_id = message(dynamic_case, key="review-consecutive")
+    run(dynamic_case, run_id, ScriptProvider())
+    url = f"/api/v1/agent-runs/{run_id}/fact-corrections"
+    prior_id = None
+    for index, value in enumerate(("8", "10")):
+        facts = client.get(f"/api/v1/agent-runs/{run_id}/facts").json()
+        group = next(g for g in facts["fact_sets"] if g["supplier"] == "vendor-a")
+        old = next((f for f in group["facts"] if f["fact_id"] == prior_id), group["facts"][0])
+        candidate = {k: old[k] for k in FactCandidate.model_fields}
+        candidate["value"] = value
+        candidate["unit"] = "箱"
+        response = client.post(url, headers={"Idempotency-Key": f"consecutive-{index}"}, json={
+            "fact_id": old["fact_id"], "candidate": candidate, "reason": "同源备选",
+            "expected_revision": 3, "expected_payload_digest": facts["payload_digest"],
+        })
+        assert response.status_code == 201, response.text
+        audit = client.get(url).json()
+        record = next(c for c in audit["corrections"] if c["correction_id"] == response.json()["correction_id"])
+        assert record["old_fact"]["fact_id"] == old["fact_id"]
+        prior_id = record["corrected_fact"]["fact_id"]
+    # Historical records without the target ID must not guess the old value.
+    with engine.begin() as connection:
+        records = connection.execute(select(dynamic_corrections).where(
+            dynamic_corrections.c.run_id == run_id)).mappings().all()
+        for record in records:
+            old_payload = dict(record["old_payload_json"])
+            old_payload.pop("correction_target_fact_id")
+            connection.execute(update(dynamic_corrections).where(
+                dynamic_corrections.c.id == record["id"]).values(old_payload_json=old_payload))
+    legacy = client.get(url).json()["corrections"]
+    assert next(c for c in legacy if c["corrected_fact"]["fact_id"] == prior_id)["old_fact"] is None
+
+
+def test_queued_dynamic_run_facts_are_readable_without_an_extraction_payload(dynamic_case):
+    confirm(dynamic_case)
+    client, _, _, _, _ = dynamic_case
+    run_id = message(dynamic_case, key="review-queued")
+    response = client.get(f"/api/v1/agent-runs/{run_id}/facts")
+    assert response.status_code == 200, response.text
+    assert response.json()["available"] is False
+    assert response.json()["fact_sets"] == []
+
+
+@pytest.mark.parametrize("dynamic_case", ["苹果 数量12箱或8箱"], indirect=True)
+@pytest.mark.parametrize("reader", ["facts", "corrections"])
+def test_report_read_rejects_a_correction_committed_between_queries(dynamic_case, monkeypatch, reader):
+    from backend.app.criteria.facts import FactCandidate
+
+    confirm(dynamic_case)
+    client, engine, _, _, _ = dynamic_case
+    run_id = message(dynamic_case, key="review-read-race")
+    run(dynamic_case, run_id, ScriptProvider())
+    repository = DynamicRepository(engine)
+    verified = repository.verified
+    inserted = False
+
+    def concurrent_verified(identifier):
+        nonlocal inserted
+        result = verified(identifier)
+        if not inserted:
+            inserted = True
+            row, payload, _ = result
+            old = next(f for f in payload["facts"] if f["supplier"] == "vendor-a")
+            candidate = {k: old[k] for k in FactCandidate.model_fields}
+            candidate.update(value="8", unit="箱")
+            response = client.post(f"/api/v1/agent-runs/{identifier}/fact-corrections",
+                headers={"Idempotency-Key": "concurrent-correction"}, json={
+                    "fact_id": old["fact_id"], "candidate": candidate, "reason": "同源备选",
+                    "expected_revision": 3, "expected_payload_digest": row["payload_digest"],
+                })
+            assert response.status_code == 201, response.text
+        return result
+
+    monkeypatch.setattr(repository, "verified", concurrent_verified)
+    with pytest.raises(RepositoryError, match="run_changed"):
+        getattr(repository, reader)(run_id)
 
 
 def test_source_followup_reuses_validated_report_only_in_same_conversation(

@@ -210,6 +210,37 @@ test('switching tasks closes the dynamic panels and clears their targets', async
   expect(wrapper.findComponent({ name: 'ChecklistPanel' }).props('caseId')).toBe('case-1')
 })
 
+test('current report correction events refresh only the corresponding chat result', async () => {
+  apiRequest.mockImplementation(reads)
+  const wrapper = mount(App, { global: { stubs: {
+    DocumentsPanel: true, AgentWorkbench: true, EvidencePanel: true, ChatWorkspace: true,
+    ChecklistPanel: true,
+    ReviewPanel: { name: 'ReviewPanel', props: ['runId'], emits: ['correctionSubmitted'], template: '<div class="report-stub" />' },
+  } } })
+  wrappers.push(wrapper)
+  await flushPromises()
+  const chat = wrapper.findComponent({ name: 'ChatWorkspace' })
+  const target = { caseId: 'case-1', snapshotId: 'snapshot-case-1', runId: 'run-a' }
+  chat.vm.$emit('openReview', target)
+  await flushPromises()
+  const report = wrapper.findComponent({ name: 'ReviewPanel' })
+  let finish!: () => void
+  const completion = new Promise<void>(resolve => { finish = resolve })
+  report.vm.$emit('correctionSubmitted', target, completion)
+  await flushPromises()
+  expect(chat.props('pendingReportCorrections')).toMatchObject({ 'run-a': { ...target, count: 1 } })
+  report.vm.$emit('correctionSubmitted', { ...target, caseId: 'case-2' }, completion)
+  report.vm.$emit('correctionSubmitted', { ...target, runId: 'old-run' }, completion)
+  await flushPromises()
+  expect(chat.props('pendingReportCorrections')).toMatchObject({ 'run-a': { ...target, count: 1 } })
+  await wrapper.get('[aria-label="关闭工作面板"]').trigger('click')
+  await flushPromises()
+  expect(wrapper.find('.report-stub').exists()).toBe(false)
+  finish()
+  await flushPromises()
+  expect(chat.props('pendingReportCorrections')).toMatchObject({ 'run-a': { count: 0 } })
+})
+
 test('the account menu opens memory preference settings', async () => {
   apiRequest.mockImplementation(reads)
   const wrapper = mount(App, { global: { stubs: {

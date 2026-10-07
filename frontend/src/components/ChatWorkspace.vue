@@ -7,7 +7,8 @@ import type {
 } from '../api'
 import { accessToken } from '../auth'
 import ChatComposer from './ChatComposer.vue'
-const props = defineProps<{ caseId: string | null; scopeKey?: string; revision: number; canWrite: boolean; prepareCase: () => Promise<string | null> }>()
+const props = defineProps<{ caseId: string | null; scopeKey?: string; revision: number; canWrite: boolean; prepareCase: () => Promise<string | null>;
+  pendingReportCorrections?: Record<string, { caseId: string; snapshotId: string; count: number }> }>()
 const emit = defineEmits<{
   upload: []
   openEvidence: [target: { caseId: string; snapshotId: string; evidenceId: string }]
@@ -62,8 +63,13 @@ async function latest() { await nextTick(); if (atBottom.value && scrollArea.val
 function updateScroll() { const area = scrollArea.value; if (area) atBottom.value = area.scrollHeight - area.scrollTop - area.clientHeight < 90 }
 function goLatest() { atBottom.value = true; void latest() }
 function lastMessageFor(runId: string) { return messages.value.filter(item => item.run_id === runId && item.role === 'user').at(-1)?.id }
+function correctionPending(runId: string) {
+  const correction = props.pendingReportCorrections?.[runId]
+  return correction?.caseId === props.caseId && correction.count > 0
+}
 function answer(message: StoredMessage) {
   if (!message.run_id || lastMessageFor(message.run_id) !== message.id) return ''
+  if (correctionPending(message.run_id)) return ''
   const run = runs.value[message.run_id]
   if (!run || !['completed', 'partial', 'waiting_user'].includes(run.status)) return ''
   return run.workflow === 'assistant' ? results.value[run.id]?.result?.answer ?? '' : run.workflow === 'legacy' ? run.answer_text ?? '' : ''
@@ -95,6 +101,10 @@ async function messagesRange(id: string, from: number, version: number): Promise
   return items
 }
 async function readRun(runId: string, version: number) {
+  if (correctionPending(runId)) {
+    resultErrors.value = { ...resultErrors.value, [runId]: '正在保存事实修正，原结论已暂停展示。' }
+    return
+  }
   const request = (readVersions.get(runId) ?? 0) + 1
   readVersions.set(runId, request)
   const latestRead = () => current(version) && readVersions.get(runId) === request
@@ -321,6 +331,28 @@ function openReview(message: StoredMessage) {
   if (!result?.snapshot_id) return
   emit('openReview', { caseId: result.case_id, snapshotId: result.snapshot_id, runId: message.run_id! })
 }
+watch(() => props.pendingReportCorrections, (pending, previous) => {
+  for (const runId of new Set([...Object.keys(pending ?? {}), ...Object.keys(previous ?? {})])) {
+    if (pending?.[runId] === previous?.[runId]) continue
+    const target = pending?.[runId] ?? previous?.[runId]
+    if (!target || target.caseId !== props.caseId || !messages.value.some(message => message.run_id === runId)
+      || (runs.value[runId] && runs.value[runId]!.snapshot_id !== target.snapshotId)) continue
+    const version = generation
+    // Remove the cached answer before reading; a failed GET must never restore the old conclusion.
+    delete results.value[runId]; delete resultErrors.value[runId]
+    if (runs.value[runId]) runs.value[runId] = { ...runs.value[runId]!, answer_text: null }
+    readVersions.set(runId, (readVersions.get(runId) ?? 0) + 1)
+    if ((pending?.[runId]?.count ?? 0) > 0) {
+      resultErrors.value = { ...resultErrors.value, [runId]: '正在保存事实修正，原结论已暂停展示。' }
+      continue
+    }
+    void readRun(runId, version).catch(reason => {
+      if (current(version) && !correctionPending(runId)) {
+        resultErrors.value = { ...resultErrors.value, [runId]: notice(reason) }
+      }
+    })
+  }
+}, { flush: 'sync' })
 watch(() => [props.caseId, props.scopeKey] as const, (_, previous) => {
   drafts.set(`${previous?.[1] ?? ''}:${previous?.[0] ?? 'new'}:${conversationId.value ?? 'new'}`, draft.value)
   ++generation

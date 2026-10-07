@@ -37,6 +37,7 @@ const evidenceWidth = ref(390)
 const checklistTarget = ref<{ caseId: string; snapshotId: string; runId: string;
   candidate: { candidate: ChecklistDefinitionPayload; changes: CriterionChange[]; runId: string } } | null>(null)
 const reviewTarget = ref<{ caseId: string; snapshotId: string; runId: string } | null>(null)
+const pendingReportCorrections = ref<Record<string, { caseId: string; snapshotId: string; count: number }>>({})
 const memoryOpen = ref(false)
 let refreshTimer: ReturnType<typeof setInterval> | undefined
 let selectionVersion = 0
@@ -103,6 +104,23 @@ function openReviewFromChat(target: { caseId: string; snapshotId: string; runId:
   if (target.caseId !== selectedCaseId.value) return
   reviewTarget.value = target
   panel.value = 'review'; evidenceTarget.value = null
+}
+
+function trackReportCorrection(target: { caseId: string; snapshotId: string; runId: string }, completion: Promise<unknown>) {
+  if (target.caseId !== selectedCaseId.value || target.runId !== reviewTarget.value?.runId
+    || target.snapshotId !== reviewTarget.value?.snapshotId) return
+  pendingReportCorrections.value = { ...pendingReportCorrections.value, [target.runId]: {
+    ...target, count: (pendingReportCorrections.value[target.runId]?.count ?? 0) + 1,
+  } }
+  const reload = () => {
+    const next = { ...pendingReportCorrections.value }
+    const record = next[target.runId]
+    if (!record) return
+    next[target.runId] = { ...record, count: Math.max(0, record.count - 1) }
+    // Keep completed entries: a fast start/end may be batched into one child update.
+    pendingReportCorrections.value = next
+  }
+  void completion.then(reload, reload)
 }
 
 const selectedCase = computed(() => cases.value.find(
@@ -393,7 +411,7 @@ onUnmounted(() => { if (refreshTimer) clearInterval(refreshTimer) })
       </header>
       <div v-if="error" class="alert" role="alert"><span>{{ error }}</span><button class="text-button" @click="error = ''">关闭</button></div>
       <div v-if="loading" class="loading-state" role="status">正在读取工作区…</div>
-      <ChatWorkspace v-else :case-id="selectedCaseId" :scope-key="selectedProjectId ?? ''" :revision="documents?.revision ?? selectedCase?.revision ?? 0"
+      <ChatWorkspace v-else :case-id="selectedCaseId" :scope-key="selectedProjectId ?? ''" :revision="documents?.revision ?? selectedCase?.revision ?? 0" :pending-report-corrections="pendingReportCorrections"
                      :can-write="canWrite && !busy" :prepare-case="prepareCase"
                      @upload="openDocuments" @title="taskTitles[$event.caseId] = $event.title"
                      @open-evidence="evidenceTarget = $event; panel = null"
@@ -414,7 +432,7 @@ onUnmounted(() => { if (refreshTimer) clearInterval(refreshTimer) })
         <ReviewPanel v-else-if="panel === 'review' && reviewTarget"
                      :case-id="reviewTarget.caseId" :run-id="reviewTarget.runId" :snapshot-id="reviewTarget.snapshotId"
                      :revision="documents?.revision ?? 0" :can-write="canWrite && !busy" :supplier-names="supplierNames"
-                     @open-evidence="evidenceTarget = $event; panel = null" />
+                     @open-evidence="evidenceTarget = $event; panel = null" @correction-submitted="trackReportCorrection" />
         <template v-else-if="panel === 'agent'">
           <label v-if="snapshots.length" class="workspace-history">查看资料版本<select class="field-control" :value="selectedHistoryId ?? ''" @change="selectHistory(($event.target as HTMLSelectElement).value || null)"><option value="">当前版本 {{ documents?.revision ?? 0 }}</option><option v-for="snapshot in snapshots.filter(item => item.revision !== documents?.revision)" :key="snapshot.id" :value="snapshot.id">历史版本 {{ snapshot.revision }}</option></select></label>
           <AgentWorkbench :case-id="selectedCaseId" :documents="documents" :history-documents="historyDocuments" :selected-history-id="selectedHistoryId" :can-write="canWrite" @open-evidence="evidenceTarget = $event; panel = null" @changed="refreshAfterCorrection" />

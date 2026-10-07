@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { accessToken } from '../auth'
 import { apiRequest, downloadRunExport, submitDynamicFactCorrection } from '../api'
 import type {
-  AnyRunChecksResult, DynamicCorrectionAuditRecord, DynamicFactsResult, DynamicProgressResult,
+  AnyRunChecksResult, DynamicCorrectionAuditRecord, DynamicCorrectionRecord, DynamicFactsResult, DynamicProgressResult,
   RunDynamicChecksResult,
 } from '../api'
 
@@ -17,6 +17,7 @@ const props = defineProps<{
 }>()
 const emit = defineEmits<{
   openEvidence: [target: { caseId: string; snapshotId: string; evidenceId: string }]
+  correctionSubmitted: [target: { caseId: string; snapshotId: string; runId: string }, completion: Promise<DynamicCorrectionRecord>]
 }>()
 
 const checks = ref<RunDynamicChecksResult | null>(null)
@@ -29,10 +30,15 @@ const busy = ref(false)
 const exporting = ref(false)
 const error = ref('')
 const selectedFactKey = ref('')
-const correctedValue = ref('')
+const correctedValue = ref<string | boolean>('')
 const correctedUnit = ref('')
 const correctionReason = ref('')
 let scope = 0
+let mounted = true
+let savedDigest = ''
+let savedUnrefreshed = false
+function identity() { return JSON.stringify([props.caseId, props.runId, props.snapshotId, props.revision, props.canWrite]) }
+function active(ticket: number, context: string) { return mounted && ticket === scope && context === identity() }
 
 const statusNames: Record<string, string> = {
   queued: '排队中', running: '正在处理', waiting_user: '等待补充信息', completed: '已完成',
@@ -51,7 +57,10 @@ const reasonNames: Record<string, string> = {
   unit_basis_mismatch: '单位口径与要求不一致',
 }
 const errorTexts: Record<string, string> = {
-  run_changed: '运行结果已更新，请关闭面板后重新打开查看最新状态。',
+  run_changed: '运行结果已更新，请重试读取最新状态。',
+  unsupported_correction: '修正值必须由所引用的同一原文支持，请核对来源后重试。',
+  correction_unchanged: '修正值与现有事实相同，无需重复提交。',
+  case_busy: '当前采购任务正在处理，请等待完成后重试读取。',
   facts_unavailable: '本次运行没有可修正的事实集。',
   not_found: '没有找到该运行或无权访问。',
   forbidden: '当前账号无权查看该报告。',
@@ -105,55 +114,82 @@ function openEvidence(evidenceId: string) {
 }
 
 const allFacts = computed(() => (facts.value?.fact_sets ?? []).flatMap(set =>
-  set.facts.map(fact => ({ ...fact, factSetId: set.fact_set_id,
+  set.facts.map(fact => ({ ...fact, factSetId: set.fact_set_id, rule: set.rule,
     criterionName: fact.criterion_name
       ?? checks.value?.checks.find(item => item.criterion_id === fact.criterion_id)?.criterion_name
       ?? fact.criterion_id,
     key: `${set.fact_set_id}/${fact.fact_id}` }))))
 const selectedFact = computed(() => allFacts.value.find(item => item.key === selectedFactKey.value))
-const canCorrect = computed(() => props.canWrite && facts.value?.available &&
-  checks.value?.is_current && !busy.value)
+const canCorrect = computed(() => props.canWrite && !loading.value && facts.value?.available &&
+  facts.value.is_current && checks.value?.is_current && checks.value.revision === props.revision &&
+  ['completed', 'partial'].includes(checks.value.run_status))
+const correctionType = computed(() => selectedFact.value?.rule?.type)
+const supportedCorrection = computed(() => ['numeric', 'money', 'duration', 'enum', 'presence', 'manual']
+  .includes(correctionType.value ?? ''))
+const hasUnit = computed(() => ['numeric', 'money', 'duration'].includes(correctionType.value ?? ''))
+
+function clearReport() {
+  checks.value = null; facts.value = null; progress.value = null; corrections.value = []
+  detailSupplier.value = ''; selectedFactKey.value = ''
+  correctedValue.value = ''; correctedUnit.value = ''; correctionReason.value = ''
+}
 
 async function load() {
   const ticket = ++scope
-  const { runId } = props
-  loading.value = true; error.value = ''
+  const context = identity()
+  const { runId, caseId, snapshotId } = props
+  const expectedDigest = savedDigest
+  savedDigest = ''
+  clearReport()
+  loading.value = true; busy.value = false; exporting.value = false; error.value = ''
   try {
-    const checksResult = await apiRequest<AnyRunChecksResult>(`/agent-runs/${runId}/checks`, accessToken)
-    if (ticket !== scope) return
-    checks.value = checksResult as RunDynamicChecksResult
+    const [checksResult, progressResult, factsResult, auditResult] = await Promise.all([
+      apiRequest<AnyRunChecksResult>(`/agent-runs/${runId}/checks`, accessToken),
+      apiRequest<DynamicProgressResult>(`/agent-runs/${runId}/progress`, accessToken),
+      apiRequest<DynamicFactsResult>(`/agent-runs/${runId}/facts`, accessToken),
+      apiRequest<{ run_id: string; payload_digest: string | null; corrections: DynamicCorrectionAuditRecord[] }>(
+        `/agent-runs/${runId}/fact-corrections`, accessToken),
+    ])
+    if (!active(ticket, context)) return
+    const report = checksResult as RunDynamicChecksResult
+    if ([report, factsResult].some(result => result.run_id !== runId || result.case_id !== caseId
+        || result.snapshot_id !== snapshotId)
+      || progressResult.run_id !== runId || auditResult.run_id !== runId
+      || factsResult.revision !== report.revision || factsResult.is_current !== report.is_current
+      || factsResult.checklist_version_id !== report.checklist_version_id
+      || progressResult.checklist_version_id !== report.checklist_version_id
+      || progressResult.run_status !== report.run_status
+      || (factsResult.available && !report.payload_digest) || factsResult.payload_digest !== report.payload_digest
+      || auditResult.payload_digest !== report.payload_digest
+      || (expectedDigest && expectedDigest !== report.payload_digest)) throw new Error('run_changed')
+    checks.value = report; facts.value = factsResult; progress.value = progressResult
+    corrections.value = auditResult.corrections
+    savedUnrefreshed = false
   } catch (reason) {
-    if (ticket === scope) { error.value = friendly(reason); loading.value = false }
-    return
+    if (active(ticket, context)) error.value = (savedUnrefreshed
+      ? '修正已保存，但最新报告读取失败。请重试读取，避免重复提交。' : '') + friendly(reason)
+  } finally {
+    if (active(ticket, context)) loading.value = false
   }
-  const [progressResult, factsResult, correctionResult] = await Promise.allSettled([
-    apiRequest<DynamicProgressResult>(`/agent-runs/${runId}/progress`, accessToken),
-    apiRequest<DynamicFactsResult>(`/agent-runs/${runId}/facts`, accessToken),
-    apiRequest<{ run_id: string; corrections: DynamicCorrectionAuditRecord[] }>(
-      `/agent-runs/${runId}/fact-corrections`, accessToken),
-  ])
-  if (ticket !== scope) return
-  if (progressResult.status === 'fulfilled') progress.value = progressResult.value
-  if (factsResult.status === 'fulfilled') facts.value = factsResult.value
-  if (correctionResult.status === 'fulfilled') corrections.value = correctionResult.value.corrections
-  loading.value = false
 }
 
 async function exportRun(format: 'json' | 'xlsx') {
-  if (!checks.value?.checks.length || exporting.value) return
+  if (!checks.value?.checks.length || exporting.value || busy.value || loading.value) return
+  const ticket = scope, context = identity(), runId = props.runId
   exporting.value = true; error.value = ''
   try {
-    const blob = await downloadRunExport(props.runId, format, accessToken)
+    const blob = await downloadRunExport(runId, format, accessToken)
+    if (!active(ticket, context)) return
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = `docucheck-${props.runId}.${format}`
+    link.download = `docucheck-${runId}.${format}`
     document.body.appendChild(link)
     link.click()
     link.remove()
     window.setTimeout(() => URL.revokeObjectURL(url), 1000)
-  } catch (reason) { error.value = friendly(reason) }
-  finally { exporting.value = false }
+  } catch (reason) { if (active(ticket, context)) error.value = friendly(reason) }
+  finally { if (active(ticket, context)) exporting.value = false }
 }
 
 watch(selectedFactKey, () => {
@@ -163,20 +199,24 @@ watch(selectedFactKey, () => {
 
 async function submitCorrection() {
   const fact = selectedFact.value
-  if (!fact || !canCorrect.value) return
-  if (!correctedValue.value.trim() || !correctedUnit.value.trim() || !correctionReason.value.trim()) {
-    error.value = '请填写修正值、单位和原因。'; return
+  if (!fact || !canCorrect.value || !supportedCorrection.value || busy.value || exporting.value) return
+  const value = typeof correctedValue.value === 'boolean' ? correctedValue.value : correctedValue.value.trim()
+  const unit = hasUnit.value || correctionType.value === 'manual' ? correctedUnit.value.trim() : ''
+  if ((correctionType.value === 'presence' ? typeof value !== 'boolean' : typeof value !== 'string' || !value)
+    || (hasUnit.value && !unit) || !correctionReason.value.trim()) {
+    error.value = '请填写有效的修正值、必要单位和原因。'; return
   }
+  const ticket = scope, context = identity(), runId = props.runId
   busy.value = true; error.value = ''
   try {
-    const record = await submitDynamicFactCorrection(props.runId, {
+    const completion = submitDynamicFactCorrection(runId, {
       fact_id: fact.fact_id,
       candidate: {
         criterion_id: String(fact.criterion_id ?? ''),
         item_id: String(fact.item_id ?? ''),
         supplier: String(fact.supplier ?? ''),
-        value: correctedValue.value.trim(),
-        unit: correctedUnit.value.trim(),
+        value,
+        unit,
         evidence_refs: fact.evidence_refs,
         quote: fact.quote,
         currency: fact.currency ?? null,
@@ -189,21 +229,23 @@ async function submitCorrection() {
       expected_revision: props.revision,
       expected_payload_digest: facts.value?.payload_digest ?? '',
     }, accessToken)
-    corrections.value = [...corrections.value, {
-      correction_id: record.correction_id,
-      reason: correctionReason.value.trim(),
-      old_fact: { ...fact, criterion_name: fact.criterionName },
-      corrected_fact: { ...fact, criterion_name: fact.criterionName,
-        value: correctedValue.value.trim(), unit: correctedUnit.value.trim(),
-        raw_value: correctedValue.value.trim(), raw_unit: correctedUnit.value.trim() },
-      review_status: record.review_status,
-    }]
-    correctionReason.value = ''
-  } catch (reason) { error.value = friendly(reason) }
-  finally { busy.value = false }
+    emit('correctionSubmitted', { caseId: props.caseId, snapshotId: props.snapshotId, runId }, completion)
+    const record = await completion
+    if (!active(ticket, context)) return
+    savedDigest = record.payload_digest
+    savedUnrefreshed = true
+    if (record.run_id !== runId || !savedDigest) throw new Error('run_changed')
+    await load()
+  } catch (reason) {
+    if (active(ticket, context)) {
+      clearReport()
+      error.value = friendly(reason) + '请先重试读取最新事实；网络异常时提交可能已保存。'
+    }
+  } finally { if (active(ticket, context)) busy.value = false }
 }
 
-watch([() => props.runId, () => props.caseId], () => { void load() }, { immediate: true })
+watch(identity, () => { savedDigest = ''; savedUnrefreshed = false; void load() }, { immediate: true, flush: 'sync' })
+onBeforeUnmount(() => { mounted = false; ++scope })
 </script>
 
 <template>
@@ -221,7 +263,7 @@ watch([() => props.runId, () => props.caseId], () => { void load() }, { immediat
     <p v-if="progress && progress.planned_batches" class="state-note">
       处理批次：已核验 {{ progress.validated_batches }} / {{ progress.planned_batches }}
     </p>
-    <div v-if="error" class="chat-error" role="alert">{{ error }} <button class="text-button" @click="load">重试读取</button></div>
+    <div v-if="error" class="chat-error" role="alert">{{ error }} <button class="text-button" @click="load()">重试读取</button></div>
     <div v-if="loading" class="chat-loading" role="status">正在读取审查报告…</div>
     <template v-else-if="checks">
       <div class="review-toolbar">
@@ -231,11 +273,11 @@ watch([() => props.runId, () => props.caseId], () => { void load() }, { immediat
             <option v-for="supplier in suppliers" :key="supplier" :value="supplier">{{ supplierLabel(supplier) }}</option>
           </select>
         </label>
-        <button class="button button-secondary" data-test="export-xlsx" :disabled="exporting || !checks.checks.length"
+        <button class="button button-secondary" data-test="export-xlsx" :disabled="exporting || busy || !checks.checks.length"
                 @click="exportRun('xlsx')">导出 Excel</button>
         <details class="audit-menu">
           <summary>更多</summary>
-          <button class="text-button" data-test="export-json" :disabled="exporting" @click="exportRun('json')">导出审计 JSON</button>
+          <button class="text-button" data-test="export-json" :disabled="exporting || busy" @click="exportRun('json')">导出报告 JSON</button>
         </details>
       </div>
 
@@ -274,7 +316,7 @@ watch([() => props.runId, () => props.caseId], () => { void load() }, { immediat
       </div>
 
       <div v-if="checks.checks.some(item => !item.is_formal)" class="state-note warning">
-        报告包含非正式结果（处理未完成或历史来源）；导出文件保留每项的正式标记。
+        报告包含非正式结果（处理未完成、历史来源或事实修正待复核）；导出文件保留每项的正式标记。
       </div>
 
       <div v-if="canCorrect || corrections.length" class="correction-section">
@@ -283,31 +325,39 @@ watch([() => props.runId, () => props.caseId], () => { void load() }, { immediat
         <div v-if="corrections.length" class="correction-audit">
           <div v-for="record in corrections" :key="record.correction_id" class="review-card">
             <strong>需人工复核</strong>
-            <span v-if="record.old_fact && record.corrected_fact">
-              {{ record.old_fact.supplier }} · {{ record.old_fact.criterion_name ?? record.old_fact.criterion_id }}：
-              {{ record.old_fact.raw_value ?? record.old_fact.value }} {{ record.old_fact.raw_unit ?? record.old_fact.unit }}
+            <span v-if="record.corrected_fact">
+              {{ supplierLabel(record.corrected_fact.supplier ?? '') }} · {{ record.corrected_fact.criterion_name ?? record.corrected_fact.criterion_id }}：
+              <template v-if="record.old_fact">{{ record.old_fact.raw_value ?? record.old_fact.value }} {{ record.old_fact.raw_unit ?? record.old_fact.unit }}</template>
+              <template v-else>历史记录未保存唯一的旧事实，无法确认旧值</template>
               → {{ record.corrected_fact.raw_value ?? record.corrected_fact.value }} {{ record.corrected_fact.raw_unit ?? record.corrected_fact.unit }}
             </span>
             <p>理由：{{ record.reason }}</p>
           </div>
         </div>
         <form v-if="canCorrect && allFacts.length" class="correction-form" @submit.prevent="submitCorrection">
-          <label>选择提取事实<select v-model="selectedFactKey" class="field-control" data-test="fact-select">
+          <label>选择提取事实<select v-model="selectedFactKey" class="field-control" data-test="fact-select" :disabled="busy || exporting">
             <option value="">请选择</option>
             <option v-for="fact in allFacts" :key="fact.key" :value="fact.key">
-              {{ supplierLabel(fact.supplier ?? '') }} · {{ fact.criterionName }} · {{ fact.raw_value }} {{ fact.raw_unit }}
+              {{ supplierLabel(fact.supplier ?? '') }} · {{ fact.criterionName }} · {{ typeof fact.raw_value === 'boolean' ? (fact.raw_value ? '有' : '无') : fact.raw_value }} {{ fact.raw_unit }}
             </option>
           </select></label>
           <div v-if="selectedFact" class="fact-source">
             <button v-for="refId in selectedFact.evidence_refs" :key="refId" type="button" class="text-button"
                     @click="openEvidence(refId)">核对原文来源</button>
           </div>
-          <div class="correction-grid">
-            <label>修正数值<input v-model="correctedValue" class="field-control" data-test="correction-value" maxlength="500" /></label>
-            <label>单位<input v-model="correctedUnit" class="field-control" data-test="correction-unit" maxlength="120" /></label>
+          <div v-if="supportedCorrection" class="correction-grid">
+            <label v-if="correctionType === 'presence'">修正为<select v-model="correctedValue" class="field-control" data-test="correction-value" :disabled="busy || exporting">
+              <option :value="true">有（原文明确提供）</option><option :value="false">无（原文明确未提供）</option>
+            </select></label>
+            <label v-else-if="correctionType === 'enum'">原文中的选项值<input v-model="correctedValue" class="field-control" data-test="correction-value" maxlength="500" :disabled="busy || exporting" /></label>
+            <label v-else>{{ correctionType === 'manual' ? '修正内容' : '修正数值' }}<input v-model="correctedValue" class="field-control" data-test="correction-value" maxlength="500" :disabled="busy || exporting" /></label>
+            <label v-if="hasUnit || correctionType === 'manual'">{{ hasUnit ? '单位' : '单位（选填）' }}<input v-model="correctedUnit" class="field-control" data-test="correction-unit" maxlength="120" :disabled="busy || exporting" /></label>
           </div>
-          <label>修正原因<textarea v-model="correctionReason" class="field-control" data-test="correction-reason" rows="2" maxlength="1000" /></label>
-          <button class="button button-secondary" type="submit" data-test="correction-submit" :disabled="busy || !selectedFact">提交事实修正</button>
+          <p v-if="correctionType === 'enum'" class="state-note">填写原文中的实际选项；允许填写要求范围以外的值，由后端核验是否符合要求。</p>
+          <p v-if="correctionType === 'manual'" class="state-note">只修正原文提取内容，复杂规则仍需人工判断。</p>
+          <p v-if="selectedFact && !supportedCorrection" class="state-note">缺少已确认的规则类型，暂不支持在此修正事实。</p>
+          <label>修正原因<textarea v-model="correctionReason" class="field-control" data-test="correction-reason" rows="2" maxlength="1000" :disabled="busy || exporting" /></label>
+          <button class="button button-secondary" type="submit" data-test="correction-submit" :disabled="busy || exporting || !supportedCorrection">{{ busy ? '正在保存并刷新…' : '提交事实修正' }}</button>
         </form>
         <p v-else-if="canWrite && !facts?.available" class="state-note">本次运行没有可修正的事实集。</p>
       </div>

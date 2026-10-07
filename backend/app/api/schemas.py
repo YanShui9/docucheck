@@ -373,3 +373,4 @@ class RunChecksOut(DynamicCompatibleOut):
     is_current: bool
     checks: list[CheckOut]
     checklist_version_id: str | None = None
+    payload_digest: str | None = None

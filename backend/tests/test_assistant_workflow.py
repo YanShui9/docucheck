@@ -2,6 +2,7 @@
 
 from copy import deepcopy
 
+import pytest
 from sqlalchemy import func, select, update
 
 from backend.app.db.models import input_snapshots, task_memory
@@ -102,6 +103,54 @@ def test_assistant_formal_review_preserves_dynamic_validation_and_shared_usage(d
     with dynamic_case[1].connect() as connection:
         assert connection.scalar(select(assistant_runs.c.run_id)) == receipt["run_id"]
         assert connection.scalar(select(dynamic_runs.c.run_id).where(dynamic_runs.c.run_id == receipt["run_id"])) == receipt["run_id"]
+
+
+@pytest.mark.parametrize("dynamic_case", ["苹果 数量12箱或8箱"], indirect=True)
+@pytest.mark.parametrize("tamper", [False, True])
+def test_assistant_fact_correction_keeps_chat_report_and_checkpoint_consistent(dynamic_case, tamper):
+    from backend.app.criteria.facts import FactCandidate
+    from backend.app.db.models import agent_runs, assistant_runs
+
+    test_dynamic_workflow.confirm(dynamic_case)
+    client, engine, _, _, _ = dynamic_case
+    receipt = send(dynamic_case, "审查苹果的数量")
+    assert run(dynamic_case, receipt, ScriptProvider()).status == "completed"
+    run_id = receipt["run_id"]
+    prefix = f"/api/v1/agent-runs/{run_id}"
+    before = client.get(prefix + "/assistant-result")
+    assert before.status_code == 200, before.text
+    facts = client.get(prefix + "/facts").json()
+    group = next(g for g in facts["fact_sets"] if g["supplier"] == "vendor-a")
+    old = group["facts"][0]
+    candidate = {k: old[k] for k in FactCandidate.model_fields}
+    candidate.update(value="8", unit="箱")
+    if tamper:
+        with engine.begin() as connection:
+            payload = deepcopy(before.json()["result"])
+            payload["answer"] = "伪造答案"
+            connection.execute(update(assistant_runs).where(
+                assistant_runs.c.run_id == run_id).values(payload_json=payload))
+    response = client.post(prefix + "/fact-corrections",
+        headers={"Idempotency-Key": "assistant-correction"}, json={
+            "fact_id": old["fact_id"], "candidate": candidate, "reason": "同源备选",
+            "expected_revision": 3, "expected_payload_digest": facts["payload_digest"],
+        })
+    if tamper:
+        assert response.status_code == 409, response.text
+        assert client.get(prefix + "/facts").json()["payload_digest"] == facts["payload_digest"]
+        assert not client.get(prefix + "/fact-corrections").json()["corrections"]
+        return
+    assert response.status_code == 201, response.text
+    result = client.get(prefix + "/assistant-result")
+    assert result.status_code == 200, result.text
+    assert result.json()["result"]["dynamic_payload_digest"] == response.json()["payload_digest"]
+    with engine.connect() as connection:
+        stored = connection.execute(select(agent_runs).where(agent_runs.c.id == run_id)).mappings().one()
+    assert result.json()["result"]["answer"] == stored["answer_text"]
+    assert stored["memory_json"]["version"] == 5
+    assert stored["memory_json"]["payload_digest"] == result.json()["payload_digest"]
+    checkpoints = client.get(prefix + "/checks").json()["checks"]
+    assert not any(c["is_formal"] for c in checkpoints)
 
 
 def test_fixed_base_candidate_historical_get_and_diff_tamper_rejected(dynamic_case):
