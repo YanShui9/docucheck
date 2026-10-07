@@ -162,6 +162,7 @@ export interface CriterionChange {
 
 export interface AssistantResult {
   run_id: string; case_id: string; snapshot_id: string | null; revision: number; is_current: boolean
+  checklist_revision: number
   result: { kind: 'chat' | 'evidence' | 'changes' | 'review' | 'proposal'; answer: string
     citations: AssistantCitation[]; candidate: ChecklistDefinitionPayload | null
     changes: CriterionChange[] } | null

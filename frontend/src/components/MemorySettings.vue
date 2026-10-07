@@ -16,7 +16,7 @@ const EXPIRY_OPTIONS = [
   { value: '30', label: '保存 30 天' },
 ]
 const errorTexts: Record<string, string> = {
-  memory_revision_conflict: '偏好已被其他人修改，请重试保存。',
+  memory_revision_conflict: '偏好已被其他人修改，请重新读取后再保存。',
   invalid_memory_preference: '偏好取值无效，请重新选择。',
   invalid_memory_expiration: '到期时间无效。',
   memory_confirmation_required: '需要明确确认才能保存偏好。',
@@ -55,7 +55,7 @@ async function load() {
     if (ticket !== generation) return
     profile.value = response
     draft.value = Object.fromEntries(KEYS.map(key => [key, valueOf(key)]))
-    expiryChoice.value = Object.fromEntries(KEYS.map(key => [key, '']))
+    expiryChoice.value = Object.fromEntries(KEYS.map(key => [key, valueOf(key) ? 'keep' : '']))
   } catch (reason) {
     if (ticket === generation) error.value = friendly(reason)
   } finally { if (ticket === generation) busy.value = false }
@@ -64,41 +64,55 @@ void load()
 
 function expiresAtFor(key: string): string | null {
   const days = expiryChoice.value[key]
+  if (days === 'keep') return expiryOf(key)
   if (!days) return null
   return new Date(Date.now() + Number(days) * 24 * 3600 * 1000).toISOString()
+}
+function changed(key: string): boolean {
+  return !!draft.value[key] && (draft.value[key] !== valueOf(key)
+    || ['7', '30'].includes(expiryChoice.value[key] ?? '')
+    || (expiryChoice.value[key] === '' && expiryOf(key) !== null))
 }
 
 async function save(key: string) {
   const value = draft.value[key]
-  if (!value || busy.value || !profile.value) return
+  if (!changed(key) || busy.value || !profile.value) return
+  const ticket = generation
   busy.value = true; error.value = ''; notice.value = ''
   try {
-    profile.value = await saveMemoryPreference(key, {
+    const response = await saveMemoryPreference(key, {
       value, expected_revision: profile.value.revision, confirmed: true,
       expires_at: expiresAtFor(key),
     }, accessToken)
+    if (ticket !== generation) return
+    profile.value = response
     draft.value = { ...draft.value, [key]: valueOf(key) }
+    expiryChoice.value = { ...expiryChoice.value, [key]: 'keep' }
     notice.value = `${MEMORY_KEY_LABELS[key] ?? key}已保存。`
-  } catch (reason) { error.value = friendly(reason) }
-  finally { busy.value = false }
+  } catch (reason) { if (ticket === generation) error.value = friendly(reason) }
+  finally { if (ticket === generation) busy.value = false }
 }
 
 async function remove(key: string) {
   if (!profile.value || busy.value) return
+  const ticket = generation
   busy.value = true; error.value = ''; notice.value = ''
   try {
-    profile.value = await deleteMemoryPreference(key, profile.value.revision, accessToken)
+    const response = await deleteMemoryPreference(key, profile.value.revision, accessToken)
+    if (ticket !== generation) return
+    profile.value = response
     draft.value = { ...draft.value, [key]: '' }
+    expiryChoice.value = { ...expiryChoice.value, [key]: '' }
     notice.value = `${MEMORY_KEY_LABELS[key] ?? key}已删除。`
-  } catch (reason) { error.value = friendly(reason) }
-  finally { busy.value = false }
+  } catch (reason) { if (ticket === generation) error.value = friendly(reason) }
+  finally { if (ticket === generation) busy.value = false }
 }
 
 function onKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape') emit('close')
 }
 window.addEventListener('keydown', onKeydown)
-onUnmounted(() => window.removeEventListener('keydown', onKeydown))
+onUnmounted(() => { ++generation; window.removeEventListener('keydown', onKeydown) })
 </script>
 
 <template>
@@ -115,7 +129,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
         <div v-for="key in KEYS" :key="key" class="memory-row" :data-test="`row-${key}`">
           <label class="memory-key">
             <span>{{ MEMORY_KEY_LABELS[key] }}</span>
-            <select v-model="draft[key]" class="field-control" :data-test="`pref-${key}`">
+            <select v-model="draft[key]" class="field-control" :disabled="busy" :data-test="`pref-${key}`">
               <option value="">未设置</option>
               <option v-for="(label, value) in MEMORY_PREFERENCE_LABELS[key]" :key="value" :value="value">{{ label }}</option>
             </select>
@@ -123,21 +137,24 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
           <p v-if="expiryOf(key)" class="memory-expiry">
             当前偏好 {{ formatExpiry(expiryOf(key)) }} 到期
           </p>
+          <p v-else-if="valueOf(key)" class="memory-expiry">当前偏好长期有效</p>
           <div class="memory-actions">
             <label class="memory-expiry-choice">
               有效期
-              <select v-model="expiryChoice[key]" class="field-control" :data-test="`expiry-${key}`">
+              <select v-model="expiryChoice[key]" class="field-control" :disabled="busy" :data-test="`expiry-${key}`">
+                <option v-if="valueOf(key)" value="keep">保持当前有效期</option>
                 <option v-for="option in EXPIRY_OPTIONS" :key="option.value" :value="option.value">{{ option.label }}</option>
               </select>
             </label>
             <button class="button button-primary" :data-test="`save-${key}`"
-                    :disabled="busy || !draft[key] || draft[key] === valueOf(key)" @click="save(key)">保存</button>
+                    :disabled="busy || !changed(key)" @click="save(key)">保存</button>
             <button v-if="valueOf(key)" class="button button-secondary" :data-test="`delete-${key}`"
                     :disabled="busy" @click="remove(key)">删除</button>
           </div>
         </div>
       </template>
       <div class="rule-actions">
+        <button v-if="error" class="button button-secondary" :disabled="busy" @click="load">重新读取偏好</button>
         <button class="button button-secondary" data-test="memory-close" @click="emit('close')">关闭</button>
       </div>
     </div>

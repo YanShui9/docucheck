@@ -2,18 +2,20 @@
 import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
 import { apiRequest } from '../api'
 import type {
-  AssistantResult, ChatRun, ChecklistDefinitionPayload, ConversationRecord,
-  CriterionChange, MessagesPage, StoredMessage,
+  AssistantResult, ChatRun, ChecklistDefinitionPayload, ChecklistView, ConversationRecord,
+  MessagesPage, StoredMessage,
 } from '../api'
+import { candidateState } from '../checklistCandidate'
+import type { ChecklistTarget } from '../checklistCandidate'
 import { accessToken } from '../auth'
 import ChatComposer from './ChatComposer.vue'
 const props = defineProps<{ caseId: string | null; scopeKey?: string; revision: number; canWrite: boolean; prepareCase: () => Promise<string | null>;
+  checklistChanges?: Record<string, number>;
   pendingReportCorrections?: Record<string, { caseId: string; snapshotId: string; count: number }> }>()
 const emit = defineEmits<{
   upload: []
   openEvidence: [target: { caseId: string; snapshotId: string; evidenceId: string }]
-  openChecklist: [target: { caseId: string; snapshotId: string; runId: string;
-    candidate: { candidate: ChecklistDefinitionPayload; changes: CriterionChange[]; runId: string } }]
+  openChecklist: [target: ChecklistTarget]
   openReview: [target: { caseId: string; snapshotId: string; runId: string }]
   title: [value: { caseId: string; title: string }]
 }>()
@@ -23,6 +25,9 @@ const messages = ref<StoredMessage[]>([])
 const runs = ref<Record<string, ChatRun>>({})
 const results = ref<Record<string, AssistantResult>>({})
 const resultErrors = ref<Record<string, string>>({})
+const checklistViews = ref<Record<string, ChecklistView>>({})
+const checklistReads = new Map<string, Promise<void>>()
+const checklistReadVersions = new Map<string, number>()
 const draft = ref('')
 const drafts = new Map<string, string>()
 const readVersions = new Map<string, number>()
@@ -55,8 +60,13 @@ function fail(reason: unknown) {
   error.value = notice(reason)
   const code = reason instanceof Error ? reason.message : ''
   if (['not_found', 'run_not_found', 'forbidden', 'session_expired', 'case_deleting'].includes(code)) {
-    messages.value = []; runs.value = {}; results.value = {}; resultErrors.value = {}
-    historyReady.value = false
+    // Losing access invalidates every in-flight read, including independent older-page/status requests.
+    ++generation
+    if (timer) clearTimeout(timer)
+    messages.value = []; runs.value = {}; results.value = {}; resultErrors.value = {}; checklistViews.value = {}
+    checklistReads.clear()
+    loading.value = false; olderLoading.value = false; sending.value = false; historyReady.value = false
+    pending = null; uncertain.value = false
   }
 }
 async function latest() { await nextTick(); if (atBottom.value && scrollArea.value) scrollArea.value.scrollTop = scrollArea.value.scrollHeight }
@@ -70,6 +80,7 @@ function correctionPending(runId: string) {
 function answer(message: StoredMessage) {
   if (!message.run_id || lastMessageFor(message.run_id) !== message.id) return ''
   if (correctionPending(message.run_id)) return ''
+  if (resultErrors.value[message.run_id]) return ''
   const run = runs.value[message.run_id]
   if (!run || !['completed', 'partial', 'waiting_user'].includes(run.status)) return ''
   return run.workflow === 'assistant' ? results.value[run.id]?.result?.answer ?? '' : run.workflow === 'legacy' ? run.answer_text ?? '' : ''
@@ -113,6 +124,7 @@ async function readRun(runId: string, version: number) {
     if (!latestRead()) return
     if (run.id !== runId || run.conversation_id !== conversationId.value) throw new Error('result_scope')
     runs.value = { ...runs.value, [runId]: run }
+    if (run.workflow === 'legacy') delete resultErrors.value[runId]
     if (!['completed', 'partial', 'waiting_user'].includes(run.status)) { delete results.value[runId]; delete resultErrors.value[runId] }
     if (run.workflow === 'assistant' && ['completed', 'partial', 'waiting_user'].includes(run.status)) {
       try {
@@ -120,6 +132,7 @@ async function readRun(runId: string, version: number) {
         if (!latestRead()) return
         if (result.run_id !== runId || result.case_id !== props.caseId) throw new Error('result_scope')
         if (latestRead()) { results.value = { ...results.value, [runId]: result }; delete resultErrors.value[runId] }
+        if (result.snapshot_id && result.result?.candidate) await readChecklist(result.snapshot_id, version)
       } catch (reason) {
         if (latestRead()) {
           delete results.value[runId]
@@ -129,7 +142,62 @@ async function readRun(runId: string, version: number) {
         }
       }
     }
-  } catch (reason) { if (latestRead()) throw reason }
+  } catch (reason) {
+    if (!latestRead()) return
+    const code = reason instanceof Error ? reason.message : ''
+    if (['not_found', 'run_not_found', 'forbidden', 'session_expired', 'case_deleting'].includes(code)) fail(reason)
+    else throw reason
+  }
+}
+async function readChecklist(snapshotId: string, version: number, refresh = false): Promise<void> {
+  if (!current(version) || !props.caseId) return
+  if (!refresh && checklistViews.value[snapshotId]) return
+  if (!refresh && checklistReads.has(snapshotId)) return checklistReads.get(snapshotId)
+  const caseId = props.caseId
+  const request = (checklistReadVersions.get(snapshotId) ?? 0) + 1
+  checklistReadVersions.set(snapshotId, request)
+  delete checklistViews.value[snapshotId]
+  const latestRead = () => current(version) && checklistReadVersions.get(snapshotId) === request
+  const reading = (async () => {
+    try {
+      const view = await apiRequest<ChecklistView>(`/cases/${caseId}/snapshots/${snapshotId}/checklist`, accessToken)
+      if (!latestRead()) return
+      if (view.case_id !== caseId || view.snapshot_id !== snapshotId) throw new Error('result_scope')
+      checklistViews.value = { ...checklistViews.value, [snapshotId]: view }
+    } catch (reason) {
+      if (!latestRead()) return
+      const code = reason instanceof Error ? reason.message : ''
+      if (['not_found', 'run_not_found', 'forbidden', 'session_expired', 'case_deleting'].includes(code)) throw reason
+      // No view is safer than retaining a stale saved/confirmed label. The card offers a scoped GET retry.
+    }
+    finally { if (latestRead()) checklistReads.delete(snapshotId) }
+  })()
+  checklistReads.set(snapshotId, reading)
+  return reading
+}
+function refreshChecklist(snapshotId: string, version = generation) {
+  void readChecklist(snapshotId, version, true).catch(reason => { if (current(version)) fail(reason) })
+}
+async function hydrateRuns(stored: StoredMessage[], version: number, onlyNew = false) {
+  const ids = [...new Set(stored.map(item => item.run_id).filter((id): id is string => !!id))]
+    .filter(id => !onlyNew || !runs.value[id])
+  // Wait for each bounded batch to settle before reporting a failure or starting the next batch.
+  for (let index = 0; index < ids.length; index += 5) {
+    if (!current(version)) return
+    const settled = await Promise.allSettled(ids.slice(index, index + 5).map(async id => {
+      try { await readRun(id, version) }
+      catch (reason) {
+        if (!current(version)) return
+        const code = reason instanceof Error ? reason.message : ''
+        if (['not_found', 'run_not_found', 'forbidden', 'session_expired', 'case_deleting'].includes(code)) throw reason
+        delete results.value[id]
+        resultErrors.value = { ...resultErrors.value, [id]: notice(reason) }
+      }
+    }))
+    if (!current(version)) return
+    const rejected = settled.find(item => item.status === 'rejected')
+    if (rejected?.status === 'rejected') throw rejected.reason
+  }
 }
 function schedule(version: number, delay = 2500) {
   if (timer) clearTimeout(timer)
@@ -174,19 +242,14 @@ async function loadMessages(version: number, keepOldest?: number) {
   messages.value = stored
   const first = stored.find(item => item.role === 'user')
   if (props.caseId && first) emit('title', { caseId: props.caseId, title: first.content.slice(0, 30) })
-  const ids = [...new Set(stored.map(item => item.run_id).filter((id): id is string => !!id))]
-  // Bounded batches keep history hydration from flooding the API.
-  for (let index = 0; index < ids.length; index += 5) {
-    if (!current(version)) return
-    await Promise.all(ids.slice(index, index + 5).map(id => readRun(id, version)))
-  }
+  await hydrateRuns(stored, version)
   if (current(version)) { schedule(version); void latest() }
 }
 
 async function loadOlder() {
   const version = generation
   const id = conversationId.value
-  if (!id || olderLoading.value || oldestOffset.value <= 0) return
+  if (!id || olderLoading.value || loading.value || sending.value || uncertain.value || oldestOffset.value <= 0) return
   const previousOffset = Math.max(0, oldestOffset.value - PAGE_SIZE)
   if (totalKnown.value !== null &&
       Math.ceil((totalKnown.value - previousOffset) / PAGE_SIZE) > MAX_PAGES) {
@@ -204,10 +267,13 @@ async function loadOlder() {
     const fresh = page.messages.filter(item => !known.has(item.id))
     if (fresh.length) {
       messages.value = [...fresh, ...messages.value]
-      oldestOffset.value = previousOffset
     }
+    oldestOffset.value = previousOffset
+    await hydrateRuns(fresh, version, true)
+    if (!current(version)) return
+    schedule(version)
     await nextTick()
-    if (area) area.scrollTop += area.scrollHeight - scrollHeightBefore
+    if (current(version) && area) area.scrollTop += area.scrollHeight - scrollHeightBefore
   } catch (reason) { if (current(version)) fail(reason) }
   finally { if (current(version)) olderLoading.value = false }
 }
@@ -232,6 +298,8 @@ async function selectConversation(id: string | null) {
   if (timer) clearTimeout(timer)
   drafts.set(`${props.scopeKey ?? ''}:${props.caseId ?? 'new'}:${conversationId.value ?? 'new'}`, draft.value)
   conversationId.value = id; messages.value = []; runs.value = {}; results.value = {}; resultErrors.value = {}
+  checklistViews.value = {}; checklistReads.clear()
+  olderLoading.value = false
   oldestOffset.value = 0; totalKnown.value = null
   draft.value = drafts.get(`${props.scopeKey ?? ''}:${props.caseId ?? 'new'}:${id ?? 'new'}`) ?? ''
   pending = null; uncertain.value = false; sending.value = false; error.value = ''; atBottom.value = true
@@ -240,7 +308,7 @@ async function selectConversation(id: string | null) {
   finally { if (current(version)) loading.value = false }
 }
 async function send(retry = false) {
-  if (!props.canWrite || sending.value || loading.value || running.value || !historyReady.value) return
+  if (!props.canWrite || sending.value || loading.value || olderLoading.value || running.value || !historyReady.value) return
   const content = retry && pending ? pending.content : draft.value.trim()
   if ((!content && !(retry && pending?.retry)) || (!retry && uncertain.value)) return
   let version = generation
@@ -308,7 +376,20 @@ async function retryRun(runId: string) {
   pending = { caseId: props.caseId, conversationId: run.conversation_id, content: '', revision: props.revision, key: crypto.randomUUID(), path: `/agent-runs/${runId}/retry`, resume: false, retry: true }
   await send(true)
 }
-async function refresh() { if (sending.value || loading.value || uncertain.value) return; error.value = ''; loading.value = true; const version = generation; try { if (!historyReady.value || !conversationId.value) await loadCase(); else await loadMessages(version) } catch (reason) { if (current(version)) fail(reason) } finally { if (current(version)) loading.value = false } }
+async function refresh() {
+  if (sending.value || loading.value || uncertain.value || olderLoading.value) return
+  const version = generation
+  error.value = ''; loading.value = true; checklistViews.value = {}
+  for (const snapshotId of checklistReads.keys()) {
+    checklistReadVersions.set(snapshotId, (checklistReadVersions.get(snapshotId) ?? 0) + 1)
+  }
+  checklistReads.clear()
+  try {
+    if (!historyReady.value || !conversationId.value) await loadCase()
+    else await loadMessages(version, oldestOffset.value)
+  } catch (reason) { if (current(version)) fail(reason) }
+  finally { if (current(version)) loading.value = false }
+}
 function cite(message: StoredMessage, evidenceId: string) {
   const result = message.run_id ? results.value[message.run_id] : null
   if (props.caseId && result?.snapshot_id) emit('openEvidence', { caseId: props.caseId, snapshotId: result.snapshot_id, evidenceId })
@@ -319,12 +400,41 @@ function candidateOf(message: StoredMessage): ChecklistDefinitionPayload | null 
   return result?.result?.candidate && (kind === 'changes' || kind === 'proposal')
     ? result.result.candidate : null
 }
+function stateOf(message: StoredMessage) {
+  const result = message.run_id ? results.value[message.run_id] : null
+  const candidate = candidateOf(message)
+  if (!candidate || !result?.snapshot_id) return 'unknown'
+  if (result.revision !== props.revision) return 'historical'
+  const view = checklistViews.value[result.snapshot_id]
+  if (view && view.revision !== result.revision) return 'unknown'
+  return candidateState(candidate, view, props.revision, result.checklist_revision, result.is_current)
+}
+const candidateLabels = { unknown: '状态待核实', candidate: '待确认的审查要求', saved: '已保存，待确认',
+  confirmed: '已确认的审查要求', partial: '部分已确认', historical: '历史候选（只读）' }
+function candidateNote(message: StoredMessage) {
+  const state = stateOf(message)
+  if (state === 'confirmed') {
+    const result = results.value[message.run_id!]
+    return checklistViews.value[result!.snapshot_id!]?.execution_available
+      ? '当前已确认要求与此候选一致，可用于正式审查。'
+      : '此候选与已确认版本一致；当前另有草稿待确认，暂不能直接执行完整审查。'
+  }
+  return { unknown: '尚未核实最新清单状态，请重新读取。',
+    candidate: '候选内容尚未保存确认。请查看、编辑并保存，再明确确认后才会用于正式审查。',
+    saved: '当前草稿与此候选一致。保存不代表确认，请明确确认后再进行正式审查。',
+    partial: '部分指标已确认，其余指标保留为草稿；正式审查只使用已确认部分。',
+    historical: '资料或审查要求已变化。此候选仅供追溯，不能直接写入当前清单。' }[state]
+}
 function openChecklist(message: StoredMessage) {
   const result = message.run_id ? results.value[message.run_id] : null
   const candidate = candidateOf(message)
   if (!result?.snapshot_id || !candidate) return
+  const state = stateOf(message)
+  if (state === 'unknown') { refreshChecklist(result.snapshot_id); return }
   emit('openChecklist', { caseId: result.case_id, snapshotId: result.snapshot_id,
-    runId: message.run_id!, candidate: { candidate, changes: result.result?.changes ?? [], runId: message.run_id! } })
+    runId: message.run_id!, ...(state === 'historical' ? { readOnly: true } : {}),
+    candidate: ['saved', 'confirmed', 'partial'].includes(state) ? null : {
+      candidate, changes: result.result?.changes ?? [], runId: message.run_id!, baseChecklistRevision: result.checklist_revision } })
 }
 function openReview(message: StoredMessage) {
   const result = message.run_id ? results.value[message.run_id] : null
@@ -353,11 +463,20 @@ watch(() => props.pendingReportCorrections, (pending, previous) => {
     })
   }
 }, { flush: 'sync' })
+watch(() => props.checklistChanges, (changes, previous) => {
+  for (const snapshotId of Object.keys(changes ?? {})) {
+    if (changes?.[snapshotId] === previous?.[snapshotId]) continue
+    if (Object.values(results.value).some(result => result.case_id === props.caseId && result.snapshot_id === snapshotId && result.result?.candidate)) {
+      refreshChecklist(snapshotId)
+    }
+  }
+}, { flush: 'sync' })
 watch(() => [props.caseId, props.scopeKey] as const, (_, previous) => {
   drafts.set(`${previous?.[1] ?? ''}:${previous?.[0] ?? 'new'}:${conversationId.value ?? 'new'}`, draft.value)
   ++generation
   if (timer) clearTimeout(timer)
   conversationId.value = null; conversations.value = []; messages.value = []; runs.value = {}; results.value = {}; resultErrors.value = {}
+  checklistViews.value = {}; checklistReads.clear(); olderLoading.value = false
   oldestOffset.value = 0; totalKnown.value = null
   draft.value = drafts.get(`${props.scopeKey ?? ''}:${props.caseId ?? 'new'}:new`) ?? ''
   loading.value = false; historyReady.value = true; sending.value = false; error.value = ''; pending = null; uncertain.value = false; atBottom.value = true
@@ -403,9 +522,9 @@ onUnmounted(() => { disposed = true; ++generation; if (timer) clearTimeout(timer
               <button v-for="citation in results[message.run_id]?.result?.citations" :key="citation.evidence_id" @click="cite(message, citation.evidence_id)">{{ citation.file_name }} · {{ citation.location }} ↗</button>
             </div>
             <div v-if="candidateOf(message)" class="candidate-card">
-              <p class="candidate-title">待确认的审查要求 · {{ candidateOf(message)!.items.length }} 个品目 / {{ candidateOf(message)!.criteria.length }} 项指标</p>
-              <p class="candidate-note">候选内容尚未保存确认。请查看、编辑并保存，再明确确认后才会用于正式审查。</p>
-              <button class="text-button" @click="openChecklist(message)">查看与编辑</button>
+              <p class="candidate-title">{{ candidateLabels[stateOf(message)] }} · {{ candidateOf(message)!.items.length }} 个品目 / {{ candidateOf(message)!.criteria.length }} 项指标</p>
+              <p class="candidate-note">{{ candidateNote(message) }}</p>
+              <button class="text-button" @click="openChecklist(message)">{{ stateOf(message) === 'unknown' ? '重新读取状态' : stateOf(message) === 'historical' ? '查看历史候选' : stateOf(message) === 'candidate' ? '查看与编辑' : '查看当前清单' }}</button>
             </div>
             <div v-if="results[message.run_id]?.result?.kind === 'review' && results[message.run_id]?.snapshot_id" class="review-link">
               <button class="text-button" @click="openReview(message)">查看完整报告 →</button>
@@ -413,7 +532,7 @@ onUnmounted(() => { disposed = true; ++generation; if (timer) clearTimeout(timer
             <div v-if="runs[message.run_id]" class="message-status" :role="['queued', 'running'].includes(runs[message.run_id]!.status) ? 'status' : undefined">
               {{ labels[runs[message.run_id]!.status] ?? '状态待确认' }}
               <span v-if="runs[message.run_id]!.revision !== revision"> · 历史资料版本 {{ runs[message.run_id]!.revision }}</span>
-              <span v-else-if="results[message.run_id] && !results[message.run_id]!.is_current"> · 历史审查要求</span>
+              <span v-else-if="results[message.run_id] && !results[message.run_id]!.is_current && !candidateOf(message)"> · 历史审查要求</span>
             </div>
             <p v-if="runs[message.run_id]?.outcome_unknown" class="state-note">上次模型请求的结果未知，重新处理可能再次调用模型。</p>
             <button v-if="runs[message.run_id]?.is_current && runs[message.run_id]!.revision === revision && ['failed', 'partial', 'interrupted'].includes(runs[message.run_id]!.status) && canWrite" class="text-button" :disabled="sending || loading || uncertain || !!activeRun" @click="retryRun(message.run_id)">重新处理</button>
@@ -424,8 +543,9 @@ onUnmounted(() => { disposed = true; ++generation; if (timer) clearTimeout(timer
     <div class="composer-dock">
       <button v-if="!atBottom" class="back-to-latest" @click="goLatest">↓ 回到最新</button>
       <div v-if="error" class="chat-error" role="alert">{{ error }} <button v-if="uncertain" class="text-button" @click="send(true)">重试原请求</button><button v-else class="text-button" @click="refresh">刷新对话</button></div>
+      <button v-else-if="Object.keys(resultErrors).length" class="text-button" :disabled="loading || sending || olderLoading" @click="refresh">刷新对话</button>
       <div v-if="activeRun?.status === 'waiting_user'" class="state-note">请补充信息后发送，或<button class="text-button" :disabled="sending || !canWrite" @click="stop">结束本次处理</button>。</div>
-      <ChatComposer v-model="draft" :disabled="!canWrite || loading || sending || uncertain || !historyReady" :running="running && canWrite" @send="send()" @upload="emit('upload')" @stop="stop" />
+      <ChatComposer v-model="draft" :disabled="!canWrite || loading || sending || olderLoading || uncertain || !historyReady" :running="running && canWrite" @send="send()" @upload="emit('upload')" @stop="stop" />
       <p class="composer-disclaimer">{{ canWrite ? '助手结论供采购审查参考，请结合原文确认。' : '当前为只读权限，可查看对话和资料。' }}</p>
     </div>
   </section>

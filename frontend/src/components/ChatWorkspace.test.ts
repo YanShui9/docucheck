@@ -307,7 +307,7 @@ test('access denial during result hydration clears already loaded private messag
 })
 
 const candidateResult = {
-  run_id: 'run-a', case_id: 'case-a', revision: 0, snapshot_id: 'snap-1', is_current: true,
+  run_id: 'run-a', case_id: 'case-a', revision: 0, snapshot_id: 'snap-1', is_current: true, checklist_revision: 0,
   result: { kind: 'changes', answer: '已整理 1 项要求。', citations: [],
     candidate: { items: [{ item_id: 'apple', name: '苹果' }],
       criteria: [{ criterion_id: 'c-qty', item_id: 'apple', name: '数量',
@@ -317,12 +317,27 @@ const candidateResult = {
     changes: [{ op: 'add', criterion_id: 'c-qty', reason: '用户要求', before: null, after: {} }] },
 }
 
+function checklistView(overrides: object = {}) {
+  return { case_id: 'case-a', snapshot_id: 'snap-1', revision: 0, is_current_snapshot: true,
+    checklist_revision: 0, state: 'empty', draft: null, confirmed_version: null,
+    previous_version_id: null, issues: [], execution_available: false, ...overrides }
+}
+function candidateReads(path: string) {
+  if (path.includes('/conversations?')) return Promise.resolve({ conversations: [{ id: 'conv-a', created_at: '' }], next_offset: null })
+  if (path.includes('/messages?')) return Promise.resolve({ messages: [{ id: 'message-a', role: 'user', content: '整理要求', run_id: 'run-a', created_at: '' }], next_offset: null })
+  if (path === '/agent-runs/run-a') return Promise.resolve({ id: 'run-a', conversation_id: 'conv-a', status: 'completed', workflow: 'assistant', revision: 0 })
+  if (path.endsWith('/assistant-result')) return Promise.resolve(candidateResult)
+  if (path.endsWith('/checklist')) return Promise.resolve(checklistView())
+  return reads(path)
+}
+
 test('a changes candidate shows an explicit edit entry and never saves by itself', async () => {
   apiRequest.mockImplementation((path: string) => {
     if (path.includes('/conversations?')) return Promise.resolve({ conversations: [{ id: 'conv-a', created_at: '' }], next_offset: null })
     if (path.includes('/messages?')) return Promise.resolve({ messages: [{ id: 'message-a', role: 'user', content: '整理要求', run_id: 'run-a', created_at: '' }], next_offset: null })
     if (path === '/agent-runs/run-a') return Promise.resolve({ id: 'run-a', conversation_id: 'conv-a', status: 'completed', workflow: 'assistant', revision: 0 })
     if (path.endsWith('/assistant-result')) return Promise.resolve(candidateResult)
+    if (path.endsWith('/checklist')) return Promise.resolve(checklistView())
     return reads(path)
   })
   const wrapper = setup()
@@ -333,9 +348,139 @@ test('a changes candidate shows an explicit edit entry and never saves by itself
   expect(wrapper.emitted('openChecklist')).toEqual([[
     { caseId: 'case-a', snapshotId: 'snap-1', runId: 'run-a',
       candidate: { candidate: candidateResult.result.candidate,
-        changes: candidateResult.result.changes, runId: 'run-a' } },
+        changes: candidateResult.result.changes, runId: 'run-a', baseChecklistRevision: 0 } },
   ]])
   expect(apiRequest.mock.calls.some(([, , init]) => init?.method === 'PUT')).toBe(false)
+})
+
+test.each(['draft', 'confirmed'])('candidate card reflects the persisted %s definition, despite an old base revision', async state => {
+  apiRequest.mockImplementation((path: string) => {
+    if (path.endsWith('/assistant-result')) return Promise.resolve({ ...candidateResult, is_current: false })
+    if (path.endsWith('/checklist')) return Promise.resolve(checklistView({ state, checklist_revision: 2,
+      draft: state === 'draft' ? candidateResult.result.candidate : null,
+      confirmed_version: state === 'confirmed' ? { definition: candidateResult.result.candidate } : null,
+      execution_available: state === 'confirmed' }))
+    return candidateReads(path)
+  })
+  const wrapper = setup()
+  await flushPromises()
+  const card = wrapper.get('.candidate-card')
+  expect(card.text()).toContain(state === 'draft' ? '已保存' : '已确认')
+  expect(card.text()).not.toContain('尚未保存确认')
+  await card.get('button').trigger('click')
+  expect((wrapper.emitted('openChecklist')![0]![0] as { candidate: unknown }).candidate).toBeNull()
+})
+
+test.each(['snapshot', 'checklist'])('historical %s candidates are read-only and keep their original snapshot', async history => {
+  apiRequest.mockImplementation((path: string) => {
+    if (path.endsWith('/assistant-result')) return Promise.resolve({ ...candidateResult, is_current: false })
+    if (path.endsWith('/checklist')) return Promise.resolve(checklistView({
+      state: history === 'snapshot' ? 'historical' : 'draft',
+      is_current_snapshot: history !== 'snapshot', checklist_revision: 2 }))
+    return candidateReads(path)
+  })
+  const wrapper = setup()
+  await flushPromises()
+  const card = wrapper.get('.candidate-card')
+  expect(card.text()).toContain('历史候选')
+  expect(card.text()).not.toContain('查看与编辑')
+  await card.get('button').trigger('click')
+  expect(wrapper.emitted('openChecklist')![0]![0]).toMatchObject({ snapshotId: 'snap-1', readOnly: true })
+})
+
+test('save and confirm notifications refresh the candidate status without model requests', async () => {
+  let view = checklistView()
+  apiRequest.mockImplementation((path: string) => path.endsWith('/checklist') ? Promise.resolve(view) : candidateReads(path))
+  const wrapper = setup()
+  await flushPromises()
+  view = checklistView({ state: 'draft', checklist_revision: 1, draft: candidateResult.result.candidate })
+  await wrapper.setProps({ checklistChanges: { 'snap-1': 1 } })
+  await flushPromises()
+  expect(wrapper.get('.candidate-card').text()).toContain('已保存')
+  view = checklistView({ state: 'confirmed', checklist_revision: 2,
+    confirmed_version: { definition: candidateResult.result.candidate }, execution_available: true })
+  await wrapper.setProps({ checklistChanges: { 'snap-1': 2 } })
+  await flushPromises()
+  expect(wrapper.get('.candidate-card').text()).toContain('已确认')
+  expect(apiRequest.mock.calls.some(([, , init]) => init?.method === 'POST' || init?.method === 'PUT')).toBe(false)
+})
+
+test('a failed candidate state refresh cannot retain a saved label or allow editing', async () => {
+  let failed = false
+  apiRequest.mockImplementation((path: string) => {
+    if (path.endsWith('/checklist')) return failed ? Promise.reject(new Error('offline'))
+      : Promise.resolve(checklistView({ state: 'draft', checklist_revision: 1, draft: candidateResult.result.candidate }))
+    return candidateReads(path)
+  })
+  const wrapper = setup()
+  await flushPromises()
+  expect(wrapper.get('.candidate-card').text()).toContain('已保存')
+  failed = true
+  await wrapper.setProps({ checklistChanges: { 'snap-1': 1 } })
+  await flushPromises()
+  expect(wrapper.get('.candidate-card').text()).toContain('状态待核实')
+  await wrapper.get('.candidate-card button').trigger('click')
+  await flushPromises()
+  expect(wrapper.emitted('openChecklist')).toBeUndefined()
+  failed = false
+  await wrapper.get('.candidate-card button').trigger('click')
+  await flushPromises()
+  expect(wrapper.get('.candidate-card').text()).toContain('已保存')
+})
+
+test('a delayed candidate status cannot overwrite a newer confirmation response', async () => {
+  let resolveOld!: (value: unknown) => void
+  let count = 0
+  apiRequest.mockImplementation((path: string) => {
+    if (path.endsWith('/checklist')) {
+      if (++count === 1) return new Promise(resolve => { resolveOld = resolve })
+      return Promise.resolve(checklistView({ state: 'confirmed', checklist_revision: 2,
+        confirmed_version: { definition: candidateResult.result.candidate }, execution_available: true }))
+    }
+    return candidateReads(path)
+  })
+  const wrapper = setup()
+  await flushPromises()
+  await wrapper.setProps({ checklistChanges: { 'snap-1': 1 } })
+  await flushPromises()
+  expect(wrapper.get('.candidate-card').text()).toContain('已确认')
+  resolveOld(checklistView())
+  await flushPromises()
+  expect(wrapper.get('.candidate-card').text()).toContain('已确认')
+  expect(wrapper.get('.candidate-card').text()).not.toContain('尚未保存确认')
+})
+
+test('candidate status access denial clears private messages and candidate actions', async () => {
+  apiRequest.mockImplementation((path: string) => path.endsWith('/checklist')
+    ? Promise.reject(new Error('forbidden')) : candidateReads(path))
+  const wrapper = setup()
+  await flushPromises()
+  expect(wrapper.text()).not.toContain('整理要求')
+  expect(wrapper.find('.candidate-card').exists()).toBe(false)
+  expect(wrapper.get('textarea').attributes('disabled')).toBeDefined()
+})
+
+test('access denial invalidates an older message page already in flight', async () => {
+  let denied = false
+  let resolvePage!: (value: unknown) => void
+  apiRequest.mockImplementation((path: string) => {
+    if (path.endsWith('offset=0&limit=1')) return Promise.resolve({ total: 101, messages: [], next_offset: 1 })
+    if (path.includes('/messages?') && path.includes('offset=0&limit=100')) return new Promise(resolve => { resolvePage = resolve })
+    if (path.endsWith('/checklist') && denied) return Promise.reject(new Error('forbidden'))
+    return candidateReads(path)
+  })
+  const wrapper = setup()
+  await flushPromises()
+  await wrapper.get('[data-test="load-older"]').trigger('click')
+  await flushPromises()
+  denied = true
+  await wrapper.setProps({ checklistChanges: { 'snap-1': 1 } })
+  await flushPromises()
+  expect(wrapper.text()).not.toContain('整理要求')
+  resolvePage({ messages: [{ id: 'private-old', role: 'user', content: '失权前读取的内部报价', run_id: null }], next_offset: null })
+  await flushPromises()
+  expect(wrapper.text()).not.toContain('失权前读取的内部报价')
+  expect(wrapper.get('textarea').attributes('disabled')).toBeDefined()
 })
 
 test('a formal review offers the full report entry bound to its snapshot', async () => {
@@ -401,4 +546,105 @@ test('progressive paging stops with a clear error beyond the 20-page budget', as
   }
   expect(wrapper.text()).toContain('历史记录较多')
   expect(fetched.filter(path => path.includes('/messages?')).length).toBeLessThanOrEqual(22)
+})
+
+test('loading older history restores verified answers and deduplicates Run reads', async () => {
+  apiRequest.mockImplementation((path: string) => {
+    if (path.includes('/conversations?')) return Promise.resolve({ conversations: [{ id: 'conv-a', created_at: '' }], next_offset: null })
+    if (path.endsWith('offset=0&limit=1')) return Promise.resolve({ total: 102, messages: [], next_offset: 1 })
+    if (path.includes('/messages?')) return Promise.resolve({ messages: path.includes('offset=2&')
+      ? Array.from({ length: 100 }, (_, i) => ({ id: `new-${i}`, role: 'user', content: `最新问题${i}`, run_id: null }))
+      : [{ id: 'old', role: 'user', content: '旧问题', run_id: 'old-run' }, { id: 'old-resume', role: 'user', content: '旧补充', run_id: 'old-run' }], next_offset: null })
+    if (path === '/agent-runs/old-run') return Promise.resolve({ id: 'old-run', conversation_id: 'conv-a', status: 'completed', workflow: 'assistant', revision: 0 })
+    if (path.endsWith('/assistant-result')) return Promise.resolve({ run_id: 'old-run', case_id: 'case-a',
+      result: { kind: 'chat', answer: '旧问题的经过验证的答复', candidate: null, citations: [] } })
+    return reads(path)
+  })
+  const wrapper = setup()
+  await flushPromises()
+  await wrapper.get('[data-test="load-older"]').trigger('click')
+  await flushPromises()
+  expect(wrapper.text()).toContain('旧问题的经过验证的答复')
+  expect(apiRequest.mock.calls.filter(([path]) => path === '/agent-runs/old-run')).toHaveLength(1)
+  expect(wrapper.findAll('.chat-message.assistant').filter(item => item.text().includes('旧问题的经过验证的答复'))).toHaveLength(1)
+})
+
+function olderReads(path: string) {
+  if (path.includes('/conversations?')) return Promise.resolve({ conversations: [{ id: 'conv-a', created_at: '' }], next_offset: null })
+  if (path.endsWith('offset=0&limit=1')) return Promise.resolve({ total: 112, messages: [], next_offset: 1 })
+  if (path.includes('/messages?')) return Promise.resolve({ messages: path.includes('offset=12&')
+    ? [{ id: 'new', role: 'user', content: '最新问题', run_id: null }]
+    : Array.from({ length: 12 }, (_, i) => ({ id: `old-${i}`, role: 'user', content: `旧问题${i}`, run_id: `old-${i}` })), next_offset: null })
+  return reads(path)
+}
+test('older Run reads stay bounded and a delayed batch cannot leak into a new task', async () => {
+  const releases: Array<() => void> = []
+  let active = 0; let maxActive = 0
+  apiRequest.mockImplementation((path: string) => {
+    if (path === '/cases/case-b/conversations?offset=0&limit=100') return Promise.resolve({ conversations: [], next_offset: null })
+    if (path.startsWith('/agent-runs/old-')) return new Promise(resolve => {
+      active++; maxActive = Math.max(maxActive, active)
+      releases.push(() => { active--; resolve({ id: path.split('/')[2], conversation_id: 'conv-a',
+        status: 'completed', workflow: 'legacy', answer_text: '旧答复' }) })
+    })
+    return olderReads(path)
+  })
+  const wrapper = setup()
+  await flushPromises()
+  await wrapper.get('[data-test="load-older"]').trigger('click')
+  await flushPromises()
+  expect(releases).toHaveLength(5)
+  releases.splice(0).forEach(release => release())
+  await flushPromises()
+  expect(releases).toHaveLength(5)
+  expect(maxActive).toBe(5)
+  await wrapper.setProps({ caseId: 'case-b' })
+  releases.splice(0).forEach(release => release())
+  await flushPromises()
+  expect(wrapper.text()).not.toContain('旧答复')
+  expect(wrapper.text()).not.toContain('旧问题')
+  expect(apiRequest.mock.calls.filter(([path]) => path.startsWith('/agent-runs/old-'))).toHaveLength(10)
+})
+
+test('denied older Run metadata clears history without waiting for its slow batch peers', async () => {
+  let rejectRun!: (reason: Error) => void
+  const releases: Array<() => void> = []
+  apiRequest.mockImplementation((path: string) => {
+    if (path === '/agent-runs/old-0') return new Promise((_resolve, reject) => { rejectRun = reject })
+    if (path.startsWith('/agent-runs/old-')) return new Promise(resolve => {
+      releases.push(() => resolve({ id: path.split('/')[2], conversation_id: 'conv-a', status: 'completed', workflow: 'legacy', answer_text: '迟到的旧答复' }))
+    })
+    return olderReads(path)
+  })
+  const wrapper = setup()
+  await flushPromises()
+  await wrapper.get('[data-test="load-older"]').trigger('click')
+  await flushPromises()
+  rejectRun(new Error('forbidden'))
+  await flushPromises()
+  expect(wrapper.text()).not.toContain('旧问题')
+  releases.forEach(release => release())
+  await flushPromises()
+  expect(wrapper.text()).not.toContain('迟到的旧答复')
+  expect(apiRequest.mock.calls.filter(([path]) => path.startsWith('/agent-runs/old-'))).toHaveLength(5)
+})
+
+test('failed older Run reads show an error and refresh restores the same loaded range', async () => {
+  let failed = true
+  apiRequest.mockImplementation((path: string) => {
+    if (path.startsWith('/agent-runs/old-')) return failed ? Promise.reject(new Error('offline'))
+      : Promise.resolve({ id: path.split('/')[2], conversation_id: 'conv-a', status: 'completed', workflow: 'legacy', answer_text: '重读后的历史答复' })
+    return olderReads(path)
+  })
+  const wrapper = setup()
+  await flushPromises()
+  await wrapper.get('[data-test="load-older"]').trigger('click')
+  await flushPromises()
+  expect(wrapper.text()).toContain('暂时无法完成请求')
+  failed = false
+  // Per-answer failures must provide a retry entry, even when all older pages have loaded.
+  await wrapper.findAll('button').find(button => button.text() === '刷新对话')!.trigger('click')
+  await flushPromises()
+  expect(wrapper.text()).toContain('重读后的历史答复')
+  expect(wrapper.text()).not.toContain('暂时无法完成请求')
 })

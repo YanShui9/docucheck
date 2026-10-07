@@ -96,3 +96,39 @@ test('escape closes the dialog', async () => {
   await wrapper.get('[data-test="memory-dialog"]').trigger('keydown.esc')
   expect(wrapper.emitted('close')).toHaveLength(1)
 })
+
+test.each(['30', ''])('expiry alone can be renewed or made permanent: %s', async choice => {
+  fetchMemoryProfile.mockResolvedValue(profile)
+  saveMemoryPreference.mockImplementation(async (_key, body) => ({ revision: 5,
+    records: [{ ...profile.records[0], expires_at: body.expires_at }] }))
+  const wrapper = setup()
+  await flushPromises()
+  expect((wrapper.get('[data-test="expiry-answer_length"]').element as HTMLSelectElement).value).toBe('keep')
+  expect(wrapper.get('[data-test="save-answer_length"]').attributes('disabled')).toBeDefined()
+  await wrapper.get('[data-test="expiry-answer_length"]').setValue(choice)
+  expect(wrapper.get('[data-test="save-answer_length"]').attributes('disabled')).toBeUndefined()
+  await wrapper.get('[data-test="save-answer_length"]').trigger('click')
+  await flushPromises()
+  expect(saveMemoryPreference).toHaveBeenCalledTimes(1)
+  const body = saveMemoryPreference.mock.calls[0][1]
+  expect(body.value).toBe('concise')
+  if (choice === '') expect(body.expires_at).toBeNull()
+  else expect(Math.abs(Date.parse(body.expires_at) - Date.now() - 30 * 86400000)).toBeLessThan(10000)
+  expect(wrapper.get('[data-test="save-answer_length"]').attributes('disabled')).toBeDefined()
+})
+
+test('changing only the value preserves the exact expiry and other unsaved preferences', async () => {
+  fetchMemoryProfile.mockResolvedValue(profile)
+  saveMemoryPreference.mockImplementation(async (_key, body) => ({ revision: 5,
+    records: [{ ...profile.records[0], value: body.value, expires_at: body.expires_at }] }))
+  const wrapper = setup()
+  await flushPromises()
+  await wrapper.get('[data-test="pref-language"]').setValue('zh-CN')
+  await wrapper.get('[data-test="expiry-language"]').setValue('7')
+  await wrapper.get('[data-test="pref-answer_length"]').setValue('detailed')
+  await wrapper.get('[data-test="save-answer_length"]').trigger('click')
+  await flushPromises()
+  expect(saveMemoryPreference.mock.calls[0][1].expires_at).toBe(profile.records[0].expires_at)
+  expect((wrapper.get('[data-test="pref-language"]').element as HTMLSelectElement).value).toBe('zh-CN')
+  expect((wrapper.get('[data-test="expiry-language"]').element as HTMLSelectElement).value).toBe('7')
+})

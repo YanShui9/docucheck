@@ -162,7 +162,7 @@ test('checklist and review panels open from chat events with persisted supplier 
   })
   const wrapper = mount(App, { global: { stubs: {
     DocumentsPanel: true, AgentWorkbench: true, EvidencePanel: true, ChatWorkspace: true,
-    ChecklistPanel: { name: 'ChecklistPanel', props: ['caseId', 'snapshotId', 'candidate'],
+    ChecklistPanel: { name: 'ChecklistPanel', props: ['caseId', 'snapshotId', 'candidate', 'candidateReadOnly'],
       template: '<div class="checklist-stub">{{ caseId }}/{{ snapshotId }}</div>' },
     ReviewPanel: { name: 'ReviewPanel', props: ['caseId', 'runId', 'supplierNames'],
       template: '<div class="review-stub">{{ runId }}</div>' },
@@ -177,6 +177,17 @@ test('checklist and review panels open from chat events with persisted supplier 
   expect(wrapper.find('.checklist-stub').text()).toBe('case-1/snapshot-case-1')
   expect(wrapper.findComponent({ name: 'ChecklistPanel' })
     .props('candidate')).toEqual({ candidate: { items: [], criteria: [] }, changes: [], runId: 'run-a' })
+  wrapper.findComponent({ name: 'ChecklistPanel' }).vm.$emit('saved', { caseId: 'case-1', snapshotId: 'snapshot-case-1' })
+  await flushPromises()
+  expect(chat.props('checklistChanges')).toEqual({ 'snapshot-case-1': 1 })
+  wrapper.findComponent({ name: 'ChecklistPanel' }).vm.$emit('confirmed', { caseId: 'case-1', snapshotId: 'snapshot-case-1' })
+  await flushPromises()
+  expect(chat.props('checklistChanges')).toEqual({ 'snapshot-case-1': 2 })
+  chat.vm.$emit('openChecklist', { caseId: 'case-1', snapshotId: 'old-snapshot', runId: 'old-run',
+    readOnly: true, candidate: { candidate: { items: [], criteria: [] }, changes: [], runId: 'old-run' } })
+  await flushPromises()
+  expect(wrapper.findComponent({ name: 'ChecklistPanel' }).props('snapshotId')).toBe('old-snapshot')
+  expect(wrapper.findComponent({ name: 'ChecklistPanel' }).props('candidateReadOnly')).toBe(true)
   chat.vm.$emit('openReview', { caseId: 'case-1', snapshotId: 'snapshot-case-1', runId: 'run-r' })
   await flushPromises()
   expect(wrapper.find('.work-panel-heading').text()).toContain('审查报告')
@@ -187,6 +198,8 @@ test('checklist and review panels open from chat events with persisted supplier 
   await flushPromises()
   expect(wrapper.find('.work-panel-heading').text()).toContain('审查要求')
   expect(wrapper.findComponent({ name: 'ChecklistPanel' }).props('candidate')).toBeNull()
+  expect(wrapper.findComponent({ name: 'ChecklistPanel' }).props('snapshotId')).toBe('snapshot-case-1')
+  expect(wrapper.findComponent({ name: 'ChecklistPanel' }).props('candidateReadOnly')).toBe(false)
 })
 
 test('switching tasks closes the dynamic panels and clears their targets', async () => {

@@ -4,20 +4,23 @@ import { accessToken } from '../auth'
 import { confirmChecklist, fetchChecklist, previewChecklistRebase, saveChecklistDraft } from '../api'
 import type {
   ChecklistCriterion, ChecklistDefinitionPayload, ChecklistRule, ChecklistView,
-  CriterionChange, RuleType,
+  RuleType,
 } from '../api'
+import { candidateState } from '../checklistCandidate'
+import type { ChecklistCandidate } from '../checklistCandidate'
 
 const props = defineProps<{
   caseId: string
   snapshotId: string
   revision: number
   canWrite: boolean
-  candidate?: { candidate: ChecklistDefinitionPayload; changes: CriterionChange[]; runId: string } | null
+  candidate?: ChecklistCandidate | null
+  candidateReadOnly?: boolean
 }>()
 const emit = defineEmits<{
   openEvidence: [target: { caseId: string; snapshotId: string; evidenceId: string }]
-  confirmed: []
-  saved: []
+  confirmed: [target: { caseId: string; snapshotId: string }]
+  saved: [target: { caseId: string; snapshotId: string }]
 }>()
 
 const view = ref<ChecklistView | null>(null)
@@ -25,6 +28,7 @@ const working = ref<ChecklistDefinitionPayload | null>(null)
 const savedDefinition = ref<ChecklistDefinitionPayload | null>(null)
 const selected = ref<Set<string>>(new Set())
 const candidateUnsaved = ref(false)
+const candidateWasHistorical = ref(false)
 const loading = ref(true)
 const busy = ref(false)
 const error = ref('')
@@ -86,7 +90,9 @@ const issueById = computed(() => {
 })
 const selectedIds = computed(() => [...selected.value].filter(id =>
   (working.value?.criteria ?? []).some(item => item.criterion_id === id && item.enabled)))
-const writable = computed(() => props.canWrite && !!view.value?.is_current_snapshot && view.value.state !== 'historical')
+const historicalCandidate = computed(() => !!props.candidate && (props.candidateReadOnly || candidateWasHistorical.value))
+const writable = computed(() => props.canWrite && !historicalCandidate.value
+  && !!view.value?.is_current_snapshot && view.value.state !== 'historical')
 const unsaved = computed(() => candidateUnsaved.value || JSON.stringify(working.value) !== JSON.stringify(savedDefinition.value))
 const editing = computed(() => !!editDraft.value || adding.value)
 const baseIds = computed(() => new Set(view.value?.state === 'partially_confirmed'
@@ -151,18 +157,28 @@ function contextOf(criterion: ChecklistCriterion) {
 
 async function load() {
   const ticket = ++scope
-  const { caseId, snapshotId } = props
+  const { caseId, snapshotId, revision } = props
   busy.value = false; confirmOpen.value = false; cancelEdit(); adding.value = false; addDraft.value = null
   working.value = null; savedDefinition.value = null; view.value = null; selected.value = new Set()
   candidateUnsaved.value = false
+  candidateWasHistorical.value = false
   loading.value = true; error.value = ''; notice.value = ''
   try {
     const response = await fetchChecklist(caseId, snapshotId, accessToken)
     if (ticket !== scope) return
     acceptView(response)
     if (props.candidate && props.candidate.candidate) {
-      working.value = clone(props.candidate.candidate)
-      candidateUnsaved.value = true
+      const state = candidateState(props.candidate.candidate, response, revision,
+        props.candidate.baseChecklistRevision, true)
+      candidateWasHistorical.value = !response.is_current_snapshot ||
+        (props.candidate.baseChecklistRevision !== undefined && state === 'historical')
+      // An identical server draft/version may have been saved after the card was opened.
+      // Keep it as the authoritative working definition rather than forcing a duplicate save.
+      if (props.candidateReadOnly || props.candidate.baseChecklistRevision === undefined
+        || !['saved', 'confirmed', 'partial'].includes(state)) {
+        working.value = clone(props.candidate.candidate)
+        candidateUnsaved.value = !historicalCandidate.value
+      }
     } else if (response.state === 'needs_reconfirmation' || response.state === 'empty') {
       working.value = null
       savedDefinition.value = null
@@ -247,7 +263,7 @@ async function save() {
     if (ticket !== scope) return
     acceptView(response)
     notice.value = `草稿已保存（清单版本 ${response.checklist_revision}）。尚未确认，确认后才会用于正式审查。`
-    emit('saved')
+    emit('saved', { caseId, snapshotId })
   } catch (reason) { if (ticket === scope) error.value = friendly(reason) }
   finally { if (ticket === scope) busy.value = false }
 }
@@ -269,7 +285,7 @@ async function submitConfirm() {
     const excluded = response.excluded_criterion_ids?.length ?? 0
     notice.value = `已确认 ${ids.length} 项指标。` +
       (excluded ? `未纳入本次确认的 ${excluded} 项保留为草稿。` : '本次采购的正式审查将按这些指标执行。')
-    emit('confirmed')
+    emit('confirmed', { caseId, snapshotId })
   } catch (reason) { if (ticket === scope) error.value = friendly(reason) }
   finally { if (ticket === scope) busy.value = false }
 }
@@ -363,7 +379,7 @@ function openContext(criterion: ChecklistCriterion) {
 }
 
 watch([() => props.caseId, () => props.snapshotId, () => props.revision, () => props.candidate?.runId,
-  () => props.canWrite], () => { void load() }, { immediate: true })
+  () => props.canWrite, () => props.candidateReadOnly], () => { void load() }, { immediate: true })
 
 function onKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape' && confirmOpen.value) confirmOpen.value = false
@@ -384,9 +400,10 @@ onUnmounted(() => { ++scope; window.removeEventListener('keydown', onKeydown) })
     <template v-else-if="view">
       <p v-if="view.state === 'needs_reconfirmation'" class="state-note warning">
         资料已更新，之前的审查要求不能直接生效。
-        <button v-if="canWrite && view.previous_version_id" class="text-button" data-test="adopt-draft" :disabled="busy" @click="adoptPrevious">以上一版确认为底稿</button>
+        <button v-if="writable && view.previous_version_id" class="text-button" data-test="adopt-draft" :disabled="busy" @click="adoptPrevious">以上一版确认为底稿</button>
       </p>
       <p v-else-if="view.state === 'historical'" class="state-note">历史资料版本的审查要求仅供追溯，不能在当前版本执行。</p>
+      <p v-if="historicalCandidate" class="state-note">历史候选仅供追溯，不能保存或确认到当前清单。</p>
       <p v-if="candidateUnsaved" class="state-note warning">助手候选要求尚未保存确认。请检查内容后保存草稿，再明确确认。</p>
       <div v-if="view.issues.length" class="state-note warning" role="alert">
         <strong>清单待处理：</strong>

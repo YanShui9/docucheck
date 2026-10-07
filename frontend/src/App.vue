@@ -3,9 +3,10 @@ import { computed, defineAsyncComponent, onMounted, onUnmounted, ref } from 'vue
 import { accessToken, identity, signOut } from './auth'
 import { apiRequest, uploadDocument } from './api'
 import type {
-  CaseRecord, ChecklistDefinitionPayload, CriterionChange, DocumentRecord, DocumentsResult,
+  CaseRecord, DocumentRecord, DocumentsResult,
   Project, SnapshotRecord, SnapshotsResult,
 } from './api'
+import type { ChecklistTarget } from './checklistCandidate'
 import CaseSidebar from './components/CaseSidebar.vue'
 import DocumentsPanel from './components/DocumentsPanel.vue'
 import AgentWorkbench from './components/AgentWorkbench.vue'
@@ -34,8 +35,8 @@ const sidebarOpen = ref(window.innerWidth > 760)
 const taskTitles = ref<Record<string, string>>({})
 const evidenceTarget = ref<{ caseId: string; snapshotId: string; evidenceId: string } | null>(null)
 const evidenceWidth = ref(390)
-const checklistTarget = ref<{ caseId: string; snapshotId: string; runId: string;
-  candidate: { candidate: ChecklistDefinitionPayload; changes: CriterionChange[]; runId: string } } | null>(null)
+const checklistTarget = ref<ChecklistTarget | null>(null)
+const checklistChanges = ref<Record<string, number>>({})
 const reviewTarget = ref<{ caseId: string; snapshotId: string; runId: string } | null>(null)
 const pendingReportCorrections = ref<Record<string, { caseId: string; snapshotId: string; count: number }>>({})
 const memoryOpen = ref(false)
@@ -44,7 +45,7 @@ let selectionVersion = 0
 let preparingCase: Promise<string | null> | null = null
 
 const checklistSnapshotId = computed(() =>
-  documents.value?.snapshot_id ?? snapshots.value[0]?.id ?? null)
+  checklistTarget.value?.snapshotId ?? documents.value?.snapshot_id ?? snapshots.value[0]?.id ?? null)
 const supplierNames = computed(() => Object.fromEntries(
   (documents.value?.documents ?? [])
     .filter((item): item is DocumentRecord & { supplier_handle: string; supplier_name: string } =>
@@ -93,11 +94,15 @@ function openChecklistPanel() {
   panel.value = 'checklist'; evidenceTarget.value = null
 }
 
-function openChecklistFromChat(target: { caseId: string; snapshotId: string; runId: string;
-  candidate: { candidate: ChecklistDefinitionPayload; changes: CriterionChange[]; runId: string } }) {
+function openChecklistFromChat(target: ChecklistTarget) {
   if (target.caseId !== selectedCaseId.value) return
   checklistTarget.value = target
   panel.value = 'checklist'; evidenceTarget.value = null
+}
+function checklistChanged(target: { caseId: string; snapshotId: string }) {
+  if (target.caseId !== selectedCaseId.value) return
+  checklistChanges.value = { ...checklistChanges.value,
+    [target.snapshotId]: (checklistChanges.value[target.snapshotId] ?? 0) + 1 }
 }
 
 function openReviewFromChat(target: { caseId: string; snapshotId: string; runId: string }) {
@@ -412,6 +417,7 @@ onUnmounted(() => { if (refreshTimer) clearInterval(refreshTimer) })
       <div v-if="error" class="alert" role="alert"><span>{{ error }}</span><button class="text-button" @click="error = ''">关闭</button></div>
       <div v-if="loading" class="loading-state" role="status">正在读取工作区…</div>
       <ChatWorkspace v-else :case-id="selectedCaseId" :scope-key="selectedProjectId ?? ''" :revision="documents?.revision ?? selectedCase?.revision ?? 0" :pending-report-corrections="pendingReportCorrections"
+                     :checklist-changes="checklistChanges"
                      :can-write="canWrite && !busy" :prepare-case="prepareCase"
                      @upload="openDocuments" @title="taskTitles[$event.caseId] = $event.title"
                      @open-evidence="evidenceTarget = $event; panel = null"
@@ -428,6 +434,8 @@ onUnmounted(() => { if (refreshTimer) clearInterval(refreshTimer) })
                         :case-id="selectedCaseId!" :snapshot-id="checklistSnapshotId"
                         :revision="documents?.revision ?? 0" :can-write="canWrite && !busy"
                         :candidate="checklistTarget?.candidate ?? null"
+                        :candidate-read-only="checklistTarget?.readOnly ?? false"
+                        @saved="checklistChanged" @confirmed="checklistChanged"
                         @open-evidence="evidenceTarget = $event; panel = null" />
         <ReviewPanel v-else-if="panel === 'review' && reviewTarget"
                      :case-id="reviewTarget.caseId" :run-id="reviewTarget.runId" :snapshot-id="reviewTarget.snapshotId"

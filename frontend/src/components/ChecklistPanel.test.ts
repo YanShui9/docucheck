@@ -40,6 +40,49 @@ function setup(props: Record<string, unknown> = {}) {
   wrappers.push(wrapper)
   return wrapper
 }
+
+test('a historical candidate cannot be saved into a current checklist', async () => {
+  fetchChecklist.mockResolvedValue(emptyView({ state: 'draft', draft: draftDefinition }))
+  const wrapper = setup({ candidateReadOnly: true,
+    candidate: { candidate: draftDefinition, changes: [], runId: 'old-run' } })
+  await flushPromises()
+  expect(wrapper.text()).toContain('历史候选')
+  expect(wrapper.find('[data-test="save-draft"]').exists()).toBe(false)
+  expect(wrapper.find('[data-test="start-add"]').exists()).toBe(false)
+  expect(saveChecklistDraft).not.toHaveBeenCalled()
+})
+
+test('a candidate made stale before opening is read-only even with a current snapshot', async () => {
+  fetchChecklist.mockResolvedValue(emptyView({ state: 'draft', checklist_revision: 5,
+    draft: { ...draftDefinition, criteria: [manualCriterion] } }))
+  const wrapper = setup({ candidate: { candidate: draftDefinition, changes: [], runId: 'old-run', baseChecklistRevision: 4 } })
+  await flushPromises()
+  expect(wrapper.text()).toContain('历史候选')
+  expect(wrapper.find('[data-test="save-draft"]').exists()).toBe(false)
+})
+
+test('editing and saving a current candidate does not lock its confirmation controls', async () => {
+  fetchChecklist.mockResolvedValue(emptyView())
+  saveChecklistDraft.mockImplementation(async (_caseId, _snapshotId, definition) => emptyView({
+    state: 'draft', checklist_revision: 1, draft: definition }))
+  const wrapper = setup({ candidate: { candidate: draftDefinition, changes: [], runId: 'new-run', baseChecklistRevision: 0 } })
+  await flushPromises()
+  await wrapper.get('[data-test="criterion-name-c-qty"] input').setValue('采购总数量')
+  await wrapper.get('[data-test="save-draft"]').trigger('click')
+  await flushPromises()
+  expect(wrapper.text()).not.toContain('历史候选')
+  expect(wrapper.get('[data-test="open-confirm"]').attributes('disabled')).toBeUndefined()
+  expect(wrapper.emitted('saved')).toEqual([[{ caseId: 'case-a', snapshotId: 'snap-1' }]])
+})
+
+test('a candidate already saved before opening uses the persisted checklist without requiring another save', async () => {
+  fetchChecklist.mockResolvedValue(emptyView({ state: 'draft', checklist_revision: 1, draft: draftDefinition }))
+  const wrapper = setup({ candidate: { candidate: draftDefinition, changes: [], runId: 'run-a', baseChecklistRevision: 0 } })
+  await flushPromises()
+  expect(wrapper.text()).not.toContain('尚未保存确认')
+  expect(wrapper.get('[data-test="open-confirm"]').attributes('disabled')).toBeUndefined()
+  expect(saveChecklistDraft).not.toHaveBeenCalled()
+})
 afterEach(() => { wrappers.splice(0).forEach(w => w.unmount());
   [fetchChecklist, saveChecklistDraft, confirmChecklist, fetchChecklistVersion, previewChecklistRebase].forEach(fn => fn.mockReset()) })
 
