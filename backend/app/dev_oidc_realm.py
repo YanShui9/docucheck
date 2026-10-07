@@ -46,6 +46,12 @@ def prepare() -> Path:
         "enabled": True,
         "registrationAllowed": False,
         "resetPasswordAllowed": False,
+        "displayName": "DocuCheck",
+        "loginTheme": "docucheck-login",
+        "internationalizationEnabled": True,
+        "defaultLocale": "zh-CN",
+        "supportedLocales": ["zh-CN", "en"],
+        "sslRequired": "none",
         "clients": [{
             "clientId": "docucheck-web",
             "enabled": True,

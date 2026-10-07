@@ -21,6 +21,7 @@ services:
     volumes:
       - keycloak_data:/opt/keycloak/data
       - ./data/oidc-import:/opt/keycloak/data/import:ro
+      - ./deploy/keycloak/themes:/opt/keycloak/themes:ro
 
   mysql:
     image: mysql:8.4

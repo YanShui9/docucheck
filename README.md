@@ -184,7 +184,7 @@ Compose 启动 MySQL 8.4、Redis 7.4；显式启用 `agent` profile 后启动 Li
 
 `cleaner` 已单独启动；通常用 `docker compose --profile agent up -d --build cleaner` 部署或更新。它会自动物理清理已通过 Case DELETE 接口标记的资料、历史记录及无其他 Case 引用的上传原件；操作不可恢复。可用 `docker compose --profile agent ps cleaner` 查看状态，或用 `python.exe -m backend.app.cleanup_cases --once --case-id <Case ID>` 对指定已标记 Case 执行一次清理。
 
-本地 OIDC 演示使用 `alice`、`bob`、`reviewer` 三个账号。先在已激活的 Conda 环境中生成被忽略的 realm 文件和本地口令，再启动 Keycloak；API 和前端分别在本机新终端运行：
+本地 OIDC 演示使用 `alice`、`bob`、`reviewer` 三个账号。先在已激活的 Conda 环境中生成被忽略的 realm 文件和本地口令，再启动 Keycloak；登录页由 `docucheck-login` 自定义主题渲染（中文界面、产品视觉），主题文件在 `deploy/keycloak/themes/`；API 和前端分别在本机新终端运行：
 
 ```powershell
 python.exe -m backend.app.dev_oidc_realm

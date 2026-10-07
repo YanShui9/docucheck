@@ -1,0 +1,153 @@
+/* DocuCheck login theme — mirrors the chat app design tokens
+   (warm light background, low-saturation green accent, CJK-first fonts). */
+
+:root {
+  --docu-bg: #fafaf9;
+  --docu-surface: #ffffff;
+  --docu-border: #e5e7eb;
+  --docu-accent: #246b5a;
+  --docu-accent-hover: #1f5b4d;
+  --docu-text: #1f2937;
+  --docu-text-muted: #6b7280;
+  --docu-focus: #95ad9a;
+}
+
+body#keycloak-bg {
+  background: var(--docu-bg);
+  background-image: radial-gradient(circle at 20% -10%, rgba(36, 107, 90, 0.08), transparent 42%);
+  color: var(--docu-text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+    "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 品牌区：绿色圆角方块 + 产品名 */
+#kc-header-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: #27362b !important;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.5px !important;
+  text-transform: none !important;
+  padding: 12px 0 !important;
+}
+
+#kc-header-wrapper::before {
+  content: "D";
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 36px;
+  border-radius: 9px;
+  background: var(--docu-accent);
+  color: #fff;
+  font-size: 19px;
+  font-weight: 800;
+}
+
+#kc-header-wrapper .pf-v5-c-brand { display: none; }
+
+/* 主卡片 */
+.pf-v5-c-login__main {
+  background: var(--docu-surface);
+  border: 1px solid var(--docu-border);
+  border-top: 4px solid var(--docu-accent) !important;
+  border-radius: 16px;
+  box-shadow: 0 10px 32px rgba(22, 50, 55, 0.06);
+  padding: 36px 36px 28px !important;
+}
+
+#kc-page-title {
+  color: #27362b !important;
+  font-size: 21px !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.4px;
+  margin-bottom: 6px !important;
+}
+
+.pf-v5-c-login__main-header { margin-bottom: 22px !important; border-top: 0 !important; }
+
+/* 表单标签与控件 */
+.pf-v5-c-form__label-text {
+  color: #52666f !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+}
+
+.pf-v5-c-form-control {
+  --pf-v5-c-form-control--BorderRadius: 8px;
+  --pf-v5-c-form-control--m-warning--BackgroundColor: var(--docu-surface);
+  background: var(--docu-surface) !important;
+  border: 1px solid #dfe4dc !important;
+  border-radius: 8px !important;
+  min-height: 42px;
+}
+
+.pf-v5-c-form-control:hover { border-color: #c3cdc2 !important; }
+
+.pf-v5-c-form-control:focus-within,
+.pf-v5-c-form-control.pf-m-focus {
+  border-color: var(--docu-focus) !important;
+  box-shadow: 0 0 0 2px rgba(36, 107, 90, 0.16) !important;
+  outline: none !important;
+}
+
+.pf-v5-c-form-control input:focus { outline: none !important; }
+
+#username:focus, #password:focus { border-color: var(--docu-focus); box-shadow: 0 0 0 2px rgba(36, 107, 90, 0.16); }
+
+#username, #password {
+  color: var(--docu-text);
+  font-size: 15px;
+}
+
+input[type="checkbox"] { accent-color: var(--docu-accent); }
+
+/* 主按钮 */
+#kc-login, .pf-v5-c-button.pf-m-primary {
+  background: var(--docu-accent) !important;
+  border-radius: 8px !important;
+  min-height: 42px;
+  font-weight: 600 !important;
+}
+
+#kc-login:hover, .pf-v5-c-button.pf-m-primary:hover {
+  background: var(--docu-accent-hover) !important;
+}
+
+#kc-login:focus { outline: 2px solid var(--docu-focus); outline-offset: 2px; }
+
+/* 辅助链接与页脚 */
+a { color: #54675a !important; }
+a:hover { color: var(--docu-accent) !important; }
+
+.pf-v5-c-login__main-footer-band,
+.pf-v5-c-login__main-footer {
+  color: var(--docu-text-muted) !important;
+  font-size: 12px;
+}
+
+/* 语言切换下拉 */
+#kc-locale {
+  color: var(--docu-text-muted);
+}
+
+#kc-locale-toggle, #kc-current-locale {
+  color: var(--docu-text-muted) !important;
+  font-size: 12px !important;
+}
+
+/* 错误与提示 */
+.pf-v5-c-alert, .alert-error, .pf-v5-c-form__helper-text.pf-m-error {
+  border-radius: 8px;
+}
+
+.kc-feedback-text-error, .alert-error { color: #a23f3f !important; }
+
+/* 窄屏间距 */
+@media (max-width: 480px) {
+  .pf-v5-c-login__main { padding: 26px 20px 22px !important; border-radius: 14px; }
+}
