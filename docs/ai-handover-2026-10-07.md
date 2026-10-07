@@ -49,7 +49,7 @@ Mimosa git-gate 以 28 个"硬编码凭据"高危阻塞一切提交，核实全�
 - `test_milvus_live.py`：实连探针加固——解析 URI 并断言 scheme=http 且主机为回环地址后重建 URL 再请求（对扫描器和测试都是真实改进）。
 - `data/m5-c*/clean-room-windows/` 两份清洁室工作副本（gitignored）同步了相同修复；**存档 ZIP 原件未动**，副本可随时重新提取。
 - 新增 `.mimosa/security-policy.json`（豁免清单，已入库可审计）；`.gitignore` 修正为 `**/.mimosa/*` + 豁免策略文件（曾误提交工具状态文件，已 amend 移除）。
-- 复审结果：**0 高危**。剩 15 个中危"疑似跨文件污点"全部位于测试夹具（语料构建/逐字节校验的确定性测试代码，M5-A/C 交付时就存在），已向用户说明、作为已披露基线保留。
+- **2026-10-07 更正**：此前“0 高危、15 中危”不作为当前源码安全验收结论。后续找到 `data/mimosa-audit-3.json`，它自报 native / completed / complete、1796 文件，crossFile 为45条 advisory，按规则/文件/行/定义位置去重后15条，其中当前测试5条、两份忽略工作副本10条；但无文件内容清单/hash和提交绑定，且未执行 Semgrep，不能证明当前版本无高危。`.mimosa/reports` 的另四份时间戳报告均未完成。当前补证方法、逐项处置和限制见 [安全证据入口](../ops/security/README.md)。
 
 ## 三、验证记录
 
@@ -82,7 +82,7 @@ Mimosa git-gate 以 28 个"硬编码凭据"高危阻塞一切提交，核实全�
 
 ## 六、协作约定与注意事项
 
-- **Mimosa git-gate 拦截 `git commit`**：L3 全项目审计（含 gitignored 目录），高危拒绝。本机的 15 个中危为已披露基线；若扫描出新高危按"修复"路径处理（参考第五节的处置方式，勿直接绕过）。
+- **历史 Mimosa git-gate 自报不能代替当前门禁证据**：当前会话无可调用的 Mimosa 扫描入口，仓库 hooks 只有 sample 文件，未验证存在有效 commit gate。后续以 `scripts/security_evidence.py` 的可复核手动门禁为准；它没有自动安装 Git hook。原整文件豁免已移除，发现必须绑定具体规则、位置和源码 hash 复核。
 - 协作规矩见 `CLAUDE.md`：一次一个大步骤、真实模型调用先说明范围费用、Docker 操作先告知、前端样式改动先讨论。
 - **M5 主线待办**：独立人工封存（104 格，用户本人复核，`data/m5-review/` 已备好，`python -X utf8 -m evals.corpus_review` 查状态）——质量门槛/独立集验收的前置；灾备演练、当前代码性能复测、费用报告、Windows 服务化等 B 类任务已列出未开工。
 - `AGENTS.md` 是 Codex 入口；`docs/development-roadmap.md` 顶部即最新状态。

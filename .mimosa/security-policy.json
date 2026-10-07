@@ -6,17 +6,7 @@
     "attackerControlledInputs": [],
     "trustBoundaries": [],
     "securityInvariants": [],
-    "exclusions": [
-      "backend/tests/test_provider_contract.py",
-      "data/m5-c/clean-room-windows/backend/tests/test_provider_contract.py",
-      "data/m5-c/clean-room-windows/backend/tests/test_delivery_bundle.py",
-      "data/m5-c/clean-room-windows/backend/tests/test_m5_run_usage.py",
-      "data/m5-c/clean-room-windows/backend/tests/test_offline_verification.py",
-      "data/m5-c-recheck/clean-room-windows/backend/tests/test_provider_contract.py",
-      "data/m5-c-recheck/clean-room-windows/backend/tests/test_delivery_bundle.py",
-      "data/m5-c-recheck/clean-room-windows/backend/tests/test_m5_run_usage.py",
-      "data/m5-c-recheck/clean-room-windows/backend/tests/test_offline_verification.py"
-    ]
+    "exclusions": []
   },
   "network": {
     "allowedProtocols": [

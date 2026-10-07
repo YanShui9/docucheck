@@ -1,0 +1,6 @@
+rules:
+  - id: docucheck.container.privileged-mode
+    languages: [generic]
+    message: Privileged container configuration requires explicit security review.
+    severity: ERROR
+    pattern-regex: '(?m)^\s*privileged:\s*true\s*(?:#.*)?$'

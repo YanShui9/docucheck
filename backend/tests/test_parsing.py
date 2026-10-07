@@ -64,6 +64,26 @@ def test_xlsx_cells_keep_sheet_and_cell_coordinates() -> None:
     assert len({block.evidence_id for block in result.blocks}) == len(result.blocks)
 
 
+def test_xlsx_entity_declaration_is_rejected_before_fact_extraction(tmp_path):
+    malicious = tmp_path / "entity.xlsx"
+    source = PACK / "vendor-a-quote.xlsx"
+    with ZipFile(source) as original, ZipFile(malicious, "w", compression=ZIP_DEFLATED) as changed:
+        for item in original.infolist():
+            content = original.read(item.filename)
+            if item.filename == "xl/worksheets/sheet1.xml":
+                content = b'<!DOCTYPE worksheet [<!ENTITY canary "not-an-extracted-fact">]>' + content
+            changed.writestr(item, content)
+    # The stdlib import is only ParseError; actual XML parsing uses defusedxml.
+    from defusedxml.common import DefusedXmlException
+    # openpyxl may reject the entity while reading dimensions, before our own iterparse.
+    with pytest.raises(ValueError) as raised:
+        parsing().parse_xlsx(malicious, document_id="entity-probe")
+    error = raised.value
+    while error is not None and not isinstance(error, DefusedXmlException):
+        error = error.__cause__
+    assert isinstance(error, DefusedXmlException)
+
+
 def _with_declared_xlsx_dimension(source: Path, target: Path, dimension: str) -> None:
     with ZipFile(source) as original, ZipFile(target, "w", compression=ZIP_DEFLATED) as changed:
         for item in original.infolist():

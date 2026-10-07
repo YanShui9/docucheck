@@ -1,0 +1,1127 @@
+[
+  {
+    "id": "dockerfile.security.last-user-is-root.last-user-is-root",
+    "url": "https://semgrep.dev/c/6xT29Eg",
+    "sha256": "4d29e6471b03dfd18d46273c551f2bf40bbfbd575845053a9b504ec5fea72a97"
+  },
+  {
+    "id": "c.lang.security.insecure-use-gets-fn.insecure-use-gets-fn",
+    "url": "https://semgrep.dev/c/YDTvRlQ",
+    "sha256": "d8c4c05ed4dbb9777a01635138e5992aa9a4e1b78a6d8e712d144aeca6eb4074"
+  },
+  {
+    "id": "c.lang.security.insecure-use-printf-fn.insecure-use-printf-fn",
+    "url": "https://semgrep.dev/c/o5TZeB2",
+    "sha256": "19c3c6f063bbe214446830f697cc92c7533bb634c2240ffcbf203a6d0d3e7d94"
+  },
+  {
+    "id": "c.lang.security.insecure-use-strcat-fn.insecure-use-strcat-fn",
+    "url": "https://semgrep.dev/c/pZTNOXb",
+    "sha256": "8e951449a04b5530811d1680fd231085087e12e921026572c9a8ba500d5a7e9f"
+  },
+  {
+    "id": "c.lang.security.insecure-use-strtok-fn.insecure-use-strtok-fn",
+    "url": "https://semgrep.dev/c/qkTx1oq",
+    "sha256": "e9a9dd5eb5e966fb9215748b275450211abd18ea14feeab203da7b4de0766de4"
+  },
+  {
+    "id": "c.lang.security.double-free.double-free",
+    "url": "https://semgrep.dev/c/RGT0L3W",
+    "sha256": "7bd20a147be6b695e2e579e18420cd62bfb61c8eb58ad539d4c0b81d17151336"
+  },
+  {
+    "id": "c.lang.security.use-after-free.use-after-free",
+    "url": "https://semgrep.dev/c/1QToKPy",
+    "sha256": "2b8e08d80859906f8863474cf806301ddc52104468f3da1f0c002bab3d6c2d73"
+  },
+  {
+    "id": "c.lang.security.random-fd-exhaustion.random-fd-exhaustion",
+    "url": "https://semgrep.dev/c/jQTzvry",
+    "sha256": "5dfa9495a592b23563ef64f88c35709fe809ceeb7f8cb02cc04cadad409fafc7"
+  },
+  {
+    "id": "go.grpc.security.grpc-client-insecure-connection.grpc-client-insecure-connection",
+    "url": "https://semgrep.dev/c/YDTZeZB",
+    "sha256": "7b16c57ecabf962acde0e4cd9d0efc1b95219382e7da0a1874e0b1484d61df31"
+  },
+  {
+    "id": "go.grpc.security.grpc-server-insecure-connection.grpc-server-insecure-connection",
+    "url": "https://semgrep.dev/c/6xT2923",
+    "sha256": "26c0e28400a76dc36a6d76cb40048d9c1379d5216dcd64ea63119fa772d958d3"
+  },
+  {
+    "id": "go.jwt-go.security.jwt.hardcoded-jwt-key",
+    "url": "https://semgrep.dev/c/pZT0305",
+    "sha256": "287d24444515b543f24a560c2d84a2eaf8c6261eee6a976b7f70e3a9c72fd2d1"
+  },
+  {
+    "id": "go.lang.security.audit.crypto.bad_imports.insecure-module-used",
+    "url": "https://semgrep.dev/c/2KTv2vJ",
+    "sha256": "50f6db2cd43c6cce1945c6e3eafb549d5cfc92160031e600ef7c437dbd15fb51"
+  },
+  {
+    "id": "go.lang.security.audit.crypto.insecure_ssh.avoid-ssh-insecure-ignore-host-key",
+    "url": "https://semgrep.dev/c/X0TzyzN",
+    "sha256": "09e61b748769f1395282a8a59e6861036cc33eb8899497e8b780b598cd412ed0"
+  },
+  {
+    "id": "go.lang.security.audit.crypto.math_random.math-random-used",
+    "url": "https://semgrep.dev/c/jQTn5nj",
+    "sha256": "976b7318ecbe6b95a0bdb7f3d75a4edf7b5b7bdc6fbe5fd853ca003383ffccfa"
+  },
+  {
+    "id": "go.lang.security.audit.crypto.ssl.ssl-v3-is-insecure",
+    "url": "https://semgrep.dev/c/yeTxpxj",
+    "sha256": "ef8be5991ac3aa00ede0f186eb2a7fe117c48616a718b04ee697b07eaccd43cb"
+  },
+  {
+    "id": "go.lang.security.audit.crypto.tls.tls-with-insecure-cipher",
+    "url": "https://semgrep.dev/c/rxTAKAZ",
+    "sha256": "dc7d7fc156e8b7752de66fecafe031093cc33651ba07f64da4597a8105487761"
+  },
+  {
+    "id": "go.lang.security.audit.crypto.use_of_weak_crypto.use-of-DES",
+    "url": "https://semgrep.dev/c/kbTzGzA",
+    "sha256": "408a772af08b97310ecce3065168219ca70526d030521d39d71acd7e49eb5d3d"
+  },
+  {
+    "id": "go.lang.security.audit.crypto.use_of_weak_crypto.use-of-md5",
+    "url": "https://semgrep.dev/c/bZT535Y",
+    "sha256": "0e0e189aa39e18a210608301e398aa1866cf0a14cc7eb0990b4302b1d01a2a12"
+  },
+  {
+    "id": "go.lang.security.audit.crypto.use_of_weak_crypto.use-of-rc4",
+    "url": "https://semgrep.dev/c/w8TRoRQ",
+    "sha256": "82ecc545ad5a2cb8a63d3adcba317cc15ae9560989a2f01a96fc33f41d7701bc"
+  },
+  {
+    "id": "go.lang.security.audit.crypto.use_of_weak_crypto.use-of-sha1",
+    "url": "https://semgrep.dev/c/NdTzyz1",
+    "sha256": "2e151fc231cd68cc1dde75e50ad3373cdc1448820a2c10fbc31d989c1c54b607"
+  },
+  {
+    "id": "go.lang.security.audit.database.string-formatted-query.string-formatted-query",
+    "url": "https://semgrep.dev/c/ZRTKA2q",
+    "sha256": "1bc87f559b1dcfa2a750bec2d7103ba7645682c7de349c2bdf3b8adc3c123758"
+  },
+  {
+    "id": "go.lang.security.audit.net.bind_all.avoid-bind-to-all-interfaces",
+    "url": "https://semgrep.dev/c/ExTExoK",
+    "sha256": "813c0159cc27932c9881100fec6e3a5728a7e0b222851fb042764eabb5e4634b"
+  },
+  {
+    "id": "go.lang.security.audit.net.dynamic-httptrace-clienttrace.dynamic-httptrace-clienttrace",
+    "url": "https://semgrep.dev/c/8KT5rNv",
+    "sha256": "7905e82ef4427b536018713f91bf893ef6dbd0296cbd109e614651788dea0640"
+  },
+  {
+    "id": "go.lang.security.audit.net.formatted-template-string.formatted-template-string",
+    "url": "https://semgrep.dev/c/gETB7Pe",
+    "sha256": "3aea64a879ff5e4590431056b40bf1f9ee2efbe9f6e9ad167c84308d93da6ad1"
+  },
+  {
+    "id": "go.lang.security.audit.net.pprof.pprof-debug-exposure",
+    "url": "https://semgrep.dev/c/9lTy168",
+    "sha256": "dd87e3c10985c55b91baec0bc93b7d2a9444542e1f9b38812027fb9183f45411"
+  },
+  {
+    "id": "go.lang.security.audit.net.unescaped-data-in-htmlattr.unescaped-data-in-htmlattr",
+    "url": "https://semgrep.dev/c/3ZT4XRr",
+    "sha256": "74ffb3e6adcf6e377f381bf22b57e88aac2f3feec14408a1116db34d7213a09a"
+  },
+  {
+    "id": "go.lang.security.audit.net.unescaped-data-in-js.unescaped-data-in-js",
+    "url": "https://semgrep.dev/c/44TEj9E",
+    "sha256": "369aac585d58519315ce6bf5b9dd39901201c60d0edf3a49a3c7febaff77f0cb"
+  },
+  {
+    "id": "go.lang.security.audit.net.unescaped-data-in-url.unescaped-data-in-url",
+    "url": "https://semgrep.dev/c/PkTR3zz",
+    "sha256": "6d2c04073c8d9f7091907a06e52a2d887824497c7678b91fb7c63a34a58db15e"
+  },
+  {
+    "id": "go.lang.security.audit.net.use-tls.use-tls",
+    "url": "https://semgrep.dev/c/JdTzxkn",
+    "sha256": "ef6067843246880c8f6a4783ae4378fec44ae941e6433f6bd44e14e3205ab4d1"
+  },
+  {
+    "id": "go.lang.security.audit.net.wip-xss-using-responsewriter-and-printf.wip-xss-using-responsewriter-and-printf",
+    "url": "https://semgrep.dev/c/5PTo1qr",
+    "sha256": "81ba6fd9eb9034af211fc32c76d3ae552a5d288dd045bbc0f50b2fb55bd168a9"
+  },
+  {
+    "id": "go.lang.security.audit.reflect-makefunc.reflect-makefunc",
+    "url": "https://semgrep.dev/c/GxTkeqB",
+    "sha256": "bd8dddfd4e9464c4422e13f6ad63f9f5a903d2d4257386e4936df27ef9dcb65f"
+  },
+  {
+    "id": "go.lang.security.audit.unsafe.use-of-unsafe-block",
+    "url": "https://semgrep.dev/c/ZRT35Wd",
+    "sha256": "e1640bd104d6142e4c8eb798fe99c0c303bb3de78287e714d93d9f8b593011f0"
+  },
+  {
+    "id": "go.lang.security.bad_tmp.bad-tmp-file-creation",
+    "url": "https://semgrep.dev/c/2KTv2pJ",
+    "sha256": "66a78282a9d37e4a74f4b913d96a20e7b186855d0ede72d958521307ecf69555"
+  },
+  {
+    "id": "go.lang.security.decompression_bomb.potential-dos-via-decompression-bomb",
+    "url": "https://semgrep.dev/c/JdTDye5",
+    "sha256": "cb2fe4c37f6bbfe607d8ca58893b6c7fb284c13e9d5655f7b75daa4f6d22f97b"
+  },
+  {
+    "id": "go.lang.security.zip.path-traversal-inside-zip-extraction",
+    "url": "https://semgrep.dev/c/rxTAK1Z",
+    "sha256": "563945832502e32d60aea9ca2bed24acc645d649029904a34ee2231c6cc5fe6e"
+  },
+  {
+    "id": "go.otto.security.audit.dangerous-execution.dangerous-execution",
+    "url": "https://semgrep.dev/c/bZT53ZY",
+    "sha256": "5921910a4905df456b94fd23ff0a03bab4cac2bdfe19d09497cc1784d7c4f2af"
+  },
+  {
+    "id": "java.jax-rs.security.jax-rs-path-traversal.jax-rs-path-traversal",
+    "url": "https://semgrep.dev/c/7ZTE3KW",
+    "sha256": "1152096f1a61d151cf2c9d78e535fbb08956c0c1122b0239742d85adb5534b04"
+  },
+  {
+    "id": "java.lang.security.audit.anonymous-ldap-bind.anonymous-ldap-bind",
+    "url": "https://semgrep.dev/c/QkTGqE0",
+    "sha256": "0643aca4dd218cf8d049f02f5fe2aa11b1778c22b2d253a44471c2d586a569e5"
+  },
+  {
+    "id": "java.lang.security.audit.bad-hexa-conversion.bad-hexa-conversion",
+    "url": "https://semgrep.dev/c/QkTZzgy",
+    "sha256": "db138edcced79314352b2f1a2f991c098c63bd91272a619b93fa982f1e855923"
+  },
+  {
+    "id": "java.lang.security.audit.cbc-padding-oracle.cbc-padding-oracle",
+    "url": "https://semgrep.dev/c/44TEjbE",
+    "sha256": "42dbc62a77f9c0bc7881e2431e18cfe9b8c9bd93cc2ae0daafcae45915a0c272"
+  },
+  {
+    "id": "java.lang.security.audit.command-injection-formatted-runtime-call.command-injection-formatted-runtime-call",
+    "url": "https://semgrep.dev/c/PkTR3ez",
+    "sha256": "79bb28f508415113dcac79f78e3681b9908977b02d72c36528bf11e987d27c9a"
+  },
+  {
+    "id": "java.lang.security.audit.cookie-missing-httponly.cookie-missing-httponly",
+    "url": "https://semgrep.dev/c/5PTo17r",
+    "sha256": "32cec31e9621bbf23a075a3b68ff9c6425cbfee7906f773a83d3620220257fdd"
+  },
+  {
+    "id": "java.lang.security.audit.cookie-missing-secure-flag.cookie-missing-secure-flag",
+    "url": "https://semgrep.dev/c/GxTkelB",
+    "sha256": "e489413e011f86b8f9a1fd6242136016fa7fa8bf1e8d17103a8842009c3b841e"
+  },
+  {
+    "id": "java.lang.security.audit.crlf-injection-logs.crlf-injection-logs",
+    "url": "https://semgrep.dev/c/RGT0LEr",
+    "sha256": "850670f4746ee4be5eb24416bbd3718404a9d58313cfb24d5197c69d4b8e7a78"
+  },
+  {
+    "id": "java.lang.security.audit.crypto.des-is-deprecated.des-is-deprecated",
+    "url": "https://semgrep.dev/c/A8TgdEn",
+    "sha256": "e130717d24dd77d9fb874b393b8e9d643d969c6ac8a971eb4fa9737f4184ac70"
+  },
+  {
+    "id": "java.lang.security.audit.crypto.desede-is-deprecated.desede-is-deprecated",
+    "url": "https://semgrep.dev/c/BjTkZyQ",
+    "sha256": "de07243a19420404ee8d637571e6f968a911f5e2759822ccbc4971a6d9dfb2e7"
+  },
+  {
+    "id": "java.lang.security.audit.crypto.no-null-cipher.no-null-cipher",
+    "url": "https://semgrep.dev/c/K3TKkgB",
+    "sha256": "50d34c1a4ee1be3b155ff12102a314e55d64c6d1b60f83387437136b127a410a"
+  },
+  {
+    "id": "java.lang.security.audit.crypto.no-static-initialization-vector.no-static-initialization-vector",
+    "url": "https://semgrep.dev/c/qkTR7vP",
+    "sha256": "132c8a2fd962e5931e47742c3da748f301cbebfb81a5e27d5f2c3a16abe1aff7"
+  },
+  {
+    "id": "java.lang.security.audit.crypto.rsa-no-padding.rsa-no-padding",
+    "url": "https://semgrep.dev/c/l4TJRpK",
+    "sha256": "2560fcf73d981dbde3d4c3596a64313f298397bb73502c94c546c0492e430837"
+  },
+  {
+    "id": "java.lang.security.audit.crypto.ssl.defaulthttpclient-is-deprecated.defaulthttpclient-is-deprecated",
+    "url": "https://semgrep.dev/c/JdTzxnb",
+    "sha256": "93dfcd356deb58e2a7472901f052bad282aea3b2c1042fb72586969e767d7a86"
+  },
+  {
+    "id": "java.lang.security.audit.crypto.ssl.insecure-hostname-verifier.insecure-hostname-verifier",
+    "url": "https://semgrep.dev/c/5PTo17W",
+    "sha256": "afdabf32f27d2f327dba564efe6a81cbdf51a3f29c5efae93c57070dbfa25faa"
+  },
+  {
+    "id": "java.lang.security.audit.crypto.ssl.insecure-trust-manager.insecure-trust-manager",
+    "url": "https://semgrep.dev/c/GxTkel1",
+    "sha256": "7db13fe3037b64d506582331ff65cb33f43580c7f01de7d83e6ca02840a8d659"
+  },
+  {
+    "id": "java.lang.security.audit.crypto.unencrypted-socket.unencrypted-socket",
+    "url": "https://semgrep.dev/c/RGT0LEj",
+    "sha256": "b6fc3a157280ed70a6883152f9faba66ab3b2ab3f682f2ff65dc0c29726ff780"
+  },
+  {
+    "id": "java.lang.security.audit.el-injection.el-injection",
+    "url": "https://semgrep.dev/c/pZT03e1",
+    "sha256": "7dba99806cb31b3df8fdf5c570422593b1816e8dd6625934a01e39c5a90341ab"
+  },
+  {
+    "id": "java.lang.security.audit.formatted-sql-string.formatted-sql-string",
+    "url": "https://semgrep.dev/c/ExTeyBP",
+    "sha256": "262dfef3ff2f2fc2a5a1fe49064444d743c4d98b5e0cee9cb0955e78135e15a1"
+  },
+  {
+    "id": "java.lang.security.audit.http-response-splitting.http-response-splitting",
+    "url": "https://semgrep.dev/c/X0Tzykw",
+    "sha256": "b16cce2d6197937e9735c05ebe3726697b80d7d028a5902430b7d5b75464e450"
+  },
+  {
+    "id": "java.lang.security.audit.insecure-smtp-connection.insecure-smtp-connection",
+    "url": "https://semgrep.dev/c/jQTn5Dv",
+    "sha256": "25564001e4d3025ff3ab46b2b920079ffdb1b3196f7cf44cca295cc573243c94"
+  },
+  {
+    "id": "java.lang.security.audit.jdbc-sql-formatted-string.jdbc-sql-formatted-string",
+    "url": "https://semgrep.dev/c/9lT4bqk",
+    "sha256": "07e435776168ca9600f27138c470d368192c10efa2785f3f9e66d2204ae9b016"
+  },
+  {
+    "id": "java.lang.security.audit.ldap-entry-poisoning.ldap-entry-poisoning",
+    "url": "https://semgrep.dev/c/yeTxpGP",
+    "sha256": "c805dde3b5f0cde059a02b3c29156c5bb8214584400cf99ce8af4c7d9ad7c69a"
+  },
+  {
+    "id": "java.lang.security.audit.ldap-injection.ldap-injection",
+    "url": "https://semgrep.dev/c/rxTAKl2",
+    "sha256": "e494baa5fa67200b9b59464c6cd570ff029de3df86121de340f01309a5b6d4b4"
+  },
+  {
+    "id": "java.lang.security.audit.object-deserialization.object-deserialization",
+    "url": "https://semgrep.dev/c/NdTzyGe",
+    "sha256": "444dfa7efd2e55886484385c774795c83e182857aeee61bcd81bb8b2585b38c5"
+  },
+  {
+    "id": "java.lang.security.audit.overly-permissive-file-permission.overly-permissive-file-permission",
+    "url": "https://semgrep.dev/c/w8TRoNn",
+    "sha256": "73a25a884911503f5ce674941cc68b800456653e5c06d9a145dc7744c6ec6c92"
+  },
+  {
+    "id": "java.lang.security.audit.permissive-cors.permissive-cors",
+    "url": "https://semgrep.dev/c/xyTjz0p",
+    "sha256": "893b4800719c7a62237227d4f2bdd99352a6541c9629d7948fb2b6db3457fbec"
+  },
+  {
+    "id": "java.lang.security.audit.script-engine-injection.script-engine-injection",
+    "url": "https://semgrep.dev/c/O9TpxEp",
+    "sha256": "ddef5f2d982424d8f4674faaf89dd5e73a4d0f248bb33b8c9bd196864224ff05"
+  },
+  {
+    "id": "java.lang.security.audit.unvalidated-redirect.unvalidated-redirect",
+    "url": "https://semgrep.dev/c/PkTR329",
+    "sha256": "b59b41a724bc53ad54e8d4dd3b76cbd97a6732b94107bff5b77c9fbdbab597f6"
+  },
+  {
+    "id": "java.lang.security.audit.url-rewriting.url-rewriting",
+    "url": "https://semgrep.dev/c/JdTzxGb",
+    "sha256": "beeb3d8176a2711142b1810c3276752caa75d9f766ceb75a6c35920afaf70893"
+  },
+  {
+    "id": "java.lang.security.audit.weak-ssl-context.weak-ssl-context",
+    "url": "https://semgrep.dev/c/5PTo1rW",
+    "sha256": "9582cc0be6c60e04ea697228f2b4e53dad3e756421928815bbd018a90c16769d"
+  },
+  {
+    "id": "java.lang.security.audit.xml-decoder.xml-decoder",
+    "url": "https://semgrep.dev/c/GxTkeY1",
+    "sha256": "7177db6bb44e0cb44d8173ba89e3755777672cbaf622c8434f5813023cbbac89"
+  },
+  {
+    "id": "java.lang.security.audit.xssrequestwrapper-is-insecure.xssrequestwrapper-is-insecure",
+    "url": "https://semgrep.dev/c/WrTqKGK",
+    "sha256": "8bb84c8fc103538655616a9a0a497ab894a6eed9826e43b4b752625780999bb8"
+  },
+  {
+    "id": "java.lang.security.httpservlet-path-traversal.httpservlet-path-traversal",
+    "url": "https://semgrep.dev/c/zyTb2rq",
+    "sha256": "f5cb89702f61b58d48f29bd207624c9944b2d0fe2212a75b3405ac155c8fc3bb"
+  },
+  {
+    "id": "java.lang.security.servletresponse-writer-xss.servletresponse-writer-xss",
+    "url": "https://semgrep.dev/c/2KTv2EG",
+    "sha256": "89029fdd534f4ebd2f523d4773ef6f14ffbdbd517b0df84e0af1a174ed3488a9"
+  },
+  {
+    "id": "java.lang.security.xmlinputfactory-external-entities-enabled.xmlinputfactory-external-entities-enabled",
+    "url": "https://semgrep.dev/c/jQTn5Jv",
+    "sha256": "8d7e414adf9eef9e34809b8be113444d58f5894314d08c747230efc3d8b91e6b"
+  },
+  {
+    "id": "java.lang.security.xmlinputfactory-possible-xxe.xmlinputfactory-possible-xxe",
+    "url": "https://semgrep.dev/c/1QTypQZ",
+    "sha256": "6d75adcf1f74cf78896bff87a3affde5abea6751191403b0f168a8237c0e5e07"
+  },
+  {
+    "id": "java.rmi.security.server-dangerous-object-deserialization.server-dangerous-object-deserialization",
+    "url": "https://semgrep.dev/c/rxTAKN2",
+    "sha256": "d7b1b83460b91460eeabe7ec68f36a3a189a8db0182227487b34fe4411fb6cad"
+  },
+  {
+    "id": "java.spring.security.audit.spel-injection.spel-injection",
+    "url": "https://semgrep.dev/c/kbTzG5Y",
+    "sha256": "4ed9d23982b950b303d374f2b4d5c07a259cadab97284988fadd23ca40a475f9"
+  },
+  {
+    "id": "java.spring.security.audit.spring-csrf-disabled.spring-csrf-disabled",
+    "url": "https://semgrep.dev/c/vdT06dL",
+    "sha256": "078338dce5c5754baed33f790b4396d9631ec81a0d4d76b8a6c8713f9feeee49"
+  },
+  {
+    "id": "java.spring.security.audit.spring-unvalidated-redirect.spring-unvalidated-redirect",
+    "url": "https://semgrep.dev/c/nWT2Lk0",
+    "sha256": "ccebd67d3ada77848f160e98e45ab549ab077f8a063635c0b0f1913fe2a19eb9"
+  },
+  {
+    "id": "java.spring.security.unrestricted-request-mapping.unrestricted-request-mapping",
+    "url": "https://semgrep.dev/c/QkTGq2l",
+    "sha256": "33adb806dd4e07596b6fa78935f0264b5e4a986ef0b9b6e48c3a3acc07e745ba"
+  },
+  {
+    "id": "javascript.grpc.security.grpc-nodejs-insecure-connection.grpc-nodejs-insecure-connection",
+    "url": "https://semgrep.dev/c/e1TyjAl",
+    "sha256": "ae4327d9a3369cc90d22c34463731102e65bd463f37d710764694713cba4bb69"
+  },
+  {
+    "id": "javascript.jose.security.jwt-hardcode.hardcoded-jwt-secret",
+    "url": "https://semgrep.dev/c/d6TyxbX",
+    "sha256": "ef4617401b8356b7b09824a8599c7ec2ec0d0f51d863debda867f767b72eb4ac"
+  },
+  {
+    "id": "javascript.jose.security.jwt-none-alg.jwt-none-alg",
+    "url": "https://semgrep.dev/c/ZRTKAyb",
+    "sha256": "deb519752d422b52082f17d838425d6b546e190faf48ff169252b34cfb43dc9e"
+  },
+  {
+    "id": "javascript.jsonwebtoken.security.jwt-hardcode.hardcoded-jwt-secret",
+    "url": "https://semgrep.dev/c/gETB75D",
+    "sha256": "5d9312311800225e0b34f8c8e63158fce60310cf062ace23a891cd5af723ea0a"
+  },
+  {
+    "id": "javascript.jsonwebtoken.security.jwt-none-alg.jwt-none-alg",
+    "url": "https://semgrep.dev/c/QkTGqQo",
+    "sha256": "7ff13abf8fc0b8c247d2e1be3704d9d903bf26a9a06854918211e610f397f88d"
+  },
+  {
+    "id": "javascript.lang.security.detect-buffer-noassert.detect-buffer-noassert",
+    "url": "https://semgrep.dev/c/9lTy1Y6",
+    "sha256": "cb27a070db004b8c80d9ad3c05b9b378f01b1711bc7dcef9a3777181bf1d8fec"
+  },
+  {
+    "id": "javascript.lang.security.detect-child-process.detect-child-process",
+    "url": "https://semgrep.dev/c/5PT7KnG",
+    "sha256": "05954fddd09154273e41cca5793d1608fbe5eb0d6dc9eeb08ba32dcdfb60da82"
+  },
+  {
+    "id": "javascript.lang.security.detect-disable-mustache-escape.detect-disable-mustache-escape",
+    "url": "https://semgrep.dev/c/DkTRb3X",
+    "sha256": "f706d6d3227a9082b05882e3fe31513dd5d44c4e2edde7f7f071340473c635f3"
+  },
+  {
+    "id": "javascript.lang.security.detect-eval-with-expression.detect-eval-with-expression",
+    "url": "https://semgrep.dev/c/WrTqKkJ",
+    "sha256": "9f4e0bd299178628d27ed41fcda7e9e384096f6361c223cd6d043055d11c152b"
+  },
+  {
+    "id": "javascript.lang.security.detect-no-csrf-before-method-override.detect-no-csrf-before-method-override",
+    "url": "https://semgrep.dev/c/K3TKkPO",
+    "sha256": "f23ffa98155f13057d6dc0dd489fb6a6b421ad3c8ff3e85e13599da832a15f38"
+  },
+  {
+    "id": "javascript.lang.security.detect-pseudorandombytes.detect-pseudoRandomBytes",
+    "url": "https://semgrep.dev/c/qkTR799",
+    "sha256": "e8b2731db85e737372c988a9d0e3a6dc5f2daeb2a19563c25896881332174ef7"
+  },
+  {
+    "id": "javascript.lang.security.spawn-git-clone.spawn-git-clone",
+    "url": "https://semgrep.dev/c/6xT29A7",
+    "sha256": "e3f6bf2c85105f77b51470d5980ec5d42c5d615dcc492ff77f37e335ac22f28f"
+  },
+  {
+    "id": "javascript.node-expat.security.audit.expat-xxe.expat-xxe",
+    "url": "https://semgrep.dev/c/2KTv2AZ",
+    "sha256": "0b7f83ecb296968845f51b42604a54ef33f398474dd703f8d53920bfb0178fbf"
+  },
+  {
+    "id": "javascript.sax.security.audit.sax-xxe.sax-xxe",
+    "url": "https://semgrep.dev/c/d6Tyxn9",
+    "sha256": "b021af48d2ca6950863f1a1633d41345144df137e606bc677e9e04cdacfb0d0e"
+  },
+  {
+    "id": "javascript.xml2json.security.audit.xml2json-xxe.xml2json-xxe",
+    "url": "https://semgrep.dev/c/GxTkeg8",
+    "sha256": "a8ec111f720da0e93492dc28fa01a2908b697e321c4409844fcb7ee8d13cb483"
+  },
+  {
+    "id": "javascript.lang.security.audit.unknown-value-with-script-tag.unknown-value-with-script-tag",
+    "url": "https://semgrep.dev/c/GxTke48",
+    "sha256": "fdb7466a87fb5209c3cd69445d0f66c11edcf4aa1ed797653d41713f72a735d4"
+  },
+  {
+    "id": "javascript.express.security.audit.possible-user-input-redirect.unknown-value-in-redirect",
+    "url": "https://semgrep.dev/c/3ZT4Xev",
+    "sha256": "0fe5b2da5670be9f50ca61093b98a19f5d6a73b86736415f7cd6f43942f6daff"
+  },
+  {
+    "id": "python.airflow.security.audit.formatted-string-bashoperator.formatted-string-bashoperator",
+    "url": "https://semgrep.dev/c/yeTxpb3",
+    "sha256": "26143c3be5410479dbf64e1962fe1f51712ba63223b941acca62816a3654616d"
+  },
+  {
+    "id": "python.boto3.security.hardcoded-token.hardcoded-token",
+    "url": "https://semgrep.dev/c/gETB78n",
+    "sha256": "8cbd6023798ab6f6e1f516071ab48e1caae976a0da5c2ef165c9d07f0eb8354a"
+  },
+  {
+    "id": "python.cryptography.security.insecure-cipher-algorithms.insecure-cipher-algorithm-idea",
+    "url": "https://semgrep.dev/c/44TEjNJ",
+    "sha256": "e04c708902faeb07394d7e533834324415ceb0b6281b6b786d117f05643e7858"
+  },
+  {
+    "id": "python.cryptography.security.insecure-cipher-mode-ecb.insecure-cipher-mode-ecb",
+    "url": "https://semgrep.dev/c/PkTR3w7",
+    "sha256": "6fe017063e3be3cf8d4a927ba54d76175ff83c2b56f3df58ed422a773ae0dab6"
+  },
+  {
+    "id": "python.cryptography.security.insecure-hash-algorithms.insecure-hash-algorithm-sha1",
+    "url": "https://semgrep.dev/c/5PTo1l0",
+    "sha256": "11689e72db8ec5574ec6bcbaa84c3a55108e41bd72cd94cc00955bb349f26dbb"
+  },
+  {
+    "id": "python.cryptography.security.insufficient-ec-key-size.insufficient-ec-key-size",
+    "url": "https://semgrep.dev/c/RGT0LW6",
+    "sha256": "cd576dc5c44446cf161f4fcd0e8161e42de8e67651800683ddd88f7d74dec688"
+  },
+  {
+    "id": "python.django.security.audit.avoid-insecure-deserialization.avoid-insecure-deserialization",
+    "url": "https://semgrep.dev/c/GxTlb9e",
+    "sha256": "c8127648e1398092497ead0f61860ba59f1a1c8f423695cfd1ab99d3eb217b40"
+  },
+  {
+    "id": "python.django.security.audit.avoid-mark-safe.avoid-mark-safe",
+    "url": "https://semgrep.dev/c/0bTKzkj",
+    "sha256": "64cfa87bcaa4410eae41e5f486531197b4a77c7986cd8036c10069d2c5fa757f"
+  },
+  {
+    "id": "python.django.security.audit.csrf-exempt.no-csrf-exempt",
+    "url": "https://semgrep.dev/c/K3TKk9W",
+    "sha256": "b21a3a64d00cd8e14afc40d395513596098525d8254bb5f53a3a5201d6ec4db5"
+  },
+  {
+    "id": "python.django.security.audit.custom-expression-as-sql.custom-expression-as-sql",
+    "url": "https://semgrep.dev/c/qkTR7gn",
+    "sha256": "47bc061997af97b6cf3e76302ab218c4aeb1ad10b8d34e0ff9e0ccd9ba7c74ce"
+  },
+  {
+    "id": "python.django.security.audit.extends-custom-expression.extends-custom-expression",
+    "url": "https://semgrep.dev/c/YDTZeGe",
+    "sha256": "cd4f471bf807ecccd1c85e03d537a6d3f3b061924f98cb995346b686e810f2dc"
+  },
+  {
+    "id": "python.django.security.audit.query-set-extra.avoid-query-set-extra",
+    "url": "https://semgrep.dev/c/6xT297o",
+    "sha256": "4256cf9767d1bd99344ee2d6cad43c682c8addd060ff18056a805cb32228d4a1"
+  },
+  {
+    "id": "python.django.security.audit.raw-query.avoid-raw-sql",
+    "url": "https://semgrep.dev/c/o5TbDQN",
+    "sha256": "c729b6fd3a4db1a06d738e4d8730b73dcdb56b7a93c39715e847a2987fcbcbd1"
+  },
+  {
+    "id": "python.django.security.audit.secure-cookies.django-secure-set-cookie",
+    "url": "https://semgrep.dev/c/zyTb2gp",
+    "sha256": "d05899f92c59f1e1d7821ca13a9a227b262cdbd34242358f86388f0534876721"
+  },
+  {
+    "id": "python.django.security.audit.unvalidated-password.unvalidated-password",
+    "url": "https://semgrep.dev/c/pZT03gB",
+    "sha256": "1a5e8cd5da2df5761df4c38dc75f27e39792b1eb0fdb59284776c18e82a6110e"
+  },
+  {
+    "id": "python.django.security.injection.code.globals-misuse-code-execution.globals-misuse-code-execution",
+    "url": "https://semgrep.dev/c/e1TyjXZ",
+    "sha256": "4e417e3397873f7f41aef5a7bae08dae1636a8ee75670663a53fe69cc6a889ef"
+  },
+  {
+    "id": "python.django.security.injection.code.user-eval.user-eval",
+    "url": "https://semgrep.dev/c/d6Tyx2A",
+    "sha256": "d8c7d45a24b3aae70f409c0f17e4f40254370526ab3c5ca27e4359eb3bbd934f"
+  },
+  {
+    "id": "python.django.security.injection.code.user-exec.user-exec",
+    "url": "https://semgrep.dev/c/nWT2LA2",
+    "sha256": "f277a392edcecd831e872b9a08a7366a6147bceccb5aa74225e375df9aa936c8"
+  },
+  {
+    "id": "python.django.security.injection.mass-assignment.mass-assignment",
+    "url": "https://semgrep.dev/c/QkTGqlQ",
+    "sha256": "0df457e31cfedf9ad7ceebb861ef0b520364c55c7e831472baacf2c71e5a1bd4"
+  },
+  {
+    "id": "python.django.security.injection.email.xss-html-email-body.xss-html-email-body",
+    "url": "https://semgrep.dev/c/8KT5rOn",
+    "sha256": "66071c39e0582f685f0f4bad47a8953fef090bd155d0323c70028e41893dd920"
+  },
+  {
+    "id": "python.django.security.injection.email.xss-send-mail-html-message.xss-send-mail-html-message",
+    "url": "https://semgrep.dev/c/gETB7Gn",
+    "sha256": "72fe5735846d821e7c5842b8e66f8a33ea4a3198636e1cb2a80a53e2f0254afa"
+  },
+  {
+    "id": "python.django.security.injection.command.command-injection-os-system.command-injection-os-system",
+    "url": "https://semgrep.dev/c/ExTExPo",
+    "sha256": "ce9343d6551d09c73442bb4a500f292054778cf5f94fe36200e0f4fdb3f1742c"
+  },
+  {
+    "id": "python.django.security.injection.path-traversal.path-traversal-file-name.path-traversal-file-name",
+    "url": "https://semgrep.dev/c/44TEjWJ",
+    "sha256": "ab73e6d0ae7b27e7e3a4497eca805cc8a8f94780e708b8e4dbfc6a25f422e223"
+  },
+  {
+    "id": "python.django.security.passwords.use-none-for-password-default.use-none-for-password-default",
+    "url": "https://semgrep.dev/c/RGT0LYX",
+    "sha256": "2b5dace57005e19a0a07b33e8f94a3b31f826b42d8ce0192e5fcc305208660ca"
+  },
+  {
+    "id": "python.django.security.audit.xss.context-autoescape-off.context-autoescape-off",
+    "url": "https://semgrep.dev/c/X0Tzye3",
+    "sha256": "94e05bbfd762d62990594af136296d0a06f0ea60ea5dde20e3b0ad8497328595"
+  },
+  {
+    "id": "python.django.security.audit.xss.global-autoescape-off.global-autoescape-off",
+    "url": "https://semgrep.dev/c/yeTxp93",
+    "sha256": "ec194b0fedef9e86763634d65eb0ef7a3f8317b5008cdff5a3ee3cbe11314619"
+  },
+  {
+    "id": "python.django.security.audit.xss.template-autoescape-off.template-autoescape-off",
+    "url": "https://semgrep.dev/c/NdTzy0A",
+    "sha256": "1996254de0365c777d3574935cd8c352804fb82a39417d0588ba707a43a310c0"
+  },
+  {
+    "id": "python.django.security.audit.xss.template-blocktranslate-no-escape.template-blocktranslate-no-escape",
+    "url": "https://semgrep.dev/c/kbTzG08",
+    "sha256": "4006da92045ddd6264f17236bb5042e354700298ea9a43d717af140b29c2546f"
+  },
+  {
+    "id": "python.django.security.audit.xss.template-translate-as-no-escape.template-translate-as-no-escape",
+    "url": "https://semgrep.dev/c/w8TRodj",
+    "sha256": "9c054aa234d7e60f2b4f51564b58c5827420f7b22880ed10f31d1163ab2068c2"
+  },
+  {
+    "id": "python.django.security.audit.xss.template-var-unescaped-with-safeseq.template-var-unescaped-with-safeseq",
+    "url": "https://semgrep.dev/c/xyTjzyG",
+    "sha256": "23aeda4aa1ebc9bb2f1f69c0575a27e6f5b78bddf2da18eab805da91e44c32f9"
+  },
+  {
+    "id": "python.flask.security.audit.app-run-param-config.avoid_app_run_with_bad_host",
+    "url": "https://semgrep.dev/c/BjTkZOY",
+    "sha256": "9448254746aad6ba06d69508a5e7a278b072d037fbba54c986c3ab4cc9592a07"
+  },
+  {
+    "id": "python.flask.security.audit.app-run-security-config.avoid_using_app_run_directly",
+    "url": "https://semgrep.dev/c/DkTRb4z",
+    "sha256": "91429c8b0a3bcc83dca497d4b662f5fa8e57452ee200549c6aab464997f31457"
+  },
+  {
+    "id": "python.flask.security.audit.debug-enabled.debug-enabled",
+    "url": "https://semgrep.dev/c/8KTKjwR",
+    "sha256": "1260e7a3ad1b761ab38526136aeb0c8591d53df6627ffbfa020b2636c38d5c53"
+  },
+  {
+    "id": "python.flask.security.audit.hardcoded-config.avoid_hardcoded_config_DEBUG",
+    "url": "https://semgrep.dev/c/6xT29w6",
+    "sha256": "50abae9ef92511be3ba5b1b4b03de41e11268ad87a15410098ec7bfe2b3b452f"
+  },
+  {
+    "id": "python.flask.security.audit.hardcoded-config.avoid_hardcoded_config_ENV",
+    "url": "https://semgrep.dev/c/YDTZeKr",
+    "sha256": "510ab27ba9ae9bcf31cf4506423d202077ab83056c918e76231fb0179dc48f79"
+  },
+  {
+    "id": "python.flask.security.audit.hardcoded-config.avoid_hardcoded_config_SECRET_KEY",
+    "url": "https://semgrep.dev/c/l4TJRA9",
+    "sha256": "4808982a7a2d3936bb0741e032ab5bb2f6bc6038f76db8a65a858ecb51826499"
+  },
+  {
+    "id": "python.flask.security.audit.hardcoded-config.avoid_hardcoded_config_TESTING",
+    "url": "https://semgrep.dev/c/qkTR7P1",
+    "sha256": "ca8c484ab8b57274c12def322e48b3635dc6eba2cf34d8e9e5ac16aca21a9a86"
+  },
+  {
+    "id": "python.flask.security.audit.render-template-string.render-template-string",
+    "url": "https://semgrep.dev/c/o5TbDp4",
+    "sha256": "d764a4dfc59133cebb622d01dba198e153e82724b0e817836743ef626766962d"
+  },
+  {
+    "id": "python.flask.security.audit.secure-set-cookie.secure-set-cookie",
+    "url": "https://semgrep.dev/c/zyTb20n",
+    "sha256": "b698bec460eef03300d4f1d5754863c710c2d7aa56371e46f01b1856c77e8885"
+  },
+  {
+    "id": "python.flask.security.audit.wtf-csrf-disabled.flask-wtf-csrf-disabled",
+    "url": "https://semgrep.dev/c/pZT034X",
+    "sha256": "1aa2752d11fe16784ed0820191617e085174f3149152577095bd743bd4e50321"
+  },
+  {
+    "id": "python.flask.security.dangerous-template-string.dangerous-template-string",
+    "url": "https://semgrep.dev/c/X0Tzy0L",
+    "sha256": "b554738cc0906de267696d447e8c263740ee7d7f5fcd7ad742e542970d418b1a"
+  },
+  {
+    "id": "python.flask.security.injection.user-eval.eval-injection",
+    "url": "https://semgrep.dev/c/w8TRoB0",
+    "sha256": "8263927d2601804e2283197af01b36fa9bf0ac13459082182ed0df26b80fff2a"
+  },
+  {
+    "id": "python.flask.security.injection.user-exec.exec-injection",
+    "url": "https://semgrep.dev/c/xyTjzD9",
+    "sha256": "3be31efdf2009bd4b2400d7a19b45614f9d442c772ab0e732bc637dde12ffd04"
+  },
+  {
+    "id": "python.flask.security.insecure-deserialization.insecure-deserialization",
+    "url": "https://semgrep.dev/c/O9Tpx2r",
+    "sha256": "d900cd7b021e443647f29a51eb486dd113e5585d7d1013902aaa61787432ec34"
+  },
+  {
+    "id": "python.flask.security.open-redirect.open-redirect",
+    "url": "https://semgrep.dev/c/e1Tyj2Y",
+    "sha256": "765b805b5a94112b2eb265c7e53a4d971e27ed29f8b43b4dd25989de694c4174"
+  },
+  {
+    "id": "python.flask.security.secure-static-file-serve.avoid_send_file_without_path_sanitization",
+    "url": "https://semgrep.dev/c/vdT06Ab",
+    "sha256": "123f36ce0b17590b381ed5b7ebf287385257b51e7ffe1444eead0c036b250000"
+  },
+  {
+    "id": "python.flask.security.unescaped-template-extension.unescaped-template-extension",
+    "url": "https://semgrep.dev/c/d6Tyx52",
+    "sha256": "91d53ec2ffbea6d49171c4cfb1a1e9ff4be54526584b458897f150df1c806818"
+  },
+  {
+    "id": "python.flask.security.unsanitized-input.response-contains-unsanitized-input",
+    "url": "https://semgrep.dev/c/ZRTKAvv",
+    "sha256": "c5019d5a90b433391e1f0fee4912dc7902780b4e149db2bb6541f1475306bcdc"
+  },
+  {
+    "id": "python.flask.security.xss.audit.template-autoescape-off.template-autoescape-off",
+    "url": "https://semgrep.dev/c/7ZTE3jd",
+    "sha256": "b100d36f84273f419c9adbff503ee235e9bd4753607f496db9a4536f4956e892"
+  },
+  {
+    "id": "python.flask.security.xss.audit.template-unescaped-with-safe.template-unescaped-with-safe",
+    "url": "https://semgrep.dev/c/LjTkgoZ",
+    "sha256": "f83c57e2032455aa280074f873b43f6976858e096c0be6188a8113a90e9cadfd"
+  },
+  {
+    "id": "python.lang.security.audit.conn_recv.multiprocessing-recv",
+    "url": "https://semgrep.dev/c/GxTkeKQ",
+    "sha256": "c783dfbdd98b5951017760e385ae4e3f967e351dd6ab0ce5d1fd33863344ac15"
+  },
+  {
+    "id": "python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected",
+    "url": "https://semgrep.dev/c/w8TKJbO",
+    "sha256": "302c87b8d2cd426d8c205bb9ee5c27e6abd40f9de351a46d26f4919facc97bdd"
+  },
+  {
+    "id": "python.lang.security.audit.eval-detected.eval-detected",
+    "url": "https://semgrep.dev/c/bZT537Q",
+    "sha256": "541b1d538c9eb30dbb456cb5e23c9df72cdfa8a27059d277cc559281e37bf90e"
+  },
+  {
+    "id": "python.lang.security.audit.exec-detected.exec-detected",
+    "url": "https://semgrep.dev/c/NdTzyKJ",
+    "sha256": "fbe86e5212b569cb482987e3822032ce01b5e0d8ed767132fe03b845221c84ee"
+  },
+  {
+    "id": "python.lang.security.audit.hardcoded-password-default-argument.hardcoded-password-default-argument",
+    "url": "https://semgrep.dev/c/w8TRoP0",
+    "sha256": "606f263be497661beb9364056fd00a6409928576bd3e650b95b562a9bf5339fd"
+  },
+  {
+    "id": "python.lang.security.audit.httpsconnection-detected.httpsconnection-detected",
+    "url": "https://semgrep.dev/c/xyTjzg9",
+    "sha256": "a4e464cba63b9ec7df6717bdd8c904b705eaaae707e69c4e17275f21f130e412"
+  },
+  {
+    "id": "python.lang.security.audit.logging.listeneval.listen-eval",
+    "url": "https://semgrep.dev/c/RGT0L6X",
+    "sha256": "be3cddf363f755347ba67c12caf7f74960c0dcb2764b0eb9eb9b97a56fd17e73"
+  },
+  {
+    "id": "python.lang.security.audit.mako-templates-detected.mako-templates-detected",
+    "url": "https://semgrep.dev/c/BjTkZgY",
+    "sha256": "e130b5a5d7fda48db56754e8760110d24881b9b52cdf259715196773713d027a"
+  },
+  {
+    "id": "python.lang.security.audit.marshal.marshal-usage",
+    "url": "https://semgrep.dev/c/DkTRbPz",
+    "sha256": "7cf31bf48868ecaaef8bbef22662c479d63c6dc1efb609a548540c2b6e29dd69"
+  },
+  {
+    "id": "python.lang.security.audit.network.bind.avoid-bind-to-all-interfaces",
+    "url": "https://semgrep.dev/c/0bTKzDL",
+    "sha256": "d3a85ab31c8cf6cb34311bc0aa47bf635e4b491a4741e84f68b853841f404f85"
+  },
+  {
+    "id": "python.lang.security.audit.network.http-not-https-connection.http-not-https-connection",
+    "url": "https://semgrep.dev/c/qkTR7E1",
+    "sha256": "d6403371e4620172ad8c76187f4c08b4d88706f167da44fbceb74ba3a3856601"
+  },
+  {
+    "id": "python.lang.security.audit.paramiko-implicit-trust-host-key.paramiko-implicit-trust-host-key",
+    "url": "https://semgrep.dev/c/JdTzxEQ",
+    "sha256": "6cdf16c06c6d207b9c36b0f703bc8fbbd26ed74dee7479f58070b143feeb7418"
+  },
+  {
+    "id": "python.lang.security.audit.paramiko.paramiko-exec-command.paramiko-exec-command",
+    "url": "https://semgrep.dev/c/YDTZeBr",
+    "sha256": "a716eb70f03a9b7c9735a8e83c7d9eebc0b0e69c46efe56e2eeccf1d4a988076"
+  },
+  {
+    "id": "python.lang.security.audit.ssl-wrap-socket-is-deprecated.ssl-wrap-socket-is-deprecated",
+    "url": "https://semgrep.dev/c/DkTRbgn",
+    "sha256": "220cc3c920c44d1b2d4ce0af9f2ad466dfe73609b09b3ba1b8c37fa28920f42f"
+  },
+  {
+    "id": "python.lang.security.audit.subprocess-shell-true.subprocess-shell-true",
+    "url": "https://semgrep.dev/c/0bTKzDK",
+    "sha256": "593b6d401a26f6f99c8986ad629cdff9f44ebdc03f5669f7d8cf942be20e856f"
+  },
+  {
+    "id": "python.lang.security.audit.system-wildcard-detected.system-wildcard-detected",
+    "url": "https://semgrep.dev/c/6xTxj9B",
+    "sha256": "22a192dc4445231ea9689aa8b5c1eee42b9bc57acde62dfe62e75b177b369fc6"
+  },
+  {
+    "id": "python.lang.security.audit.telnetlib.telnetlib",
+    "url": "https://semgrep.dev/c/K3TKkZo",
+    "sha256": "bc4b632307ea7543cf5cc78987e650f0d49e43fd133ee9389e0a8a7c0d74face"
+  },
+  {
+    "id": "python.lang.security.audit.weak-ssl-version.weak-ssl-version",
+    "url": "https://semgrep.dev/c/qkTR7Ev",
+    "sha256": "e094c7a85e8d00ea53d5660c0e2ce641c71a605e6ac5ea9e300f0cf16416f23d"
+  },
+  {
+    "id": "python.lang.security.deserialization.avoid-pyyaml-load.avoid-pyyaml-load",
+    "url": "https://semgrep.dev/c/1QTyprw",
+    "sha256": "9a7b6a470a982a56b1d9cf3999a6b833fea35f76c0a3126b648c88b92a60a164"
+  },
+  {
+    "id": "python.lang.security.deserialization.pickle.avoid-cPickle",
+    "url": "https://semgrep.dev/c/rxTAKEq",
+    "sha256": "3571458919fa249c64032ac7ed168911cd30b145ed9d87e91269a973392c7945"
+  },
+  {
+    "id": "python.lang.security.deserialization.pickle.avoid-dill",
+    "url": "https://semgrep.dev/c/bZT53np",
+    "sha256": "33a53e507299ae54da419970762e85db2b655e05717c765506386812547fe489"
+  },
+  {
+    "id": "python.lang.security.deserialization.pickle.avoid-pickle",
+    "url": "https://semgrep.dev/c/yeTxpEE",
+    "sha256": "8e12b5673bf98d2cc7c2e72f28ce1f3bb5f75489785b21fe876141a2b9702d2f"
+  },
+  {
+    "id": "python.lang.security.deserialization.pickle.avoid-shelve",
+    "url": "https://semgrep.dev/c/NdTzyb4",
+    "sha256": "e1cca1807de0c1ed206154dc64fa0470c4f09dff714baf04f3660662037bec99"
+  },
+  {
+    "id": "python.lang.security.insecure-hash-algorithms.insecure-hash-algorithm-sha1",
+    "url": "https://semgrep.dev/c/w8TRoE7",
+    "sha256": "ee37f2a75b430cfbc37410ee1283903a235d594ef3b40d6c7eba7eddbdb62396"
+  },
+  {
+    "id": "python.lang.security.insecure-hash-function.insecure-hash-function",
+    "url": "https://semgrep.dev/c/xyT0gk7",
+    "sha256": "5e5fb9f7fb06bc76bf410d01af6c6102ba355a2e7bea0971c2b16a28b0ad2906"
+  },
+  {
+    "id": "python.lang.security.unverified-ssl-context.unverified-ssl-context",
+    "url": "https://semgrep.dev/c/e1Tyjlj",
+    "sha256": "43a1427478c29a1d66614f23a159f6fc4d54576799df2afa4cef2e31008d1634"
+  },
+  {
+    "id": "python.lang.security.use-defused-xml.use-defused-xml",
+    "url": "https://semgrep.dev/c/d6TyxoZ",
+    "sha256": "a6e6df8f4d23486f82acf466990a0846c51686f1bc6ca9eb774a716346f78e2a"
+  },
+  {
+    "id": "python.lang.security.use-defused-xmlrpc.use-defused-xmlrpc",
+    "url": "https://semgrep.dev/c/ZRTKA8z",
+    "sha256": "8071d959de1f0e419974087206391039d4a993355f6c003dd08937c10c2eea91"
+  },
+  {
+    "id": "python.pycryptodome.security.insecure-cipher-algorithm.insecure-cipher-algorithm-xor",
+    "url": "https://semgrep.dev/c/gETB7j3",
+    "sha256": "2883f4aa68bca7a9a5905ddab1ad9b6e370d0b0989cbb168aaf89c93d3abac4f"
+  },
+  {
+    "id": "python.pycryptodome.security.insecure-hash-algorithm.insecure-hash-algorithm-sha1",
+    "url": "https://semgrep.dev/c/PkTR3vk",
+    "sha256": "a75e1f4f2d025ba3d51e526cf47dfac17e1839aaeba213febbc8453baf05c92a"
+  },
+  {
+    "id": "python.requests.security.disabled-cert-validation.disabled-cert-validation",
+    "url": "https://semgrep.dev/c/1QTypBw",
+    "sha256": "c4bc91c3a779adc06c2f450709febd983eda247446467782197aba7a4ee73454"
+  },
+  {
+    "id": "python.requests.security.no-auth-over-http.no-auth-over-http",
+    "url": "https://semgrep.dev/c/9lT4b2G",
+    "sha256": "106857f2a579f50884fbfd0fb9611d1a7bbcca47921a9eecc2ef4f9122bd74ca"
+  },
+  {
+    "id": "python.sqlalchemy.security.sqlalchemy-sql-injection.sqlalchemy-sql-injection",
+    "url": "https://semgrep.dev/c/NdTzyL4",
+    "sha256": "e254171aaef7037224678bf9fb7b1e7fddd5ad7fffbfc14af708eb1597b3888f"
+  },
+  {
+    "id": "ruby.lang.security.filter-skipping.filter-skipping",
+    "url": "https://semgrep.dev/c/DkTRbln",
+    "sha256": "e71bcb4a90e5b8eb47662c04dc3b651fa2badad0bc326437ec45a29ba17eca41"
+  },
+  {
+    "id": "ruby.lang.security.bad-deserialization.bad-deserialization",
+    "url": "https://semgrep.dev/c/3ZT4Xqp",
+    "sha256": "0a1849ca421297d60002e8b7203611ed8c90161df26dd214670f6aac79566f85"
+  },
+  {
+    "id": "ruby.lang.security.divide-by-zero.divide-by-zero",
+    "url": "https://semgrep.dev/c/BjT1NPZ",
+    "sha256": "8a0e2cec13cd0766ac36947d6dfaeb54977a8510ea05ab18c060db497a3efba6"
+  },
+  {
+    "id": "ruby.lang.security.hardcoded-http-auth-in-controller.hardcoded-http-auth-in-controller",
+    "url": "https://semgrep.dev/c/0bTKzNK",
+    "sha256": "fc685823edc676b72fe6228370a76de42145b34e0ef8b3b71e5bac5a49342496"
+  },
+  {
+    "id": "ruby.lang.security.force-ssl-false.force-ssl-false",
+    "url": "https://semgrep.dev/c/WrTqKB3",
+    "sha256": "eecd842f7e0aec3c44b4a019957f6360a177720a8e0acfadd84bf021c216c035"
+  },
+  {
+    "id": "ruby.lang.security.cookie-serialization.cookie-serialization",
+    "url": "https://semgrep.dev/c/44TEj4k",
+    "sha256": "764b2be0e468b36821ada3badf39afb381bdc8e3899bc978e7a7fd297b816659"
+  },
+  {
+    "id": "ruby.lang.security.file-disclosure.file-disclosure",
+    "url": "https://semgrep.dev/c/BjTkZq1",
+    "sha256": "ccf899beda9393223e66cef4a7a1cda6ce874975395df7806a4c431ce7d3135e"
+  },
+  {
+    "id": "ruby.lang.security.create-with.create-with",
+    "url": "https://semgrep.dev/c/PkTR34k",
+    "sha256": "2dbe43673d9ef0e3065d50194e149631f551c6fd02f615f4b2c1e0489ca741db"
+  },
+  {
+    "id": "ruby.lang.security.no-send.bad-send",
+    "url": "https://semgrep.dev/c/BjTkZqj",
+    "sha256": "892697c84f45b9ffc8e2b3792ef5bd790c8b9f47300dcb989d7800bdad1e0881"
+  },
+  {
+    "id": "ruby.lang.security.mass-assignment-protection-disabled.mass-assignment-protection-disabled",
+    "url": "https://semgrep.dev/c/YDTZeW4",
+    "sha256": "f8f26aa228757e4c4b750b6e5bedb16240318679cb78e92300572306755fea7f"
+  },
+  {
+    "id": "ruby.lang.security.ssl-mode-no-verify.ssl-mode-no-verify",
+    "url": "https://semgrep.dev/c/DkTRbl4",
+    "sha256": "baec7935a16585127c6beabee88108003a22403fb30e879ad4ae1c525a8a6109"
+  },
+  {
+    "id": "ruby.lang.security.missing-csrf-protection.missing-csrf-protection",
+    "url": "https://semgrep.dev/c/5PTo1WY",
+    "sha256": "29510e2635c945c8a60f5a847a758f9bb47e9e5df89305a401e81f8d11ddb507"
+  },
+  {
+    "id": "ruby.lang.security.weak-hashes-md5.weak-hashes-md5",
+    "url": "https://semgrep.dev/c/0bTKzN8",
+    "sha256": "b8c7cfa439bcbf14c8f7893e3340460632deebbe024c80d73dd9682033631318"
+  },
+  {
+    "id": "ruby.lang.security.weak-hashes-sha1.weak-hashes-sha1",
+    "url": "https://semgrep.dev/c/K3TKkEZ",
+    "sha256": "4827fa04d707db4323fccc2b5b66858cdde67ccbd2fb6c2890e7b50cf07ec4b9"
+  },
+  {
+    "id": "ruby.lang.security.unprotected-mass-assign.mass-assignment-vuln",
+    "url": "https://semgrep.dev/c/WrTqKBA",
+    "sha256": "97acbfedcc07dde5e78490e293f6e12f1dabb69fa73426d4238d4fce9192bc7a"
+  },
+  {
+    "id": "typescript.react.security.react-insecure-request.react-insecure-request",
+    "url": "https://semgrep.dev/c/A8Tgd2p",
+    "sha256": "39416a47651cdc65fe2aff0d445a930a852f3288c67dbf7dbf90c6ef1a0c07f9"
+  },
+  {
+    "id": "typescript.react.security.react-markdown-insecure-html.react-markdown-insecure-html",
+    "url": "https://semgrep.dev/c/BjTkZA8",
+    "sha256": "b0ac9e32d4586c54f64d3b065f741ca50207be579e2b40cc1a82a4b51539b91a"
+  },
+  {
+    "id": "typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml",
+    "url": "https://semgrep.dev/c/l4TJR0v",
+    "sha256": "a35d6e1dd8f3c6b8b77a4c4ea4f0db95164b80194a42d3106833b9d7bb1d38b2"
+  },
+  {
+    "id": "json.aws.security.public-s3-policy-statement.public-s3-policy-statement",
+    "url": "https://semgrep.dev/c/A8Tgdxq",
+    "sha256": "80774606772ba004c00d0392f16f654663197e9f642950fe8640a6ebafa978cf"
+  },
+  {
+    "id": "terraform.lang.security.eks-public-endpoint-enabled.eks-public-endpoint-enabled",
+    "url": "https://semgrep.dev/c/e1TyjjB",
+    "sha256": "8109fc33d1536f45528806926e6750ff65afa27bab02660062054ffde359da79"
+  },
+  {
+    "id": "terraform.lang.security.s3-cors-all-origins.all-origins-allowed",
+    "url": "https://semgrep.dev/c/3ZT4XXJ",
+    "sha256": "71c4258df83124d57f552b85ed09bab74a19e0094f2177c414a51f34d523444e"
+  },
+  {
+    "id": "terraform.lang.security.s3-public-rw-bucket.s3-public-rw-bucket",
+    "url": "https://semgrep.dev/c/PkTR3y5",
+    "sha256": "18685273515c71033836e7c8de972a48b4770629479a1fb541e1884a7b39b781"
+  },
+  {
+    "id": "generic.html-templates.security.unquoted-attribute-var.unquoted-attribute-var",
+    "url": "https://semgrep.dev/c/1QT3R1A",
+    "sha256": "555d6ef34d710e43ae8a8337b2f0898cf047da9592c7278ae62c359d9be23b75"
+  },
+  {
+    "id": "generic.html-templates.security.var-in-href.var-in-href",
+    "url": "https://semgrep.dev/c/9lTqGx9",
+    "sha256": "9604d8a8642e5f7344bb9af4b9bc6fcecac4d9de25edd8d49f663327ec8d112c"
+  },
+  {
+    "id": "generic.html-templates.security.var-in-script-tag.var-in-script-tag",
+    "url": "https://semgrep.dev/c/rxTlpQE",
+    "sha256": "c625900e6f39e4d270a8f4397c34e0c49317680dab447277e540f9abae65018a"
+  },
+  {
+    "id": "generic.nginx.security.dynamic-proxy-host.dynamic-proxy-host",
+    "url": "https://semgrep.dev/c/kbTzG2j",
+    "sha256": "46d6f801a0bee2617639dc61662f2e818eeb4f4559ed94abba1dc68f9d7b8b22"
+  },
+  {
+    "id": "generic.nginx.security.dynamic-proxy-scheme.dynamic-proxy-scheme",
+    "url": "https://semgrep.dev/c/w8TRoAJ",
+    "sha256": "a7e0c176c26deea8c4a9a72584e0ffc7459159e041602c08e2029739d6e3909e"
+  },
+  {
+    "id": "generic.nginx.security.header-injection.header-injection",
+    "url": "https://semgrep.dev/c/xyTjzNW",
+    "sha256": "2e4250708f4118b9319882a3839858a96fdcde2cefe00ff543107f91ed18a37d"
+  },
+  {
+    "id": "generic.nginx.security.header-redefinition.header-redefinition",
+    "url": "https://semgrep.dev/c/O9TpxJD",
+    "sha256": "7d1577026b2c6feb4140402e7d1d87ce59561efaa7a9dbd42b05492bd5b9c7d0"
+  },
+  {
+    "id": "generic.nginx.security.insecure-redirect.insecure-redirect",
+    "url": "https://semgrep.dev/c/e1TyjDz",
+    "sha256": "828f0e2d7613796f6a3ed43df8d3cfa27a30967496520c8eb586b1ba291285f4"
+  },
+  {
+    "id": "generic.nginx.security.insecure-ssl-version.insecure-ssl-version",
+    "url": "https://semgrep.dev/c/vdT06O4",
+    "sha256": "0c1f3a1c20ed9dd92741aba82f9fd0d312e8c3b87a229455d12037d00e47a771"
+  },
+  {
+    "id": "generic.nginx.security.missing-internal.missing-internal",
+    "url": "https://semgrep.dev/c/d6TyxKK",
+    "sha256": "892af7756c80bc049e3daa6aa56ccc7b551a6c7f99e564ca96e0c78a59626e7a"
+  },
+  {
+    "id": "generic.nginx.security.missing-ssl-version.missing-ssl-version",
+    "url": "https://semgrep.dev/c/ZRTKAle",
+    "sha256": "5a558a59a17b44d0f7f43d848dae77a82f23e96b30f0a6d777e31167955bc0c6"
+  },
+  {
+    "id": "generic.nginx.security.alias-path-traversal.alias-path-traversal",
+    "url": "https://semgrep.dev/c/NdTzyBg",
+    "sha256": "ddbc9d623d974255c2f7396644e866db9b90919beb609b56efd419e2ca2d6a78"
+  },
+  {
+    "id": "java.lang.security.audit.crypto.weak-random.weak-random",
+    "url": "https://semgrep.dev/c/6xT29RK",
+    "sha256": "f90d1f7bab7796df2a270cce736331b776aaca4765f6178377837eac654d969d"
+  },
+  {
+    "id": "java.lang.security.audit.xss.no-direct-response-writer.no-direct-response-writer",
+    "url": "https://semgrep.dev/c/DkTRbXy",
+    "sha256": "f67be3381d1e871a19fdca96870a4f4f9f8f043e00fc5de15213356622e498ce"
+  },
+  {
+    "id": "java.lang.security.audit.crypto.use-of-sha1.use-of-sha1",
+    "url": "https://semgrep.dev/c/l4TJRpL",
+    "sha256": "913de3f46bf2f7ad58986a82850e98ea78334309e00388e3b1a0ec72febc5b0b"
+  },
+  {
+    "id": "java.lang.security.audit.crypto.use-of-md5.use-of-md5",
+    "url": "https://semgrep.dev/c/0bTKzGX",
+    "sha256": "71814e1a4c03bc21bab884f1060289334bb6499a2b79d69397ea1ede00a66eb2"
+  },
+  {
+    "id": "java.lang.security.audit.tainted-ldapi-from-http-request.tainted-ldapi-from-http-request",
+    "url": "https://semgrep.dev/c/8KT3Pe6",
+    "sha256": "b6c11f0e4314500139ff7abf312dc3dfe647848f3a4b4f4e2ac7d01c66d45e4c"
+  },
+  {
+    "id": "java.lang.security.audit.tainted-session-from-http-request.tainted-session-from-http-request",
+    "url": "https://semgrep.dev/c/gETrv9j",
+    "sha256": "220cacc79e5d4eedb11d48adca4963d41688e0dbcc2f18d9c1bf4675941ac837"
+  },
+  {
+    "id": "java.lang.security.audit.tainted-xpath-from-http-request.tainted-xpath-from-http-request",
+    "url": "https://semgrep.dev/c/QkTERKP",
+    "sha256": "b69b81aea2bf78e56d9ed6644e0e069b476caebb2403810abda7f3cc7280c545"
+  },
+  {
+    "id": "java.lang.security.audit.sqli.tainted-sql-from-http-request.tainted-sql-from-http-request",
+    "url": "https://semgrep.dev/c/7ZTKJNj",
+    "sha256": "1acc31c659762ec81e7317f827e8ee53a207ec42e0a0504c260b31777c8b5613"
+  },
+  {
+    "id": "java.lang.security.audit.tainted-cmd-from-http-request.tainted-cmd-from-http-request",
+    "url": "https://semgrep.dev/c/LjTkg9J",
+    "sha256": "560d915e2cfc4623e74ddf527d957394a02455b7ccadfe054135b7c22dc3662e"
+  },
+  {
+    "id": "c.lang.security.insecure-use-scanf-fn.insecure-use-scanf-fn",
+    "url": "https://semgrep.dev/c/zyTlkWW",
+    "sha256": "56e2118d0cc5aafd412ce7d6ea2dff1884faea2c830d6fd6b9b8653abc61367b"
+  },
+  {
+    "id": "java.lang.security.audit.crypto.ssl.avoid-implementing-custom-digests.avoid-implementing-custom-digests",
+    "url": "https://semgrep.dev/c/YDTZewB",
+    "sha256": "000df2cb8bcdce81982255e61a445a355d442b27358c8aa62a6644d261c63b15"
+  },
+  {
+    "id": "c.lang.security.insecure-use-string-copy-fn.insecure-use-string-copy-fn",
+    "url": "https://semgrep.dev/c/2KTYb7Y",
+    "sha256": "10e32b5455bb862cb9b126b1c92f9b3e5ce43dade1f6817db1a319b81c29c632"
+  },
+  {
+    "id": "ruby.lang.security.no-eval.ruby-eval",
+    "url": "https://semgrep.dev/c/A8TgdDv",
+    "sha256": "68a03f57446daf9597fbf7e97e1a07454c1a71f3063eecbbbe79a9f90b245af8"
+  }
+]

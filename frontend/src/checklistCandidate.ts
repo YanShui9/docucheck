@@ -1,8 +1,8 @@
-import type { ChecklistDefinitionPayload, ChecklistView } from './api'
+import type { ChecklistDefinitionPayload, ChecklistView, CriterionChange } from './api'
 
 export interface ChecklistCandidate {
   candidate: ChecklistDefinitionPayload
-  changes: import('./api').CriterionChange[]
+  changes: CriterionChange[]
   runId: string
   baseChecklistRevision?: number
 }

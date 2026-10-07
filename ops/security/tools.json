@@ -1,0 +1,31 @@
+{
+  "semgrep": {
+    "version": "1.179.0",
+    "source": "https://pypi.org/project/semgrep/1.179.0/"
+  },
+  "gitleaks": {
+    "version": "8.30.1",
+    "source": "https://github.com/gitleaks/gitleaks/releases/tag/v8.30.1",
+    "windows_zip_sha256": "d29144deff3a68aa93ced33dddf84b7fdc26070add4aa0f4513094c8332afc4e"
+  },
+  "rules": {
+    "source": "https://semgrep.dev/c/p/security-audit",
+    "retrieved_on": "2026-10-07",
+    "sha256": "47b9e328ecd23530ce3d782c6008ab373fb30192a89d5eb77181efe4e38650f1",
+    "rule_count": 225,
+    "original_yaml_sha256": "b109a039df712f30c6d3e25e1e8358053fd0f1c91b92d0e8d2871cd141fe602f",
+    "license": "https://semgrep.dev/legal/rules-license/",
+    "rebuild": "scripts/fetch_security_rules.py using rule-versions.json; no rule bodies distributed"
+  },
+  "limitations": [
+    "Static community rules are not proof of absence of vulnerabilities or enterprise production certification.",
+    "Current tracked source only; no Git history, ignored local secrets, dependency CVEs, container image or runtime penetration testing.",
+    "Gitleaks pattern allowlists remain upstream defaults; all path allowlists removed and source allow comments disabled; actual per-file trace coverage required.",
+    "Semgrep CE is not whole-program interfile analysis; Vue templates and unsupported languages have generic-rule coverage only."
+  ],
+  "gitleaks_config": {
+    "source": "https://raw.githubusercontent.com/gitleaks/gitleaks/v8.30.1/config/gitleaks.toml",
+    "original_sha256": "e163e53b9e7e8a8511e77271e2b323ed057759542a6d988258afe3a1fa329caf",
+    "modification": "Removed global path allowlist and entire rule-level allowlists containing paths; preserved all 222 detection rules and remaining pattern allowlists; MIT license preserved."
+  }
+}

@@ -1,0 +1,38 @@
+[
+  {
+    "fingerprint": "6d86545f93f46ef7ad85eabe4afc9383c3c90856f56363099789a09ea2b6b191",
+    "status": "false_positive",
+    "reason": "Only imports stdlib ParseError; worksheet and relationship parsing uses defusedxml.ElementTree.iterparse. Real XLSX entity regression proves EntitiesForbidden rejection before facts.",
+    "reviewer": "Codex code review 2026-10-07"
+  },
+  {
+    "fingerprint": "05259ba964535d7cbb23d70599e037dd40736cf1d668dbdd82b712a2408721b6",
+    "status": "false_positive",
+    "reason": "This field is a historical SHA256 for a source file named auth.py/route_auth.py/api_queries.py, not a credential or authentication token. Preserve historical report bytes.",
+    "reviewer": "Codex code review 2026-10-07"
+  },
+  {
+    "fingerprint": "6720425be66cbe69701a5fbff53844bc1b2153910166579859afe61e4ab75f80",
+    "status": "false_positive",
+    "reason": "This field is a historical SHA256 for a source file named auth.py/route_auth.py/api_queries.py, not a credential or authentication token. Preserve historical report bytes.",
+    "reviewer": "Codex code review 2026-10-07"
+  },
+  {
+    "fingerprint": "8a27662756df95de8ee814735aa4af637a714c2a7aefcbe3570563131c17a01a",
+    "status": "false_positive",
+    "reason": "This field is a historical SHA256 for a source file named auth.py/route_auth.py/api_queries.py, not a credential or authentication token. Preserve historical report bytes.",
+    "reviewer": "Codex code review 2026-10-07"
+  },
+  {
+    "fingerprint": "e469a63bd3134c53d546dfad5f67d41e0041cd8851bce05ae67184b212ab076e",
+    "status": "false_positive",
+    "reason": "Explicit setup-only rule download, not reachable from API/Agent document input. URL comes from checked-in version lock, is constrained to https://semgrep.dev/c/<alphanumeric-version>, bounded to 30 seconds/1 MB, and validated against exact per-rule and pack SHA256. No user documents or credentials are sent.",
+    "reviewer": "Codex code review 2026-10-07"
+  },
+  {
+    "fingerprint": "6110ef3dfbc643677431bb26813e92b86fbdca85bf97c21688023125f29754a3",
+    "status": "false_positive",
+    "reason": "This is the upstream detection regex literal for the static Bedrock key prefix, not an issued secret or signed credential. The entire configuration remains scanned; only this exact rule/line/source hash is dispositioned.",
+    "reviewer": "Codex code review 2026-10-07"
+  }
+]
