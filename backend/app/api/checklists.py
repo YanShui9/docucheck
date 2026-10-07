@@ -1,6 +1,6 @@
 """Chinese procurement checklist contracts exposed under existing project authorization."""
 
-from fastapi import APIRouter, Header, Request
+from fastapi import APIRouter, Header, Query, Request
 from pydantic import Field, StrictBool, field_validator
 from sqlalchemy import Engine
 
@@ -45,6 +45,13 @@ def checklist_router(engine: Engine):
     @router.get("/cases/{case_id}/snapshots/{snapshot_id}/checklist")
     def get_checklist(case_id: str, snapshot_id: str):
         return service.get(case_id, snapshot_id)
+
+    @router.get("/cases/{case_id}/snapshots/{snapshot_id}/checklist/rebase-preview")
+    def preview_rebase(case_id: str, snapshot_id: str,
+                       version_id: str = Query(min_length=1, max_length=64),
+                       expected_revision: int = Query(ge=0)):
+        return service.preview_rebase(case_id, snapshot_id, version_id,
+                                      expected_revision=expected_revision)
 
     @router.put("/cases/{case_id}/snapshots/{snapshot_id}/checklist")
     def save_checklist(

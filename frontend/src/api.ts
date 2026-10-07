@@ -540,6 +540,15 @@ export async function fetchChecklistVersion(
   return apiRequest(`/cases/${caseId}/checklist-versions/${versionId}`, tokenProvider)
 }
 
+export async function previewChecklistRebase(
+  caseId: string, snapshotId: string, versionId: string, expectedRevision: number,
+  tokenProvider: TokenProvider,
+): Promise<{ case_id: string; snapshot_id: string; revision: number;
+  source_version_id: string; definition: ChecklistDefinitionPayload }> {
+  const query = new URLSearchParams({ version_id: versionId, expected_revision: String(expectedRevision) })
+  return apiRequest(`/cases/${caseId}/snapshots/${snapshotId}/checklist/rebase-preview?${query}`, tokenProvider)
+}
+
 export async function fetchRunProposal(
   runId: string, tokenProvider: TokenProvider,
 ): Promise<ChecklistProposal> {

@@ -315,6 +315,20 @@ class ChecklistRepository:
             _scope(connection, case_id)
             return _version(connection, case_id, version_id)
 
+    def preview_rebase(
+        self, case_id: str, snapshot_id: str, version_id: str, *, expected_revision: int
+    ) -> dict:
+        """Rebind only unchanged, uniquely identified evidence; never save or confirm."""
+        from .checklist_rebase import rebind_definition
+
+        with self.engine.connect() as connection:
+            revision = _scope(connection, case_id, snapshot_id, expected_revision=expected_revision)
+            version = _version(connection, case_id, version_id)
+            definition = rebind_definition(connection, case_id, snapshot_id, version)
+            _bindings(connection, case_id, snapshot_id, _definition(definition))
+            return {"case_id": case_id, "snapshot_id": snapshot_id, "revision": revision,
+                    "source_version_id": version_id, "definition": definition}
+
     def put(
         self,
         case_id,

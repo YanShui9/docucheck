@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onUnmounted, ref, watch } from 'vue'
 import { accessToken } from '../auth'
-import { confirmChecklist, fetchChecklist, fetchChecklistVersion, saveChecklistDraft } from '../api'
+import { confirmChecklist, fetchChecklist, previewChecklistRebase, saveChecklistDraft } from '../api'
 import type {
   ChecklistCriterion, ChecklistDefinitionPayload, ChecklistRule, ChecklistView,
   CriterionChange, RuleType,
@@ -22,6 +22,7 @@ const emit = defineEmits<{
 
 const view = ref<ChecklistView | null>(null)
 const working = ref<ChecklistDefinitionPayload | null>(null)
+const savedDefinition = ref<ChecklistDefinitionPayload | null>(null)
 const selected = ref<Set<string>>(new Set())
 const candidateUnsaved = ref(false)
 const loading = ref(true)
@@ -58,8 +59,10 @@ const issueLabels: Record<string, string> = {
 const errorTexts: Record<string, string> = {
   checklist_revision_conflict: '审查要求刚被其他人修改，请刷新后重试。',
   checklist_snapshot_changed: '资料版本已更新，请刷新后重试。',
-  checklist_source_scope: '部分指标的原文来源无法在当前资料中定位，请核对接算依据。',
+  checklist_source_scope: '部分指标的原文来源无法在当前资料中定位，请核对计算依据。',
   checklist_source_changed: '依据的原文已变化，请重新核对来源。',
+  checklist_rebase_unresolved: '旧指标的原文已变化、尚未解析或无法唯一匹配。请根据新版资料让助手重新整理候选，或手动设置指标。',
+  case_busy: '采购任务正在处理，请等待处理结束后再保存或确认。',
   checklist_capacity: '清单规模超出上限，请精简指标。',
   invalid_checklist: '清单定义未通过校验，请检查各字段。',
   invalid_checklist_selection: '确认的指标选择无效，请刷新后重试。',
@@ -83,9 +86,37 @@ const issueById = computed(() => {
 })
 const selectedIds = computed(() => [...selected.value].filter(id =>
   (working.value?.criteria ?? []).some(item => item.criterion_id === id && item.enabled)))
+const writable = computed(() => props.canWrite && !!view.value?.is_current_snapshot && view.value.state !== 'historical')
+const unsaved = computed(() => candidateUnsaved.value || JSON.stringify(working.value) !== JSON.stringify(savedDefinition.value))
+const editing = computed(() => !!editDraft.value || adding.value)
+const baseIds = computed(() => new Set(view.value?.state === 'partially_confirmed'
+  ? view.value.confirmed_version?.definition.criteria.map(item => item.criterion_id) ?? [] : []))
+const confirmationIds = computed(() => selectedIds.value.filter(id => !baseIds.value.has(id)))
 const selectedCriteria = computed(() => (working.value?.criteria ?? [])
-  .filter(item => selected.value.has(item.criterion_id) && item.enabled))
+  .filter(item => confirmationIds.value.includes(item.criterion_id)))
 const confirmGroupCount = computed(() => new Set(selectedCriteria.value.map(item => item.item_id)).size)
+const canConfirm = computed(() => writable.value && !loading.value && !busy.value && !unsaved.value
+  && !editing.value && !!view.value?.draft && confirmationIds.value.length > 0)
+const removedConfirmed = computed(() => (view.value?.confirmed_version?.definition.criteria ?? [])
+  .filter(item => !baseIds.value.has(item.criterion_id) && !selectedIds.value.includes(item.criterion_id)))
+
+function canMutate() { return writable.value && !busy.value && !loading.value }
+function definitionOf(response: ChecklistView): ChecklistDefinitionPayload | null {
+  if (response.state === 'partially_confirmed' && response.draft && response.confirmed_version) {
+    const prior = response.confirmed_version.definition
+    return { items: [...new Map([...prior.items, ...response.draft.items].map(item => [item.item_id, item])).values()],
+      criteria: [...prior.criteria, ...response.draft.criteria] }
+  }
+  return response.draft ?? response.confirmed_version?.definition ?? null
+}
+function acceptView(response: ChecklistView) {
+  view.value = response
+  const definition = definitionOf(response)
+  working.value = definition ? clone(definition) : null
+  savedDefinition.value = definition ? clone(definition) : null
+  candidateUnsaved.value = false
+  reselect()
+}
 
 function operatorLabel(rule: ChecklistRule): string {
   return operatorLabels[rule.operator ?? ''] ?? ''
@@ -121,24 +152,20 @@ function contextOf(criterion: ChecklistCriterion) {
 async function load() {
   const ticket = ++scope
   const { caseId, snapshotId } = props
+  busy.value = false; confirmOpen.value = false; cancelEdit(); adding.value = false; addDraft.value = null
+  working.value = null; savedDefinition.value = null; view.value = null; selected.value = new Set()
+  candidateUnsaved.value = false
   loading.value = true; error.value = ''; notice.value = ''
   try {
     const response = await fetchChecklist(caseId, snapshotId, accessToken)
     if (ticket !== scope) return
-    view.value = response
+    acceptView(response)
     if (props.candidate && props.candidate.candidate) {
       working.value = clone(props.candidate.candidate)
       candidateUnsaved.value = true
-    } else if (response.state === 'needs_resolution' || response.state === 'draft'
-        || response.state === 'partially_confirmed') {
-      working.value = response.draft ? clone(response.draft) : null
-      candidateUnsaved.value = false
-    } else if (response.state === 'confirmed') {
-      working.value = response.confirmed_version ? clone(response.confirmed_version.definition) : null
-      candidateUnsaved.value = false
-    } else {
+    } else if (response.state === 'needs_reconfirmation' || response.state === 'empty') {
       working.value = null
-      candidateUnsaved.value = false
+      savedDefinition.value = null
     }
     reselect()
   } catch (reason) {
@@ -157,15 +184,20 @@ function toggleSelect(criterionId: string, event: Event) {
 }
 async function adoptPrevious() {
   const versionId = view.value?.previous_version_id
-  if (!versionId) return
+  if (!versionId || !canMutate()) return
+  const ticket = scope
+  const { caseId, snapshotId, revision } = props
   busy.value = true; error.value = ''
   try {
-    const version = await fetchChecklistVersion(props.caseId, versionId, accessToken)
-    working.value = clone(version.definition)
+    const preview = await previewChecklistRebase(caseId, snapshotId, versionId, revision, accessToken)
+    if (ticket !== scope) return
+    working.value = clone(preview.definition)
+    savedDefinition.value = null
     candidateUnsaved.value = false
     reselect()
-  } catch (reason) { error.value = friendly(reason) }
-  finally { busy.value = false }
+    notice.value = '已按当前资料重新核对来源。请检查指标后保存草稿，再明确确认。'
+  } catch (reason) { if (ticket === scope) error.value = friendly(reason) }
+  finally { if (ticket === scope) busy.value = false }
 }
 
 const numberPattern = /^-?[0-9]{1,12}(?:\.[0-9]{1,6})?$/
@@ -195,7 +227,7 @@ function validateCriterion(criterion: ChecklistCriterion): string | null {
 }
 
 async function save() {
-  if (!props.canWrite || busy.value || !working.value) return
+  if (!canMutate() || !working.value || editing.value) return
   if (!working.value.items.length || !working.value.criteria.length) {
     error.value = '请至少设置一个品目和一条指标。'; return
   }
@@ -203,42 +235,47 @@ async function save() {
     const problem = validateCriterion(criterion)
     if (problem) { error.value = `${itemName(criterion.item_id)} · ${criterion.name}：${problem}`; return }
   }
-  busy.value = true; error.value = ''
+  const ticket = scope
+  const { caseId, snapshotId, revision } = props
+  const definition = clone(working.value)
+  const checklistRevision = view.value?.checklist_revision ?? 0
+  busy.value = true; error.value = ''; confirmOpen.value = false
   try {
-    const response = await saveChecklistDraft(props.caseId, props.snapshotId, clone(working.value),
-      props.revision, view.value?.checklist_revision ?? 0, draftReason.value.trim() || '手工调整审查要求',
+    const response = await saveChecklistDraft(caseId, snapshotId, definition,
+      revision, checklistRevision, draftReason.value.trim() || '手工调整审查要求',
       accessToken)
-    view.value = response
-    working.value = response.draft ? clone(response.draft) : working.value
-    candidateUnsaved.value = false
-    reselect()
+    if (ticket !== scope) return
+    acceptView(response)
     notice.value = `草稿已保存（清单版本 ${response.checklist_revision}）。尚未确认，确认后才会用于正式审查。`
     emit('saved')
-  } catch (reason) { error.value = friendly(reason) }
-  finally { busy.value = false }
+  } catch (reason) { if (ticket === scope) error.value = friendly(reason) }
+  finally { if (ticket === scope) busy.value = false }
 }
 
 async function submitConfirm() {
-  if (!props.canWrite || busy.value) return
-  const ids = selectedIds.value
+  if (!canConfirm.value) return
+  const ids = [...confirmationIds.value]
   if (!ids.length) { error.value = '请至少选择一条要确认的指标。'; return }
+  const ticket = scope
+  const { caseId, snapshotId, revision } = props
+  const checklistRevision = view.value?.checklist_revision ?? 0
   busy.value = true; error.value = ''
   try {
-    const response = await confirmChecklist(props.caseId, props.snapshotId, ids, props.revision,
-      view.value?.checklist_revision ?? 0, confirmReason.value.trim() || '确认当前审查要求', accessToken)
-    view.value = response
-    working.value = response.draft ? clone(response.draft) : working.value
-    reselect()
+    const response = await confirmChecklist(caseId, snapshotId, ids, revision,
+      checklistRevision, confirmReason.value.trim() || '确认当前审查要求', accessToken)
+    if (ticket !== scope) return
+    acceptView(response)
     confirmOpen.value = false
     const excluded = response.excluded_criterion_ids?.length ?? 0
     notice.value = `已确认 ${ids.length} 项指标。` +
       (excluded ? `未纳入本次确认的 ${excluded} 项保留为草稿。` : '本次采购的正式审查将按这些指标执行。')
     emit('confirmed')
-  } catch (reason) { error.value = friendly(reason) }
-  finally { busy.value = false }
+  } catch (reason) { if (ticket === scope) error.value = friendly(reason) }
+  finally { if (ticket === scope) busy.value = false }
 }
 
 function startEdit(criterion: ChecklistCriterion) {
+  if (!canMutate()) return
   editingId.value = criterion.criterion_id
   adding.value = false; addDraft.value = null
   editError.value = ''
@@ -246,7 +283,7 @@ function startEdit(criterion: ChecklistCriterion) {
 }
 async function applyEdit() {
   const draft = editDraft.value
-  if (!draft || !working.value) return
+  if (!draft || !working.value || !canMutate()) return
   const problem = validateCriterion(draft)
   if (problem) { editError.value = problem; return }
   const index = working.value.criteria.findIndex(item => item.criterion_id === draft.criterion_id)
@@ -256,7 +293,7 @@ async function applyEdit() {
 }
 function cancelEdit() { editingId.value = null; editDraft.value = null; editError.value = '' }
 function removeCriterion(criterionId: string) {
-  if (!working.value) return
+  if (!working.value || !canMutate()) return
   working.value.criteria = working.value.criteria.filter(item => item.criterion_id !== criterionId)
   if (!working.value.criteria.length) working.value.items = []
   else {
@@ -267,20 +304,37 @@ function removeCriterion(criterionId: string) {
   if (editingId.value === criterionId) cancelEdit()
 }
 
-function blankRule(): ChecklistRule {
-  return { type: 'numeric', operator: 'gte', value: '', unit: '' }
+function blankRule(type: RuleType = 'numeric'): ChecklistRule {
+  switch (type) {
+    case 'numeric': return { type, operator: 'gte', value: '', unit: '' }
+    case 'money': return { type, operator: 'lte', value: '', currency: 'CNY', per_unit: '', tax_basis: 'included' }
+    case 'duration': return { type, operator: 'lte', value: '', calendar: 'natural_days', start_event: '' }
+    case 'enum': return { type, operator: 'eq', values: [] }
+    case 'presence': return { type, description: '', must_be_present: true }
+    case 'manual': return { type, instruction: '' }
+  }
+}
+function switchType(criterion: ChecklistCriterion, event: Event) {
+  criterion.rule = blankRule((event.target as HTMLSelectElement).value as RuleType)
+}
+function switchOperator(rule: ChecklistRule, event: Event) {
+  rule.operator = (event.target as HTMLSelectElement).value as ChecklistRule['operator']
+  if (rule.operator === 'between') { delete rule.value; rule.lower = ''; rule.upper = '' }
+  else { delete rule.lower; delete rule.upper; rule.value = '' }
 }
 function startAdd() {
+  if (!canMutate()) return
+  if (!working.value) working.value = { items: [], criteria: [] }
   editingId.value = null; editDraft.value = null; editError.value = ''
   adding.value = true
-  addDraft.value = { itemMode: 'existing', itemId: working.value?.items[0]?.item_id ?? '',
+  addDraft.value = { itemMode: working.value.items.length ? 'existing' : 'new', itemId: working.value.items[0]?.item_id ?? '',
     newItemName: '', criterion: { criterion_id: `c${crypto.randomUUID().replaceAll('-', '').slice(0, 12)}`,
       item_id: '', name: '', rule: blankRule(), required: true, enabled: true,
       conditions: [], source: { kind: 'user_defined', reason: '用户手动设置', context: null } } }
 }
 async function applyAdd() {
   const draft = addDraft.value
-  if (!draft || !working.value) return
+  if (!draft || !working.value || !canMutate()) return
   const criterion = draft.criterion
   if (draft.itemMode === 'new') {
     const name = draft.newItemName.trim()
@@ -308,13 +362,14 @@ function openContext(criterion: ChecklistCriterion) {
     evidenceId: context.evidence_refs[0] })
 }
 
-watch([() => props.caseId, () => props.snapshotId, () => props.candidate?.runId], () => { void load() }, { immediate: true })
+watch([() => props.caseId, () => props.snapshotId, () => props.revision, () => props.candidate?.runId,
+  () => props.canWrite], () => { void load() }, { immediate: true })
 
 function onKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape' && confirmOpen.value) confirmOpen.value = false
 }
 window.addEventListener('keydown', onKeydown)
-onUnmounted(() => window.removeEventListener('keydown', onKeydown))
+onUnmounted(() => { ++scope; window.removeEventListener('keydown', onKeydown) })
 </script>
 
 <template>
@@ -340,11 +395,13 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
         </li></ul>
       </div>
       <p v-if="notice" class="state-note" role="status">{{ notice }}</p>
+      <p v-if="unsaved && !candidateUnsaved" class="state-note warning" data-test="unsaved-note">清单有未保存修改。请先保存草稿，再确认审查指标。</p>
 
+      <fieldset class="checklist-editor" :disabled="busy || loading">
       <div v-if="!working" class="empty-state compact">
         <strong>还没有审查要求</strong>
         <span>可以在聊天中让助手从需求资料整理候选，或手动设置指标。</span>
-        <button v-if="canWrite" class="button button-secondary" data-test="start-add" @click="startAdd">手动添加指标</button>
+        <button v-if="writable" class="button button-secondary" data-test="start-add" @click="startAdd">手动添加指标</button>
       </div>
 
       <template v-else>
@@ -355,7 +412,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
             <div class="criterion-main">
               <div class="criterion-title">
                 <span class="criterion-name" :data-test="`criterion-name-${criterion.criterion_id}`">
-                  <input v-if="canWrite && editingId !== criterion.criterion_id" v-model="criterion.name"
+                  <input v-if="writable && editingId !== criterion.criterion_id" v-model="criterion.name"
                          :aria-label="`${criterion.name}的指标名称`" />
                   <strong v-else>{{ criterion.name }}</strong>
                 </span>
@@ -363,6 +420,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
                 <span v-if="criterion.rule.type === 'manual' || criterion.conditions.length" class="manual-badge">人工复核</span>
                 <span v-if="!criterion.enabled" class="disabled-badge">已停用</span>
                 <span v-if="!criterion.required" class="optional-badge">可选</span>
+                <span v-if="baseIds.has(criterion.criterion_id)" class="source-badge">已确认 · 本次保留</span>
               </div>
               <p class="rule-summary">{{ ruleSummary(criterion.rule) }}</p>
               <details v-if="contextOf(criterion)" class="criterion-context">
@@ -376,29 +434,29 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
               </p>
             </div>
             <div class="criterion-side">
-              <label v-if="canWrite && view?.state !== 'historical'" class="criterion-select">
+              <label v-if="writable" class="criterion-select">
                 <input type="checkbox" :data-test="`select-${criterion.criterion_id}`"
-                       :checked="selected.has(criterion.criterion_id)" :disabled="!criterion.enabled"
+                       :checked="selected.has(criterion.criterion_id)" :disabled="!criterion.enabled || baseIds.has(criterion.criterion_id)"
                        @change="toggleSelect(criterion.criterion_id, $event)" />纳入确认
               </label>
-              <label v-if="canWrite && editingId !== criterion.criterion_id" class="criterion-enabled">
+              <label v-if="writable && editingId !== criterion.criterion_id" class="criterion-enabled">
                 <input v-model="criterion.enabled" type="checkbox" />启用
               </label>
-              <button v-if="canWrite && editingId !== criterion.criterion_id" class="text-button"
+              <button v-if="writable && editingId !== criterion.criterion_id" class="text-button"
                       :data-test="`edit-${criterion.criterion_id}`" @click="startEdit(criterion)">编辑规则</button>
-              <button v-if="canWrite && editingId !== criterion.criterion_id" class="text-button criterion-remove"
+              <button v-if="writable && editingId !== criterion.criterion_id" class="text-button criterion-remove"
                       @click="removeCriterion(criterion.criterion_id)">删除</button>
             </div>
 
             <div v-if="editingId === criterion.criterion_id && editDraft" class="rule-edit-form" data-test="rule-form">
               <div class="rule-grid">
-                <label>规则类型<select v-model="editDraft.rule.type" class="field-control">
+                <label>规则类型<select :value="editDraft.rule.type" class="field-control" @change="switchType(editDraft, $event)">
                   <option value="numeric">数值</option><option value="money">金额</option>
                   <option value="enum">枚举</option><option value="presence">资料存在</option>
                   <option value="duration">期限</option><option value="manual">人工复核</option>
                 </select></label>
                 <template v-if="editDraft.rule.type === 'numeric' || editDraft.rule.type === 'money' || editDraft.rule.type === 'duration'">
-                  <label>比较<select v-model="editDraft.rule.operator" class="field-control">
+                  <label>比较<select :value="editDraft.rule.operator" class="field-control" @change="switchOperator(editDraft.rule, $event)">
                     <option value="gte">至少</option><option value="lte">最多</option><option value="eq">等于</option>
                     <option value="gt">大于</option><option value="lt">小于</option><option value="between">区间</option>
                   </select></label>
@@ -442,7 +500,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
               </div>
               <p v-if="editError" class="form-error">{{ editError }}</p>
               <div class="rule-actions">
-                <button class="button button-primary" data-test="rule-save" @click="applyEdit">保存修改</button>
+                <button class="button button-primary" data-test="rule-save" @click="applyEdit">应用到草稿</button>
                 <button class="button button-secondary" @click="cancelEdit">取消</button>
               </div>
             </div>
@@ -459,10 +517,15 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
             </select></label>
             <label v-else>新品目名称<input v-model="addDraft.newItemName" class="field-control" /></label>
             <label>指标名称<input v-model="addDraft.criterion.name" class="field-control" /></label>
+            <label>规则类型<select :value="addDraft.criterion.rule.type" class="field-control" data-test="add-rule-type" @change="switchType(addDraft.criterion, $event)">
+              <option value="numeric">数值</option><option value="money">金额</option>
+              <option value="enum">枚举</option><option value="presence">资料存在</option>
+              <option value="duration">期限</option><option value="manual">人工复核</option>
+            </select></label>
             <template v-if="addDraft.criterion.rule.type === 'numeric' || addDraft.criterion.rule.type === 'money' || addDraft.criterion.rule.type === 'duration'">
-              <label>比较<select v-model="addDraft.criterion.rule.operator" class="field-control">
+              <label>比较<select :value="addDraft.criterion.rule.operator" class="field-control" @change="switchOperator(addDraft.criterion.rule, $event)">
                 <option value="gte">至少</option><option value="lte">最多</option><option value="eq">等于</option>
-                <option value="between">区间</option>
+                <option value="gt">大于</option><option value="lt">小于</option><option value="between">区间</option>
               </select></label>
               <label v-if="addDraft.criterion.rule.operator !== 'between'">阈值<input v-model="addDraft.criterion.rule.value" class="field-control" /></label>
               <template v-else>
@@ -475,6 +538,9 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
                   <option value="CNY">人民币</option><option value="USD">美元</option><option value="EUR">欧元</option>
                 </select></label>
                 <label>计价单位<input v-model="addDraft.criterion.rule.per_unit" class="field-control" /></label>
+                <label>含税口径<select v-model="addDraft.criterion.rule.tax_basis" class="field-control">
+                  <option value="included">含税</option><option value="excluded">不含税</option><option value="unspecified">口径未定</option>
+                </select></label>
               </template>
               <template v-if="addDraft.criterion.rule.type === 'duration'">
                 <label>期限口径<select v-model="addDraft.criterion.rule.calendar" class="field-control">
@@ -502,16 +568,16 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
             <button class="button button-secondary" @click="adding = false; addDraft = null">取消</button>
           </div>
         </div>
-        <div v-else-if="canWrite && view.state !== 'historical'" class="checklist-footer">
+        <div v-else-if="writable" class="checklist-footer">
           <button class="text-button" data-test="start-add-row" @click="startAdd">＋ 添加指标</button>
         </div>
       </template>
 
       <div v-if="view" class="checklist-footer">
-        <template v-if="canWrite && view.state !== 'historical'">
+        <template v-if="writable">
           <label class="draft-reason">保存说明<input v-model="draftReason" class="field-control" maxlength="200" /></label>
-          <button class="button button-primary" data-test="save-draft" :disabled="busy || !working?.criteria.length" @click="save">保存草稿</button>
-          <button class="button button-secondary" data-test="open-confirm" :disabled="busy || !selectedIds.length || !view?.checklist_revision" @click="confirmOpen = true">确认审查指标</button>
+          <button class="button button-primary" data-test="save-draft" :disabled="busy || editing || !working?.criteria.length" @click="save">保存草稿</button>
+          <button class="button button-secondary" data-test="open-confirm" :disabled="!canConfirm" @click="confirmOpen = true">确认审查指标</button>
         </template>
         <span v-else class="readonly-note">当前为只读权限或历史版本，仅可查看。</span>
       </div>
@@ -519,17 +585,25 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
       <div v-if="confirmOpen" class="confirm-overlay" role="dialog" aria-label="确认审查指标">
         <div class="confirm-card">
           <h3>确认审查指标</h3>
-          <p>将确认 <strong data-test="confirm-count">{{ selectedIds.length }} 项指标</strong>、
+          <p>将确认 <strong data-test="confirm-count">{{ confirmationIds.length }} 项指标</strong>、
             {{ confirmGroupCount }} 个品目，
             按资料版本 v{{ view.revision }} 执行。</p>
-          <p class="confirm-detail">确认后，未勾选的指标保留为草稿，不会进入正式审查；正式审查会覆盖全部已确认且启用的指标。</p>
+          <ul class="confirm-detail" data-test="confirm-metrics"><li v-for="criterion in selectedCriteria" :key="criterion.criterion_id">{{ itemName(criterion.item_id) }} · {{ criterion.name }}：{{ ruleSummary(criterion.rule) }}</li></ul>
+          <p class="confirm-detail">本次未选中的草稿指标继续保留为草稿。正式审查按确认后的清单执行。</p>
+          <p v-if="baseIds.size" class="state-note">另保留之前已确认的 {{ baseIds.size }} 项指标。</p>
+          <p v-if="removedConfirmed.length" class="state-note warning" data-test="removed-confirmed">本次正式版本将移除：{{ removedConfirmed.map(item => item.name).join('、') }}。历史版本仍保留。</p>
           <label class="draft-reason">确认说明<input v-model="confirmReason" class="field-control" maxlength="200" /></label>
           <div class="rule-actions">
-            <button class="button button-primary" data-test="confirm-submit" :disabled="busy" @click="submitConfirm">确认生效</button>
+            <button class="button button-primary" data-test="confirm-submit" :disabled="!canConfirm" @click="submitConfirm">确认生效</button>
             <button class="button button-secondary" @click="confirmOpen = false">再看看</button>
           </div>
         </div>
       </div>
+      </fieldset>
     </template>
   </section>
 </template>
+
+<style scoped>
+.checklist-editor { margin: 0; padding: 0; border: 0; min-width: 0; }
+</style>
