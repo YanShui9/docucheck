@@ -129,6 +129,7 @@ class StoredMessageOut(BaseModel):
 
 class MessagesOut(BaseModel):
     conversation_id: str
+    total: int
     messages: list[StoredMessageOut]
     next_offset: int | None
 
@@ -218,6 +219,7 @@ class DocumentOut(BaseModel):
     original_name: str
     role: str
     supplier_handle: str | None
+    supplier_name: str | None = None
     model_name: str | None = None
     parse_status: str
     source_sha256: str

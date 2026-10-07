@@ -12,6 +12,8 @@ node_modules/
 dist/
 tmp/
 data/
-.mimosa/
+.mimosa/*
+**/.mimosa/*
+!/.mimosa/security-policy.json
 .v2c/
 .video_agent/

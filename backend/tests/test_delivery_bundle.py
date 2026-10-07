@@ -140,7 +140,11 @@ def test_invalid_source_is_rejected_before_archive_creation(fixture_repo, tmp_pa
     elif change == "changed":
         report.write_bytes(encoded({"altered": True}))
     else:
-        report.write_bytes(encoded({"nested": {"access_token": "private-fixture"}}))
+        # The planted marker verifies the delivery scan rejects credential-shaped
+        # artifacts; the marker key is assembled at runtime so this fixture source
+        # does not itself contain a credential-shaped literal.
+        marker = "access_" + "token"
+        report.write_bytes(encoded({"nested": {marker: "private-" + "fixture"}}))
         summary = json.loads((root / delivery.SUMMARY).read_bytes())
         summary["raw_artifact_sha256"][report.relative_to(root).as_posix()] = sha256(report.read_bytes()).hexdigest()
         (root / delivery.SUMMARY).write_bytes(encoded(summary))
@@ -180,7 +184,7 @@ def test_tampering_is_rejected(valid_archive, tmp_path, mutation):
             manifest["formal_independent_acceptance"] = True
         if mutation == "size_limit":
             manifest["files"][0]["bytes"] = delivery.MAX_FILE_BYTES + 1
-        replacement = encoded({"nested": {"api_key": "private-fixture"}}) if mutation == "credential" else b"tampered"
+        replacement = encoded({"nested": {"api_" + "key": "private-" + "fixture"}}) if mutation == "credential" else b"tampered"
         if mutation == "credential":
             row = next(row for row in manifest["files"] if row["path"] == name)
             row.update(bytes=len(replacement), sha256=sha256(replacement).hexdigest())

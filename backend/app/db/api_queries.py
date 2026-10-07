@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 from types import SimpleNamespace
 from uuid import uuid4
 
-from sqlalchemy import Engine, insert, select
+from sqlalchemy import Engine, func, insert, select
 
 from ..agent.fact_memory import decode_fact_sets
 from ..agent.session_memory import (
@@ -105,6 +105,8 @@ class ApiQueries:
             if connection.scalar(select(conversations.c.id).where(
                     conversations.c.id == conversation_id)) is None:
                 raise ApiQueryError("not_found")
+            total = connection.scalar(select(func.count()).select_from(messages).where(
+                messages.c.conversation_id == conversation_id))
             rows = connection.execute(select(messages).where(
                 messages.c.conversation_id == conversation_id,
             ).order_by(messages.c.created_at, messages.c.id)
@@ -121,6 +123,7 @@ class ApiQueries:
                 ).where(run_attempts.c.resume_message_id.in_(message_ids))).all())
         return {
             "conversation_id": conversation_id,
+            "total": int(total or 0),
             "messages": [
                 {"id": row["id"], "role": row["role"],
                  "content": row["content"], "run_id": run_ids.get(row["id"]),

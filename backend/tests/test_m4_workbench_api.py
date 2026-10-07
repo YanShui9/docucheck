@@ -403,3 +403,16 @@ def test_formal_check_is_recomputed_from_source_bound_facts(tmp_path, monkeypatc
     assert deleting.status_code == 409
     assert deleting.json()["error"]["code"] == "case_deleting"
     engine.dispose()
+
+
+def test_document_reads_expose_persisted_supplier_names(tmp_path, monkeypatch):
+    engine, client, alice, _bob, case_id, receipt, _source = _fixture(tmp_path, monkeypatch)
+    current = client.get(f"/api/v1/cases/{case_id}/documents", headers=alice)
+    assert current.status_code == 200, current.text
+    assert current.json()["documents"][0]["supplier_name"] == "Vendor A"
+    history = client.get(
+        f"/api/v1/cases/{case_id}/snapshots/{receipt['snapshot_id']}/documents",
+        headers=alice)
+    assert history.status_code == 200, history.text
+    assert history.json()["documents"][0]["supplier_name"] == "Vendor A"
+    engine.dispose()

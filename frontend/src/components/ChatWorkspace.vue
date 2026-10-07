@@ -1,11 +1,21 @@
 <script setup lang="ts">
 import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
 import { apiRequest } from '../api'
-import type { AssistantResult, ChatRun, ConversationRecord, StoredMessage } from '../api'
+import type {
+  AssistantResult, ChatRun, ChecklistDefinitionPayload, ConversationRecord,
+  CriterionChange, MessagesPage, StoredMessage,
+} from '../api'
 import { accessToken } from '../auth'
 import ChatComposer from './ChatComposer.vue'
 const props = defineProps<{ caseId: string | null; scopeKey?: string; revision: number; canWrite: boolean; prepareCase: () => Promise<string | null> }>()
-const emit = defineEmits<{ upload: []; openEvidence: [target: { caseId: string; snapshotId: string; evidenceId: string }]; title: [value: { caseId: string; title: string }] }>()
+const emit = defineEmits<{
+  upload: []
+  openEvidence: [target: { caseId: string; snapshotId: string; evidenceId: string }]
+  openChecklist: [target: { caseId: string; snapshotId: string; runId: string;
+    candidate: { candidate: ChecklistDefinitionPayload; changes: CriterionChange[]; runId: string } }]
+  openReview: [target: { caseId: string; snapshotId: string; runId: string }]
+  title: [value: { caseId: string; title: string }]
+}>()
 const conversations = ref<ConversationRecord[]>([])
 const conversationId = ref<string | null>(null)
 const messages = ref<StoredMessage[]>([])
@@ -27,6 +37,11 @@ let hydration: Promise<void> | null = null
 let timer: ReturnType<typeof setTimeout> | undefined
 let pending: { caseId: string; conversationId: string; content: string; revision: number; key: string; path: string; resume: boolean; retry?: boolean } | null = null
 const uncertain = ref(false)
+const olderLoading = ref(false)
+const oldestOffset = ref(0)
+const totalKnown = ref<number | null>(null)
+const PAGE_SIZE = 100
+const MAX_PAGES = 20
 const activeRun = computed(() => Object.values(runs.value).find(run => ['queued', 'running', 'waiting_user'].includes(run.status)))
 const running = computed(() => !!activeRun.value && activeRun.value.status !== 'waiting_user')
 const labels: Record<string, string> = { queued: '排队中', running: '正在处理', completed: '处理完成', partial: '部分完成', failed: '处理失败', cancelled: '已停止', waiting_user: '等待补充信息', interrupted: '处理已中断' }
@@ -62,6 +77,20 @@ async function pages<T>(path: string, field: string, version: number): Promise<T
     if (!current(version)) return []
     items.push(...response[field] as T[])
     offset = response.next_offset as number | null
+  }
+  return items
+}
+
+async function messagesRange(id: string, from: number, version: number): Promise<StoredMessage[]> {
+  const items: StoredMessage[] = []
+  let offset: number | null = from
+  for (let page = 0; offset !== null; page++) {
+    if (page >= MAX_PAGES) throw new Error('history_limit')
+    const response: MessagesPage = await apiRequest<MessagesPage>(
+      `/conversations/${id}/messages?offset=${offset}&limit=${PAGE_SIZE}`, accessToken)
+    if (!current(version)) return []
+    items.push(...response.messages)
+    offset = response.next_offset
   }
   return items
 }
@@ -105,11 +134,33 @@ function schedule(version: number, delay = 2500) {
     } catch (reason) { if (current(version)) { fail(reason); schedule(version, 10000) } }
   }, delay)
 }
-async function loadMessages(version: number) {
+async function loadMessages(version: number, keepOldest?: number) {
   const id = conversationId.value
   if (!id) return
-  const stored = await pages<StoredMessage>(`/conversations/${id}/messages`, 'messages', version)
-  if (!current(version)) return
+  let stored: StoredMessage[]
+  if (keepOldest !== undefined) {
+    stored = await messagesRange(id, keepOldest, version)
+    if (!current(version)) return
+    oldestOffset.value = keepOldest
+  } else {
+    const probe = await apiRequest<MessagesPage>(
+      `/conversations/${id}/messages?offset=0&limit=1`, accessToken)
+    if (!current(version)) return
+    const total = typeof probe.total === 'number' ? probe.total : null
+    totalKnown.value = total
+    if (total === null || total <= PAGE_SIZE) {
+      stored = await messagesRange(id, 0, version)
+      if (!current(version)) return
+      oldestOffset.value = 0
+    } else {
+      const tailOffset = total - PAGE_SIZE
+      const page = await apiRequest<MessagesPage>(
+        `/conversations/${id}/messages?offset=${tailOffset}&limit=${PAGE_SIZE}`, accessToken)
+      if (!current(version)) return
+      stored = page.messages
+      oldestOffset.value = tailOffset
+    }
+  }
   messages.value = stored
   const first = stored.find(item => item.role === 'user')
   if (props.caseId && first) emit('title', { caseId: props.caseId, title: first.content.slice(0, 30) })
@@ -120,6 +171,35 @@ async function loadMessages(version: number) {
     await Promise.all(ids.slice(index, index + 5).map(id => readRun(id, version)))
   }
   if (current(version)) { schedule(version); void latest() }
+}
+
+async function loadOlder() {
+  const version = generation
+  const id = conversationId.value
+  if (!id || olderLoading.value || oldestOffset.value <= 0) return
+  const previousOffset = Math.max(0, oldestOffset.value - PAGE_SIZE)
+  if (totalKnown.value !== null &&
+      Math.ceil((totalKnown.value - previousOffset) / PAGE_SIZE) > MAX_PAGES) {
+    fail(new Error('history_limit'))
+    return
+  }
+  olderLoading.value = true
+  const area = scrollArea.value
+  const scrollHeightBefore = area?.scrollHeight ?? 0
+  try {
+    const page = await apiRequest<MessagesPage>(
+      `/conversations/${id}/messages?offset=${previousOffset}&limit=${PAGE_SIZE}`, accessToken)
+    if (!current(version)) return
+    const known = new Set(messages.value.map(item => item.id))
+    const fresh = page.messages.filter(item => !known.has(item.id))
+    if (fresh.length) {
+      messages.value = [...fresh, ...messages.value]
+      oldestOffset.value = previousOffset
+    }
+    await nextTick()
+    if (area) area.scrollTop += area.scrollHeight - scrollHeightBefore
+  } catch (reason) { if (current(version)) fail(reason) }
+  finally { if (current(version)) olderLoading.value = false }
 }
 async function loadCase() {
   const version = generation
@@ -142,6 +222,7 @@ async function selectConversation(id: string | null) {
   if (timer) clearTimeout(timer)
   drafts.set(`${props.scopeKey ?? ''}:${props.caseId ?? 'new'}:${conversationId.value ?? 'new'}`, draft.value)
   conversationId.value = id; messages.value = []; runs.value = {}; results.value = {}; resultErrors.value = {}
+  oldestOffset.value = 0; totalKnown.value = null
   draft.value = drafts.get(`${props.scopeKey ?? ''}:${props.caseId ?? 'new'}:${id ?? 'new'}`) ?? ''
   pending = null; uncertain.value = false; sending.value = false; error.value = ''; atBottom.value = true
   loading.value = true; historyReady.value = false
@@ -184,7 +265,13 @@ async function send(retry = false) {
     if (!current(version)) return
     pending = null; uncertain.value = false; if (!request.retry) { draft.value = ''; drafts.delete(`${props.scopeKey ?? ''}:new:new`); drafts.delete(`${props.scopeKey ?? ''}:${props.caseId}:${conversationId.value}`) }; atBottom.value = true
     await readRun(receipt.run_id, version)
-    if (current(version)) await loadMessages(version)
+    if (current(version)) {
+      try { await loadMessages(version, oldestOffset.value > 0 ? oldestOffset.value : undefined) }
+      catch (reason) {
+        if (reason instanceof Error && reason.message === 'history_limit') await loadMessages(version)
+        else throw reason
+      }
+    }
     if (current(version)) schedule(version)
   } catch (reason) {
     if (current(version)) {
@@ -216,11 +303,30 @@ function cite(message: StoredMessage, evidenceId: string) {
   const result = message.run_id ? results.value[message.run_id] : null
   if (props.caseId && result?.snapshot_id) emit('openEvidence', { caseId: props.caseId, snapshotId: result.snapshot_id, evidenceId })
 }
+function candidateOf(message: StoredMessage): ChecklistDefinitionPayload | null {
+  const result = message.run_id ? results.value[message.run_id] : null
+  const kind = result?.result?.kind
+  return result?.result?.candidate && (kind === 'changes' || kind === 'proposal')
+    ? result.result.candidate : null
+}
+function openChecklist(message: StoredMessage) {
+  const result = message.run_id ? results.value[message.run_id] : null
+  const candidate = candidateOf(message)
+  if (!result?.snapshot_id || !candidate) return
+  emit('openChecklist', { caseId: result.case_id, snapshotId: result.snapshot_id,
+    runId: message.run_id!, candidate: { candidate, changes: result.result?.changes ?? [], runId: message.run_id! } })
+}
+function openReview(message: StoredMessage) {
+  const result = message.run_id ? results.value[message.run_id] : null
+  if (!result?.snapshot_id) return
+  emit('openReview', { caseId: result.case_id, snapshotId: result.snapshot_id, runId: message.run_id! })
+}
 watch(() => [props.caseId, props.scopeKey] as const, (_, previous) => {
   drafts.set(`${previous?.[1] ?? ''}:${previous?.[0] ?? 'new'}:${conversationId.value ?? 'new'}`, draft.value)
   ++generation
   if (timer) clearTimeout(timer)
   conversationId.value = null; conversations.value = []; messages.value = []; runs.value = {}; results.value = {}; resultErrors.value = {}
+  oldestOffset.value = 0; totalKnown.value = null
   draft.value = drafts.get(`${props.scopeKey ?? ''}:${props.caseId ?? 'new'}:new`) ?? ''
   loading.value = false; historyReady.value = true; sending.value = false; error.value = ''; pending = null; uncertain.value = false; atBottom.value = true
   hydration = loadCase()
@@ -248,6 +354,10 @@ onUnmounted(() => { disposed = true; ++generation; if (timer) clearTimeout(timer
         </div>
       </div>
       <div v-else class="chat-transcript">
+        <button v-if="oldestOffset > 0" class="text-button history-older" data-test="load-older"
+                :disabled="olderLoading" @click="loadOlder()">
+          {{ olderLoading ? '正在读取更早消息…' : `加载更早消息（剩余 ${oldestOffset} 条）` }}
+        </button>
         <template v-for="message in messages" :key="message.id">
           <article :class="['chat-message', message.role]">
             <span v-if="message.role === 'assistant'" class="message-author">DocuCheck</span>
@@ -260,7 +370,14 @@ onUnmounted(() => { disposed = true; ++generation; if (timer) clearTimeout(timer
             <div v-if="results[message.run_id]?.result?.citations?.length" class="chat-citations">
               <button v-for="citation in results[message.run_id]?.result?.citations" :key="citation.evidence_id" @click="cite(message, citation.evidence_id)">{{ citation.file_name }} · {{ citation.location }} ↗</button>
             </div>
-            <div v-if="results[message.run_id]?.result?.candidate" class="candidate-note">已整理候选审查要求。候选内容尚未保存确认。</div>
+            <div v-if="candidateOf(message)" class="candidate-card">
+              <p class="candidate-title">待确认的审查要求 · {{ candidateOf(message)!.items.length }} 个品目 / {{ candidateOf(message)!.criteria.length }} 项指标</p>
+              <p class="candidate-note">候选内容尚未保存确认。请查看、编辑并保存，再明确确认后才会用于正式审查。</p>
+              <button class="text-button" @click="openChecklist(message)">查看与编辑</button>
+            </div>
+            <div v-if="results[message.run_id]?.result?.kind === 'review' && results[message.run_id]?.snapshot_id" class="review-link">
+              <button class="text-button" @click="openReview(message)">查看完整报告 →</button>
+            </div>
             <div v-if="runs[message.run_id]" class="message-status" :role="['queued', 'running'].includes(runs[message.run_id]!.status) ? 'status' : undefined">
               {{ labels[runs[message.run_id]!.status] ?? '状态待确认' }}
               <span v-if="runs[message.run_id]!.revision !== revision"> · 历史资料版本 {{ runs[message.run_id]!.revision }}</span>

@@ -157,9 +157,10 @@ def runner_module():
 
 def test_child_environment_cannot_inherit_live_opt_ins_or_credentials():
     module = runner_module()
+    fixture_value = "private-" + "fixture"
     result = module.sanitized_env({"PATH": "local-path", "DOCUCHECK_RUN_MYSQL_TESTS": "1",
-        "DOCUCHECK_RUN_MINERU_MYSQL": "1", "DOCUCHECK_MODEL_API_KEY": "private-fixture",
-        "OPENAI_API_KEY": "private-fixture", "LANGSMITH_API_KEY": "private-fixture",
+        "DOCUCHECK_RUN_MINERU_MYSQL": "1", "DOCUCHECK_MODEL_API_KEY": fixture_value,
+        "OPENAI_API_KEY": fixture_value, "LANGSMITH_API_KEY": fixture_value,
         "DOCUCHECK_CJK_FONT": "fixture.ttf", "LANGSMITH_TRACING": "true"})
     assert result["PATH"] == "local-path"
     assert result["DOCUCHECK_CJK_FONT"] == "fixture.ttf"

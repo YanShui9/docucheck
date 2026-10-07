@@ -266,6 +266,7 @@ class DocumentRepository:
                 document_versions.c.role, document_versions.c.parse_status,
                 document_versions.c.source_sha256, document_versions.c.model_name,
                 suppliers.c.handle,
+                suppliers.c.name,
             ).select_from(document_versions.outerjoin(
                 suppliers, document_versions.c.supplier_id == suppliers.c.id,
             )).where(document_versions.c.snapshot_id == snapshot_id)
@@ -274,6 +275,7 @@ class DocumentRepository:
                     "snapshot_id": snapshot_id,
                     "documents": [{"id": row.id, "original_name": row.original_name,
                                    "role": row.role, "supplier_handle": row.handle,
+                                   "supplier_name": row.name,
                                    "model_name": row.model_name,
                                    "parse_status": row.parse_status,
                                    "source_sha256": row.source_sha256}
@@ -323,6 +325,7 @@ class DocumentRepository:
                 document_versions.c.role, document_versions.c.parse_status,
                 document_versions.c.source_sha256, document_versions.c.model_name,
                 suppliers.c.handle,
+                suppliers.c.name,
             ).select_from(document_versions.outerjoin(
                 suppliers, document_versions.c.supplier_id == suppliers.c.id,
             )).where(document_versions.c.case_id == case_id,
@@ -332,6 +335,7 @@ class DocumentRepository:
                 "snapshot_id": snapshot_id,
                 "documents": [{"id": row.id, "original_name": row.original_name,
                                "role": row.role, "supplier_handle": row.handle,
+                               "supplier_name": row.name,
                                "model_name": row.model_name,
                                "parse_status": row.parse_status,
                                "source_sha256": row.source_sha256}

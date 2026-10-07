@@ -3,13 +3,17 @@ import { computed, defineAsyncComponent, onMounted, onUnmounted, ref } from 'vue
 import { accessToken, identity, signOut } from './auth'
 import { apiRequest, uploadDocument } from './api'
 import type {
-  CaseRecord, DocumentRecord, DocumentsResult, Project, SnapshotRecord, SnapshotsResult,
+  CaseRecord, ChecklistDefinitionPayload, CriterionChange, DocumentRecord, DocumentsResult,
+  Project, SnapshotRecord, SnapshotsResult,
 } from './api'
 import CaseSidebar from './components/CaseSidebar.vue'
 import DocumentsPanel from './components/DocumentsPanel.vue'
 import AgentWorkbench from './components/AgentWorkbench.vue'
 import ChatWorkspace from './components/ChatWorkspace.vue'
 const EvidencePanel = defineAsyncComponent(() => import('./components/EvidencePanel.vue'))
+const ChecklistPanel = defineAsyncComponent(() => import('./components/ChecklistPanel.vue'))
+const ReviewPanel = defineAsyncComponent(() => import('./components/ReviewPanel.vue'))
+const MemorySettings = defineAsyncComponent(() => import('./components/MemorySettings.vue'))
 
 const projects = ref<Project[]>([])
 const cases = ref<CaseRecord[]>([])
@@ -25,20 +29,36 @@ const busy = ref(false)
 const loading = ref(true)
 const error = ref('')
 const activeTab = ref<'documents' | 'agent'>('documents')
-const panel = ref<'documents' | 'agent' | null>(null)
+const panel = ref<'documents' | 'agent' | 'checklist' | 'review' | null>(null)
 const sidebarOpen = ref(window.innerWidth > 760)
 const taskTitles = ref<Record<string, string>>({})
 const evidenceTarget = ref<{ caseId: string; snapshotId: string; evidenceId: string } | null>(null)
 const evidenceWidth = ref(390)
+const checklistTarget = ref<{ caseId: string; snapshotId: string; runId: string;
+  candidate: { candidate: ChecklistDefinitionPayload; changes: CriterionChange[]; runId: string } } | null>(null)
+const reviewTarget = ref<{ caseId: string; snapshotId: string; runId: string } | null>(null)
+const memoryOpen = ref(false)
 let refreshTimer: ReturnType<typeof setInterval> | undefined
 let selectionVersion = 0
 let preparingCase: Promise<string | null> | null = null
+
+const checklistSnapshotId = computed(() =>
+  documents.value?.snapshot_id ?? snapshots.value[0]?.id ?? null)
+const supplierNames = computed(() => Object.fromEntries(
+  (documents.value?.documents ?? [])
+    .filter((item): item is DocumentRecord & { supplier_handle: string; supplier_name: string } =>
+      Boolean(item.supplier_handle && item.supplier_name))
+    .map(item => [item.supplier_handle, item.supplier_name])))
+const panelTitles: Record<string, string> = {
+  documents: '采购资料', agent: '历史核验', checklist: '审查要求', review: '审查报告',
+}
 
 function newTask() {
   ++selectionVersion
   selectedCaseId.value = null; documents.value = null; snapshots.value = []
   nextSnapshotBefore.value = null; selectedHistoryId.value = null; historyDocuments.value = null
   evidenceTarget.value = null; panel.value = null; error.value = ''
+  checklistTarget.value = null; reviewTarget.value = null
 }
 
 async function prepareCase(): Promise<string | null> {
@@ -64,6 +84,25 @@ async function prepareCase(): Promise<string | null> {
 async function openDocuments() {
   if (!selectedCaseId.value && !await prepareCase()) return
   panel.value = 'documents'; activeTab.value = 'documents'; evidenceTarget.value = null
+}
+
+function openChecklistPanel() {
+  if (!selectedCaseId.value || !checklistSnapshotId.value) return
+  checklistTarget.value = null
+  panel.value = 'checklist'; evidenceTarget.value = null
+}
+
+function openChecklistFromChat(target: { caseId: string; snapshotId: string; runId: string;
+  candidate: { candidate: ChecklistDefinitionPayload; changes: CriterionChange[]; runId: string } }) {
+  if (target.caseId !== selectedCaseId.value) return
+  checklistTarget.value = target
+  panel.value = 'checklist'; evidenceTarget.value = null
+}
+
+function openReviewFromChat(target: { caseId: string; snapshotId: string; runId: string }) {
+  if (target.caseId !== selectedCaseId.value) return
+  reviewTarget.value = target
+  panel.value = 'review'; evidenceTarget.value = null
 }
 
 const selectedCase = computed(() => cases.value.find(
@@ -124,6 +163,7 @@ async function selectProject(projectId: string) {
   error.value = ''
   evidenceTarget.value = null
   panel.value = null
+  checklistTarget.value = null; reviewTarget.value = null
   try {
     const response = await apiRequest<{ cases: CaseRecord[] }>(
       `/projects/${projectId}/cases`, accessToken,
@@ -147,6 +187,7 @@ async function selectCase(caseId: string) {
   historyDocuments.value = null
   error.value = ''
   evidenceTarget.value = null
+  checklistTarget.value = null; reviewTarget.value = null
   try {
     const [current, history] = await Promise.all([
       apiRequest<DocumentsResult>(`/cases/${caseId}/documents`, accessToken),
@@ -345,30 +386,42 @@ onUnmounted(() => { if (refreshTimer) clearInterval(refreshTimer) })
         <div class="chat-page-title"><strong>{{ selectedCase ? taskTitles[selectedCase.id] ?? '采购任务' : '新采购任务' }}</strong><span>{{ selectedProject?.name ?? '创建一个工作区，开始采购对话' }}</span></div>
         <nav class="chat-header-tools" aria-label="采购工作面板">
           <button class="text-button" :disabled="!selectedProjectId || busy" :aria-pressed="panel === 'documents'" @click="openDocuments">资料<span v-if="documents?.documents.length" class="file-count">{{ documents.documents.length }}</span></button>
+          <button class="text-button" :disabled="!selectedCaseId || !checklistSnapshotId" :aria-pressed="panel === 'checklist'" @click="openChecklistPanel">审查清单</button>
           <button class="text-button" :disabled="!selectedCaseId" :aria-pressed="panel === 'agent'" @click="panel = panel === 'agent' ? null : 'agent'; activeTab = 'agent'; evidenceTarget = null">历史核验</button>
         </nav>
-        <details class="account-menu"><summary :aria-label="`${displayName}的账号菜单`">{{ displayName.slice(0, 1).toUpperCase() }}</summary><div><strong>{{ displayName }}</strong><button class="text-button" @click="signOut">退出登录</button></div></details>
+        <details class="account-menu"><summary :aria-label="`${displayName}的账号菜单`">{{ displayName.slice(0, 1).toUpperCase() }}</summary><div><strong>{{ displayName }}</strong><button class="text-button" @click="memoryOpen = true">记忆偏好</button><button class="text-button" @click="signOut">退出登录</button></div></details>
       </header>
       <div v-if="error" class="alert" role="alert"><span>{{ error }}</span><button class="text-button" @click="error = ''">关闭</button></div>
       <div v-if="loading" class="loading-state" role="status">正在读取工作区…</div>
       <ChatWorkspace v-else :case-id="selectedCaseId" :scope-key="selectedProjectId ?? ''" :revision="documents?.revision ?? selectedCase?.revision ?? 0"
                      :can-write="canWrite && !busy" :prepare-case="prepareCase"
                      @upload="openDocuments" @title="taskTitles[$event.caseId] = $event.title"
-                     @open-evidence="evidenceTarget = $event; panel = null" />
+                     @open-evidence="evidenceTarget = $event; panel = null"
+                     @open-checklist="openChecklistFromChat" @open-review="openReviewFromChat" />
     </main>
     <aside v-if="panel && !evidenceTarget" class="chat-work-panel" :class="{ 'legacy-panel': panel === 'agent' }" aria-label="采购工作面板">
-      <header class="work-panel-heading"><h2>{{ panel === 'documents' ? '采购资料' : '历史核验' }}</h2><button class="icon-button" aria-label="关闭工作面板" @click="panel = null">×</button></header>
+      <header class="work-panel-heading"><h2>{{ panelTitles[panel] ?? '采购工作面板' }}</h2><button class="icon-button" aria-label="关闭工作面板" @click="panel = null">×</button></header>
       <div class="work-panel-content">
         <DocumentsPanel v-if="panel === 'documents'" :selected-case="selectedCase" :documents="documents"
                         :snapshots="snapshots" :next-snapshot-before="nextSnapshotBefore" :loading-older="loadingOlder"
                         :selected-history-id="selectedHistoryId" :history-documents="historyDocuments" :can-write="canWrite" :busy="busy"
                         @upload="handleUpload" @select-history="selectHistory" @load-older-snapshots="loadOlderSnapshots" @refresh-documents="refreshDocuments(true)" />
-        <template v-else>
+        <ChecklistPanel v-else-if="panel === 'checklist' && checklistSnapshotId"
+                        :case-id="selectedCaseId!" :snapshot-id="checklistSnapshotId"
+                        :revision="documents?.revision ?? 0" :can-write="canWrite && !busy"
+                        :candidate="checklistTarget?.candidate ?? null"
+                        @open-evidence="evidenceTarget = $event; panel = null" />
+        <ReviewPanel v-else-if="panel === 'review' && reviewTarget"
+                     :case-id="reviewTarget.caseId" :run-id="reviewTarget.runId" :snapshot-id="reviewTarget.snapshotId"
+                     :revision="documents?.revision ?? 0" :can-write="canWrite && !busy" :supplier-names="supplierNames"
+                     @open-evidence="evidenceTarget = $event; panel = null" />
+        <template v-else-if="panel === 'agent'">
           <label v-if="snapshots.length" class="workspace-history">查看资料版本<select class="field-control" :value="selectedHistoryId ?? ''" @change="selectHistory(($event.target as HTMLSelectElement).value || null)"><option value="">当前版本 {{ documents?.revision ?? 0 }}</option><option v-for="snapshot in snapshots.filter(item => item.revision !== documents?.revision)" :key="snapshot.id" :value="snapshot.id">历史版本 {{ snapshot.revision }}</option></select></label>
           <AgentWorkbench :case-id="selectedCaseId" :documents="documents" :history-documents="historyDocuments" :selected-history-id="selectedHistoryId" :can-write="canWrite" @open-evidence="evidenceTarget = $event; panel = null" @changed="refreshAfterCorrection" />
         </template>
       </div>
     </aside>
     <EvidencePanel v-if="evidenceTarget" :target="evidenceTarget" :width="evidenceWidth" @close="evidenceTarget = null" @resize="evidenceWidth = $event" />
+    <MemorySettings v-if="memoryOpen" @close="memoryOpen = false" />
   </div>
 </template>

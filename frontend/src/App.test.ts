@@ -148,3 +148,83 @@ test('first interaction creates only one task and late creation cannot reclaim a
   expect(await first).toBeNull(); expect(await second).toBeNull()
   expect(wrapper.findComponent({ name: 'ChatWorkspace' }).props('caseId')).toBe('case-2')
 })
+
+test('checklist and review panels open from chat events with persisted supplier names', async () => {
+  apiRequest.mockImplementation((path: string) => {
+    if (path.endsWith('/documents')) return Promise.resolve({
+      case_id: 'case-1', revision: 1, snapshot_id: 'snapshot-case-1', documents: [{
+        id: 'doc-1', original_name: '报价.xlsx', role: 'quote',
+        supplier_handle: 'vendor-a', supplier_name: '供应商甲', model_name: null,
+        parse_status: 'complete', source_sha256: 'sha',
+      }],
+    })
+    return reads(path)
+  })
+  const wrapper = mount(App, { global: { stubs: {
+    DocumentsPanel: true, AgentWorkbench: true, EvidencePanel: true, ChatWorkspace: true,
+    ChecklistPanel: { name: 'ChecklistPanel', props: ['caseId', 'snapshotId', 'candidate'],
+      template: '<div class="checklist-stub">{{ caseId }}/{{ snapshotId }}</div>' },
+    ReviewPanel: { name: 'ReviewPanel', props: ['caseId', 'runId', 'supplierNames'],
+      template: '<div class="review-stub">{{ runId }}</div>' },
+  } } })
+  wrappers.push(wrapper)
+  await flushPromises()
+  const chat = wrapper.findComponent({ name: 'ChatWorkspace' })
+  chat.vm.$emit('openChecklist', { caseId: 'case-1', snapshotId: 'snapshot-case-1', runId: 'run-a',
+    candidate: { candidate: { items: [], criteria: [] }, changes: [], runId: 'run-a' } })
+  await flushPromises()
+  expect(wrapper.find('.work-panel-heading').text()).toContain('审查要求')
+  expect(wrapper.find('.checklist-stub').text()).toBe('case-1/snapshot-case-1')
+  expect(wrapper.findComponent({ name: 'ChecklistPanel' })
+    .props('candidate')).toEqual({ candidate: { items: [], criteria: [] }, changes: [], runId: 'run-a' })
+  chat.vm.$emit('openReview', { caseId: 'case-1', snapshotId: 'snapshot-case-1', runId: 'run-r' })
+  await flushPromises()
+  expect(wrapper.find('.work-panel-heading').text()).toContain('审查报告')
+  const review = wrapper.findComponent({ name: 'ReviewPanel' })
+  expect(review.props('runId')).toBe('run-r')
+  expect(review.props('supplierNames')).toEqual({ 'vendor-a': '供应商甲' })
+  await wrapper.findAll('button').find(button => button.text() === '审查清单')!.trigger('click')
+  await flushPromises()
+  expect(wrapper.find('.work-panel-heading').text()).toContain('审查要求')
+  expect(wrapper.findComponent({ name: 'ChecklistPanel' }).props('candidate')).toBeNull()
+})
+
+test('switching tasks closes the dynamic panels and clears their targets', async () => {
+  apiRequest.mockImplementation(reads)
+  const wrapper = mount(App, { global: { stubs: {
+    DocumentsPanel: true, AgentWorkbench: true, EvidencePanel: true, ChatWorkspace: true,
+    ChecklistPanel: { name: 'ChecklistPanel', props: ['caseId'], template: '<div class="checklist-stub" />' },
+    ReviewPanel: true,
+  } } })
+  wrappers.push(wrapper)
+  await flushPromises()
+  const chat = wrapper.findComponent({ name: 'ChatWorkspace' })
+  chat.vm.$emit('openChecklist', { caseId: 'case-1', snapshotId: 'snapshot-case-1', runId: 'run-a',
+    candidate: { candidate: { items: [], criteria: [] }, changes: [], runId: 'run-a' } })
+  await flushPromises()
+  expect(wrapper.find('.checklist-stub').exists()).toBe(true)
+  chat.vm.$emit('openChecklist', { caseId: 'case-2', snapshotId: 'snapshot-case-2', runId: 'run-b',
+    candidate: { candidate: { items: [], criteria: [] }, changes: [], runId: 'run-b' } })
+  await flushPromises()
+  expect(wrapper.find('.checklist-stub').exists()).toBe(true)
+  expect(wrapper.findComponent({ name: 'ChecklistPanel' }).props('caseId')).toBe('case-1')
+})
+
+test('the account menu opens memory preference settings', async () => {
+  apiRequest.mockImplementation(reads)
+  const wrapper = mount(App, { global: { stubs: {
+    DocumentsPanel: true, AgentWorkbench: true, EvidencePanel: true, ChatWorkspace: true,
+    ChecklistPanel: true, ReviewPanel: true,
+    MemorySettings: { name: 'MemorySettings', emits: ['close'],
+      template: '<div class="memory-stub"><button data-test="memory-close" @click="$emit(\'close\')">关闭</button></div>' },
+  } } })
+  wrappers.push(wrapper)
+  await flushPromises()
+  await wrapper.get('.account-menu summary').trigger('click')
+  await wrapper.findAll('button').find(button => button.text() === '记忆偏好')!.trigger('click')
+  await flushPromises()
+  expect(wrapper.find('.memory-stub').exists()).toBe(true)
+  await wrapper.get('[data-test="memory-close"]').trigger('click')
+  await flushPromises()
+  expect(wrapper.find('.memory-stub').exists()).toBe(false)
+})

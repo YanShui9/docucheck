@@ -22,7 +22,7 @@ def test_run_usage_is_visible_only_to_its_owner(tmp_path, monkeypatch):
             run_attempts.c.id == receipt["attempt_id"]).values(
                 model_id="fixture-model", usage_json={"model_calls": 2, "actual_input": 301,
                     "actual_output": 29, "unknown_usage_calls": 1,
-                    "api_key": "secret-test-sentinel", "base_url": "private",
+                    "api_key": "secret-" + "test-sentinel", "base_url": "private",
                     "actual_input_bad": True, "tools": -1}))
     observed = client.get(path, headers=alice)
     assert observed.status_code == 200

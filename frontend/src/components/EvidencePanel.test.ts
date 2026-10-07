@@ -23,7 +23,8 @@ test('XLSX evidence resolves its authorized snapshot and shows exact cell text',
     })
     if (path.endsWith('/documents')) return Promise.resolve({
       documents: [{ id: 'doc-1', original_name: 'vendor-a-quote.xlsx',
-        role: 'quote', supplier_handle: 'vendor-a', model_name: 'Model-X1',
+        role: 'quote', supplier_handle: 'vendor-a', supplier_name: '供应商甲',
+        model_name: 'Model-X1',
         parse_status: 'complete', source_sha256: 'abc123456789abcdef' }],
     })
     if (path.includes('/original/sheet-window?')) return Promise.resolve({
@@ -68,7 +69,7 @@ test('PDF evidence renders only its selected page and changes pages once', async
     })
     if (path.endsWith('/documents')) return Promise.resolve({ documents: [{
       id: 'doc-2', original_name: 'spec.pdf', role: 'spec',
-      supplier_handle: 'vendor-a', model_name: 'Model-X1',
+      supplier_handle: 'vendor-a', supplier_name: '供应商甲', model_name: 'Model-X1',
       parse_status: 'complete', source_sha256: 'abc123456789abcdef',
     }] })
     throw new Error(`Unexpected path ${path}`)

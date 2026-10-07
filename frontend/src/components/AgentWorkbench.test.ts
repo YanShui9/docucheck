@@ -13,7 +13,7 @@ vi.mock('../api', () => ({ apiRequest, downloadRunExport }))
 const document: DocumentsResult = {
   case_id: 'case-1', revision: 1, snapshot_id: 'snapshot-1',
   documents: [{ id: 'doc-1', original_name: 'quote.xlsx', role: 'quote',
-    supplier_handle: 'vendor-a', model_name: 'Model-X1',
+    supplier_handle: 'vendor-a', supplier_name: '供应商甲', model_name: 'Model-X1',
     parse_status: 'complete', source_sha256: 'hash' }],
 }
 

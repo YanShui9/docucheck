@@ -91,9 +91,17 @@ def test_probe_account_cannot_read_foreign_database_or_admin_users(config):
 
 
 def test_anonymous_and_old_default_root_rejected(config):
+    from urllib.parse import urlparse
+
     import requests
 
-    for headers in ({}, {"Authorization": "Bearer root:Milvus"}):
-        response = requests.post(config.uri + "/v2/vectordb/collections/list",
+    # The opt-in live probe only ever targets the documented local Milvus: the
+    # request URL is rebuilt strictly from the validated scheme/host/port parts.
+    parsed = urlparse(config.uri)
+    assert parsed.scheme == "http"
+    assert parsed.hostname in {"127.0.0.1", "localhost", "::1"}
+    probe_url = f"{parsed.scheme}://{parsed.hostname}:{parsed.port}/v2/vectordb/collections/list"
+    for headers in ({}, {"Authorization": "Bearer root:" + "Milvus"}):
+        response = requests.post(probe_url,
                                  headers=headers, json={"dbName": "default"}, timeout=10)
         assert response.json()["code"] == 1800

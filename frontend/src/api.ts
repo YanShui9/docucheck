@@ -20,6 +20,7 @@ export interface DocumentRecord {
   original_name: string
   role: 'requirement' | 'quote' | 'spec'
   supplier_handle: string | null
+  supplier_name: string | null
   model_name: string | null
   parse_status: string
   source_sha256: string
@@ -70,16 +71,201 @@ export interface CaseRunsResult {
 
 export interface ConversationRecord { id: string; case_id: string; created_at: string }
 export interface StoredMessage { id: string; role: 'user' | 'assistant'; content: string; run_id: string | null; created_at: string }
+export interface MessagesPage {
+  conversation_id: string
+  total: number
+  messages: StoredMessage[]
+  next_offset: number | null
+}
 export interface ChatRun {
   id: string; conversation_id: string; message_id: string; snapshot_id: string | null
   revision: number; status: string; answer_text: string | null; error_code: string | null
   workflow: string | null; outcome_unknown: boolean; is_current: boolean
 }
 export interface AssistantCitation { evidence_id: string; quote: string; file_name: string; location: string }
+export type RuleType = 'numeric' | 'money' | 'enum' | 'presence' | 'duration' | 'manual'
+
+export interface ChecklistRule {
+  type: RuleType
+  operator?: 'eq' | 'gte' | 'lte' | 'gt' | 'lt' | 'between' | 'in'
+  value?: string | null
+  lower?: string | null
+  upper?: string | null
+  unit?: string
+  currency?: 'CNY' | 'USD' | 'EUR'
+  per_unit?: string
+  tax_basis?: 'included' | 'excluded' | 'unspecified'
+  values?: string[]
+  description?: string
+  must_be_present?: boolean
+  calendar?: 'natural_days' | 'working_days' | 'months'
+  start_event?: string
+  instruction?: string
+}
+
+export interface EvidenceContextRecord { evidence_refs: string[]; quote: string }
+
+export interface ChecklistCriterion {
+  criterion_id: string
+  item_id: string
+  name: string
+  rule: ChecklistRule
+  source: { kind: 'user_defined'; reason: string; context?: EvidenceContextRecord | null }
+        | { kind: 'document_extracted'; context: EvidenceContextRecord }
+  required: boolean
+  enabled: boolean
+  conditions: string[]
+}
+
+export interface ChecklistItem { item_id: string; name: string; specification?: string }
+
+export interface ChecklistDefinitionPayload { items: ChecklistItem[]; criteria: ChecklistCriterion[] }
+
+export interface ChecklistIssue { criterion_id: string; code: string }
+
+export interface ChecklistVersionRecord {
+  id: string
+  version: number
+  snapshot_id: string
+  revision: number
+  definition: ChecklistDefinitionPayload
+  confirmed_by: string
+  reason: string
+  manual_review_ids: string[]
+}
+
+export type ChecklistState = 'empty' | 'draft' | 'needs_resolution' | 'confirmed'
+  | 'partially_confirmed' | 'needs_reconfirmation' | 'historical'
+
+export interface ChecklistView {
+  case_id: string
+  snapshot_id: string
+  revision: number
+  is_current_snapshot: boolean
+  checklist_revision: number
+  state: ChecklistState
+  draft: ChecklistDefinitionPayload | null
+  confirmed_version: ChecklistVersionRecord | null
+  previous_version_id: string | null
+  issues: ChecklistIssue[]
+  execution_available: boolean
+  excluded_criterion_ids?: string[]
+}
+
+export interface CriterionChange {
+  op: 'add' | 'update' | 'remove'
+  criterion_id: string
+  reason: string
+  before: ChecklistCriterion | null
+  after: ChecklistCriterion | null
+}
+
 export interface AssistantResult {
   run_id: string; case_id: string; snapshot_id: string | null; revision: number; is_current: boolean
   result: { kind: 'chat' | 'evidence' | 'changes' | 'review' | 'proposal'; answer: string
-    citations: AssistantCitation[]; candidate: unknown; changes: unknown[] } | null
+    citations: AssistantCitation[]; candidate: ChecklistDefinitionPayload | null
+    changes: CriterionChange[] } | null
+}
+
+export interface DynamicCheckResult {
+  criterion_id: string
+  item_id: string
+  item_name: string
+  criterion_name: string
+  supplier: string
+  field_key: string
+  processing_status: string
+  business_status: string | null
+  reason_code: string
+  evidence_refs: string[]
+  reason_evidence_refs: string[]
+  fact_ids: string[]
+  rule_version: string
+  is_formal: boolean
+  checklist_version_id?: string
+}
+
+export interface RunDynamicChecksResult {
+  run_id: string
+  case_id: string
+  snapshot_id: string
+  revision: number
+  run_status: string
+  is_current: boolean
+  checklist_version_id: string
+  checks: DynamicCheckResult[]
+}
+
+export type AnyRunChecksResult = RunChecksResult | RunDynamicChecksResult
+
+export function isDynamicChecks(result: AnyRunChecksResult): result is RunDynamicChecksResult {
+  return typeof (result as RunDynamicChecksResult).checklist_version_id === 'string'
+}
+
+export interface DynamicFactRecord {
+  fact_id: string
+  raw_value: string
+  raw_unit: string
+  value: string | boolean
+  unit: string
+  evidence_refs: string[]
+  quote: string
+  role: string
+  supplier: string | null
+  criterion_id?: string
+  item_id?: string
+  item_name?: string
+  criterion_name?: string
+  currency?: string | null
+  per_unit?: string | null
+  tax_basis?: string | null
+  calendar?: string | null
+  start_event?: string | null
+}
+
+export interface DynamicFactSet {
+  fact_set_id: string
+  supplier: string
+  field_key: string
+  criterion_id: string
+  facts: DynamicFactRecord[]
+}
+
+export interface DynamicFactsResult {
+  run_id: string
+  case_id: string
+  snapshot_id: string
+  revision: number
+  is_current: boolean
+  available: boolean
+  checklist_version_id: string
+  payload_digest: string
+  fact_sets: DynamicFactSet[]
+}
+
+export interface DynamicProgressResult {
+  run_id: string
+  workflow: string
+  run_status: string
+  checklist_version_id: string
+  validated_batches: number
+  planned_batches: number
+  coverage: Record<string, boolean>
+}
+
+export interface DynamicCorrectionRecord {
+  correction_id: string
+  run_id: string
+  review_status: string
+  payload_digest: string
+}
+
+export interface DynamicCorrectionAuditRecord {
+  correction_id: string
+  reason: string
+  old_fact: DynamicFactRecord | null
+  corrected_fact: DynamicFactRecord | null
+  review_status: string
 }
 
 export interface CheckResult {
@@ -257,4 +443,145 @@ export async function downloadRunExport(
     throw new Error(code)
   }
   return response.blob()
+}
+
+export interface MemoryRecord { key: string; value: string; expires_at: string | null }
+export interface MemoryProfile { revision: number; records: MemoryRecord[] }
+
+export const MEMORY_PREFERENCE_LABELS: Record<string, Record<string, string>> = {
+  answer_length: { concise: '简洁', standard: '标准', detailed: '详细' },
+  answer_format: { paragraph: '段落', bullets: '分条', table: '表格' },
+  language: { 'zh-CN': '中文', en: 'English' },
+}
+export const MEMORY_KEY_LABELS: Record<string, string> = {
+  answer_length: '答复长度', answer_format: '答复格式', language: '答复语言',
+}
+
+export async function fetchMemoryProfile(tokenProvider: TokenProvider): Promise<MemoryProfile> {
+  return apiRequest('/me/memories', tokenProvider)
+}
+
+export async function saveMemoryPreference(
+  key: string,
+  body: { value: string; expected_revision: number; confirmed: true; expires_at: string | null },
+  tokenProvider: TokenProvider,
+): Promise<MemoryProfile> {
+  return apiRequest(`/me/memories/${encodeURIComponent(key)}`, tokenProvider, {
+    method: 'PUT',
+    body: JSON.stringify(body),
+  })
+}
+
+export async function deleteMemoryPreference(
+  key: string,
+  expectedRevision: number,
+  tokenProvider: TokenProvider,
+): Promise<MemoryProfile> {
+  return apiRequest(`/me/memories/${encodeURIComponent(key)}?expected_revision=${expectedRevision}`, tokenProvider, {
+    method: 'DELETE',
+  })
+}
+
+export interface ChecklistProposal {
+  run_id: string
+  case_id: string
+  snapshot_id: string
+  revision: number
+  definition: ChecklistDefinitionPayload | null
+  changes: CriterionChange[]
+  requires_user_confirmation: boolean
+  instruction?: string
+}
+
+export async function fetchChecklist(
+  caseId: string, snapshotId: string, tokenProvider: TokenProvider,
+): Promise<ChecklistView> {
+  return apiRequest(`/cases/${caseId}/snapshots/${snapshotId}/checklist`, tokenProvider)
+}
+
+export async function saveChecklistDraft(
+  caseId: string,
+  snapshotId: string,
+  definition: ChecklistDefinitionPayload,
+  expectedRevision: number,
+  expectedChecklistRevision: number,
+  reason: string,
+  tokenProvider: TokenProvider,
+): Promise<ChecklistView> {
+  return apiRequest(`/cases/${caseId}/snapshots/${snapshotId}/checklist`, tokenProvider, {
+    method: 'PUT',
+    headers: { 'Idempotency-Key': crypto.randomUUID() },
+    body: JSON.stringify({ ...definition, expected_revision: expectedRevision,
+      expected_checklist_revision: expectedChecklistRevision, reason }),
+  })
+}
+
+export async function confirmChecklist(
+  caseId: string,
+  snapshotId: string,
+  criterionIds: string[],
+  expectedRevision: number,
+  expectedChecklistRevision: number,
+  reason: string,
+  tokenProvider: TokenProvider,
+): Promise<ChecklistView> {
+  return apiRequest(`/cases/${caseId}/snapshots/${snapshotId}/checklist/confirm`, tokenProvider, {
+    method: 'POST',
+    headers: { 'Idempotency-Key': crypto.randomUUID() },
+    body: JSON.stringify({ criterion_ids: criterionIds, confirmed: true,
+      expected_revision: expectedRevision,
+      expected_checklist_revision: expectedChecklistRevision, reason }),
+  })
+}
+
+export async function fetchChecklistVersion(
+  caseId: string, versionId: string, tokenProvider: TokenProvider,
+): Promise<ChecklistVersionRecord> {
+  return apiRequest(`/cases/${caseId}/checklist-versions/${versionId}`, tokenProvider)
+}
+
+export async function fetchRunProposal(
+  runId: string, tokenProvider: TokenProvider,
+): Promise<ChecklistProposal> {
+  return apiRequest(`/agent-runs/${runId}/proposal`, tokenProvider)
+}
+
+export async function fetchRunProgress(
+  runId: string, tokenProvider: TokenProvider,
+): Promise<DynamicProgressResult> {
+  return apiRequest(`/agent-runs/${runId}/progress`, tokenProvider)
+}
+
+export async function fetchDynamicFacts(
+  runId: string, tokenProvider: TokenProvider,
+): Promise<DynamicFactsResult> {
+  return apiRequest(`/agent-runs/${runId}/facts`, tokenProvider)
+}
+
+export interface DynamicFactCandidate {
+  criterion_id: string
+  item_id: string
+  supplier: string
+  value: string | boolean
+  unit: string
+  evidence_refs: string[]
+  quote: string
+  currency?: string | null
+  per_unit?: string | null
+  tax_basis?: string | null
+  calendar?: string | null
+  start_event?: string | null
+}
+
+export async function submitDynamicFactCorrection(
+  runId: string,
+  body: { fact_id: string; candidate: DynamicFactCandidate; reason: string;
+    expected_revision: number; expected_payload_digest: string },
+  tokenProvider: TokenProvider,
+): Promise<DynamicCorrectionRecord> {
+  return apiRequest(`/agent-runs/${runId}/fact-corrections`, tokenProvider, {
+    method: 'POST',
+    headers: { 'Idempotency-Key': crypto.randomUUID() },
+    body: JSON.stringify(body),
+  })
 }

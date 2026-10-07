@@ -237,3 +237,100 @@ test('access denial during result hydration clears already loaded private messag
   expect(wrapper.text()).not.toContain('内部采购要求')
   expect(wrapper.get('textarea').attributes('disabled')).toBeDefined()
 })
+
+const candidateResult = {
+  run_id: 'run-a', case_id: 'case-a', revision: 0, snapshot_id: 'snap-1', is_current: true,
+  result: { kind: 'changes', answer: '已整理 1 项要求。', citations: [],
+    candidate: { items: [{ item_id: 'apple', name: '苹果' }],
+      criteria: [{ criterion_id: 'c-qty', item_id: 'apple', name: '数量',
+        rule: { type: 'numeric', operator: 'gte', value: '20', unit: '箱' },
+        source: { kind: 'user_defined', reason: '用户要求' }, required: true,
+        enabled: true, conditions: [] }] },
+    changes: [{ op: 'add', criterion_id: 'c-qty', reason: '用户要求', before: null, after: {} }] },
+}
+
+test('a changes candidate shows an explicit edit entry and never saves by itself', async () => {
+  apiRequest.mockImplementation((path: string) => {
+    if (path.includes('/conversations?')) return Promise.resolve({ conversations: [{ id: 'conv-a', created_at: '' }], next_offset: null })
+    if (path.includes('/messages?')) return Promise.resolve({ messages: [{ id: 'message-a', role: 'user', content: '整理要求', run_id: 'run-a', created_at: '' }], next_offset: null })
+    if (path === '/agent-runs/run-a') return Promise.resolve({ id: 'run-a', conversation_id: 'conv-a', status: 'completed', workflow: 'assistant', revision: 0 })
+    if (path.endsWith('/assistant-result')) return Promise.resolve(candidateResult)
+    return reads(path)
+  })
+  const wrapper = setup()
+  await flushPromises()
+  expect(wrapper.text()).toContain('待确认的审查要求')
+  expect(wrapper.text()).toContain('尚未保存确认')
+  await wrapper.findAll('button').find(button => button.text() === '查看与编辑')!.trigger('click')
+  expect(wrapper.emitted('openChecklist')).toEqual([[
+    { caseId: 'case-a', snapshotId: 'snap-1', runId: 'run-a',
+      candidate: { candidate: candidateResult.result.candidate,
+        changes: candidateResult.result.changes, runId: 'run-a' } },
+  ]])
+  expect(apiRequest.mock.calls.some(([, , init]) => init?.method === 'PUT')).toBe(false)
+})
+
+test('a formal review offers the full report entry bound to its snapshot', async () => {
+  apiRequest.mockImplementation((path: string) => {
+    if (path.includes('/conversations?')) return Promise.resolve({ conversations: [{ id: 'conv-a', created_at: '' }], next_offset: null })
+    if (path.includes('/messages?')) return Promise.resolve({ messages: [{ id: 'message-a', role: 'user', content: '开始审查', run_id: 'run-a', created_at: '' }], next_offset: null })
+    if (path === '/agent-runs/run-a') return Promise.resolve({ id: 'run-a', conversation_id: 'conv-a', status: 'completed', workflow: 'assistant', revision: 0 })
+    if (path.endsWith('/assistant-result')) return Promise.resolve({ run_id: 'run-a', case_id: 'case-a',
+      revision: 1, snapshot_id: 'snap-1', is_current: true,
+      result: { kind: 'review', answer: '审查完成：1 项满足。', citations: [], candidate: null, changes: [] } })
+    return reads(path)
+  })
+  const wrapper = setup()
+  await flushPromises()
+  expect(wrapper.text()).toContain('审查完成：1 项满足。')
+  await wrapper.findAll('button').find(button => button.text().includes('查看完整报告'))!.trigger('click')
+  expect(wrapper.emitted('openReview')).toEqual([[{ caseId: 'case-a', snapshotId: 'snap-1', runId: 'run-a' }]])
+})
+
+test('long conversations load the recent page first and page back progressively', async () => {
+  const tail = Array.from({ length: 3 }, (_, i) => ({
+    id: `m${i + 3}`, role: 'user' as const, content: `较新消息${i + 3}`, run_id: null, created_at: '' }))
+  const older = [{ id: 'm1', role: 'user' as const, content: '最早消息1', run_id: null, created_at: '' }]
+  const fetched: string[] = []
+  apiRequest.mockImplementation((path: string) => {
+    fetched.push(path)
+    if (path.includes('/conversations?')) return Promise.resolve({ conversations: [{ id: 'conv-a', created_at: '' }], next_offset: null })
+    if (path.includes('offset=0&limit=1')) return Promise.resolve({ conversation_id: 'conv-a', total: 203, messages: [], next_offset: 1 })
+    if (path.includes('offset=103')) return Promise.resolve({ conversation_id: 'conv-a', total: 203, messages: tail, next_offset: null })
+    if (path.includes('offset=3')) return Promise.resolve({ conversation_id: 'conv-a', total: 203, messages: older, next_offset: 103 })
+    return reads(path)
+  })
+  const wrapper = setup()
+  await flushPromises()
+  expect(wrapper.text()).toContain('较新消息5')
+  expect(wrapper.text()).not.toContain('最早消息1')
+  await wrapper.get('[data-test="load-older"]').trigger('click')
+  await flushPromises()
+  expect(wrapper.text()).toContain('最早消息1')
+  expect(wrapper.text()).toContain('剩余 3 条')
+  expect(fetched.some(path => path.includes('offset=3&limit=100'))).toBe(true)
+})
+
+test('progressive paging stops with a clear error beyond the 20-page budget', async () => {
+  const fetched: string[] = []
+  apiRequest.mockImplementation((path: string) => {
+    fetched.push(path)
+    if (path.includes('/conversations?')) return Promise.resolve({ conversations: [{ id: 'conv-a', created_at: '' }], next_offset: null })
+    if (path.includes('offset=0&limit=1')) return Promise.resolve({ conversation_id: 'conv-a', total: 2400, messages: [], next_offset: 1 })
+    if (path.includes('offset=2300')) return Promise.resolve({ conversation_id: 'conv-a', total: 2400, messages: [{ id: 'tail', role: 'user', content: '最新消息', run_id: null, created_at: '' }], next_offset: null })
+    const offset = Number(path.match(/offset=(\d+)/)?.[1])
+    return Promise.resolve({ conversation_id: 'conv-a', total: 2400,
+      messages: [{ id: `m${offset}`, role: 'user' as const, content: `消息${offset}`, run_id: null, created_at: '' }],
+      next_offset: offset + 100 })
+  })
+  const wrapper = setup()
+  await flushPromises()
+  for (let i = 0; i < 25; i++) {
+    const button = wrapper.findAll('button').find(item => item.text().includes('加载更早消息'))
+    if (!button) break
+    await button.trigger('click')
+    await flushPromises()
+  }
+  expect(wrapper.text()).toContain('历史记录较多')
+  expect(fetched.filter(path => path.includes('/messages?')).length).toBeLessThanOrEqual(22)
+})

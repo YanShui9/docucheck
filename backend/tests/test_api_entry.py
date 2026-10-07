@@ -270,6 +270,7 @@ def test_clarification_resume_accepts_reply_once_and_blocks_parallel_question(ap
     ).json()
     assert first_page["next_offset"] == 1
     assert second_page["next_offset"] is None
+    assert first_page["total"] == 2
     assert [first_page["messages"][0]["content"],
             second_page["messages"][0]["content"]] == [
                 "审查供应商 A", "供应商 A",
