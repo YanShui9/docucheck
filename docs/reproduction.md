@@ -1,10 +1,10 @@
 # 安装、离线验证与本地启动
 
-适用日期：2026-10-03。Windows + Miniconda 是本机开发入口；Linux Celery worker 由 Docker 运行。各命令在仓库根目录执行，前端命令除外。项目形态是有身份、权限、异步任务与证据版本的面试演示工作台。
+适用日期：2026-10-08（本轮更新本地前端与 OIDC 端口；其他历史实测日期以对应记录为准）。Windows + Miniconda 是本机开发入口；Linux Celery worker 由 Docker 运行。各命令在仓库根目录执行，前端命令除外。项目形态是有身份、权限、异步任务与证据版本的面试演示工作台。
 
 ## 1. 先复现代码测试
 
-新机器先取得**包含 M5-C 新文件的完整源码**。目前交付位于本地工作区，尚未提交或发布远程版本；仅克隆旧提交不会得到这些文件。不要复制旧 `.env`、`data/`、`.venv` 或 `node_modules/`。
+新机器先取得**包含当前阶段文件的完整源码**。每步已按约定提交本地 Git；仓库尚未配置远程，不代表已发布远程版本。不要复制旧 `.env`、`data/`、`.venv` 或 `node_modules/`。
 
 ```powershell
 conda create -n docucheck-repro python=3.12.14 pip -y
@@ -72,6 +72,7 @@ Docker Desktop 切换 Linux Engine；从 `.env.example` 在本机首次建立 `.
 | --- | --- |
 | `DOCUCHECK_MYSQL_HOST` / `PORT` | Windows API/解析进程连接 MySQL；默认主机端口 3307，本机因 Windows 保留端口改用 13307。容器内部始终 3306。 |
 | `DOCUCHECK_MYSQL_ROOT_PASSWORD` / `PASSWORD` | 数据库管理员和应用账号口令，彼此不同。 |
+| `DOCUCHECK_WEB_PORT` | 根目录 `.env` 中的本机前端端口，默认15173；Vite和OIDC生成器/同步器共用。 |
 | `DOCUCHECK_MODEL_PROVIDER` | 当前为 `openai-compatible`，没有默认假模型回退。 |
 | `DOCUCHECK_MODEL_BASE_URL` / `ID` | 本次实测为 `https://api.deepseek.com` / `deepseek-flash`；更换模型须重新验证工具调用契约。 |
 | `DOCUCHECK_MODEL_API_KEY` | 仅本机或目标部署的密钥管理存储。 |
@@ -85,7 +86,13 @@ python.exe -m alembic -c backend/alembic.ini upgrade head
 python.exe -m alembic -c backend/alembic.ini current
 ```
 
-迁移头为 `0011_document_model_binding`。生成器创建 Alice/Bob/reviewer 的演示账号，密码只在本机 `.env` 查看。Keycloak `start-dev`、本机 HTTP 和 H2 卷用于演示；正式企业部署需 HTTPS、生产配置、身份数据库和企业 SSO。已有 Keycloak realm 不会因重写导入文件自动更新，不能把重新生成文件当成重置现有账号。
+当前迁移头为 `0016_assistant_runs`。生成器创建 alice/bob/reviewer 的演示账号，密码只在本机 `.env` 查看。Keycloak `start-dev`、本机 HTTP 和 H2 卷用于演示；正式企业部署需 HTTPS、生产配置、身份数据库和企业 SSO。已有 Keycloak realm 不会因重写导入文件自动更新，不能把重新生成文件当成重置现有账号。
+
+已有本机 Keycloak 更换前端端口时，在根目录 `.env` 设置 `DOCUCHECK_WEB_PORT`，保持当前 Keycloak 运行，执行下列命令，再重启 Vite。端口只接受1–65535的字面十进制值，两端都忽略模式文件和 `.env.local` 对此键的覆盖，不展开 `${...}`；若用进程环境变量覆盖，须在同一个环境内执行同步和前端启动。它只同步既有 `docucheck-web` 的登录/退出回调和来源地址，并读取回验；不生成凭据、不重建 realm 或账号。默认仅绑定 `127.0.0.1`，不要用 `--host`/`--port` 覆盖绕开这份共用配置。
+
+```powershell
+python.exe -m backend.app.dev_oidc_realm --sync-client
+```
 
 ## 4. 开四组进程
 
@@ -120,7 +127,7 @@ Set-Location frontend
 npm.cmd run dev
 ```
 
-访问 `http://127.0.0.1:5173/`。浏览器登录使用 OIDC Authorization Code + PKCE，API 验证签名、issuer、audience、期限，再检查项目/Case 的对象权限。`reviewer` 只是账号名称；项目权限以 owner/editor/viewer 成员关系为准。不要用无鉴权默认兼容模式对外演示。
+访问 `http://127.0.0.1:15173/`（如设置其他端口，以根 `.env` 的 `DOCUCHECK_WEB_PORT` 为准）。Windows 本机5173落在保留端口段，因此改用15173；Vite启用 `strictPort`，占用时直接失败，不自动漂移。浏览器登录使用 OIDC Authorization Code + PKCE，API 验证签名、issuer、audience、期限，再检查项目/Case 的对象权限。`reviewer` 只是账号名称；项目权限以 owner/editor/viewer 成员关系为准。不要用无鉴权默认兼容模式对外演示。
 
 启用 worker 后，点击问答会发送问题和必要证据片段到模型服务并可能计费。需要只回放历史时不要创建新 Run，保持 worker 停止即可。自签/企业 CA 问题应配置可信证书链，不能关闭 TLS 校验；本机专用证书辅助文件不在公开交付内。
 

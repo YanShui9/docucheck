@@ -1,5 +1,7 @@
 # DocuCheck
 
+> **实连第二部分A（2026-10-08）**：[本机端口与OIDC回调](docs/repair-local-login-2026-10-08.md)已修复，前端地址为 `http://127.0.0.1:15173/`，共用根.env端口、strictPort和既有客户端同步命令。最终后端定向14项、前端144项及构建通过；本轮全量1260 passed/41 skipped/网络0早于最后解析规则修正，最终修正另有定向回归。当前浏览器到达中文PKCE登录页，等待本机登录后继续业务页面验收；尚未调用模型或完成BGE/Milvus复验。
+
 > **实连验收第一部分（2026-10-08）**：[本轮交付](docs/repair-live-database-2026-10-08.md)记录批次并发写入/漏读修复、有限数据库死锁重试、独立MySQL **29 passed**及当前后端 **1248 passed / 41 skipped / 网络0**。后台4服务各118个Python文件已同步，API健康200/未登录401；本轮未调用模型。前端5173被Windows保留，后续先处理端口/登录回调，再做浏览器、真实模型和向量检索闭环。下方R13全仓扫描对应此前源码基线；本轮补充的是3个变更Python文件的定向扫描。
 
 > **R13 安全证据（2026-10-07）**：[当前扫描证据](docs/security/evidence/r13-final-2026-10-07.json)、[交付说明](docs/security/evidence/r13-delivery-2026-10-07.md) 和 [复现入口](ops/security/README.md) 提供工具/规则版本、源码清单/hash、实际覆盖、失败记录及具体处置。原 Mimosa 整文件豁免已移除，旧“0高危、15中危”口径已更正。扫描状态以证据中的 `complete/passed` 为准；实连和生产安全验收另行进行。下方第三组为本步之前的阶段记录。
@@ -201,7 +203,7 @@ docker compose --profile identity up -d keycloak
 # 在另一个终端的 frontend/ 目录：npm ci，然后 npm run dev
 ```
 
-演示账号密码只在本地 `.env` 中查看，不要提交。页面地址为 `http://127.0.0.1:5173/`。启用 worker 后，页面新提交的问答会调用 `.env` 配置的模型服务并可能计费；M4 验收使用隔离的本地脚本 Provider，没有发送 DeepSeek 请求。工作台选定有结构化核验格子的 Run 后，可点击“导出 JSON / 导出 XLSX”；历史或部分结果保留非正式标记。下载接口为 `GET /api/v1/agent-runs/{run_id}/export?format=json|xlsx`，需相同 Case 读取权限。完整无模型验收命令和演示顺序见 [M4-D 记录](docs/m4-d-export-delivery-2026-10-01.md)。
+演示账号密码只在本地 `.env` 中查看，不要提交。当前默认页面地址为 `http://127.0.0.1:15173/`（根 `.env` 的 `DOCUCHECK_WEB_PORT` 可覆盖；已有Keycloak按[启动说明](docs/reproduction.md)同步回调）。启用 worker 后，页面新提交的问答会调用 `.env` 配置的模型服务并可能计费；M4 验收使用隔离的本地脚本 Provider，没有发送 DeepSeek 请求。工作台选定有结构化核验格子的 Run 后，可点击“导出 JSON / 导出 XLSX”；历史或部分结果保留非正式标记。下载接口为 `GET /api/v1/agent-runs/{run_id}/export?format=json|xlsx`，需相同 Case 读取权限。完整无模型验收命令和演示顺序见 [M4-D 记录](docs/m4-d-export-delivery-2026-10-01.md)。
 
 仅停止 Run 自动处理可运行 `docker compose --profile agent stop dispatcher worker`；停止自动删除可运行 `docker compose --profile agent stop cleaner`。停止全部服务可运行 `docker compose --profile agent stop`，这些命令都保留数据库卷。
 

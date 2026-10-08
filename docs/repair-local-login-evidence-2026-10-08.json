@@ -1,0 +1,96 @@
+{
+  "kind": "repair_local_login_prerequisite",
+  "date": "2026-10-08",
+  "source_base_commit": "4d5e40432b110a590526158c1bc94efb48b30a74",
+  "source_sha256": {
+    ".env.example": "836a54a9ec45beb430e00805177eca7fc0d5b08313cd0cf05bb11a02703da7d1",
+    "backend/app/dev_oidc_realm.py": "ae94aad5de98d6f71f40bfa81da3d80f685445255f85cf7839e88736083fef62",
+    "backend/tests/test_dev_oidc_realm.py": "c7d34348254e4fc65bd1b5aea575395ec0d2b9376b14dccd1ac95e4745642d19",
+    "frontend/vite.config.ts": "1a219b340f91c351167bbcd4fff01f587b7eab2c0e693dae3d6b767e7ade0638",
+    "frontend/vite.config.test.ts": "24dfca0239b5223c75357d0af6afe3b1582664a5902504bb10b06fdbcd8231c6"
+  },
+  "raw_evidence_sha256": {
+    "data/verification/repair-local-login-live-2026-10-08.json": "58b6c04f3ec49f5c5e44f11e9f4021499a8f9a026fb28d9f3334c632171f468d",
+    "data/verification/repair-local-login-offline-2026-10-08.json": "006fe495f270061fb6400953732203313244029fc7925145c43902b2293aff21",
+    "data/verification/repair-local-login-frontend-2026-10-08.json": "cba1dc68d4fd280296c00aab84ed0a7cc6b9ecab25bd3877aff6f2c5778f4304"
+  },
+  "offline_initial_revision": {
+    "passed": 1260,
+    "skipped": 41,
+    "network_attempts": 0,
+    "note": "Started before final exact-root-file and no-interpolation parser correction; not full final-source coverage.",
+    "pip_check": true,
+    "ruff": true
+  },
+  "final_targeted_backend": {
+    "passed": 14,
+    "network_attempts": 0,
+    "ruff": true
+  },
+  "final_frontend": {
+    "passed": 144,
+    "test_files": 13,
+    "typecheck": true,
+    "build": true
+  },
+  "live": {
+    "redirect_15173_only": true,
+    "web_origin_15173_only": true,
+    "logout_15173_only": true,
+    "pkce_required": true,
+    "direct_password_grant_disabled": true,
+    "new_callback_accepted": {
+      "status": 200,
+      "passed": true
+    },
+    "old_callback_rejected": {
+      "status": 400,
+      "passed": true
+    },
+    "external_callback_rejected": {
+      "status": 400,
+      "passed": true
+    },
+    "missing_pkce_rejected": {
+      "status": 302,
+      "passed": true,
+      "error": [
+        "invalid_request"
+      ],
+      "authorization_code_issued": false
+    },
+    "frontend": {
+      "status": 200,
+      "passed": true
+    },
+    "live": {
+      "status": 200,
+      "passed": true
+    },
+    "ready": {
+      "status": 200,
+      "passed": true
+    },
+    "proxy_unauthenticated": {
+      "status": 401,
+      "passed": true
+    },
+    "bundle_contains_no_configured_secrets": true
+  },
+  "strict_port_live_second_start": {
+    "expected_exit_code": 1,
+    "observed_exit_code": 1,
+    "port": 15173
+  },
+  "independent_review": "Configuration-source drift fixed and re-reviewed; no additional material issue found.",
+  "model_calls": 0,
+  "embedding_calls": 0,
+  "docker_services_restarted": false,
+  "pending": [
+    "User login",
+    "Authenticated browser product flow and logout",
+    "Real model sample",
+    "BGE/Milvus sample"
+  ],
+  "security_scope": "Exact configured secret value check in frontend dist only; no new full repository scan claim."
+}
