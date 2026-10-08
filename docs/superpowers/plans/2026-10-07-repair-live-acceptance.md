@@ -41,6 +41,8 @@
 
 ## 三、交付
 
+2026-10-08第二部分I：核对五条failed索引均为三个Case当前资料、解析complete、target一致及项目owner成员范围后，调用既有schedule显式重试；Docker indexer五条均一次ready，11分块expected=ingested、原件hash一致。三个隔离诊断会话/Run通过真实MySQL清单、本机BGE、Milvus Strong及原文再读，历史generation不存在、未知供应商和终态Run访问拒绝。查询Embedding6次、DeepSeek0次，后台索引请求未独立计量；Outbox同事务标为已处理的测试事件，不触发业务worker。本步离线55项/网络0、MySQL并发1项、Ruff/pip通过；运维诊断不扩大为浏览器/模型回答验收。waiting_user保留，worker118文件比较仍有dynamic_repository.py一处既有差异，下一步统一部署。见[本步记录](../../repair-index-recovery-2026-10-08.md)。
+
 - [x] 第一部分记录本次证据、范围、未通过项及源码/服务版本，更新 CLAUDE.md、README.md 和路线图入口；第二部分另行补充。
 - [x] 第一部分对业务修复执行对应MySQL、离线和定向安全回归；第二部分如产生改动继续执行对应门禁。
 - [x] 第一部分核对 diff、敏感信息和工作区归属，纳入独立本地 Git 提交；实际提交号以日志及交付回复为准。第二部分完成后另行提交。远程仓库未配置，不声称已推送。

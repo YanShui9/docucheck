@@ -1,0 +1,811 @@
+{
+  "schema_version": 1,
+  "source_head": "1f82211",
+  "date": "2026-10-08",
+  "status": "five_failed_indexes_recovered_mysql_bge_milvus_retrieval_passed",
+  "application_code_changed": false,
+  "operator_recovery": true,
+  "oidc_http_acceptance": false,
+  "target": {
+    "embedding_revision": "ollama-bge-m3-7907646426070047a77226ac3e684fbbe8410524f7b4a74d02837e43f2146bab-normalized-v1",
+    "dimension": 1024,
+    "chunk_schema": "source-offsets-v1-1600-180",
+    "store_schema": "original-chunks-v2"
+  },
+  "collection": "docucheck_rag_05de1cde3ec75c42d72ce96237847307",
+  "jobs": [
+    {
+      "document_id": "708998db3b864284bbdd26983a7fb62b",
+      "case_id": "832da6f4a512476c86a2cfc79a7fe30e",
+      "snapshot_id": "8fae8096390d4e53b69936cf3094a91c",
+      "revision": 2,
+      "before": {
+        "status": "failed",
+        "fence": 3,
+        "attempts": 3,
+        "error_code": "index_service_unavailable",
+        "manifest_id": "a170895fd791b8cd89efd5a282cf1603c7dd04f26b7019285f1189b0cb9d3d7f",
+        "generation": "a2eabb2f341b44d293159e673d5008d6"
+      },
+      "after": {
+        "status": "ready",
+        "fence": 5,
+        "attempts": 1,
+        "error_code": null,
+        "manifest_id": "d9318d072c71a368bc54ddca12d8bc8561ec4433bef66c7858c2fbbefbfc4dc2",
+        "generation": "cbb18aa6db4d45d5b15f2355b9cd50d6",
+        "expected_count": 4,
+        "ingested_count": 4
+      }
+    },
+    {
+      "document_id": "fce8ef4e6bb243c48571fd3524508ad1",
+      "case_id": "832da6f4a512476c86a2cfc79a7fe30e",
+      "snapshot_id": "8fae8096390d4e53b69936cf3094a91c",
+      "revision": 2,
+      "before": {
+        "status": "failed",
+        "fence": 3,
+        "attempts": 3,
+        "error_code": "index_service_unavailable",
+        "manifest_id": "a070bd9f9a088ad98bc6564437f2e81d03daebe34f831f5011393f137a93bd58",
+        "generation": "72e2eeb2665d4a8a9dce61215b52ccb8"
+      },
+      "after": {
+        "status": "ready",
+        "fence": 5,
+        "attempts": 1,
+        "error_code": null,
+        "manifest_id": "bd1286e621be41ce654cf2bfc5cd45a787f8113a1eb3bca8c070ef515e29659d",
+        "generation": "30d38b0da7984063beb54b0455182f17",
+        "expected_count": 4,
+        "ingested_count": 4
+      }
+    },
+    {
+      "document_id": "1f2ebb7ffe6445c3a5b0a5c85d87c38b",
+      "case_id": "94e5b74b1f6947c4b07a0b87f732e037",
+      "snapshot_id": "d8834516a3ba45ca9824240efce2c1b5",
+      "revision": 1,
+      "before": {
+        "status": "failed",
+        "fence": 3,
+        "attempts": 3,
+        "error_code": "index_service_unavailable",
+        "manifest_id": "df694c22ad7432809c3fadb756025ba4ebe9da32953f2f01a8cbb50922967d0f",
+        "generation": "f8bc7f0a39b348c5822ff53872a18b35"
+      },
+      "after": {
+        "status": "ready",
+        "fence": 5,
+        "attempts": 1,
+        "error_code": null,
+        "manifest_id": "7e19e16247b598d481aea52a9d875456b2135957680dbad634810d53d2e30d73",
+        "generation": "e78f79559e92446cb1c6aab35a7af8c9",
+        "expected_count": 1,
+        "ingested_count": 1
+      }
+    },
+    {
+      "document_id": "47a2e160023c4071bd48ebc9704dcbfa",
+      "case_id": "c4fbfe1f45814d0db5cfbec8b4de6365",
+      "snapshot_id": "6ad15b4f412b47d786d9dd223f2e8602",
+      "revision": 2,
+      "before": {
+        "status": "failed",
+        "fence": 3,
+        "attempts": 3,
+        "error_code": "index_service_unavailable",
+        "manifest_id": "efb19e0d6be6e7198d96d8981b0fe2346521ac109f1a95712df74a52ca5c24c9",
+        "generation": "2c5f77e23c14425c871c0ceafae6773b"
+      },
+      "after": {
+        "status": "ready",
+        "fence": 5,
+        "attempts": 1,
+        "error_code": null,
+        "manifest_id": "7c91c9ca4f698062f748005c7f1388f4dd754554123f83369fed4d8a07ecffb3",
+        "generation": "5c9f3fddb2db48f2858294a91606d2ca",
+        "expected_count": 1,
+        "ingested_count": 1
+      }
+    },
+    {
+      "document_id": "b40fbe0abfdd4e17b7089f983f95b212",
+      "case_id": "c4fbfe1f45814d0db5cfbec8b4de6365",
+      "snapshot_id": "6ad15b4f412b47d786d9dd223f2e8602",
+      "revision": 2,
+      "before": {
+        "status": "failed",
+        "fence": 3,
+        "attempts": 3,
+        "error_code": "index_service_unavailable",
+        "manifest_id": "32363fe7c01c2a9694af01f836577919062f287c33039a51715671b0271dcbc3",
+        "generation": "f92465fccce545b8b1d496e70ab09e8e"
+      },
+      "after": {
+        "status": "ready",
+        "fence": 5,
+        "attempts": 1,
+        "error_code": null,
+        "manifest_id": "b648a1885df30eb4be7f64db5e95e90b06f0713419328283dfce7630cd7f34c4",
+        "generation": "9c31e39dc57b4327b23558fb973d1ded",
+        "expected_count": 1,
+        "ingested_count": 1
+      }
+    }
+  ],
+  "ingested_chunks": 11,
+  "retrieval": {
+    "started_at": "2026-10-08T10:25:20.656508+00:00",
+    "database": "mysql",
+    "operator_diagnostic": true,
+    "browser_oidc_test": false,
+    "deepseek_requests": 0,
+    "cases": [
+      {
+        "case_id": "832da6f4a512476c86a2cfc79a7fe30e",
+        "snapshot_id": "8fae8096390d4e53b69936cf3094a91c",
+        "run_id": "88564daedfc04486a79351c23d547bc9",
+        "conversation_id": "e07af3d92632406bba36bdd492966abd",
+        "checks": [
+          {
+            "query": "采购报价里明确给出的数量、单价和规格是什么？",
+            "diagnostics": {
+              "retrieval_mode": "hybrid",
+              "degraded_reason": null,
+              "complete_coverage": false,
+              "rrf_k": 60,
+              "bm25_candidates": 8,
+              "dense_candidates": 8
+            },
+            "hit_count": 8,
+            "sources": [
+              {
+                "document_id": "708998db3b864284bbdd26983a7fb62b",
+                "evidence_id": "36ce49d275d9c5e5959b9e2f8b1ed7718f10af276aa2d5fb556d67202ee7f913",
+                "sheet": "采购资料",
+                "cell": "A1",
+                "text_sha256": "8e97b26dd6a4d49b8221092c2424d22a4f47f69edf48add57e98f8e4b316f645"
+              },
+              {
+                "document_id": "708998db3b864284bbdd26983a7fb62b",
+                "evidence_id": "b59afa928d93eec62b585f5007ddf26f3d1bc701642d0af9a647e885df9baab2",
+                "sheet": "采购资料",
+                "cell": "A3",
+                "text_sha256": "50537dab76505dfc66dc78411b238de0f51d3d3a9ccfd7a8f133d46c484acbf3"
+              },
+              {
+                "document_id": "708998db3b864284bbdd26983a7fb62b",
+                "evidence_id": "594da528c9a54d01e43f6a561dfe3f639bd328749310ca5c6238bba690263c63",
+                "sheet": "采购资料",
+                "cell": "B3",
+                "text_sha256": "0388491a3039c0331d00b0296a1b2dc15069d1ddc7b1f37adb6c3fd8917f9d73"
+              },
+              {
+                "document_id": "708998db3b864284bbdd26983a7fb62b",
+                "evidence_id": "96ee855b1abdf82a35807840254172171fd7ba503759bc977253cda2a5c2dfba",
+                "sheet": "采购资料",
+                "cell": "C3",
+                "text_sha256": "57178877f2ee24104847cbb7887b3b6a134ce69c118b04f61e99cd617020d751"
+              },
+              {
+                "document_id": "fce8ef4e6bb243c48571fd3524508ad1",
+                "evidence_id": "e63d558388510965ac8180b21559cd692899898979df2ea7d28e77cb5f0af406",
+                "sheet": "采购资料",
+                "cell": "A1",
+                "text_sha256": "123dc533c9c4952ebd7de7bae6be45f035fe5e1c0dbe71715a0a3c04d4b84207"
+              },
+              {
+                "document_id": "fce8ef4e6bb243c48571fd3524508ad1",
+                "evidence_id": "5efab980e67714a8d432030650a65207f379c7c688ece3bd60e1a385f814652a",
+                "sheet": "采购资料",
+                "cell": "A3",
+                "text_sha256": "50537dab76505dfc66dc78411b238de0f51d3d3a9ccfd7a8f133d46c484acbf3"
+              },
+              {
+                "document_id": "fce8ef4e6bb243c48571fd3524508ad1",
+                "evidence_id": "cafff75454c9b1d218381bd5b62eee75c485163a6f9c06a9397e71d058616d1d",
+                "sheet": "采购资料",
+                "cell": "B3",
+                "text_sha256": "0388491a3039c0331d00b0296a1b2dc15069d1ddc7b1f37adb6c3fd8917f9d73"
+              },
+              {
+                "document_id": "fce8ef4e6bb243c48571fd3524508ad1",
+                "evidence_id": "ab82c63befc4d6b417be0f996aa35dba7076a58131b55404c945d86f9bf8f739",
+                "sheet": "采购资料",
+                "cell": "C3",
+                "text_sha256": "e1de0deec47c716f23580579ebe4ff7992a987b1e21db0cb7ad6cc4e659d1090"
+              },
+              {
+                "document_id": "708998db3b864284bbdd26983a7fb62b",
+                "evidence_id": "560e00a3baeec17b171b79483c1cfa4c848a2e07e4f7b8d9dfb33e038d5625bb",
+                "sheet": "采购资料",
+                "cell": "A2",
+                "text_sha256": "d6d536a70b2ad9fdc69874efbef579cbe466640c67eb53f51f601e522eaaccc5"
+              },
+              {
+                "document_id": "708998db3b864284bbdd26983a7fb62b",
+                "evidence_id": "70860b04bb95add022bf4173073b6056078d236ba444170beea3e84c6bb332b9",
+                "sheet": "采购资料",
+                "cell": "B2",
+                "text_sha256": "b87e67c7dae039910f79b50feeae0daee49f29066618cf35637550c34f5a625e"
+              },
+              {
+                "document_id": "708998db3b864284bbdd26983a7fb62b",
+                "evidence_id": "d76924be14d181b20dce722ba3ce705a2972e6c060d317971351b0a2de9cc84c",
+                "sheet": "采购资料",
+                "cell": "C2",
+                "text_sha256": "a2335f3879b766e8ae45ece631da26cc027e38a5ed4767de875682264f2fefbf"
+              },
+              {
+                "document_id": "fce8ef4e6bb243c48571fd3524508ad1",
+                "evidence_id": "54cdb3789c9121ba47835a796911ffe7f995b9ceb4a537a3be501f886eedf081",
+                "sheet": "采购资料",
+                "cell": "A2",
+                "text_sha256": "d6d536a70b2ad9fdc69874efbef579cbe466640c67eb53f51f601e522eaaccc5"
+              },
+              {
+                "document_id": "fce8ef4e6bb243c48571fd3524508ad1",
+                "evidence_id": "99bf0817f1e653e3dc654723cd0f45dad0c85880af8a77109a2094dd6f3f37c0",
+                "sheet": "采购资料",
+                "cell": "B2",
+                "text_sha256": "b87e67c7dae039910f79b50feeae0daee49f29066618cf35637550c34f5a625e"
+              },
+              {
+                "document_id": "fce8ef4e6bb243c48571fd3524508ad1",
+                "evidence_id": "100427510fb2745e44f39b143f3e5cb70574f8ef02253ff829044910a60a67b4",
+                "sheet": "采购资料",
+                "cell": "C2",
+                "text_sha256": "268d6546e069788a475b3d6b81b715ceaccad12ec247db36782dda06f35a9922"
+              },
+              {
+                "document_id": "708998db3b864284bbdd26983a7fb62b",
+                "evidence_id": "a957a13449a073e0d63bc6498b9fb1a53970af7dffc3b02d4af481a075edaebe",
+                "sheet": "采购资料",
+                "cell": "A4",
+                "text_sha256": "50537dab76505dfc66dc78411b238de0f51d3d3a9ccfd7a8f133d46c484acbf3"
+              },
+              {
+                "document_id": "708998db3b864284bbdd26983a7fb62b",
+                "evidence_id": "4bf858a73368b10209c92ef453242bfa8c3c2b27a2f4e6c9ba4ca59a14ed466e",
+                "sheet": "采购资料",
+                "cell": "B4",
+                "text_sha256": "b1c9b1474367eab89afcf3e94160bc03532168d83e43c806704d1e50223708aa"
+              },
+              {
+                "document_id": "708998db3b864284bbdd26983a7fb62b",
+                "evidence_id": "a77b1d10d9384e0741329799d1aa0bec69dd122d9306a8e862ca4da10e5a1964",
+                "sheet": "采购资料",
+                "cell": "C4",
+                "text_sha256": "8997b1928eb05265d628ff9427186eec0d9aa9313722065bdd128144e97d556b"
+              },
+              {
+                "document_id": "fce8ef4e6bb243c48571fd3524508ad1",
+                "evidence_id": "7ea5643ead9cd5a9cd4b7d01f5e8fca4448fafe69d29b2ed86f707e1fbbfc4e8",
+                "sheet": "采购资料",
+                "cell": "A4",
+                "text_sha256": "50537dab76505dfc66dc78411b238de0f51d3d3a9ccfd7a8f133d46c484acbf3"
+              },
+              {
+                "document_id": "fce8ef4e6bb243c48571fd3524508ad1",
+                "evidence_id": "dff867778906a205f5c17321bfba2b79ce4e98d21d76ea616883de726ae3f189",
+                "sheet": "采购资料",
+                "cell": "B4",
+                "text_sha256": "b1c9b1474367eab89afcf3e94160bc03532168d83e43c806704d1e50223708aa"
+              },
+              {
+                "document_id": "fce8ef4e6bb243c48571fd3524508ad1",
+                "evidence_id": "610a6f50066b4a87e0f45a921822b733f3c120c0dac4371173892aae7292ec78",
+                "sheet": "采购资料",
+                "cell": "C4",
+                "text_sha256": "8040e7f30cc74bd322b49145a583784776a5596508896c95fcac9f099a804c16"
+              }
+            ]
+          },
+          {
+            "query": "资料有没有明确写防水认证？",
+            "diagnostics": {
+              "retrieval_mode": "hybrid",
+              "degraded_reason": null,
+              "complete_coverage": false,
+              "rrf_k": 60,
+              "bm25_candidates": 0,
+              "dense_candidates": 8
+            },
+            "hit_count": 8,
+            "sources": [
+              {
+                "document_id": "fce8ef4e6bb243c48571fd3524508ad1",
+                "evidence_id": "e63d558388510965ac8180b21559cd692899898979df2ea7d28e77cb5f0af406",
+                "sheet": "采购资料",
+                "cell": "A1",
+                "text_sha256": "123dc533c9c4952ebd7de7bae6be45f035fe5e1c0dbe71715a0a3c04d4b84207"
+              },
+              {
+                "document_id": "fce8ef4e6bb243c48571fd3524508ad1",
+                "evidence_id": "54cdb3789c9121ba47835a796911ffe7f995b9ceb4a537a3be501f886eedf081",
+                "sheet": "采购资料",
+                "cell": "A2",
+                "text_sha256": "d6d536a70b2ad9fdc69874efbef579cbe466640c67eb53f51f601e522eaaccc5"
+              },
+              {
+                "document_id": "fce8ef4e6bb243c48571fd3524508ad1",
+                "evidence_id": "99bf0817f1e653e3dc654723cd0f45dad0c85880af8a77109a2094dd6f3f37c0",
+                "sheet": "采购资料",
+                "cell": "B2",
+                "text_sha256": "b87e67c7dae039910f79b50feeae0daee49f29066618cf35637550c34f5a625e"
+              },
+              {
+                "document_id": "fce8ef4e6bb243c48571fd3524508ad1",
+                "evidence_id": "100427510fb2745e44f39b143f3e5cb70574f8ef02253ff829044910a60a67b4",
+                "sheet": "采购资料",
+                "cell": "C2",
+                "text_sha256": "268d6546e069788a475b3d6b81b715ceaccad12ec247db36782dda06f35a9922"
+              },
+              {
+                "document_id": "708998db3b864284bbdd26983a7fb62b",
+                "evidence_id": "36ce49d275d9c5e5959b9e2f8b1ed7718f10af276aa2d5fb556d67202ee7f913",
+                "sheet": "采购资料",
+                "cell": "A1",
+                "text_sha256": "8e97b26dd6a4d49b8221092c2424d22a4f47f69edf48add57e98f8e4b316f645"
+              },
+              {
+                "document_id": "708998db3b864284bbdd26983a7fb62b",
+                "evidence_id": "560e00a3baeec17b171b79483c1cfa4c848a2e07e4f7b8d9dfb33e038d5625bb",
+                "sheet": "采购资料",
+                "cell": "A2",
+                "text_sha256": "d6d536a70b2ad9fdc69874efbef579cbe466640c67eb53f51f601e522eaaccc5"
+              },
+              {
+                "document_id": "708998db3b864284bbdd26983a7fb62b",
+                "evidence_id": "70860b04bb95add022bf4173073b6056078d236ba444170beea3e84c6bb332b9",
+                "sheet": "采购资料",
+                "cell": "B2",
+                "text_sha256": "b87e67c7dae039910f79b50feeae0daee49f29066618cf35637550c34f5a625e"
+              },
+              {
+                "document_id": "708998db3b864284bbdd26983a7fb62b",
+                "evidence_id": "d76924be14d181b20dce722ba3ce705a2972e6c060d317971351b0a2de9cc84c",
+                "sheet": "采购资料",
+                "cell": "C2",
+                "text_sha256": "a2335f3879b766e8ae45ece631da26cc027e38a5ed4767de875682264f2fefbf"
+              },
+              {
+                "document_id": "fce8ef4e6bb243c48571fd3524508ad1",
+                "evidence_id": "5efab980e67714a8d432030650a65207f379c7c688ece3bd60e1a385f814652a",
+                "sheet": "采购资料",
+                "cell": "A3",
+                "text_sha256": "50537dab76505dfc66dc78411b238de0f51d3d3a9ccfd7a8f133d46c484acbf3"
+              },
+              {
+                "document_id": "fce8ef4e6bb243c48571fd3524508ad1",
+                "evidence_id": "cafff75454c9b1d218381bd5b62eee75c485163a6f9c06a9397e71d058616d1d",
+                "sheet": "采购资料",
+                "cell": "B3",
+                "text_sha256": "0388491a3039c0331d00b0296a1b2dc15069d1ddc7b1f37adb6c3fd8917f9d73"
+              },
+              {
+                "document_id": "fce8ef4e6bb243c48571fd3524508ad1",
+                "evidence_id": "ab82c63befc4d6b417be0f996aa35dba7076a58131b55404c945d86f9bf8f739",
+                "sheet": "采购资料",
+                "cell": "C3",
+                "text_sha256": "e1de0deec47c716f23580579ebe4ff7992a987b1e21db0cb7ad6cc4e659d1090"
+              },
+              {
+                "document_id": "708998db3b864284bbdd26983a7fb62b",
+                "evidence_id": "b59afa928d93eec62b585f5007ddf26f3d1bc701642d0af9a647e885df9baab2",
+                "sheet": "采购资料",
+                "cell": "A3",
+                "text_sha256": "50537dab76505dfc66dc78411b238de0f51d3d3a9ccfd7a8f133d46c484acbf3"
+              },
+              {
+                "document_id": "708998db3b864284bbdd26983a7fb62b",
+                "evidence_id": "594da528c9a54d01e43f6a561dfe3f639bd328749310ca5c6238bba690263c63",
+                "sheet": "采购资料",
+                "cell": "B3",
+                "text_sha256": "0388491a3039c0331d00b0296a1b2dc15069d1ddc7b1f37adb6c3fd8917f9d73"
+              },
+              {
+                "document_id": "708998db3b864284bbdd26983a7fb62b",
+                "evidence_id": "96ee855b1abdf82a35807840254172171fd7ba503759bc977253cda2a5c2dfba",
+                "sheet": "采购资料",
+                "cell": "C3",
+                "text_sha256": "57178877f2ee24104847cbb7887b3b6a134ce69c118b04f61e99cd617020d751"
+              },
+              {
+                "document_id": "fce8ef4e6bb243c48571fd3524508ad1",
+                "evidence_id": "7ea5643ead9cd5a9cd4b7d01f5e8fca4448fafe69d29b2ed86f707e1fbbfc4e8",
+                "sheet": "采购资料",
+                "cell": "A4",
+                "text_sha256": "50537dab76505dfc66dc78411b238de0f51d3d3a9ccfd7a8f133d46c484acbf3"
+              },
+              {
+                "document_id": "fce8ef4e6bb243c48571fd3524508ad1",
+                "evidence_id": "dff867778906a205f5c17321bfba2b79ce4e98d21d76ea616883de726ae3f189",
+                "sheet": "采购资料",
+                "cell": "B4",
+                "text_sha256": "b1c9b1474367eab89afcf3e94160bc03532168d83e43c806704d1e50223708aa"
+              },
+              {
+                "document_id": "fce8ef4e6bb243c48571fd3524508ad1",
+                "evidence_id": "610a6f50066b4a87e0f45a921822b733f3c120c0dac4371173892aae7292ec78",
+                "sheet": "采购资料",
+                "cell": "C4",
+                "text_sha256": "8040e7f30cc74bd322b49145a583784776a5596508896c95fcac9f099a804c16"
+              },
+              {
+                "document_id": "708998db3b864284bbdd26983a7fb62b",
+                "evidence_id": "a957a13449a073e0d63bc6498b9fb1a53970af7dffc3b02d4af481a075edaebe",
+                "sheet": "采购资料",
+                "cell": "A4",
+                "text_sha256": "50537dab76505dfc66dc78411b238de0f51d3d3a9ccfd7a8f133d46c484acbf3"
+              },
+              {
+                "document_id": "708998db3b864284bbdd26983a7fb62b",
+                "evidence_id": "4bf858a73368b10209c92ef453242bfa8c3c2b27a2f4e6c9ba4ca59a14ed466e",
+                "sheet": "采购资料",
+                "cell": "B4",
+                "text_sha256": "b1c9b1474367eab89afcf3e94160bc03532168d83e43c806704d1e50223708aa"
+              },
+              {
+                "document_id": "708998db3b864284bbdd26983a7fb62b",
+                "evidence_id": "a77b1d10d9384e0741329799d1aa0bec69dd122d9306a8e862ca4da10e5a1964",
+                "sheet": "采购资料",
+                "cell": "C4",
+                "text_sha256": "8997b1928eb05265d628ff9427186eec0d9aa9313722065bdd128144e97d556b"
+              }
+            ]
+          }
+        ],
+        "retired_manifests_absent": [
+          "17636c6f3fbb66d771ce0632226b9f2533f07363322a71c265d18edb464a4e32",
+          "1f308120f144dccd0bb93efe064b3ec244d664c98de97ff3a4e0a84574265886",
+          "a170895fd791b8cd89efd5a282cf1603c7dd04f26b7019285f1189b0cb9d3d7f",
+          "2f9db86225a629fc961ac0c205f2123e10401a15973c6b7e36c184d4340d3425",
+          "a070bd9f9a088ad98bc6564437f2e81d03daebe34f831f5011393f137a93bd58",
+          "f9a332bac26eb0370e03fbfeffb8c4a435bb0a4001f023c09a04db038d0744ff"
+        ],
+        "unknown_supplier_error": "supplier_scope",
+        "embedding_requests": 2,
+        "terminal_access_error": "source_access_changed",
+        "dispatch_suppressed_atomically": true
+      },
+      {
+        "case_id": "94e5b74b1f6947c4b07a0b87f732e037",
+        "snapshot_id": "d8834516a3ba45ca9824240efce2c1b5",
+        "run_id": "2f66f0384d9247ae92452297e69dbf6f",
+        "conversation_id": "06f59aa6e11b4d09b0124257cb18d03c",
+        "checks": [
+          {
+            "query": "采购报价里明确给出的数量、单价和规格是什么？",
+            "diagnostics": {
+              "retrieval_mode": "hybrid",
+              "degraded_reason": null,
+              "complete_coverage": false,
+              "rrf_k": 60,
+              "bm25_candidates": 1,
+              "dense_candidates": 1
+            },
+            "hit_count": 1,
+            "sources": [
+              {
+                "document_id": "1f2ebb7ffe6445c3a5b0a5c85d87c38b",
+                "evidence_id": "ccfa57750b11c39d94427cb204250255ed35478662e0ae4296cde5faa1b75504",
+                "sheet": "报价",
+                "cell": "A1",
+                "text_sha256": "f0254b112ac3deed978d3c08cdfe4d2fdc04037dd0cdb1416fffe32414555262"
+              }
+            ]
+          },
+          {
+            "query": "资料有没有明确写防水认证？",
+            "diagnostics": {
+              "retrieval_mode": "hybrid",
+              "degraded_reason": null,
+              "complete_coverage": false,
+              "rrf_k": 60,
+              "bm25_candidates": 0,
+              "dense_candidates": 1
+            },
+            "hit_count": 1,
+            "sources": [
+              {
+                "document_id": "1f2ebb7ffe6445c3a5b0a5c85d87c38b",
+                "evidence_id": "ccfa57750b11c39d94427cb204250255ed35478662e0ae4296cde5faa1b75504",
+                "sheet": "报价",
+                "cell": "A1",
+                "text_sha256": "f0254b112ac3deed978d3c08cdfe4d2fdc04037dd0cdb1416fffe32414555262"
+              }
+            ]
+          }
+        ],
+        "retired_manifests_absent": [
+          "7a93c32405534ab5270a1d8fbf1fbb631f175c50611b46e11d8207840148fdd7",
+          "896d8296431269f67e3038171f8f063ce8fd2cd19c0e4ba3f47fd09f0acddcfd",
+          "df694c22ad7432809c3fadb756025ba4ebe9da32953f2f01a8cbb50922967d0f"
+        ],
+        "unknown_supplier_error": "supplier_scope",
+        "embedding_requests": 2,
+        "terminal_access_error": "source_access_changed",
+        "dispatch_suppressed_atomically": true
+      },
+      {
+        "case_id": "c4fbfe1f45814d0db5cfbec8b4de6365",
+        "snapshot_id": "6ad15b4f412b47d786d9dd223f2e8602",
+        "run_id": "65daeae2f539491d85ea636934eb072f",
+        "conversation_id": "cce44f9114fa455dad21b46731f1a84a",
+        "checks": [
+          {
+            "query": "采购报价里明确给出的数量、单价和规格是什么？",
+            "diagnostics": {
+              "retrieval_mode": "hybrid",
+              "degraded_reason": null,
+              "complete_coverage": false,
+              "rrf_k": 60,
+              "bm25_candidates": 2,
+              "dense_candidates": 2
+            },
+            "hit_count": 2,
+            "sources": [
+              {
+                "document_id": "47a2e160023c4071bd48ebc9704dcbfa",
+                "evidence_id": "7e290daeae06144c1f57d4c82959088b8e9e52c4d36beb38dcedcbfb3ae279d7",
+                "sheet": "修正验收",
+                "cell": "A1",
+                "text_sha256": "65ed6e3edac57af66b98db2e42467634c1c6e897be35207ae8347cc9c5f25a05"
+              },
+              {
+                "document_id": "b40fbe0abfdd4e17b7089f983f95b212",
+                "evidence_id": "1bbb336168a4abf7ebc31e603cbfea2e35eda7920873ffb39607f4b3bf58b2b9",
+                "sheet": "修正验收",
+                "cell": "A1",
+                "text_sha256": "5adf43fbb02b5fc0f8334b062c8cd870f7db918338495375e961890904b3a1ed"
+              }
+            ]
+          },
+          {
+            "query": "资料有没有明确写防水认证？",
+            "diagnostics": {
+              "retrieval_mode": "hybrid",
+              "degraded_reason": null,
+              "complete_coverage": false,
+              "rrf_k": 60,
+              "bm25_candidates": 0,
+              "dense_candidates": 2
+            },
+            "hit_count": 2,
+            "sources": [
+              {
+                "document_id": "47a2e160023c4071bd48ebc9704dcbfa",
+                "evidence_id": "7e290daeae06144c1f57d4c82959088b8e9e52c4d36beb38dcedcbfb3ae279d7",
+                "sheet": "修正验收",
+                "cell": "A1",
+                "text_sha256": "65ed6e3edac57af66b98db2e42467634c1c6e897be35207ae8347cc9c5f25a05"
+              },
+              {
+                "document_id": "b40fbe0abfdd4e17b7089f983f95b212",
+                "evidence_id": "1bbb336168a4abf7ebc31e603cbfea2e35eda7920873ffb39607f4b3bf58b2b9",
+                "sheet": "修正验收",
+                "cell": "A1",
+                "text_sha256": "5adf43fbb02b5fc0f8334b062c8cd870f7db918338495375e961890904b3a1ed"
+              }
+            ]
+          }
+        ],
+        "retired_manifests_absent": [
+          "0ad1a84593002c5d19a45d758a0d717acf6d4a70639da114f5bf636afa0e3991",
+          "636b6e2b3d984a11700982d8c541c93fa1a27024564331dd4448617389c02b0a",
+          "efb19e0d6be6e7198d96d8981b0fe2346521ac109f1a95712df74a52ca5c24c9",
+          "32363fe7c01c2a9694af01f836577919062f287c33039a51715671b0271dcbc3",
+          "4c9c5032e74fef2aa66b4c2fe1e9922928fb661acc2b2fab50ab53c293ae824f",
+          "a5bebe59653169d982f511641b1ee468bd9338a6b8e50e8d8d1846256ffe6918"
+        ],
+        "unknown_supplier_error": "supplier_scope",
+        "embedding_requests": 2,
+        "terminal_access_error": "source_access_changed",
+        "dispatch_suppressed_atomically": true
+      }
+    ],
+    "completed_at": "2026-10-08T10:25:28.131477+00:00",
+    "passed": true,
+    "embedding_requests": 6,
+    "external_network_attempts": 0,
+    "existing_active_runs_preserved": true
+  },
+  "runtime": {
+    "captured_at": "2026-10-08T10:28:52.840083+00:00",
+    "sources": [
+      {
+        "document_id": "1f2ebb7ffe6445c3a5b0a5c85d87c38b",
+        "sha256": "1200dedaedb7db8ccac6f7e1b83278e2a0455f487be0634ad4b7e3829e3879d6",
+        "unchanged": true,
+        "chunks": 1,
+        "fence": 5,
+        "attempts": 1
+      },
+      {
+        "document_id": "47a2e160023c4071bd48ebc9704dcbfa",
+        "sha256": "9302ba43de372ffaed0796dc86282c3a6a0aaa4b701654eea5779435e196e14a",
+        "unchanged": true,
+        "chunks": 1,
+        "fence": 5,
+        "attempts": 1
+      },
+      {
+        "document_id": "708998db3b864284bbdd26983a7fb62b",
+        "sha256": "4cc07d6aa8132524fc63923fb776153e21f56e96bb94a24ac5e58b3116284793",
+        "unchanged": true,
+        "chunks": 4,
+        "fence": 5,
+        "attempts": 1
+      },
+      {
+        "document_id": "b40fbe0abfdd4e17b7089f983f95b212",
+        "sha256": "5e7aa1757459d470db48981bc85b36308653bea157c4bde9bc0253508086fb33",
+        "unchanged": true,
+        "chunks": 1,
+        "fence": 5,
+        "attempts": 1
+      },
+      {
+        "document_id": "fce8ef4e6bb243c48571fd3524508ad1",
+        "sha256": "9dae8d0cd714e9008dc1a9404b8414829bc061ae69c23667c70cfa5c2391bb98",
+        "unchanged": true,
+        "chunks": 4,
+        "fence": 5,
+        "attempts": 1
+      }
+    ],
+    "services": {
+      "docucheck-indexer-1": {
+        "running": true,
+        "started_at": "2026-10-08T00:02:42.102422409Z",
+        "health": "healthy"
+      },
+      "docucheck-worker-1": {
+        "running": true,
+        "started_at": "2026-10-08T07:11:19.953759336Z",
+        "health": "healthy"
+      },
+      "docucheck-mysql-1": {
+        "running": true,
+        "started_at": "2026-10-07T23:56:07.150528673Z",
+        "health": "healthy"
+      },
+      "docucheck-vector-milvus-1": {
+        "running": true,
+        "started_at": "2026-10-08T10:07:16.065313848Z",
+        "health": "healthy"
+      },
+      "docucheck-vector-etcd-1": {
+        "running": true,
+        "started_at": "2026-10-08T10:07:10.358821548Z",
+        "health": "healthy"
+      }
+    },
+    "http_statuses": {
+      "/health/live": 200,
+      "/health/ready": 200,
+      "/api/v1/me": 401
+    },
+    "worker_source_drift": [
+      "backend/app/db/dynamic_repository.py"
+    ],
+    "worker_files_compared": 118,
+    "source_comparison": "UTF-8 universal newline normalization; raw input-file hashes remain byte exact"
+  },
+  "verification": [
+    {
+      "name": "targeted_offline",
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "backend/tests/test_index_repository.py",
+        "backend/tests/test_index_worker.py",
+        "backend/tests/test_persisted_retrieval.py",
+        "backend/tests/test_persisted_hybrid_agent.py",
+        "backend/tests/test_hybrid_retrieval.py",
+        "backend/tests/test_outbox_repository.py",
+        "backend/tests/test_outbox_dispatcher.py",
+        "backend/tests/test_workspace_access.py",
+        "-q",
+        "-p",
+        "scripts.offline_guard"
+      ],
+      "exit_code": 0,
+      "seconds": 15.703,
+      "output": ".......................................................                  [100%]\noffline_network_attempts=0\n\n55 passed in 14.54s\n"
+    },
+    {
+      "name": "mysql_index_race",
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "backend/tests/test_index_repository_mysql.py",
+        "-q"
+      ],
+      "exit_code": 0,
+      "seconds": 2.328,
+      "output": ".                                                                        [100%]\n1 passed in 1.70s\n"
+    },
+    {
+      "name": "ruff",
+      "command": [
+        "python",
+        "-m",
+        "ruff",
+        "check",
+        "backend",
+        "evals",
+        "scripts"
+      ],
+      "exit_code": 0,
+      "seconds": 0.219,
+      "output": "All checks passed!\n"
+    },
+    {
+      "name": "dependencies",
+      "command": [
+        "python",
+        "-m",
+        "pip",
+        "check"
+      ],
+      "exit_code": 0,
+      "seconds": 0.656,
+      "output": "No broken requirements found.\n"
+    }
+  ],
+  "embedding_requests_query_diagnostic": 6,
+  "embedding_requests_background_indexing": null,
+  "generative_model_requests": 0,
+  "external_network_attempts_diagnostic": 0,
+  "existing_active_runs": [
+    {
+      "id": "d2afc28c48d547688e72d1864947cb5f",
+      "case_id": "2aceaf5ff6c84e1db95a69fe30f4342c",
+      "status": "waiting_user"
+    }
+  ],
+  "boundaries": [
+    "operator recovery uses owner membership resource guard; not a fresh OIDC login test",
+    "real Docker indexer performed writes; new host-side diagnostic Runs read production retrieval directly",
+    "diagnostic Outbox atomically suppressed; no worker LLM answer or browser chat exercised",
+    "all queries complete_coverage=false; no-answer query is not a refusal accuracy test",
+    "background indexer Embedding count not measured; six counts only diagnostic queries",
+    "raw runtime-final.json and runtime-final-normalized.json used an empty wrong-root inventory; superseded by runtime-verified.json",
+    "one existing worker source drift remains for next deployment step"
+  ],
+  "evidence_sha256": {
+    "E:/PycharmProjects/docucheck/data/verification/index-recovery-live-2026-10-08/inspection.json": "fdfd7e6370a7eeb76bdfcc4f0da8bd7b312cd6d422a116189669aad4ae21448f",
+    "E:/PycharmProjects/docucheck/data/verification/index-recovery-live-2026-10-08/scheduled.json": "3e79f951f3d43610a3b4cb91b50fdb28a71a06bfcf5081486e1757a5ca80a7e6",
+    "E:/PycharmProjects/docucheck/data/verification/index-recovery-live-2026-10-08/after-index.json": "952fa91a80d401f0023cc876c1ebe2613327e3a8620b58870ed336f4eab14bc5",
+    "E:/PycharmProjects/docucheck/data/verification/index-recovery-live-2026-10-08/retrieval.json": "f5c51bfde7ef91a730f1b78bf2873d446c9723115a4da02468751cb25141db8d",
+    "E:/PycharmProjects/docucheck/data/verification/index-recovery-live-2026-10-08/runtime-verified.json": "27f85fe478840d80e9cc9a1f1acac937968426d1187fec7bd5783dfb20e138bc",
+    "E:/PycharmProjects/docucheck/data/verification/index-recovery-live-2026-10-08/checks.json": "ea818760d69c0e2218302cfb21177a7ae65fd0a26af178ad7afc2c4a38d5a913",
+    "E:/PycharmProjects/docucheck/data/verification/index-recovery-live-2026-10-08/inspect_jobs.py": "333769ff0b7db50ea97418495d9f51a1ff251beb686afde02447970a5f50d7ba",
+    "E:/PycharmProjects/docucheck/data/verification/index-recovery-live-2026-10-08/recover.py": "b9797ec789a7cc6f9fc7335e0e2cf276ff4116729b668f38c31bdcc1de8f51ed",
+    "E:/PycharmProjects/docucheck/data/verification/index-recovery-live-2026-10-08/probe_retrieval.py": "f2f29cfea58a1261ae695eccb21ab79acc510162269d5bad5e2dc8cc790a7d81",
+    "E:/PycharmProjects/docucheck/data/verification/index-recovery-live-2026-10-08/capture_final.py": "260fdcaff338eb297ce016bae539cc770064dd461bece4f3a5354bf55d87c3e2",
+    "E:/PycharmProjects/docucheck/data/verification/index-recovery-live-2026-10-08/run_checks.py": "bbd11381b32c31638ec1d0c34b942861bea23506325c4ed6f43a69fc98b78d16",
+    "E:/PycharmProjects/docucheck/data/verification/index-recovery-live-2026-10-08/build_evidence.py": "164bdadf2b274383850d32ddbd4eb2b2d04b991df523553f82953551a7a9ecad",
+    "backend/app/db/index_repository.py": "94f8bf0dd9ac930331e6402003f2f528b6109dbea70673e38d2f8fb785c6150e",
+    "backend/app/db/index_worker.py": "8a56d910733a6916d8f9cc5fd2129b73d68f2990d34883e55b66dfbaaaff1ca7",
+    "backend/app/db/persisted_retrieval.py": "45908d03e5bcd81e5fde3a5a57bbf159d42ab58f812de8dcb0df0428bbc23a40",
+    "backend/app/db/source_repository.py": "ddacd744e02905d110828b90c5fcfcfd2999b78fc71b9aef3c4814a6ed9be1fe",
+    "backend/app/db/run_repository.py": "20543e3d419fd43f6eca0efcd06a3f03785d15dcfe707f35dddfb465d92b5eeb",
+    "backend/app/db/outbox_repository.py": "3aa7c42e2b834ed10725cad81bf7f42bcdd67069010041c27da7fcfe1f344c2c",
+    "backend/app/db/workspace.py": "90e064f791876d3bdaf4b4e0c1e461fa97a5833aa1e976bbcd8e864b85bea7f7",
+    "backend/app/evidence/hybrid.py": "1bb39202b32df98514c98bdd51ab85c5e858a3d374c9da7aa97ba236e4e61548",
+    "backend/app/vector_store/store.py": "3e3764374ddb11a63c21b6954d750a57600a1aab06913b1bcda886788bb4a487"
+  },
+  "independent_review": {
+    "blocking_issues": 0,
+    "verified_hashes": 21,
+    "retired_manifest_generations_checked": 15,
+    "scope": "read-only hash recomputation and evidence/code review; no fresh network or model calls"
+  }
+}

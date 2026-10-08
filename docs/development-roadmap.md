@@ -1,6 +1,8 @@
 # DocuCheck Agent 开发路线 v2.0
 
-> **2026-10-08 实连第二部分H（当前入口）**：[Milvus启动修复](repair-milvus-startup-2026-10-08.md)用同版本独立etcd与健康门禁恢复原卷，补齐新卷目录初始化；实连发现public默认跨库元数据权限在重启时恢复，已关闭自动授权并撤销三项默认权限，重启隔离验证通过。最终真实Milvus/BGE5项通过（持久化SQL层为SQLite），此前1失败/4通过保留；本步Embedding6次、DeepSeek0次。完整离线1274/41/网络0，最后新增部署用例另由最终22项覆盖，Ruff/pip/Compose通过。原集合清单与waiting_user保留，5条failed索引未重试；worker1文件差异待统一部署。下方G为恢复前失败历史。
+> **2026-10-08 实连第二部分I（当前入口）**：[索引恢复与MySQL持久检索](repair-index-recovery-2026-10-08.md)核对当前版本及项目成员后，显式重试五条failed索引，既有Docker indexer全部一次成功，11分块ready且原件hash一致。三个新诊断Run通过真实MySQL/BGE/Milvus混合检索、原文作用域、历史generation清理与终态访问拒绝；查询Embedding6次、DeepSeek0次，后台索引请求未独立计量。相关离线55项/网络0、MySQL并发1项、Ruff/pip通过。本轮是运维诊断，未做浏览器聊天/模型回答；既有waiting_user保留。worker仍有1文件差异，下一步统一部署。下方H保留恢复前索引状态及上轮测试范围。
+
+> **2026-10-08 实连第二部分H（历史记录）**：[Milvus启动修复](repair-milvus-startup-2026-10-08.md)用同版本独立etcd与健康门禁恢复原卷，补齐新卷目录初始化；实连发现public默认跨库元数据权限在重启时恢复，已关闭自动授权并撤销三项默认权限，重启隔离验证通过。最终真实Milvus/BGE5项通过（持久化SQL层为SQLite），此前1失败/4通过保留；本步Embedding6次、DeepSeek0次。完整离线1274/41/网络0，最后新增部署用例另由最终22项覆盖，Ruff/pip/Compose通过。原集合清单与waiting_user保留，5条failed索引未重试；worker1文件差异待统一部署。下方G为恢复前失败历史。
 
 > **2026-10-08 实连第二部分G（部分完成）**：[BGE/Milvus复验](repair-rag-reverification-2026-10-08.md)已恢复本机Ollama/BGE，1024维归一化及Docker indexer到宿主连通通过；既有Milvus两次启动均因启动期etcd leader changed退出134，未改数据卷或凭据。真实连接失败时两条合成查询显式BM25降级，不能算向量成功；本诊断Embedding3次、DeepSeek0次。补齐ready manifest依赖故障/释放/原文守卫两项，相关92项/网络0、Ruff/pip check通过。Milvus成功路径实连未运行、整项不勾选，下一项先修启动再验收持久化检索；worker1文件差异仍保留。下方F为已完成的正向修正历史。
 
