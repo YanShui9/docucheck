@@ -1,0 +1,13 @@
+# Opt in only after an operator verifies and approves the local CA bundle.
+# Combine with the SAME overlays used to create the running worker.
+services:
+  worker:
+    environment:
+      SSL_CERT_FILE: /run/docucheck/model-ca-bundle.pem
+    volumes:
+      - type: bind
+        source: ${DOCUCHECK_MODEL_CA_BUNDLE:?Set the absolute path to an approved PEM CA bundle}
+        target: /run/docucheck/model-ca-bundle.pem
+        read_only: true
+        bind:
+          create_host_path: false

@@ -257,5 +257,7 @@ class AssistantAgent:
             payload.update(answer=f"本次助手处理未完成：{error}。", citations=[], candidate=None, changes=[], patch=None)
             if events and events[-1].get("status") == "started":
                 events[-1].update(status="failed", error=error, outcome_unknown=getattr(exc, "outcome_unknown", False))
+                if isinstance(exc, ProviderError) and exc.detail:
+                    events[-1]["failure_detail"] = exc.detail
         return {"status": status, "error": error, "answer": payload["answer"], "payload": payload,
                 "dynamic_payload": formal_payload, "events": events, "usage": self.budget.summary()}

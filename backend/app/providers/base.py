@@ -25,6 +25,7 @@ class ProviderError(Exception):
     _DETAILS = frozenset({
         "output_limit", "malformed_tool_args", "missing_tool_call",
         "multiple_tool_calls", "tool_schema", "message_type",
+        "tls_certificate_verification",
     })
 
     def __init__(self, code: str, outcome_unknown: bool = False,

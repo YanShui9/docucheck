@@ -1,0 +1,146 @@
+{
+  "date": "2026-10-08",
+  "baseline_commit": "365c832",
+  "status": "prepared; awaiting explicit approval to apply CA trust",
+  "diagnostic": {
+    "mode": "send",
+    "run_id": "dfa123a1beff4f7da67f0046342e5ac8",
+    "snapshot_id": "8fae8096390d4e53b69936cf3094a91c",
+    "documents": 2,
+    "tools": 6,
+    "history_turns": 2,
+    "proxy_env_present": false,
+    "message_characters": 1845,
+    "model_requests": 1,
+    "status": "failed",
+    "error_code": "connection_error",
+    "outcome_unknown": true,
+    "exception_chain": [
+      {
+        "type": "ProviderError",
+        "module": "app.providers.base",
+        "certificate_verify_failed": false,
+        "connection_reset": false,
+        "errno": null
+      },
+      {
+        "type": "OpenAIConnectionError",
+        "module": "langchain_openai.chat_models.base",
+        "certificate_verify_failed": false,
+        "connection_reset": false,
+        "errno": null
+      },
+      {
+        "type": "APIConnectionError",
+        "module": "openai",
+        "certificate_verify_failed": false,
+        "connection_reset": false,
+        "errno": null
+      },
+      {
+        "type": "ConnectError",
+        "module": "httpx2",
+        "certificate_verify_failed": true,
+        "connection_reset": false,
+        "errno": null
+      },
+      {
+        "type": "ConnectError",
+        "module": "httpcore2",
+        "certificate_verify_failed": true,
+        "connection_reset": false,
+        "errno": null
+      },
+      {
+        "type": "SSLCertVerificationError",
+        "module": "ssl",
+        "certificate_verify_failed": true,
+        "connection_reset": false,
+        "errno": 1
+      }
+    ],
+    "elapsed_seconds": 0.107
+  },
+  "tls_root_sha256": "271F539FA9F9DDA9702F457689E4535CC0102639F2F5C8B0DA918C55609BF3A0",
+  "tls_root_source": "Windows LocalMachine/Root and CurrentUser/Root; exact fingerprint match",
+  "root_valid_until": "2033-11-11T15:14:33Z",
+  "candidate_bundle_path": ".local-trust/model-ca-bundle.pem",
+  "bundle_validation": {
+    "candidate_bundle_sha256": "dc611ea7e32e13cc5f9a3b27aabc0837f2c4a2a86bb04633e10d8bf1869ce636",
+    "ca_count": 151,
+    "expected_root_present": true,
+    "private_key_absent": true,
+    "cert_required": true,
+    "check_hostname": true,
+    "applied": false
+  },
+  "compose_validation": {
+    "base_and_vector_overlay_preserved": true,
+    "worker_only": true,
+    "mount_read_only": true,
+    "no_host_path_creation": true,
+    "missing_bundle_rejected": true
+  },
+  "review": "shared writable data alias finding corrected; independent final review passed",
+  "verification": {
+    "targeted_passed": 138,
+    "targeted_network_attempts": 0,
+    "full_backend_passed": 1266,
+    "full_backend_skipped": 41,
+    "full_backend_network_attempts": 0,
+    "full_backend_seconds": 268.42,
+    "ruff": "backend/evals/scripts passed",
+    "pip_check": "passed"
+  },
+  "host_non_generating_probe": {
+    "model_requests": 0,
+    "ssl_cert_file_env": true,
+    "ssl_cert_dir_env": false,
+    "proxy_env": false,
+    "error_chain": [
+      {
+        "type": "ConnectError",
+        "module": "httpx2",
+        "verify_code": null,
+        "certificate_verify_failed": true
+      },
+      {
+        "type": "ConnectError",
+        "module": "httpcore2",
+        "verify_code": null,
+        "certificate_verify_failed": true
+      },
+      {
+        "type": "SSLCertVerificationError",
+        "module": "ssl",
+        "verify_code": 19,
+        "certificate_verify_failed": true
+      }
+    ]
+  },
+  "model_usage": {
+    "this_step_attempts": 1,
+    "this_step_actual_tokens": null,
+    "including_previous_browser_step_attempts": 4,
+    "including_previous_browser_step_unknown_usage_attempts": 3,
+    "actual_cost": null
+  },
+  "runtime_changed": false,
+  "model_recovery_verified": false,
+  "sha256": {
+    "backend/app/providers/base.py": "5d6435e0d92fb42899ae5894908bbf420920458c9d2d6786b1748b81c5f154bb",
+    "backend/app/providers/chat_model.py": "fb216b7b96eb42aff572f6366ab8b46b3e9dc96f83c2e1e67f6ecd1a5600a541",
+    "backend/app/agent/assistant.py": "a1c95d69c13462742c4193fff5dd22e0364c9beaf68b5dfa9eaf4131ac7732f6",
+    "backend/tests/test_provider_contract.py": "579e08e4993d9d62a37bd24031e8795e5c87f01d8b86d413db87e5019fb381ce",
+    "backend/tests/test_assistant_agent.py": "2affbb5447750959f028f6e45ee2c29003f99c60df243618700ef778eedb4ba9",
+    "compose.model-tls.yaml": "f5deb5d076be25577d41f832a5ab3ab80dee662c80f04c2b5efbbaca1620f4a2",
+    ".env.example": "45f3e8634cbbe7bd2d7ee7eb56924d95702239146d57d399ba12b279d58998d9",
+    ".gitignore": "5bb4ac00fae38455c512f53d1da5472bd5048244618f84a9b95af5f6a412efe8",
+    "data/verification/model-connection-2026-10-08/preview.json": "1134dfe6f3e1cd5e6265fd7033077a82c47752e3c01d0821b10aafc1283808e4",
+    "data/verification/model-connection-2026-10-08/send.json": "8162daba6283df75c293dd14ea88f369b7077cc33e9207ca35d500cf09d83e45",
+    "data/verification/model-connection-2026-10-08/bundle-validation.json": "1d5f9213513ac0ef590e7aa03d346aca8a14263c4a0db12d9fe501fe8c40b6b2",
+    "data/verification/model-connection-2026-10-08/compose-validation.json": "654121ea252c6f746329266e0873186e75771a197a29f4d3f7dfa1275fc96132",
+    "data/verification/model-connection-2026-10-08/host-tls.json": "25716d855f08364e68bc2129e50a3fd8bb0213ac702d49e2ad1694aaaa229344",
+    "data/verification/model-connection-2026-10-08/host-tls-detail.json": "8bf0bcd6b641c82dc63c2be85fd91d75a46f77feb62181b3062e72883690012b"
+  }
+}

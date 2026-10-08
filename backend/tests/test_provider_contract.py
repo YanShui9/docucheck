@@ -529,3 +529,64 @@ def test_openai_http_errors_are_sanitized_and_not_retried(status, code, unknown)
     assert exc.value.outcome_unknown is unknown
     assert len(requests) == 1
     assert "raw response" not in "".join(traceback.format_exception(exc.value))
+
+
+@pytest.mark.parametrize('link', ['__cause__', '__context__'])
+def test_tls_verification_failure_has_safe_detail_through_sdk_wrappers(link):
+    import ssl
+    import traceback
+
+    from backend.app.providers import ChatModelProvider, ProviderError
+
+    error = type('OpenAIConnectionError', (Exception,), {})('sk-secret raw transport')
+    inner = ConnectionError('private URL and headers')
+    setattr(error, link, inner)
+    inner.__cause__ = ssl.SSLCertVerificationError(1, 'sk-secret certificate data')
+    model = RecordingChatModel(responses=[error])
+    with pytest.raises(ProviderError) as caught:
+        ChatModelProvider(model).decide(MESSAGES, [TOOL], timeout=1, max_output_tokens=32)
+    assert caught.value.code == 'connection_error'
+    assert caught.value.detail == 'tls_certificate_verification'
+    assert caught.value.outcome_unknown is True
+    assert len(model.requests) == 1
+    assert 'sk-secret' not in ''.join(traceback.format_exception(caught.value))
+
+
+def test_transport_cause_cycle_is_bounded_and_raw_message_cannot_claim_tls_failure():
+    from backend.app.providers.chat_model import _transport_error
+
+    error = ConnectionError('CERTIFICATE_VERIFY_FAILED sk-secret')
+    error.__cause__ = error
+    safe = _transport_error(error)
+    assert safe.code == 'connection_error'
+    assert safe.detail is None
+    assert str(safe) == 'connection_error'
+
+
+def test_native_sdk_tls_failure_is_sanitized_and_attempted_once():
+    import ssl
+    import traceback
+
+    import httpx2
+    from langchain_openai import ChatOpenAI
+
+    from backend.app.providers import ChatModelProvider, ProviderError
+
+    requests = []
+
+    def fail(request):
+        requests.append(request)
+        raise httpx2.ConnectError('sk-secret raw URL', request=request) from (
+            ssl.SSLCertVerificationError(1, 'untrusted root sk-secret'))
+
+    with httpx2.Client(transport=httpx2.MockTransport(fail)) as client:
+        model = ChatOpenAI(model='offline-model', api_key='sk-secret',
+                           base_url='https://offline.test/v1', max_retries=2,
+                           http_client=client)
+        with pytest.raises(ProviderError) as caught:
+            ChatModelProvider(model).decide(MESSAGES, [TOOL], timeout=1, max_output_tokens=32)
+    assert caught.value.detail == 'tls_certificate_verification'
+    assert caught.value.code == 'connection_error'
+    assert caught.value.outcome_unknown is True
+    assert len(requests) == 1
+    assert 'sk-secret' not in ''.join(traceback.format_exception(caught.value))

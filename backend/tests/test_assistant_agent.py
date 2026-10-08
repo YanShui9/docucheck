@@ -39,6 +39,28 @@ def test_empty_chat_has_no_business_facts_or_checks():
     assert result["usage"]["model_calls"] == 1
 
 
+def test_tls_failure_records_safe_detail_without_replay_or_formal_result():
+    from backend.app.providers import ProviderError
+
+    class TLSFailure:
+        calls = 0
+
+        def decide(self, *args, **kwargs):
+            self.calls += 1
+            raise ProviderError('connection_error', outcome_unknown=True,
+                                detail='tls_certificate_verification')
+
+    provider = TLSFailure()
+    result = agent(EvidenceRepository.empty('case', 'snap'), provider).ask('你好')
+    assert provider.calls == 1
+    assert result['status'] == 'partial'
+    assert result['dynamic_payload'] is None
+    assert result['usage']['unknown_usage_calls'] == 1
+    failures = [e for e in result['events'] if e.get('error') == 'connection_error']
+    assert failures and failures[-1]['failure_detail'] == 'tls_certificate_verification'
+    assert failures[-1]['outcome_unknown'] is True
+
+
 @pytest.mark.parametrize("sources", ["empty", "supplier_only", "buyer"])
 def test_buyer_file_proposal_capability_is_only_available_with_buyer_document(sources):
     repo = (EvidenceRepository.empty("case", "snap") if sources == "empty" else repository())

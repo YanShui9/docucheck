@@ -1,6 +1,7 @@
 """A single LangChain call per request, with local validation and no retries."""
 
 import math
+import ssl
 
 from jsonschema import Draft202012Validator
 from langchain_core.language_models.chat_models import BaseChatModel
@@ -95,6 +96,19 @@ def validate_response(
     return response
 
 
+def _tls_verification_failed(error: BaseException) -> bool:
+    seen: set[int] = set()
+    current: BaseException | None = error
+    for _ in range(8):
+        if current is None or id(current) in seen:
+            break
+        seen.add(id(current))
+        if isinstance(current, ssl.SSLCertVerificationError):
+            return True
+        current = current.__cause__ or current.__context__
+    return False
+
+
 def _transport_error(error: Exception) -> ProviderError:
     # Inspect types/status only. Never copy messages, response bodies or headers.
     names = {kind.__name__ for kind in type(error).__mro__}
@@ -117,7 +131,8 @@ def _transport_error(error: Exception) -> ProviderError:
         "ConnectError",
         "OpenAIConnectionError",
     }:
-        return ProviderError("connection_error", outcome_unknown=True)
+        return ProviderError("connection_error", outcome_unknown=True,
+                             detail="tls_certificate_verification" if _tls_verification_failed(error) else None)
     return ProviderError("provider_error", outcome_unknown=True)
 
 

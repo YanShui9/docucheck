@@ -12,6 +12,7 @@ node_modules/
 dist/
 tmp/
 data/
+.local-trust/
 .mimosa/*
 **/.mimosa/*
 !/.mimosa/security-policy.json
