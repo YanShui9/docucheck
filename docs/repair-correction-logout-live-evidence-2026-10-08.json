@@ -1,0 +1,73 @@
+{
+  "baseline": {
+    "run_id": "dfa123a1beff4f7da67f0046342e5ac8",
+    "payload_digest": "c0f902d467a80ffdd8f58004214bc0225abf29cded29177c3ed574c60cd57ce1",
+    "status": "completed",
+    "fact_values": [
+      "25",
+      "90"
+    ],
+    "correction_count": 0,
+    "formal_flags": [
+      true,
+      true
+    ],
+    "waiting_user_status": "waiting_user"
+  },
+  "database_states_equal": true,
+  "unauthenticated_http": [
+    {
+      "path": "/api/v1/agent-runs/dfa123a1beff4f7da67f0046342e5ac8/checks",
+      "status": 401
+    },
+    {
+      "path": "/api/v1/agent-runs/dfa123a1beff4f7da67f0046342e5ac8/facts",
+      "status": 401
+    },
+    {
+      "path": "/api/v1/agent-runs/dfa123a1beff4f7da67f0046342e5ac8/export",
+      "status": 401
+    }
+  ],
+  "real_model_requests": 0,
+  "service_restarts": 0,
+  "raw_evidence_sha256": {
+    "after-expired-submit.json": "feee46a1489c242a017bbba9c09c5d185902bd97d903e3ee8fa0281883ff6d08",
+    "after-logout.json": "feee46a1489c242a017bbba9c09c5d185902bd97d903e3ee8fa0281883ff6d08",
+    "after-rejected-26.json": "feee46a1489c242a017bbba9c09c5d185902bd97d903e3ee8fa0281883ff6d08",
+    "before.json": "feee46a1489c242a017bbba9c09c5d185902bd97d903e3ee8fa0281883ff6d08",
+    "logged-out.jpg": "2bbc7b16baba3ec5ac596c8cb4a4728153c9431a10b4f88728601d54c503623d"
+  },
+  "schema_version": 1,
+  "source_head": "d6d09c6",
+  "application_changes": false,
+  "browser": {
+    "unsupported_26_rejected": true,
+    "read_retry_restores_formal_checks": true,
+    "explicit_logout_login_page": true,
+    "back_no_procurement_data": true,
+    "revisit_requires_login": true,
+    "successful_correction_in_browser": false
+  },
+  "current_tests": {
+    "backend_dynamic": {
+      "passed": 20,
+      "network_attempts": 0
+    },
+    "backend_identity_authorization": {
+      "passed": 3,
+      "network_attempts": 0
+    },
+    "frontend": {
+      "passed": 148,
+      "files": 13
+    },
+    "frontend_build": {
+      "exit_code": 0
+    }
+  },
+  "pending": [
+    "browser_successful_source_supported_correction",
+    "bge_milvus_live_reverification"
+  ]
+}
