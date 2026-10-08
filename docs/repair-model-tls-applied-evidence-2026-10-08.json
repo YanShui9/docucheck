@@ -1,0 +1,78 @@
+{
+  "date": "2026-10-08",
+  "source_commit": "38c9f03",
+  "status": "worker_tls_and_minimal_model_probe_verified_business_login_pending",
+  "runtime": {
+    "image": "sha256:d1930f8f1d16f7f04493b4f0a340632fe31dfee2cfda17b85688ecbd5cab9c72",
+    "user": "docucheck",
+    "state": "running",
+    "health": "healthy",
+    "ssl_cert_file": "/run/docucheck/model-ca-bundle.pem",
+    "bundle_read_only": true,
+    "bundle_outside_data": true,
+    "other_containers_unchanged": 6,
+    "python_source_files_equal": 118
+  },
+  "tls": {
+    "sdk_transport": "DefaultHttpx2Client",
+    "http_status": 401,
+    "tls_verified": true,
+    "cert_required": true,
+    "hostname_verified": true,
+    "ca_count": 151,
+    "model_requests": 0
+  },
+  "model_probe": {
+    "requests": 1,
+    "exit_code": 0,
+    "elapsed_seconds": 2.282,
+    "synthetic_only": true,
+    "automatic_retry": false,
+    "max_output_tokens": 128,
+    "response": {
+      "tool_call": "MemoryProbe",
+      "memory_gb": 16,
+      "input_tokens": 304,
+      "output_tokens": 35
+    },
+    "outcome_unknown": false
+  },
+  "compose": {
+    "base_and_vector_overlay_preserved": true,
+    "worker_only": true,
+    "mount_read_only": true,
+    "no_host_path_creation": true,
+    "missing_bundle_rejected": true
+  },
+  "tests": {
+    "targeted_passed": 138,
+    "offline_network_attempts": 0,
+    "ruff": "passed",
+    "container_pip_check": "passed",
+    "full_suite_rerun": false,
+    "frontend_changed": false
+  },
+  "original_waiting_user_preserved": true,
+  "browser_retry_created_attempt": false,
+  "generation_requests_this_step": 1,
+  "unknown_usage_requests_this_step": 0,
+  "historical_unknown_requests_retained": 3,
+  "limitations": [
+    "standard Docker build blocked by registry connectivity; cached runtime used",
+    "OIDC login expired; synthetic apple review still partial",
+    "Milvus/Ollama not verified in this step"
+  ],
+  "local_evidence": {
+    "before.json": "020c625ede26b83c0271d0b109ba72485f533aa2460a1dcd527e40ae6bba9a9f",
+    "containers-before.json": "4404106c125ff1e0b4298e6a8b3e454301ecc1f66ab6f1efd0536d494c17c2bc",
+    "cached-runtime.json": "7c9ec2f42616e151a2a19807244ad6f75dcab74334112f718ce02ce510816dc0",
+    "Dockerfile.cached-worker": "86f244b85f97d744cf9c99665aeb7b4235940ef920779532bca160ec066cbb99",
+    "tls-preflight.json": "407e01eff3597a12f37c3138daf43fef3c308f50f806a27b25f1e9572c374dfc",
+    "runtime.json": "10c89c04313b9939715cd37a457e68fc92d05bf3861cdc6607a76b75e7a6fd47",
+    "tls-worker.json": "407e01eff3597a12f37c3138daf43fef3c308f50f806a27b25f1e9572c374dfc",
+    "model-probe.json": "de7472f583cb58f544440ebfbf5feac73b5d0397c5ec1d45070c2aa27b2dc83d",
+    "compose-validation.json": "654121ea252c6f746329266e0873186e75771a197a29f4d3f7dfa1275fc96132",
+    "runs.json": "6887af39a2ceb2b682a7d1ab52b8fa0f5555da76e2444f45612ebca05060a792",
+    "after.json": "f39a11635fc0bc88a60e27849dcb126a6fd257493e41ea12a576ea7047d999f6"
+  }
+}

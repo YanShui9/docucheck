@@ -27,6 +27,8 @@
 
 2026-10-08第二部分C（待应用）：同worker一次诊断复现SSL验证失败，握手链根与Windows已信任Kaspersky根SHA-256精确匹配；证书信任修复需用户明确确认。已准备安全TLS错误分类及worker-only可选只读bundle overlay，修正独立复核发现的共享data写入别名，定向138项/网络0、Ruff/pip check/Compose隔离检查通过。尚未应用信任配置或重建worker，不勾选真实审查闭环。见[根因及应用/回滚方案](../../repair-model-tls-2026-10-08.md)。
 
+2026-10-08第二部分C应用：用户已确认本机根信任，worker只读CA配置生效、healthy，118源码文件一致、其余6容器未重启，既有waiting_user保留。标准在线构建因Docker Hub超时受阻，改用已验证缓存运行环境更新应用；SDK TLS检查及一次最小合成模型工具探针成功（304输入/35输出token）。本轮定向138项/网络0、Ruff和容器pip check通过。网页显式重试遇OIDC会话过期，数据库未新增attempt，苹果审查仍partial；等待重新登录后继续，不勾选整个业务闭环或BGE/Milvus。见[本步应用记录](../../repair-model-tls-applied-2026-10-08.md)。
+
 ## 三、交付
 
 - [x] 第一部分记录本次证据、范围、未通过项及源码/服务版本，更新 CLAUDE.md、README.md 和路线图入口；第二部分另行补充。
