@@ -61,6 +61,38 @@ test('a candidate made stale before opening is read-only even with a current sna
   expect(wrapper.find('[data-test="save-draft"]').exists()).toBe(false)
 })
 
+test('a differing historical candidate does not show current execution or unsaved-edit instructions', async () => {
+  const current = { ...draftDefinition, criteria: [manualCriterion] }
+  fetchChecklist.mockResolvedValue(emptyView({ state: 'confirmed', checklist_revision: 5,
+    confirmed_version: { definition: current }, execution_available: true }))
+  const wrapper = setup({ candidateReadOnly: true,
+    candidate: { candidate: draftDefinition, changes: [], runId: 'old-run', baseChecklistRevision: 0 } })
+  await flushPromises()
+  expect(wrapper.text()).toContain('历史候选仅供追溯')
+  expect(wrapper.text()).not.toContain('清单有未保存修改')
+  expect(wrapper.text()).not.toContain('可执行完整审查')
+  expect(wrapper.find('[data-test="save-draft"]').exists()).toBe(false)
+  expect(wrapper.find('[data-test="open-confirm"]').exists()).toBe(false)
+  expect(saveChecklistDraft).not.toHaveBeenCalled()
+})
+
+test('historical criteria do not inherit current per-item issues or partial-confirmation badges', async () => {
+  const currentQuantity = { ...numericCriterion,
+    rule: { type: 'numeric', operator: 'gte', value: '30', unit: '箱' } }
+  fetchChecklist.mockResolvedValue(emptyView({ state: 'partially_confirmed', checklist_revision: 5,
+    draft: { ...draftDefinition, criteria: [manualCriterion] },
+    confirmed_version: { definition: { ...draftDefinition, criteria: [currentQuantity] } },
+    issues: [{ criterion_id: 'c-qty', code: 'rule_source_unresolved' }] }))
+  const wrapper = setup({ candidateReadOnly: true,
+    candidate: { candidate: draftDefinition, changes: [], runId: 'old-run', baseChecklistRevision: 0 } })
+  await flushPromises()
+  expect(wrapper.text()).toContain('至少 20 箱')
+  expect(wrapper.text()).not.toContain('原文来源未能定位')
+  expect(wrapper.text()).not.toContain('已确认 · 本次保留')
+  expect(wrapper.find('.criterion-issues').exists()).toBe(false)
+  expect(wrapper.find('[data-test="open-confirm"]').exists()).toBe(false)
+})
+
 test('editing and saving a current candidate does not lock its confirmation controls', async () => {
   fetchChecklist.mockResolvedValue(emptyView())
   saveChecklistDraft.mockImplementation(async (_caseId, _snapshotId, definition) => emptyView({

@@ -14,3 +14,17 @@ test('generic supplier materials can upload without inventing an electronic devi
   expect((wrapper.emitted('upload')![0]![0] as { modelName: string }).modelName).toBe('')
   wrapper.unmount()
 })
+
+test.each(['', '红富士-一级'])('supplier material uses generic product identification: %s', modelName => {
+  const wrapper = mount(DocumentsPanel, { props: {
+    selectedCase: { id: 'case-a', project_id: 'project-a', revision: 1, created_at: '' },
+    documents: { case_id: 'case-a', snapshot_id: 'snap-a', revision: 1, documents: [{
+      id: 'doc-a', original_name: '水果报价.xlsx', role: 'quote', supplier_handle: 'orchard-a',
+      supplier_name: '果园甲', model_name: modelName, parse_status: 'complete', source_sha256: 'test-source',
+    }] }, snapshots: [], nextSnapshotBefore: null, loadingOlder: false,
+    selectedHistoryId: null, historyDocuments: null, canWrite: true, busy: false,
+  } })
+  expect(wrapper.text()).not.toContain('未绑定型号')
+  expect(wrapper.text()).toContain(modelName ? `产品标识 ${modelName}` : '未设置产品标识')
+  wrapper.unmount()
+})

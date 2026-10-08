@@ -83,6 +83,7 @@ function friendly(reason: unknown): string {
 }
 const issueById = computed(() => {
   const map = new Map<string, string[]>()
+  if (historicalCandidate.value) return map
   for (const issue of view.value?.issues ?? []) {
     map.set(issue.criterion_id, [...map.get(issue.criterion_id) ?? [], issueLabels[issue.code] ?? issue.code])
   }
@@ -95,7 +96,7 @@ const writable = computed(() => props.canWrite && !historicalCandidate.value
   && !!view.value?.is_current_snapshot && view.value.state !== 'historical')
 const unsaved = computed(() => candidateUnsaved.value || JSON.stringify(working.value) !== JSON.stringify(savedDefinition.value))
 const editing = computed(() => !!editDraft.value || adding.value)
-const baseIds = computed(() => new Set(view.value?.state === 'partially_confirmed'
+const baseIds = computed(() => new Set(!historicalCandidate.value && view.value?.state === 'partially_confirmed'
   ? view.value.confirmed_version?.definition.criteria.map(item => item.criterion_id) ?? [] : []))
 const confirmationIds = computed(() => selectedIds.value.filter(id => !baseIds.value.has(id)))
 const selectedCriteria = computed(() => (working.value?.criteria ?? [])
@@ -391,28 +392,29 @@ onUnmounted(() => { ++scope; window.removeEventListener('keydown', onKeydown) })
 <template>
   <section class="checklist-panel" aria-label="审查要求清单">
     <div class="panel-state-row">
-      <span v-if="view" class="state-pill" :class="`checklist-state-${view.state}`">{{ stateLabels[view.state] ?? view.state }}</span>
-      <span v-if="view?.execution_available" class="state-pill status-complete">可执行完整审查</span>
+      <span v-if="historicalCandidate" class="state-pill">历史候选</span>
+      <span v-else-if="view" class="state-pill" :class="`checklist-state-${view.state}`">{{ stateLabels[view.state] ?? view.state }}</span>
+      <span v-if="view?.execution_available && !historicalCandidate" class="state-pill status-complete">可执行完整审查</span>
       <span class="panel-revision" v-if="view">资料版本 v{{ view.revision }}</span>
     </div>
     <div v-if="error" class="chat-error" role="alert">{{ error }} <button class="text-button" @click="load">重试读取</button></div>
     <div v-if="loading" class="chat-loading" role="status">正在读取审查要求…</div>
     <template v-else-if="view">
-      <p v-if="view.state === 'needs_reconfirmation'" class="state-note warning">
+      <p v-if="view.state === 'needs_reconfirmation' && !historicalCandidate" class="state-note warning">
         资料已更新，之前的审查要求不能直接生效。
         <button v-if="writable && view.previous_version_id" class="text-button" data-test="adopt-draft" :disabled="busy" @click="adoptPrevious">以上一版确认为底稿</button>
       </p>
       <p v-else-if="view.state === 'historical'" class="state-note">历史资料版本的审查要求仅供追溯，不能在当前版本执行。</p>
       <p v-if="historicalCandidate" class="state-note">历史候选仅供追溯，不能保存或确认到当前清单。</p>
       <p v-if="candidateUnsaved" class="state-note warning">助手候选要求尚未保存确认。请检查内容后保存草稿，再明确确认。</p>
-      <div v-if="view.issues.length" class="state-note warning" role="alert">
+      <div v-if="view.issues.length && !historicalCandidate" class="state-note warning" role="alert">
         <strong>清单待处理：</strong>
         <ul><li v-for="issue in view.issues" :key="`${issue.criterion_id}-${issue.code}`">
           {{ itemName(issue.criterion_id) ? '' : '' }}{{ (working?.criteria ?? []).find(item => item.criterion_id === issue.criterion_id)?.name ?? issue.criterion_id }} · {{ issueLabels[issue.code] ?? issue.code }}
         </li></ul>
       </div>
       <p v-if="notice" class="state-note" role="status">{{ notice }}</p>
-      <p v-if="unsaved && !candidateUnsaved" class="state-note warning" data-test="unsaved-note">清单有未保存修改。请先保存草稿，再确认审查指标。</p>
+      <p v-if="writable && unsaved && !candidateUnsaved" class="state-note warning" data-test="unsaved-note">清单有未保存修改。请先保存草稿，再确认审查指标。</p>
 
       <fieldset class="checklist-editor" :disabled="busy || loading">
       <div v-if="!working" class="empty-state compact">

@@ -1,0 +1,112 @@
+{
+  "date": "2026-10-08",
+  "baseline_commit": "d391796",
+  "scope": "authenticated local browser acceptance; new full review incomplete",
+  "new_project_id": "69bec7eed4b54c7fa118068e1df6f7cc",
+  "new_case_id": "832da6f4a512476c86a2cfc79a7fe30e",
+  "current_snapshot_id": "8fae8096390d4e53b69936cf3094a91c",
+  "revision": 2,
+  "candidate_run_id": "5a8c12c293cd48bd86781f63e7f08ef4",
+  "review_run_id": "dfa123a1beff4f7da67f0046342e5ac8",
+  "attempts": [
+    {
+      "id": "4fdde2486dbc41df991ead574db2b451",
+      "status": "partial",
+      "outcome_unknown": true,
+      "model_id": "deepseek-flash",
+      "usage_json": {
+        "tools": 0,
+        "decisions": 1,
+        "model_calls": 1,
+        "actual_input": null,
+        "actual_output": null,
+        "input_reserved": 15082,
+        "output_reserved": 1536,
+        "unknown_usage_calls": 1
+      },
+      "started_at": "2026-10-08 03:30:17",
+      "finished_at": "2026-10-08 03:30:18"
+    },
+    {
+      "id": "765d4738bfea4dc9bde228b12fc6dc8b",
+      "status": "partial",
+      "outcome_unknown": true,
+      "model_id": "deepseek-flash",
+      "usage_json": {
+        "tools": 0,
+        "decisions": 1,
+        "model_calls": 1,
+        "actual_input": null,
+        "actual_output": null,
+        "input_reserved": 15349,
+        "output_reserved": 1536,
+        "unknown_usage_calls": 1
+      },
+      "started_at": "2026-10-08 03:32:16",
+      "finished_at": "2026-10-08 03:32:16"
+    },
+    {
+      "id": "f8b4d54d2f9d46e6811757b4d5e5f496",
+      "status": "completed",
+      "outcome_unknown": false,
+      "model_id": "deepseek-flash",
+      "usage_json": {
+        "tools": 1,
+        "decisions": 1,
+        "model_calls": 1,
+        "actual_input": 4549,
+        "actual_output": 234,
+        "input_reserved": 4549,
+        "output_reserved": 234,
+        "unknown_usage_calls": 0
+      },
+      "started_at": "2026-10-08 03:21:55",
+      "finished_at": "2026-10-08 03:21:56"
+    }
+  ],
+  "model_requests": 3,
+  "known_input_tokens": 4549,
+  "known_output_tokens": 234,
+  "unknown_usage_requests": 2,
+  "actual_cost": null,
+  "worker_non_generating_connectivity_probe": {
+    "method": "GET",
+    "path": "/models",
+    "status": 401,
+    "tls_verified": true,
+    "model_requests": 0,
+    "limitation": "Does not establish the cause of generation connection_error"
+  },
+  "historical_export_run_id": "0c88d344c60f44f5bee79abf896dac5d",
+  "historical_export_checks": 2,
+  "historical_exports_and_source_verified": true,
+  "frontend_tests": {
+    "passed": 148,
+    "failed": 0
+  },
+  "backend_contract_tests": {
+    "passed": 23,
+    "network_attempts": 0
+  },
+  "build": "vue-tsc and vite exit 0",
+  "pending": [
+    "new synthetic full review",
+    "new report correction flow",
+    "actual logout flow",
+    "BGE-M3 and Milvus live retrieval",
+    "model connection root cause"
+  ],
+  "sha256": {
+    "frontend/src/components/ChecklistPanel.vue": "6d55a8ac794d8c85e0da1b4cafb9780c3ac0ccd76f4544593914887c81090c53",
+    "frontend/src/components/ChecklistPanel.test.ts": "77acc668b0e58f98e5340e6c64cc925eef6c89ffaa9742bb68872c1431ac199f",
+    "frontend/src/components/DocumentsPanel.vue": "88d3796b5a4a982bb96475efa4a9499436ae3870bf7e777bc3a88acd0c77c9bb",
+    "frontend/src/components/DocumentsPanel.test.ts": "2d722dc2c3d551f7bd56883912290dc20271b6274676609583c3d1e9239827af",
+    "data/verification/browser-product-2026-10-08/runs.json": "6887af39a2ceb2b682a7d1ab52b8fa0f5555da76e2444f45612ebca05060a792",
+    "data/verification/browser-product-2026-10-08/frontend-tests.json": "adb28a9d61f652b4cdab0ce35394306064f99c59426a927ca3ed933a59cc1b6e"
+  },
+  "downloads_sha256": {
+    "docucheck-0c88d344c60f44f5bee79abf896dac5d (1).xlsx": "732bcfb65d100dd1aec38aab32a30e82109e7c737bf6046b7651c5110425273a",
+    "docucheck-0c88d344c60f44f5bee79abf896dac5d.json": "80a5ecfcebdb4028760b949360f6a96af949a11caff6c97445b5cb9338b433a6",
+    "vendor-quote.xlsx": "1200dedaedb7db8ccac6f7e1b83278e2a0455f487be0634ad4b7e3829e3879d6"
+  }
+}

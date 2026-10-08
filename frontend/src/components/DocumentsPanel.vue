@@ -181,7 +181,7 @@ function roleLabel(value: string): string {
           <div class="document-icon" aria-hidden="true">{{ document.original_name.toLowerCase().endsWith('.pdf') ? 'PDF' : 'XLS' }}</div>
           <div class="document-details">
             <strong>{{ document.original_name }}</strong>
-            <span>{{ roleLabel(document.role) }}<template v-if="document.supplier_handle"> · {{ document.supplier_handle }}</template><template v-if="document.model_name"> · 型号 {{ document.model_name }}</template><template v-else-if="document.supplier_handle"> · 未绑定型号</template></span>
+            <span>{{ roleLabel(document.role) }}<template v-if="document.supplier_handle"> · {{ document.supplier_handle }}</template><template v-if="document.model_name"> · 产品标识 {{ document.model_name }}</template><template v-else-if="document.supplier_handle"> · 未设置产品标识</template></span>
           </div>
           <span class="status-pill" :class="`status-${document.parse_status}`">
             {{ statusLabel(document.parse_status) }}
