@@ -2,10 +2,11 @@
 
 import os
 from concurrent.futures import ThreadPoolExecutor
-from threading import Barrier, Event
+from contextlib import contextmanager
+from threading import Barrier, Event, local
 
 import pytest
-from sqlalchemy import select, update
+from sqlalchemy import event, select, update
 
 from backend.app.db.checklist_repository import ChecklistRepository
 from backend.app.db.dynamic_repository import DynamicRepository
@@ -209,3 +210,113 @@ def test_mysql_batch_conflicting_writes_have_single_winner(mysql_checklist):
             )
             == 1
         )
+
+
+@pytest.mark.parametrize("same_output", [False, True])
+def test_mysql_batch_writes_refresh_old_read_view(mysql_checklist, same_output):
+    """Both transactions see an empty table before serializing on the Case."""
+    engine = mysql_checklist[0]
+    with engine.connect() as connection:
+        assert connection.get_isolation_level() == "REPEATABLE READ"
+    runs, receipt, _ = submitted(mysql_checklist)
+    claim = runs.claim(receipt.run_id, receipt.attempt_id)
+    barrier = Barrier(2)
+
+    class OldReadView(DynamicRepository):
+        def _guard(self, connection, current):
+            assert connection.scalar(select(dynamic_batches.c.batch_id).where(
+                dynamic_batches.c.run_id == current.run_id
+            )) is None
+            barrier.wait(timeout=10)
+            return super()._guard(connection, current)
+
+    def write(n):
+        try:
+            OldReadView(engine).save_batch(
+                claim, digest("batch"), digest("source"),
+                {"facts": [], "test": 1 if same_output else n},
+            )
+            return "saved"
+        except RepositoryError as exc:
+            return exc.code
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        actual = sorted(pool.map(write, [1, 2]))
+    assert actual == (["saved", "saved"] if same_output else ["batch_source_changed", "saved"])
+    with engine.connect() as connection:
+        rows = connection.execute(select(dynamic_batches).where(
+            dynamic_batches.c.run_id == claim.run_id
+        )).mappings().all()
+    assert len(rows) == 1
+    assert rows[0]["output_digest"] == digest(rows[0]["output_json"])
+
+
+def test_mysql_load_batch_refreshes_old_read_view(mysql_checklist):
+    engine = mysql_checklist[0]
+    with engine.connect() as connection:
+        assert connection.get_isolation_level() == "REPEATABLE READ"
+    runs, receipt, _ = submitted(mysql_checklist)
+    claim = runs.claim(receipt.run_id, receipt.attempt_id)
+    read_started, committed = Event(), Event()
+    batch_id, source = digest("batch"), digest("source")
+    output = {"facts": [], "test": "committed"}
+
+    class OldReadView(DynamicRepository):
+        def _guard(self, connection, current):
+            assert connection.scalar(select(dynamic_batches.c.batch_id).where(
+                dynamic_batches.c.run_id == current.run_id
+            )) is None
+            read_started.set()
+            assert committed.wait(timeout=10)
+            return super()._guard(connection, current)
+
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        loaded = pool.submit(OldReadView(engine).load_batch, claim, batch_id, source)
+        try:
+            assert read_started.wait(timeout=10)
+            DynamicRepository(engine).save_batch(claim, batch_id, source, output)
+        finally:
+            committed.set()
+        assert loaded.result(timeout=10) == output
+
+
+def test_mysql_independent_cases_save_first_batches_without_deadlock_failure(
+    mysql_checklist, tmp_path,
+):
+    engine = mysql_checklist[0]
+    with engine.connect() as connection:
+        assert connection.get_isolation_level() == "REPEATABLE READ"
+        if connection.scalar(select(dynamic_batches.c.batch_id)) is not None:
+            pytest.skip("gap-lock reproduction requires an empty isolated schema; keep existing batches")
+    make_other = contextmanager(test_checklists_mysql.mysql_checklist.__wrapped__)
+    with make_other(tmp_path / "other") as other:
+        claims = []
+        for fixture in (mysql_checklist, other):
+            runs, receipt, _ = submitted(fixture)
+            claims.append(runs.claim(receipt.run_id, receipt.attempt_id))
+        barrier, thread = Barrier(2), local()
+
+        def before_insert(connection, cursor, statement, parameters, context, many):
+            if statement.startswith("INSERT INTO dynamic_batches") and not getattr(thread, "seen", False):
+                thread.seen = True
+                barrier.wait(timeout=10)
+
+        for current in (engine, other[0]):
+            event.listen(current, "before_cursor_execute", before_insert)
+        try:
+            def save(pair):
+                fixture, claim = pair
+                DynamicRepository(fixture[0]).save_batch(
+                    claim, digest("batch"), digest("source"), {"facts": []},
+                )
+                return "saved"
+
+            with ThreadPoolExecutor(max_workers=2) as pool:
+                assert list(pool.map(save, zip((mysql_checklist, other), claims))) == ["saved", "saved"]
+            for fixture, claim in zip((mysql_checklist, other), claims):
+                assert DynamicRepository(fixture[0]).load_batch(
+                    claim, digest("batch"), digest("source"),
+                ) == {"facts": []}
+        finally:
+            for current in (engine, other[0]):
+                event.remove(current, "before_cursor_execute", before_insert)

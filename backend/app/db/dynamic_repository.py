@@ -8,6 +8,7 @@ from datetime import UTC, datetime
 from uuid import uuid4
 
 from sqlalchemy import insert, select, update
+from sqlalchemy.exc import OperationalError
 
 from ..criteria.models import ChecklistDefinition
 from ..evidence.repository import digest
@@ -235,12 +236,14 @@ class DynamicRepository:
     def load_batch(self, claim, batch_id, input_digest):
         with self.engine.begin() as connection:
             self._guard(connection, claim)
+            # The guard may establish an RR read view before waiting for the
+            # Case lock. Read the batch committed by the preceding lock owner.
             row = (
                 connection.execute(
                     select(dynamic_batches).where(
                         dynamic_batches.c.run_id == claim.run_id,
                         dynamic_batches.c.batch_id == batch_id,
-                    )
+                    ).with_for_update()
                 )
                 .mappings()
                 .first()
@@ -264,14 +267,28 @@ class DynamicRepository:
             or len(json.dumps(output, ensure_ascii=False).encode()) > 128000
         ):
             _error("dynamic_capacity")
+        for attempt in range(3):
+            try:
+                return self._save_batch(claim, batch_id, input_digest, output)
+            except OperationalError as exc:
+                # Missing-key current reads can deadlock across independent
+                # Cases. Retry only MySQL's rolled-back transaction, never a
+                # model request or an ambiguous connection/commit failure.
+                if (self.engine.dialect.name != "mysql"
+                        or getattr(exc.orig, "args", (None,))[0] != 1213
+                        or attempt == 2):
+                    raise
+
+    def _save_batch(self, claim, batch_id, input_digest, output):
         with self.engine.begin() as connection:
             self._guard(connection, claim)
+            # Use a current read after serialization, not the earlier RR view.
             existing = (
                 connection.execute(
                     select(dynamic_batches).where(
                         dynamic_batches.c.run_id == claim.run_id,
                         dynamic_batches.c.batch_id == batch_id,
-                    )
+                    ).with_for_update()
                 )
                 .mappings()
                 .first()

@@ -1,0 +1,197 @@
+{
+  "kind": "repair_live_database_part_one",
+  "date": "2026-10-08",
+  "source_base_commit": "0aecca8bd0c7e81048090e649dc7131cb1d30c56",
+  "source_sha256": {
+    "backend/app/db/dynamic_repository.py": "e46a0be4bfbf69e7f157a6ac5f61297693f5fa36753ad939aa37c786f335b5bf",
+    "backend/tests/test_dynamic_runs_mysql.py": "96e6a96c05a299fcac741b8e7d959ae1f57bf4c48e4c6a9d7f3a87eb136bd64b",
+    "backend/tests/test_dynamic_batch_retry.py": "0eed6535ac1bd4f5352bfcfe28c302041ce8aa31e82ca7c2e17fb3644ce49ec2"
+  },
+  "offline": {
+    "passed": 1248,
+    "skipped": 41,
+    "failed": 0,
+    "network_attempts": 0,
+    "exit_code": 0
+  },
+  "mysql": {
+    "test_modules": 16,
+    "passed": 29,
+    "skipped": 0,
+    "failed": 0,
+    "migration_head": "0016_assistant_runs",
+    "isolated_uuid_schema": true,
+    "production_dispatcher_connected": false,
+    "cleanup": true,
+    "command": [
+      "python.exe",
+      "-m",
+      "pytest",
+      "backend/tests/test_run_repository_mysql.py",
+      "backend/tests/test_api_mysql.py",
+      "backend/tests/test_api_workspace_mysql.py",
+      "backend/tests/test_document_upload_mysql.py",
+      "backend/tests/test_document_ingestion_mysql.py",
+      "backend/tests/test_persisted_agent_run_mysql.py",
+      "backend/tests/test_background_parsing_mysql.py",
+      "backend/tests/test_correction_mysql.py",
+      "backend/tests/test_case_deletion_mysql.py",
+      "backend/tests/test_case_cleanup_mysql.py",
+      "backend/tests/test_index_repository_mysql.py",
+      "backend/tests/test_layered_memory_mysql.py",
+      "backend/tests/test_checklists_mysql.py",
+      "backend/tests/test_dynamic_runs_mysql.py",
+      "backend/tests/test_assistant_mysql.py",
+      "backend/tests/test_run_recovery_mysql.py",
+      "-q",
+      "--tb=short"
+    ],
+    "remaining_acceptance_schemas_after_cleanup": 0
+  },
+  "runtime": {
+    "services": {
+      "worker": {
+        "container": "docucheck-worker-1",
+        "image": "sha256:59e8e37c82cb6172938ae178780c94b53e99da342d974b7ab032f7df6c4ba895",
+        "running": true,
+        "health": "healthy",
+        "source_files": 118,
+        "different": []
+      },
+      "dispatcher": {
+        "container": "docucheck-dispatcher-1",
+        "image": "sha256:2c859b31a959d938f48ef6ba6e55e97acf4338ffedf5d7d684769fc0dee905ea",
+        "running": true,
+        "health": null,
+        "source_files": 118,
+        "different": []
+      },
+      "indexer": {
+        "container": "docucheck-indexer-1",
+        "image": "sha256:59e8e37c82cb6172938ae178780c94b53e99da342d974b7ab032f7df6c4ba895",
+        "running": true,
+        "health": "healthy",
+        "source_files": 118,
+        "different": []
+      },
+      "cleaner": {
+        "container": "docucheck-cleaner-1",
+        "image": "sha256:2c859b31a959d938f48ef6ba6e55e97acf4338ffedf5d7d684769fc0dee905ea",
+        "running": true,
+        "health": null,
+        "source_files": 118,
+        "different": []
+      }
+    },
+    "backend_inventory_sha256": "4fb061d1ebb14324606aad02287beee0b097319f15e1ad928f17ae02dd07dae8",
+    "http": {
+      "/health/live": 200,
+      "/health/ready": 200,
+      "/api/v1/me": 401,
+      "oidc_discovery": 200,
+      "oidc_jwks": 200
+    },
+    "active_runs": [
+      {
+        "status": "waiting_user",
+        "n": 1
+      }
+    ],
+    "migration": "0016_assistant_runs"
+  },
+  "security_delta": {
+    "scope": "three_changed_python_files_only_not_full_repository",
+    "source_sha256": {
+      "backend/app/db/dynamic_repository.py": "e46a0be4bfbf69e7f157a6ac5f61297693f5fa36753ad939aa37c786f335b5bf",
+      "backend/tests/test_dynamic_batch_retry.py": "0eed6535ac1bd4f5352bfcfe28c302041ce8aa31e82ca7c2e17fb3644ce49ec2",
+      "backend/tests/test_dynamic_runs_mysql.py": "96e6a96c05a299fcac741b8e7d959ae1f57bf4c48e4c6a9d7f3a87eb136bd64b"
+    },
+    "semgrep": {
+      "exit_code": 0,
+      "source_files_covered": 3,
+      "errors": 0,
+      "findings": 0,
+      "extra_scanned": [
+        ".semgrepignore"
+      ]
+    },
+    "gitleaks": {
+      "exit_code": 0,
+      "findings": 0
+    },
+    "passed": true,
+    "validator_note": "Initial path check rejected Windows backslashes and extra empty ignore file; normalized paths then verified every required source and snapshot hash without rerunning successful scanner.",
+    "tools": {
+      "semgrep": "1.179.0",
+      "gitleaks": "8.30.1"
+    },
+    "rule_locks": {
+      "ops/security/tools.json": "22893a14c3e74c01b17131a73f27c3c6c3b7d75a87e9df0d64ce0f94d9c7710d",
+      "ops/security/rule-versions.json": "a5593e032808a54ffb769b830fa7aba7b27042a02089855596b1c553a38344d8",
+      "ops/security/project-rules.yaml": "da8b24b199147e49a496bcfae0ac51a12573ac3238de4559bb764e9e92284487",
+      "ops/security/gitleaks.toml": "8daa69346b72b39fe5d16bdd71c7813f476fc18ac2a54875f3d401cc2b928c33"
+    },
+    "raw_reports": [
+      {
+        "path": "data/verification/repair-security-delta-2026-10-08/semgrep.json",
+        "sha256": "02754f8036af7b54f221cf5a509ca0ebfe76801749de5a83508be34702846a37"
+      },
+      {
+        "path": "data/verification/repair-security-delta-2026-10-08/semgrep.log",
+        "sha256": "9a0a1c3ba600b4204b21b3eab6b16e8a32a1a70191c3795b177a07f7b47f4eb7"
+      },
+      {
+        "path": "data/verification/repair-security-delta-2026-10-08/gitleaks.json",
+        "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+      },
+      {
+        "path": "data/verification/repair-security-delta-2026-10-08/gitleaks.log",
+        "sha256": "e2e45c3a12b07029564f7ebdebd7f257812b6bdccc21e6711bead1bf90fba899"
+      }
+    ]
+  },
+  "external_model_calls": 0,
+  "completed_scope": "isolated_mysql_regression_batch_fix_runtime_source_sync_basic_http_boundary",
+  "full_end_to_end_complete": false,
+  "remaining": [
+    "Windows reserved frontend port 5173 and OIDC callback alignment",
+    "authenticated browser scenarios including long history and memory expiry",
+    "real HTTP OIDC plus Celery and model sampling",
+    "BGE-M3/Milvus retrieval and source validation"
+  ],
+  "failures_retained": [
+    {
+      "path": "data/verification/r13-live-mysql-2026-10-07/report.json",
+      "outcome": "24 passed 1 failed duplicate batch key",
+      "sha256": "7890400ed7dad3e55dab0947f2aff83019816a4f9cf1311b2dd11eeb102681b0"
+    },
+    {
+      "path": "data/verification/r13-live-mysql-red-2026-10-07/report.json",
+      "outcome": "3 failed old RR view regressions",
+      "sha256": "d3117cb7543f196225fd746939d831476d831b876dab1441e74dab66dde30b9a"
+    },
+    {
+      "path": "data/verification/r13-live-mysql-deadlock-red-2026-10-07/report.json",
+      "outcome": "1 failed actual MySQL 1213 across independent Cases",
+      "sha256": "1b6c56a9cf94a90c478d330f009485ca7ccf24a7419444bb8f64b1fac1d83a01"
+    }
+  ],
+  "raw_reports": [
+    {
+      "path": "data/verification/repair-live-batch-final-offline-2026-10-08.json",
+      "sha256": "154019829da3d54d3031e8ad01b0794321296cf55c563eb9cd8ca1a5dac50020"
+    },
+    {
+      "path": "data/verification/repair-live-mysql-final2-2026-10-08/report.json",
+      "sha256": "68832a0c9c99f4be43676c8b974a545234017a88b3d31841e15cd87e4fbda2ef"
+    },
+    {
+      "path": "data/verification/repair-runtime-final-2026-10-08.json",
+      "sha256": "199eb02e63733640f0390d119f069ee77651ce66f94b4754031a7eb7875d994e"
+    },
+    {
+      "path": "data/verification/repair-security-delta-2026-10-08/summary.json",
+      "sha256": "e2baed211017db471d40389a4985ae07d62c472cddd7a1b2aaf935059d0be9f5"
+    }
+  ]
+}
