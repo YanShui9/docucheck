@@ -1,0 +1,145 @@
+{
+  "version": 1,
+  "application_commit": "6601a71",
+  "scope": "first-step short-chat context repair; prepared images not deployed",
+  "offline": {
+    "dependencies": {
+      "exit_code": 0
+    },
+    "ruff": {
+      "exit_code": 0
+    },
+    "pytest": {
+      "exit_code": 0,
+      "passed": 1286,
+      "skipped": 41,
+      "network_attempts": 0
+    }
+  },
+  "recorded_replay": {
+    "kind": "offline_recorded_context_replay",
+    "scope": "fixed real seven-criterion base, validated recorded history and recorded summary; no personal preferences; fixed fake provider answer",
+    "real_model_calls": 0,
+    "production_writes": 0,
+    "records": [
+      {
+        "status": "completed",
+        "error": null,
+        "context": {
+          "input_bound": 15980,
+          "prompt_limit": 16000,
+          "mandatory_overflow": false,
+          "history_turns_selected": 0,
+          "history_turns_omitted": 8,
+          "summary_entries_selected": 2,
+          "summary_entries_omitted": 3,
+          "preferences_selected": 0
+        },
+        "fake_provider_calls": 1,
+        "real_model_calls": 0,
+        "history_turns_loaded": 8,
+        "preferences_replayed": false,
+        "question_preserved": true
+      },
+      {
+        "status": "completed",
+        "error": null,
+        "context": {
+          "input_bound": 15933,
+          "prompt_limit": 16000,
+          "mandatory_overflow": false,
+          "history_turns_selected": 0,
+          "history_turns_omitted": 8,
+          "summary_entries_selected": 2,
+          "summary_entries_omitted": 4,
+          "preferences_selected": 0
+        },
+        "fake_provider_calls": 1,
+        "real_model_calls": 0,
+        "history_turns_loaded": 8,
+        "preferences_replayed": false,
+        "question_preserved": true
+      }
+    ]
+  },
+  "prepared_images": {
+    "prepared_not_deployed": true,
+    "passed": true,
+    "images": [
+      {
+        "role": "worker",
+        "prepared_tag": "docucheck-worker:chat-context-20261009",
+        "prepared_image": "sha256:8c400afc3c3749404b3dacdad56a62091fa1df6c206d2737fc90d93f040b7492",
+        "default_restored_image": "sha256:348ee70443ce61ee2949abb06665088db815e7432d00fcd1c6eb2dd03b865699",
+        "source_hash_matches": 119
+      },
+      {
+        "role": "indexer",
+        "prepared_tag": "docucheck-indexer:chat-context-20261009",
+        "prepared_image": "sha256:83f85620883d2a6ea1a089ec75413127232b4b6dc264fab150a8df34caacc47e",
+        "default_restored_image": "sha256:35dd96d6f73101a0df6d0d3068997e88371bb9c04c595974f1899c9fc2b07f0a",
+        "source_hash_matches": 119
+      },
+      {
+        "role": "dispatcher",
+        "prepared_tag": "docucheck-dispatcher:chat-context-20261009",
+        "prepared_image": "sha256:dc289137bfe0e0f3d58179be351b0ada510640238040cbc33a8348b0c9b19678",
+        "default_restored_image": "sha256:63c1e96dd6a77356f187b7cdfc2dbcb058e742c56fe8ba925fbdc73c328d21b6",
+        "source_hash_matches": 119
+      },
+      {
+        "role": "cleaner",
+        "prepared_tag": "docucheck-cleaner:chat-context-20261009",
+        "prepared_image": "sha256:dc289137bfe0e0f3d58179be351b0ada510640238040cbc33a8348b0c9b19678",
+        "default_restored_image": "sha256:63c1e96dd6a77356f187b7cdfc2dbcb058e742c56fe8ba925fbdc73c328d21b6",
+        "source_hash_matches": 119
+      }
+    ],
+    "real_model_requests": 0,
+    "embedding_requests": 0
+  },
+  "preservation": {
+    "existing_containers_unchanged": 18,
+    "running_containers_unchanged": 12,
+    "waiting_user_runs_unchanged": 2,
+    "ready_indexes_unchanged": 5,
+    "dispatch_unchanged": true,
+    "target_checklist_and_operations_unchanged": true,
+    "target_run_attempt_bindings_unchanged": true
+  },
+  "direct_local_service_checks": {
+    "api_live": {
+      "available": false,
+      "error_type": "ConnectError"
+    },
+    "frontend": {
+      "available": false,
+      "error_type": "ConnectError"
+    },
+    "identity": {
+      "status_code": 200
+    }
+  },
+  "startup_rejection": {
+    "action": "Start-Process for local OIDC API and Vite frontend",
+    "reason": "blocked by policy",
+    "executed": false
+  },
+  "real_model_requests": 0,
+  "embedding_requests": 0,
+  "live_browser_chat_verified": false,
+  "remaining": [
+    "unsaved candidate continuity and missing quantity",
+    "revision-zero candidate UI timing",
+    "apply prepared backend images after restoring local services",
+    "real provider behavior validation"
+  ],
+  "evidence_sha256": {
+    "offline-backend.json": "d06a8bcb955ea95ccea8584be865698fbdea777b9fead9d205e581986bf1e949",
+    "recorded-replay.json": "e9cf45f0dbdbe3989ae60581982225b8f8f55dfa2663291a753974781f88d9d5",
+    "runtime\\builds-final.json": "512ebd559aef953ac7d5b3a5922c57e1c3f28ee72b50d3fbde4e1e497fc37ef6",
+    "runtime\\prepared-images.json": "c3587ebf4d380e97b4ee915ed541bbbfcc0623279a72a5351fc6d7501adc9c70",
+    "runtime\\before.json": "aa1930a4888db4e12e908e0bef1015f7372417ba5a5dc1a4ef99b4f646541156",
+    "runtime\\after.json": "5daea1d5ad0e51263a37885b1be24af0cb545c22a016d3a33b1deea1147090ca"
+  }
+}

@@ -33,7 +33,21 @@
 
 - 完整离线门禁 **1286 passed / 41 skipped / offline_network_attempts=0**，283.72 秒；全仓 backend/evals/scripts Ruff、`pip check` 通过。41 项实连测试未运行，不算通过。
 
-本机镜像同步与服务恢复另行记录。代码修复提交时尚未更新后台镜像，不把离线回放扩大为浏览器/真实模型验收。检查发现宿主 API/前端未监听，Docker 身份服务可用；后台启动 API 与前端的命令被自动审批以 `blocked by policy` 拒绝，未执行。没有尝试绕过该拒绝。
+代码修复已提交为 `6601a71`。没有把离线回放扩大为浏览器/真实模型验收。
+
+## 本机运行状态与待应用镜像
+
+检查发现宿主 API/前端未监听；禁用代理环境后直连 API 和前端均 ConnectError，身份发现接口 200。初始运行采集的 HTTP 502 未禁用代理，不能当成直连健康证据。后台启动 API 与前端的命令被自动审批以 `blocked by policy` 拒绝，未执行，没有尝试绕过该拒绝。已请用户按现有启动脚本在本机终端恢复服务。
+
+以当前运行镜像为缓存基础，成功构建三份新镜像，worker/indexer/dispatcher/cleaner 四个角色分别保留 `docucheck-{role}:chat-context-20261009` 标签；dispatcher/cleaner 共用同一镜像。各角色均保留 `pre-chat-context-20261009` 原镜像回退标签。构建使用已验证本地标签、`--pull=false --network=none`，未安装或升级包；构建中 pip check 与四个入口 import 通过。额外隔离容器校验四个角色各 **119 个源码哈希**与 `6601a71` 的应用源码一致。
+
+**这些镜像尚未部署。** 服务恢复受阻时，没有降低健康验收要求或替换运行容器；构建临时更新的 `latest` 标签已全部恢复为原运行 image ID。当前四个后台容器仍运行旧版，与新源码有三个文件差异（含新增上下文模块）。后续应用时必须显式选择已构建标签，再按原三个 Compose overlay 排空、重建、复验；直接 `docker restart` 或 `up --no-build` 不会自动应用这批修复。
+
+部署准备前后：18 个既有容器的 ID、image、StartedAt、运行/健康状态完全一致；两个 waiting_user 的 Run/attempt/fence 不变，五条索引保持 ready、派发分布不变。目标手机会话的清单及保存确认操作、Run 状态和 attempt/fence 均与排查前一致。本步没有调用真实模型或 Embedding。
+
+这是既有环境上的本地缓存构建，不能代替标准 Dockerfile 干净构建、生产镜像发布或在线闭环。可提交的[脱敏证据](repair-chat-context-evidence-2026-10-09.json)记录测试、离线回放、待部署镜像、状态保留及原始证据 hash；完整运行记录保留在忽略目录，不包含在 Git 提交中。
+
+收尾独立只读复核：六份证据 hash、119 源码与应用提交、四角色 prepared/latest/回退 tag、镜像 revision label、构建日志及目标清单/Run 数据逐项通过。修正一处证据字段口径：18 是既有容器数，其中实际运行 12 个，另外 6 个本来已停止；最终 JSON 分别记录 existing/running，正文未将 18 个都称为运行中。未发现剩余阻断问题；没有通过复核代替部署或真实模型测试。
 
 ## 后续优先级
 
