@@ -1,0 +1,301 @@
+{
+  "schema_version": 1,
+  "source_head": "6f17627",
+  "date": "2026-10-08",
+  "status": "startup_repaired_local_live_acceptance_passed",
+  "data_volume_reused": "docucheck-vector_milvus_data",
+  "etcd_version": "3.5.23",
+  "etcd_image": "quay.io/coreos/etcd:v3.5.23@sha256:a4ff811beaa545972cd993f7d331685e8777c0dcecf5a8ae46069bf792ed4916",
+  "milvus_version": "2.6.25",
+  "binary_git_commit": "95ec678526",
+  "generative_model_requests": 0,
+  "embedding_requests_total": 6,
+  "embedding_requests_first_run": 3,
+  "embedding_requests_final_run": 3,
+  "external_connection_attempts": 0,
+  "live_first": {
+    "passed": 4,
+    "failed": 1,
+    "seconds": 27.56,
+    "failure": "probe account cross-database DescribeCollection was not denied"
+  },
+  "live_final": {
+    "passed": 5,
+    "failed": 0,
+    "seconds": 26.87
+  },
+  "offline_full": {
+    "passed": 1274,
+    "skipped": 41,
+    "network_attempts": 0,
+    "wrapper_seconds": 301.046,
+    "pytest_seconds": 295.67,
+    "collected_before_last_added_deployment_test": true
+  },
+  "final_targeted": {
+    "command": [
+      "python",
+      "-m",
+      "pytest",
+      "backend/tests/test_milvus_deployment.py",
+      "backend/tests/test_dev_milvus_setup.py",
+      "backend/tests/test_persisted_retrieval.py",
+      "-q",
+      "-p",
+      "scripts.offline_guard"
+    ],
+    "exit_code": 0,
+    "seconds": 14.063,
+    "output": "......................                                                   [100%]\noffline_network_attempts=0\n\n22 passed in 13.19s\n"
+  },
+  "runtime": {
+    "probe_collections_before": [
+      "docucheck_rag_05de1cde3ec75c42d72ce96237847307"
+    ],
+    "probe_collections_after": [
+      "docucheck_rag_05de1cde3ec75c42d72ce96237847307"
+    ],
+    "collections_preserved": true,
+    "server_version": "2.6.25",
+    "public_grants_after_restart": [],
+    "probe_role_after_restart": [
+      {
+        "object_type": "Collection",
+        "object_name": "*",
+        "db_name": "docucheck_probe",
+        "role_name": "docucheck_probe_role",
+        "privilege": "CreateIndex",
+        "grantor_name": "root"
+      },
+      {
+        "object_type": "Collection",
+        "object_name": "*",
+        "db_name": "docucheck_probe",
+        "role_name": "docucheck_probe_role",
+        "privilege": "Delete",
+        "grantor_name": "root"
+      },
+      {
+        "object_type": "Collection",
+        "object_name": "*",
+        "db_name": "docucheck_probe",
+        "role_name": "docucheck_probe_role",
+        "privilege": "GetLoadState",
+        "grantor_name": "root"
+      },
+      {
+        "object_type": "Collection",
+        "object_name": "*",
+        "db_name": "docucheck_probe",
+        "role_name": "docucheck_probe_role",
+        "privilege": "GetLoadingProgress",
+        "grantor_name": "root"
+      },
+      {
+        "object_type": "Collection",
+        "object_name": "*",
+        "db_name": "docucheck_probe",
+        "role_name": "docucheck_probe_role",
+        "privilege": "IndexDetail",
+        "grantor_name": "root"
+      },
+      {
+        "object_type": "Collection",
+        "object_name": "*",
+        "db_name": "docucheck_probe",
+        "role_name": "docucheck_probe_role",
+        "privilege": "Load",
+        "grantor_name": "root"
+      },
+      {
+        "object_type": "Collection",
+        "object_name": "*",
+        "db_name": "docucheck_probe",
+        "role_name": "docucheck_probe_role",
+        "privilege": "Query",
+        "grantor_name": "root"
+      },
+      {
+        "object_type": "Collection",
+        "object_name": "*",
+        "db_name": "docucheck_probe",
+        "role_name": "docucheck_probe_role",
+        "privilege": "Search",
+        "grantor_name": "root"
+      },
+      {
+        "object_type": "Collection",
+        "object_name": "*",
+        "db_name": "docucheck_probe",
+        "role_name": "docucheck_probe_role",
+        "privilege": "Upsert",
+        "grantor_name": "root"
+      },
+      {
+        "object_type": "Global",
+        "object_name": "*",
+        "db_name": "docucheck_probe",
+        "role_name": "docucheck_probe_role",
+        "privilege": "CreateCollection",
+        "grantor_name": "root"
+      },
+      {
+        "object_type": "Global",
+        "object_name": "*",
+        "db_name": "docucheck_probe",
+        "role_name": "docucheck_probe_role",
+        "privilege": "DescribeCollection",
+        "grantor_name": "root"
+      },
+      {
+        "object_type": "Global",
+        "object_name": "*",
+        "db_name": "docucheck_probe",
+        "role_name": "docucheck_probe_role",
+        "privilege": "DropCollection",
+        "grantor_name": "root"
+      },
+      {
+        "object_type": "Global",
+        "object_name": "*",
+        "db_name": "docucheck_probe",
+        "role_name": "docucheck_probe_role",
+        "privilege": "ShowCollections",
+        "grantor_name": "root"
+      }
+    ],
+    "default_collections_after_tests": [],
+    "existing_waiting_run_status": "waiting_user",
+    "index_job_status_counts": {
+      "failed": 5
+    },
+    "healthz": 200,
+    "api_http": {
+      "/health/live": 200,
+      "/health/ready": 200,
+      "/api/v1/me": 401
+    },
+    "services": {
+      "docucheck-vector-etcd-1": {
+        "health": "healthy",
+        "restarts": 0,
+        "oom": false,
+        "image": "sha256:a4ff811beaa545972cd993f7d331685e8777c0dcecf5a8ae46069bf792ed4916",
+        "memory_limit": 268435456,
+        "ports": {}
+      },
+      "docucheck-vector-milvus-1": {
+        "health": "healthy",
+        "restarts": 0,
+        "oom": false,
+        "image": "sha256:0780292a35b94048717a1f228809d46e080128436ae229a0ec75834df2683e54",
+        "memory_limit": 2147483648,
+        "ports": {
+          "19530/tcp": [
+            {
+              "HostIp": "127.0.0.1",
+              "HostPort": "19530"
+            }
+          ],
+          "9091/tcp": [
+            {
+              "HostIp": "127.0.0.1",
+              "HostPort": "9091"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "fresh_volume": {
+    "storage-init": {
+      "status": "exited",
+      "exit_code": 0,
+      "health": ""
+    },
+    "etcd": {
+      "status": "running",
+      "exit_code": 0,
+      "health": "healthy"
+    },
+    "project": "docucheck-vector-fresh-20261008",
+    "milvus_started": false,
+    "owned_volume_removed": true,
+    "owned_containers_removed": true
+  },
+  "public_hardening": {
+    "before": [
+      {
+        "object_type": "Collection",
+        "object_name": "*",
+        "db_name": "*",
+        "role_name": "public",
+        "privilege": "IndexDetail",
+        "grantor_name": "root"
+      },
+      {
+        "object_type": "Global",
+        "object_name": "*",
+        "db_name": "*",
+        "role_name": "public",
+        "privilege": "DescribeCollection",
+        "grantor_name": "root"
+      },
+      {
+        "object_type": "Global",
+        "object_name": "*",
+        "db_name": "*",
+        "role_name": "public",
+        "privilege": "ListAliases",
+        "grantor_name": "root"
+      }
+    ],
+    "revoked": [
+      "IndexDetail",
+      "DescribeCollection",
+      "ListAliases"
+    ],
+    "after": []
+  },
+  "application_code_changed": false,
+  "backend_business_code_changed": false,
+  "frontend_changed": false,
+  "new_volume_full_milvus_boot_tested": false,
+  "persisted_live_sql_backend": "SQLite",
+  "limits": [
+    "No MySQL/queue/browser end-to-end BGE run in this step",
+    "No retry of five existing failed indexes",
+    "Worker one-file drift from prior correction fix remains",
+    "Active image not rebuilt; public privilege startup setting applied via Compose env",
+    "API/frontend/application containers and old user Milvus were not restarted",
+    "Existing collection list preserved; not a full historical row audit"
+  ],
+  "raw_evidence_sha256": {
+    "milvus-volume-before.tar": "ed749a7d3b1180b2f60e860cac1d925bc952abbb0e22611f4a8ed41ab35de06f",
+    "etcd_server.go": "4a7167f5cd6dd8e1d0526f3776d4b58915028c1f67f467d575ba021ec21e1fc1",
+    "session_util.go": "1f384724704c7c555a7c16f8de161ff07ea02ae5a4093eac47bf993c188a9271",
+    "root_coord.go": "f91f3c1d7c41aec153d949a170945709e040799ceaffcd7be1840433136c69cf",
+    "component_param.go": "fc5264885cc8844904ad9b6147ff84e8cc1e068730b5c615d49a0cee70ab9146",
+    "milvus.yaml": "b929f771706a9a9f210fde4e1fdc1d722b3f8a9266b1b62ed084bc1463beb67e",
+    "collections-before-live.json": "f6d70d5e00456df8335121500afcf51c698ac8c678be17cec073b1ba1765f310",
+    "roles-after-recovery.json": "c81e008c3a2c66d92cede980289c3ded21526500d47bbc22653cb9a568de519c",
+    "public-hardening.json": "e813ef7be6b6818077c33f72bcc92922fcc049186350c26690c071b36de7711a",
+    "runtime-final.json": "100fb6509e456987a7fa01844b8405276d23a59dba0cfcf9998152079bb4f412",
+    "fresh-volume.json": "783f4d923dd98651e5448882374651f9ca3c9d8b1954c38fb2c9f0892a69d846",
+    "live-tests.log": "f5d162b4ae51a2fdb30abf7a877585128b7335cf79e428f92e54924191106a90",
+    "live-tests-final.log": "a03c8ce1fc2c07794fb3d00c3f9532869d0c899bb6700fe1ad1536d8fc5cbe88",
+    "live-metrics-first.json": "022451c3e2e148a8659bfa92bf0251d6a7bba36c43a598ca0eec6f9f2d85a7fa",
+    "live-metrics.json": "ea07c2d4bec285e987c86131625e979afe737f7bc44f6ce261774e813debba07",
+    "live_metrics.py": "4ecc0940cbd59d0fdba55c349a4574ae16021fa525497480948ff26c4e6e610d",
+    "offline-final.json": "d18a0e54c5e0075946c0e880cf375f2861466cc15b2fbfcf9b22838cf125378a",
+    "targeted-final.json": "5704ae6d827f7f4eb8e6407ba51e1889cfcd942b61bb55fb1d181736d7bb2f1c",
+    "etcd-recovery.log": "553e21231ceeb91175eb02f24a586804031de5ddadddc4574ea5ed98f82d32ca",
+    "milvus-recovery.log": "6435449d4b9ebd9eac4e20d6dc162fefcc64ff9870f84170ff7dd0757c9d33b6"
+  },
+  "changed_source_sha256": {
+    "compose.milvus.yaml": "80a208c6a65d63518f236e1848f73d9267c1a7884bdd936017470ded929a931e",
+    "compose.milvus-smoke.yaml": "cfa298876cfbdec1fcd093ef5f39426d8a612e4f9b80ef6e913cedbfa4f26ca6",
+    "deploy/milvus/user.yaml": "167b547e14413018632fbcb999aa54df22e38a417f99ab661756c3739be7c215",
+    "backend/tests/test_milvus_deployment.py": "f24498405c634a31a45ec03c71913c795cf77b81691ea564aad6d73a3f84b58b"
+  }
+}

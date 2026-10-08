@@ -1,3 +1,4 @@
 common:
   security:
     authorizationEnabled: true
+    enablePublicPrivilege: false

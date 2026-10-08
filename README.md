@@ -1,5 +1,7 @@
 # DocuCheck
 
+> **2026-10-08 实连第二部分H（当前入口）**：[Milvus启动修复](docs/repair-milvus-startup-2026-10-08.md)用同版本独立etcd与健康门禁恢复原卷，补齐新卷目录初始化；实连发现public默认跨库元数据权限在重启时恢复，已关闭自动授权并撤销三项默认权限，重启隔离验证通过。最终真实Milvus/BGE5项通过（持久化SQL层为SQLite），此前1失败/4通过保留；本步Embedding6次、DeepSeek0次。完整离线1274/41/网络0，最后新增部署用例另由最终22项覆盖，Ruff/pip/Compose通过。原集合清单与waiting_user保留，5条failed索引未重试；worker1文件差异待统一部署。下方G为恢复前失败历史。
+
 > **2026-10-08 实连第二部分G（部分完成）**：[BGE/Milvus复验](docs/repair-rag-reverification-2026-10-08.md)已恢复本机Ollama/BGE，1024维归一化及Docker indexer到宿主连通通过；既有Milvus两次启动均因启动期etcd leader changed退出134，未改数据卷或凭据。真实连接失败时两条合成查询显式BM25降级，不能算向量成功；本诊断Embedding3次、DeepSeek0次。补齐ready manifest依赖故障/释放/原文守卫两项，相关92项/网络0、Ruff/pip check通过。Milvus成功路径实连未运行、整项不勾选，下一项先修启动再验收持久化检索；worker1文件差异仍保留。下方F为已完成的正向修正历史。
 
 > **2026-10-08 正向修正与完成度说明修复（当前入口）**：[本步交付](docs/repair-correction-positive-live-2026-10-08.md)完成同源12/8箱备选的真实OIDC页面提交、MySQL冲突/非正式/审计及Excel/JSON/原件一致性。夹具报告用测试Provider准备，真实模型0次；修复“待复核误称抽取未完成”，完整1269 passed/41 skipped/网络0、定向31项及Ruff/pip check通过。API已通过OIDC脚本应用修复，记录首次漏带认证参数的重启误操作；worker未重建，1文件差异明确保留。产品页面链路可勾选，BGE/Milvus仍待实连。下方正向修正待验收为阶段历史。
