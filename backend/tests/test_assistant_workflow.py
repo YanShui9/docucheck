@@ -147,6 +147,10 @@ def test_assistant_fact_correction_keeps_chat_report_and_checkpoint_consistent(d
     with engine.connect() as connection:
         stored = connection.execute(select(agent_runs).where(agent_runs.c.id == run_id)).mappings().one()
     assert result.json()["result"]["answer"] == stored["answer_text"]
+    assert "本次存在人工修正，结论仍需人工复核" in stored["answer_text"]
+    assert "指标审查完成" in stored["answer_text"]
+    assert "未覆盖项" not in stored["answer_text"]
+    assert "部分完成" not in stored["answer_text"]
     assert stored["memory_json"]["version"] == 5
     assert stored["memory_json"]["payload_digest"] == result.json()["payload_digest"]
     checkpoints = client.get(prefix + "/checks").json()["checks"]

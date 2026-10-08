@@ -1,0 +1,94 @@
+{
+  "run_id": "eb334fa9ebe6415f8a17ff586f0dc789",
+  "case_id": "c4fbfe1f45814d0db5cfbec8b4de6365",
+  "snapshot_id": "6ad15b4f412b47d786d9dd223f2e8602",
+  "checklist_version_id": "417471ebd9bf420eacb35861c7ece678",
+  "payload_digest": "53ba6eefcd33ece2203e395f54ff9278a8c4c70a75a2d8803b57f0590c231458",
+  "values": [
+    "12",
+    "8"
+  ],
+  "correction_id": "fd0b12f2c50740a3a78e68f61535ed89",
+  "correction_count": 1,
+  "review_status": "needs_review",
+  "processing_status": "complete",
+  "business_status": "资料冲突",
+  "is_formal": false,
+  "coverage_complete": true,
+  "assistant_chat_checkpoint_consistent": true,
+  "json_xlsx_database_equal": true,
+  "original_hash_matches": true,
+  "waiting_user_preserved": true,
+  "real_model_requests": 0,
+  "scripted_provider_calls_total": 6,
+  "download_sha256": {
+    "docucheck-eb334fa9ebe6415f8a17ff586f0dc789.json": "57cdb0cd763ff325b3df9a54f220de9e0c66d2c91949c6925927ac8cbb562121",
+    "docucheck-eb334fa9ebe6415f8a17ff586f0dc789.xlsx": "575cd43659fd3d12a069a42cbf691f5333ce4cddb3384fad6cd23b68bf68aa5e",
+    "correction-synthetic-quote.xlsx": "5e7aa1757459d470db48981bc85b36308653bea157c4bde9bc0253508086fb33"
+  },
+  "schema_version": 1,
+  "source_head": "7f719d5",
+  "offline_gate": {
+    "passed": 1269,
+    "skipped": 41,
+    "seconds": 270.579
+  },
+  "targeted_tests": {
+    "passed": 31,
+    "network_attempts": 0
+  },
+  "red_phase": {
+    "failed": 2,
+    "passed": 1
+  },
+  "partial_boundary_before_fix": {
+    "passed": 1,
+    "network_attempts": 0
+  },
+  "frontend_changed": false,
+  "browser_positive_correction": true,
+  "fixture_preparation_uses_live_model": false,
+  "runtime": {
+    "api_pid": 20404,
+    "api_start_script": "scripts/start-api-oidc.ps1",
+    "api_source_sha256": "26ff7038c1088d0cdf2237a0a0e47bbb9438be5c46ff1b44849c1f1bab7449b2",
+    "worker_image": "sha256:e29168ff352c6902fbd765bb309cce95412fb739afdb02bb46a490ad575cf684",
+    "worker_python_files": 118,
+    "worker_source_differences": [
+      "db/dynamic_repository.py"
+    ],
+    "docker_services_restarted": 0,
+    "api_restart_correction": "First bare uvicorn invocation omitted OIDC environment; stopped and restarted with the existing OIDC script. Current health and anonymous checks verified.",
+    "current_http_status": {
+      "/health/live": 200,
+      "/health/ready": 200,
+      "/api/v1/me": 401
+    }
+  },
+  "pending": [
+    "bge_milvus_live_reverification",
+    "worker_image_sync_in_next_deployment"
+  ],
+  "raw_evidence_sha256": {
+    "after-fix-report.jpg": "e560561e3a812b7d0022c3aa297857f02f8477cad78c556ff5efa465a291c437",
+    "before-fix-corrected-payload.json": "3b8862df0cc8a0b2a02a383021ba61805ba4956b9e64bff0f10168d15496ade4",
+    "before-fix.jpg": "958d4623fc4c135f5736bc79115a79f1dce527eab3b558fd841a14ad19d61ef2",
+    "before-payload.json": "344c29db883cf2338a03fec64db29767c8de8007ca4dfb244a79df705eb52959",
+    "correction-synthetic-quote.xlsx": "5e7aa1757459d470db48981bc85b36308653bea157c4bde9bc0253508086fb33",
+    "correction-synthetic-requirement.xlsx": "9302ba43de372ffaed0796dc86282c3a6a0aaa4b701654eea5779435e196e14a",
+    "fixture.json": "f2f4cd38d44cc6a1fdc3bd62688d5c5a12104694ebc6a1fcf2e84c618eba3ccf",
+    "green-after-payload.json": "3b8862df0cc8a0b2a02a383021ba61805ba4956b9e64bff0f10168d15496ade4",
+    "green-audit.json": "60e42b88eaa4385a997ef83fb09c651a26aeefb789c36fcc2166e9acfb05c2d2",
+    "green-before-payload.json": "344c29db883cf2338a03fec64db29767c8de8007ca4dfb244a79df705eb52959",
+    "green-fixture.json": "9abbb42a2378c2ce2baef7368d5a72cbe12febc240e447400401c3d8e4e07742",
+    "offline-final.json": "e3d6adec14898ebca5e312b668e68fac4ad324885ee9ee6909e6fa02f9fc91ea",
+    "runtime.json": "3a027263a6967152f8f85a040a29413bef29fa850b68291b3f574df52718433f",
+    "source.jpg": "4ed5ed1fe3a7f01bf44ac3e1afdfd1181d8c7cda8cfbc20536c0aef42cbfb778",
+    "verification.json": "da491a4a9f14433317263113509de11e84809e28f0c5f7f19d8fb2175ae6164b"
+  },
+  "source_sha256": {
+    "backend/app/db/dynamic_repository.py": "26ff7038c1088d0cdf2237a0a0e47bbb9438be5c46ff1b44849c1f1bab7449b2",
+    "backend/tests/test_dynamic_workflow.py": "f1dcd710ada53152f39938b5412be44fdd433a8b57e66acb6a4117dad0ec0bdc",
+    "backend/tests/test_assistant_workflow.py": "75945175d58b562690f3c624fc987d01a81c63d6960a84404495274f27393b6b"
+  }
+}

@@ -840,7 +840,10 @@ class DynamicRepository:
             }
             from ..agent.dynamic import render_review
 
-            answer = render_review(changed["checks"], complete=False, needs_review=True, repo=repo)
+            answer = render_review(
+                changed["checks"], complete=all(changed["coverage"].values()),
+                needs_review=True, repo=repo,
+            )
             if assistant_row is not None:
                 live_assistant = connection.execute(select(assistant_runs).where(
                     assistant_runs.c.run_id == run_id).with_for_update()).mappings().one()

@@ -285,6 +285,10 @@ def test_same_source_two_values_keep_conflict_and_correction_audit(dynamic_case)
     response = client.post(url, headers=headers, json=body)
     assert response.status_code == 201, response.text
     assert response.json()["review_status"] == "needs_review"
+    detail = client.get(f"/api/v1/agent-runs/{run_id}").json()
+    assert "指标审查完成" in detail["answer_text"]
+    assert "结论仍需人工复核" in detail["answer_text"]
+    assert "未覆盖项" not in detail["answer_text"]
     assert client.post(url, headers=headers, json=body).json() == response.json()
     changed = client.get(f"/api/v1/agent-runs/{run_id}/facts").json()
     assert {
@@ -320,6 +324,43 @@ def test_same_source_two_values_keep_conflict_and_correction_audit(dynamic_case)
         == "资料冲突"
     )
     assert not any(c["is_formal"] for c in rereview["checks"])
+
+
+@pytest.mark.parametrize("dynamic_case", ["苹果 数量12箱或8箱"], indirect=True)
+def test_correction_preserves_incomplete_extraction_warning(dynamic_case):
+    from backend.app.criteria.facts import FactCandidate
+    from backend.app.providers.base import ProviderError
+
+    class IncompleteProvider(ScriptProvider):
+        def extract(self, *args, **kwargs):
+            if self.extractions:
+                raise ProviderError("rate_limit")
+            output = super().extract(*args, **kwargs)
+            for fact in output.tool_calls[0]["args"].get("facts", []):
+                fact["unit"] = "箱"
+            return output
+
+    confirm(dynamic_case)
+    client, _, _, _, _ = dynamic_case
+    run_id = message(dynamic_case, key="partial-review")
+    assert run(dynamic_case, run_id, IncompleteProvider()).status == "partial"
+    facts = client.get(f"/api/v1/agent-runs/{run_id}/facts").json()
+    old = next(g for g in facts["fact_sets"] if g["supplier"] == "vendor-a")["facts"][0]
+    candidate = {k: old[k] for k in FactCandidate.model_fields}
+    candidate.update(value="8", unit="箱")
+    response = client.post(f"/api/v1/agent-runs/{run_id}/fact-corrections",
+        headers={"Idempotency-Key": "partial-correction"}, json={
+            "fact_id": old["fact_id"], "candidate": candidate, "reason": "同源备选",
+            "expected_revision": 3, "expected_payload_digest": facts["payload_digest"],
+        })
+    assert response.status_code == 201, response.text
+    detail = client.get(f"/api/v1/agent-runs/{run_id}").json()
+    assert detail["status"] == "partial"
+    assert "部分完成，未覆盖项仍为处理未完成" in detail["answer_text"]
+    assert "结论仍需人工复核" in detail["answer_text"]
+    checks = client.get(f"/api/v1/agent-runs/{run_id}/checks").json()["checks"]
+    assert not any(c["is_formal"] for c in checks)
+    assert any(c["processing_status"] != "complete" for c in checks)
 
 
 @pytest.mark.parametrize("dynamic_case", ["苹果 数量12箱或8箱或10箱"], indirect=True)
