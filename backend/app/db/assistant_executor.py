@@ -104,7 +104,7 @@ def execute_assistant(engine, claim, provider, *, heartbeat_interval_seconds=10.
                     RunStatus(result["status"]), answer_text=result["answer"], error_code=result["error"],
                     model_id=getattr(provider, "model_id", None), usage_json=result["usage"],
                     trace_events=result["events"], memory_json=checkpoint,
-                    context_manifest=memory.manifest | {"assistant": checkpoint},
+                    context_manifest=memory.manifest | {"assistant": checkpoint, "assistant_context": result["context"]},
                     dynamic_payload=result["dynamic_payload"], assistant_payload=payload,
                     outcome_unknown=any(e.get("outcome_unknown") is True for e in result["events"]))
             return ExecutionReport(claim.run_id, claim.active_attempt_id, result["status"], result["answer"], result["error"], result["usage"]["model_calls"])

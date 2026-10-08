@@ -53,6 +53,44 @@ def test_empty_case_chat_api_history_and_nonformal_exports(ingestion_case):
     assert legacy.status_code == 422
 
 
+def test_seven_confirmed_manual_requirements_chat_persists_context_without_formal_report(ingestion_case):
+    from backend.app.db.models import agent_runs
+    from backend.tests.test_assistant_context import phone_requirements
+
+    client, engine, _, case = ingestion_case
+    conv = client.post(f"/api/v1/cases/{case}/conversations").json()["id"]
+    messages_url = f"/api/v1/conversations/{conv}/messages"
+    initial = client.post(messages_url, headers={"Idempotency-Key": "setup"},
+        json={"content": "准备采购手机", "operation": "assistant", "expected_revision": 0}).json()
+    execute_run(engine, initial["run_id"], initial["attempt_id"], Decisions(("chat", {"answer": "请先设置采购要求。"})), heartbeat_interval_seconds=60)
+    snapshot = client.get(f"/api/v1/agent-runs/{initial['run_id']}").json()["snapshot_id"]
+    checklist_url = f"/api/v1/cases/{case}/snapshots/{snapshot}/checklist"
+    definition = phone_requirements().model_dump(mode="json")
+    saved = client.put(checklist_url, headers={"Idempotency-Key": "seven-save"},
+        json={**definition, "expected_revision": 0, "expected_checklist_revision": 0, "reason": "明确保存"})
+    assert saved.status_code == 200, saved.text
+    confirmed = client.post(checklist_url + "/confirm", headers={"Idempotency-Key": "seven-confirm"}, json={
+        "expected_revision": 0, "expected_checklist_revision": saved.json()["checklist_revision"],
+        "criterion_ids": [c["criterion_id"] for c in definition["criteria"]], "confirmed": True, "reason": "明确确认"})
+    assert confirmed.status_code == 200, confirmed.text
+    request = client.post(messages_url, headers={"Idempotency-Key": "after-seven"}, json={
+        "content": "所以我现在需要补充采购文件、供应商报价、承诺材料之类的", "operation": "assistant", "expected_revision": 0}).json()
+    report = execute_run(engine, request["run_id"], request["attempt_id"],
+        Decisions(("chat", {"answer": "是的，请补充供应商报价或承诺资料；具体型号等要求也仍需明确。"})), heartbeat_interval_seconds=60)
+    assert report.status == "completed" and report.model_calls == 1
+    prefix = f"/api/v1/agent-runs/{request['run_id']}"
+    result = client.get(prefix + "/assistant-result")
+    assert result.status_code == 200 and result.json()["result"]["kind"] == "chat"
+    assert client.get(prefix + "/checks").json()["checks"] == []
+    assert client.get(prefix + "/export").status_code == 409
+    assert client.get(checklist_url).json() == {k: v for k, v in confirmed.json().items() if k != "excluded_criterion_ids"}
+    with engine.connect() as connection:
+        manifest = connection.scalar(select(agent_runs.c.context_manifest_json).where(agent_runs.c.id == request["run_id"]))
+    audit = manifest["assistant_context"]
+    assert audit["mandatory_overflow"] is False and audit["input_bound"] <= audit["prompt_limit"]
+    assert all(type(value) in {int, bool} for value in audit.values())
+
+
 def test_empty_chat_user_defined_candidate_explicit_save_confirm_then_review_waits(ingestion_case):
     client, engine, _, case = ingestion_case
     conv = client.post(f"/api/v1/cases/{case}/conversations").json()["id"]
