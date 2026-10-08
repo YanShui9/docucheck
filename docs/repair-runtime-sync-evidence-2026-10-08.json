@@ -1,0 +1,584 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-08",
+  "source_head": "b91e3fb6fcab6e34b6b32bf2e0d1c709b41f4337",
+  "status": "four_background_roles_updated_and_verified",
+  "application_code_changed": false,
+  "containers": [
+    {
+      "role": "worker",
+      "old_image": "sha256:e29168ff352c6902fbd765bb309cce95412fb739afdb02bb46a490ad575cf684",
+      "new_image": "sha256:348ee70443ce61ee2949abb06665088db815e7432d00fcd1c6eb2dd03b865699",
+      "old_container_id": "be94f7c0dcf0e820c5c779a79ae5ee7a47a5bd035d454a207b405a18ccdb2e24",
+      "new_container_id": "29d0c659ebb0a6f8bf2ae20a61b6914ed9fdd38adf89935ef83ba424a4f6992f",
+      "old_source_differences": [
+        "backend/app/db/dynamic_repository.py"
+      ],
+      "new_source_differences": [],
+      "files_compared": 118,
+      "running": true,
+      "health": "healthy",
+      "user": "docucheck",
+      "safe_settings": {
+        "SSL_CERT_FILE": "/run/docucheck/model-ca-bundle.pem",
+        "DOCUCHECK_DATA_DIR": "/data",
+        "DOCUCHECK_VECTOR_RETRIEVAL_ENABLED": "1",
+        "DOCUCHECK_INDEX_EMBEDDING_REVISION": "ollama-bge-m3-7907646426070047a77226ac3e684fbbe8410524f7b4a74d02837e43f2146bab-normalized-v1",
+        "DOCUCHECK_EMBEDDING_BASE_URL": "http://host.docker.internal:11634",
+        "DOCUCHECK_MILVUS_URI": "http://milvus:19530",
+        "DOCUCHECK_MILVUS_DATABASE": "docucheck_probe"
+      }
+    },
+    {
+      "role": "indexer",
+      "old_image": "sha256:59e8e37c82cb6172938ae178780c94b53e99da342d974b7ab032f7df6c4ba895",
+      "new_image": "sha256:35dd96d6f73101a0df6d0d3068997e88371bb9c04c595974f1899c9fc2b07f0a",
+      "old_container_id": "9ae9eb7e2ae2b8e2c788c5de483e582d4d10d82c0b6a28bac0260302cc284ce3",
+      "new_container_id": "f6fcb5756939a5f7a44e2a408845003ae48107a22e96124a3daa45f1e75716f3",
+      "old_source_differences": [
+        "backend/app/agent/assistant.py",
+        "backend/app/agent/dynamic.py",
+        "backend/app/db/dynamic_repository.py",
+        "backend/app/dev_oidc_realm.py",
+        "backend/app/providers/base.py",
+        "backend/app/providers/chat_model.py"
+      ],
+      "new_source_differences": [],
+      "files_compared": 118,
+      "running": true,
+      "health": "healthy",
+      "user": "docucheck",
+      "safe_settings": {
+        "SSL_CERT_FILE": null,
+        "DOCUCHECK_DATA_DIR": "/data",
+        "DOCUCHECK_VECTOR_RETRIEVAL_ENABLED": "1",
+        "DOCUCHECK_INDEX_EMBEDDING_REVISION": "ollama-bge-m3-7907646426070047a77226ac3e684fbbe8410524f7b4a74d02837e43f2146bab-normalized-v1",
+        "DOCUCHECK_EMBEDDING_BASE_URL": "http://host.docker.internal:11634",
+        "DOCUCHECK_MILVUS_URI": "http://milvus:19530",
+        "DOCUCHECK_MILVUS_DATABASE": "docucheck_probe"
+      }
+    },
+    {
+      "role": "dispatcher",
+      "old_image": "sha256:2c859b31a959d938f48ef6ba6e55e97acf4338ffedf5d7d684769fc0dee905ea",
+      "new_image": "sha256:63c1e96dd6a77356f187b7cdfc2dbcb058e742c56fe8ba925fbdc73c328d21b6",
+      "old_container_id": "e0d4d95b5b52984740e211f1050dd6abe909d32b429ec2b6b70c6471748961fd",
+      "new_container_id": "586dd751a56cca0b09ecd8ed5bbed97e9c240a26bc63709b448e0d1f2d0104de",
+      "old_source_differences": [
+        "backend/app/agent/assistant.py",
+        "backend/app/agent/dynamic.py",
+        "backend/app/db/dynamic_repository.py",
+        "backend/app/dev_oidc_realm.py",
+        "backend/app/providers/base.py",
+        "backend/app/providers/chat_model.py"
+      ],
+      "new_source_differences": [],
+      "files_compared": 118,
+      "running": true,
+      "health": null,
+      "user": "docucheck",
+      "safe_settings": {
+        "SSL_CERT_FILE": null,
+        "DOCUCHECK_DATA_DIR": null,
+        "DOCUCHECK_VECTOR_RETRIEVAL_ENABLED": null,
+        "DOCUCHECK_INDEX_EMBEDDING_REVISION": null,
+        "DOCUCHECK_EMBEDDING_BASE_URL": null,
+        "DOCUCHECK_MILVUS_URI": null,
+        "DOCUCHECK_MILVUS_DATABASE": null
+      }
+    },
+    {
+      "role": "cleaner",
+      "old_image": "sha256:2c859b31a959d938f48ef6ba6e55e97acf4338ffedf5d7d684769fc0dee905ea",
+      "new_image": "sha256:63c1e96dd6a77356f187b7cdfc2dbcb058e742c56fe8ba925fbdc73c328d21b6",
+      "old_container_id": "8022bf6cbe02397831d32d2b2bc81e1c8defac440b30ff07b450fbbf887999a6",
+      "new_container_id": "ba876917b09dd2a1617d7ab9f14060e4dfe15b1cda31f1c5c601b09f4859a819",
+      "old_source_differences": [
+        "backend/app/agent/assistant.py",
+        "backend/app/agent/dynamic.py",
+        "backend/app/db/dynamic_repository.py",
+        "backend/app/dev_oidc_realm.py",
+        "backend/app/providers/base.py",
+        "backend/app/providers/chat_model.py"
+      ],
+      "new_source_differences": [],
+      "files_compared": 118,
+      "running": true,
+      "health": null,
+      "user": "docucheck",
+      "safe_settings": {
+        "SSL_CERT_FILE": null,
+        "DOCUCHECK_DATA_DIR": "/data",
+        "DOCUCHECK_VECTOR_RETRIEVAL_ENABLED": null,
+        "DOCUCHECK_INDEX_EMBEDDING_REVISION": null,
+        "DOCUCHECK_EMBEDDING_BASE_URL": null,
+        "DOCUCHECK_MILVUS_URI": null,
+        "DOCUCHECK_MILVUS_DATABASE": null
+      }
+    }
+  ],
+  "builds": [
+    {
+      "roles": [
+        "worker"
+      ],
+      "base_image": "sha256:e29168ff352c6902fbd765bb309cce95412fb739afdb02bb46a490ad575cf684",
+      "rollback_tags": [
+        "docucheck-worker:pre-sync-b91e3fb-20261008"
+      ],
+      "command": [
+        "docker",
+        "build",
+        "--pull=false",
+        "--network=none",
+        "-f",
+        "E:\\PycharmProjects\\docucheck\\data\\verification\\worker-sync-live-2026-10-08\\context\\Dockerfile.worker",
+        "-t",
+        "docucheck-worker",
+        "-t",
+        "docucheck-worker:sync-b91e3fb",
+        "E:\\PycharmProjects\\docucheck\\data\\verification\\worker-sync-live-2026-10-08\\context"
+      ],
+      "exit_code": 0,
+      "seconds": 4.344,
+      "build_network": "none",
+      "installed_packages": false,
+      "image": "sha256:348ee70443ce61ee2949abb06665088db815e7432d00fcd1c6eb2dd03b865699"
+    },
+    {
+      "roles": [
+        "indexer"
+      ],
+      "base_image": "sha256:59e8e37c82cb6172938ae178780c94b53e99da342d974b7ab032f7df6c4ba895",
+      "rollback_tags": [
+        "docucheck-indexer:pre-sync-b91e3fb-20261008"
+      ],
+      "command": [
+        "docker",
+        "build",
+        "--pull=false",
+        "--network=none",
+        "-f",
+        "E:\\PycharmProjects\\docucheck\\data\\verification\\worker-sync-live-2026-10-08\\context\\Dockerfile.indexer",
+        "-t",
+        "docucheck-indexer",
+        "-t",
+        "docucheck-indexer:sync-b91e3fb",
+        "E:\\PycharmProjects\\docucheck\\data\\verification\\worker-sync-live-2026-10-08\\context"
+      ],
+      "exit_code": 0,
+      "seconds": 5.0,
+      "build_network": "none",
+      "installed_packages": false,
+      "image": "sha256:35dd96d6f73101a0df6d0d3068997e88371bb9c04c595974f1899c9fc2b07f0a"
+    },
+    {
+      "roles": [
+        "dispatcher",
+        "cleaner"
+      ],
+      "base_image": "sha256:2c859b31a959d938f48ef6ba6e55e97acf4338ffedf5d7d684769fc0dee905ea",
+      "rollback_tags": [
+        "docucheck-dispatcher:pre-sync-b91e3fb-20261008",
+        "docucheck-cleaner:pre-sync-b91e3fb-20261008"
+      ],
+      "command": [
+        "docker",
+        "build",
+        "--pull=false",
+        "--network=none",
+        "-f",
+        "E:\\PycharmProjects\\docucheck\\data\\verification\\worker-sync-live-2026-10-08\\context\\Dockerfile.dispatcher",
+        "-t",
+        "docucheck-dispatcher",
+        "-t",
+        "docucheck-dispatcher:sync-b91e3fb",
+        "-t",
+        "docucheck-cleaner",
+        "-t",
+        "docucheck-cleaner:sync-b91e3fb",
+        "E:\\PycharmProjects\\docucheck\\data\\verification\\worker-sync-live-2026-10-08\\context"
+      ],
+      "exit_code": 0,
+      "seconds": 5.172,
+      "build_network": "none",
+      "installed_packages": false,
+      "image": "sha256:63c1e96dd6a77356f187b7cdfc2dbcb058e742c56fe8ba925fbdc73c328d21b6"
+    }
+  ],
+  "failed_first_build": [
+    {
+      "roles": [
+        "worker"
+      ],
+      "base_image": "sha256:e29168ff352c6902fbd765bb309cce95412fb739afdb02bb46a490ad575cf684",
+      "rollback_tags": [
+        "docucheck-worker:pre-sync-b91e3fb-20261008"
+      ],
+      "command": [
+        "docker",
+        "build",
+        "--pull=false",
+        "--network=none",
+        "-f",
+        "E:\\PycharmProjects\\docucheck\\data\\verification\\worker-sync-live-2026-10-08\\context\\Dockerfile.worker",
+        "-t",
+        "docucheck-worker",
+        "-t",
+        "docucheck-worker:sync-b91e3fb",
+        "E:\\PycharmProjects\\docucheck\\data\\verification\\worker-sync-live-2026-10-08\\context"
+      ],
+      "exit_code": 1,
+      "seconds": 23.391,
+      "build_network": "none",
+      "installed_packages": false
+    }
+  ],
+  "preflight": {
+    "captured_at": "2026-10-08T10:43:12.595593+00:00",
+    "compose_checks": {
+      "worker": {
+        "environment_equal": true,
+        "command_equal": true,
+        "networks_equal": true,
+        "mounts_equal": true,
+        "non_root": true,
+        "image": "sha256:348ee70443ce61ee2949abb06665088db815e7432d00fcd1c6eb2dd03b865699"
+      },
+      "dispatcher": {
+        "environment_equal": true,
+        "command_equal": true,
+        "networks_equal": true,
+        "mounts_equal": true,
+        "non_root": true,
+        "image": "sha256:63c1e96dd6a77356f187b7cdfc2dbcb058e742c56fe8ba925fbdc73c328d21b6"
+      },
+      "cleaner": {
+        "environment_equal": true,
+        "command_equal": true,
+        "networks_equal": true,
+        "mounts_equal": true,
+        "non_root": true,
+        "image": "sha256:63c1e96dd6a77356f187b7cdfc2dbcb058e742c56fe8ba925fbdc73c328d21b6"
+      },
+      "indexer": {
+        "environment_equal": true,
+        "command_equal": true,
+        "networks_equal": true,
+        "mounts_equal": true,
+        "non_root": true,
+        "image": "sha256:35dd96d6f73101a0df6d0d3068997e88371bb9c04c595974f1899c9fc2b07f0a"
+      }
+    },
+    "approved_ca_sha256": "dc611ea7e32e13cc5f9a3b27aabc0837f2c4a2a86bb04633e10d8bf1869ce636",
+    "queued_or_running_runs": 0,
+    "pending_dispatches": 0,
+    "parsing_documents": 0,
+    "indexing_documents": 0,
+    "redis_runs_queue": 0,
+    "passed": true,
+    "historical_parse_states_unchanged_by_this_step": [
+      {
+        "parse_status": "pending",
+        "count": 510
+      },
+      {
+        "parse_status": "processing",
+        "count": 1
+      }
+    ],
+    "document_parse_state_fingerprint": "2cf463393fe5243600eedaea6d666cadbc49f1e3ee49d302f9a43a6531b4c914"
+  },
+  "deployment": {
+    "started_at": "2026-10-08T10:43:55.910789+00:00",
+    "commands": [
+      {
+        "command": [
+          "docker",
+          "compose",
+          "-f",
+          "compose.yaml",
+          "-f",
+          "compose.vector-app.yaml",
+          "-f",
+          "compose.model-tls.yaml",
+          "--profile",
+          "agent",
+          "stop",
+          "-t",
+          "20",
+          "dispatcher"
+        ],
+        "exit_code": 0,
+        "log": "stop-dispatcher.log"
+      },
+      {
+        "command": [
+          "docker",
+          "exec",
+          "docucheck-worker-1",
+          "python",
+          "-c",
+          "import json;from app.celery_app import app;i=app.control.inspect(destination=['docucheck@worker'],timeout=5);r={k:getattr(i,k)() for k in ('active','reserved','scheduled')};assert all(v is not None and 'docucheck@worker' in v for v in r.values());print(json.dumps({k:len(v['docucheck@worker']) for k,v in r.items()}))"
+        ],
+        "exit_code": 0,
+        "log": "worker-drain.log"
+      },
+      {
+        "command": [
+          "docker",
+          "exec",
+          "docucheck-redis-1",
+          "redis-cli",
+          "LLEN",
+          "runs"
+        ],
+        "exit_code": 0,
+        "log": "queue-drain.log"
+      },
+      {
+        "command": [
+          "docker",
+          "compose",
+          "-f",
+          "compose.yaml",
+          "-f",
+          "compose.vector-app.yaml",
+          "-f",
+          "compose.model-tls.yaml",
+          "--profile",
+          "agent",
+          "stop",
+          "-t",
+          "30",
+          "worker",
+          "indexer",
+          "cleaner"
+        ],
+        "exit_code": 0,
+        "log": "stop-background.log"
+      },
+      {
+        "command": [
+          "docker",
+          "compose",
+          "-f",
+          "compose.yaml",
+          "-f",
+          "compose.vector-app.yaml",
+          "-f",
+          "compose.model-tls.yaml",
+          "--profile",
+          "agent",
+          "up",
+          "-d",
+          "--no-deps",
+          "--no-build",
+          "--pull",
+          "never",
+          "--wait",
+          "--wait-timeout",
+          "90",
+          "worker",
+          "dispatcher",
+          "cleaner",
+          "indexer"
+        ],
+        "exit_code": 0,
+        "log": "start-background.log"
+      }
+    ],
+    "generative_model_requests": 0,
+    "drain": {
+      "active": 0,
+      "reserved": 0,
+      "scheduled": 0,
+      "redis_runs_queue": 0,
+      "running_runs": 0
+    },
+    "passed": true,
+    "finished_at": "2026-10-08T10:45:23.440331+00:00"
+  },
+  "verification": {
+    "passed": true,
+    "containers_updated": [
+      "docucheck-cleaner-1",
+      "docucheck-dispatcher-1",
+      "docucheck-indexer-1",
+      "docucheck-worker-1"
+    ],
+    "source_files_per_container": 118,
+    "source_hash_matches": 472,
+    "unchanged_containers": [
+      "clever_northcutt",
+      "docucheck-keycloak-1",
+      "docucheck-mysql-1",
+      "docucheck-redis-1",
+      "docucheck-validate-20261003-cleaner-1",
+      "docucheck-validate-20261003-dispatcher-1",
+      "docucheck-validate-20261003-mysql-1",
+      "docucheck-validate-20261003-redis-1",
+      "docucheck-validate-20261003-worker-1",
+      "docucheck-vector-etcd-1",
+      "docucheck-vector-milvus-1",
+      "docucheck-vector-storage-init-1",
+      "friendly_blackburn",
+      "milvus-standalone"
+    ],
+    "packages": {
+      "sha256:348ee70443ce61ee2949abb06665088db815e7432d00fcd1c6eb2dd03b865699": {
+        "installed_distributions": 82,
+        "unchanged": true,
+        "package_manifest_sha256": "dd86b22a3b804fd3c775e2d9236a48ba02a15db4bf307833ff2e1ab82c294dbb"
+      },
+      "sha256:63c1e96dd6a77356f187b7cdfc2dbcb058e742c56fe8ba925fbdc73c328d21b6": {
+        "installed_distributions": 77,
+        "unchanged": true,
+        "package_manifest_sha256": "a437dbf84d313171a90e68fd10a7136081b323fec72aae73b440374779d72f90"
+      },
+      "sha256:35dd96d6f73101a0df6d0d3068997e88371bb9c04c595974f1899c9fc2b07f0a": {
+        "installed_distributions": 82,
+        "unchanged": true,
+        "package_manifest_sha256": "dd86b22a3b804fd3c775e2d9236a48ba02a15db4bf307833ff2e1ab82c294dbb"
+      }
+    },
+    "environment_mounts_networks_users_unchanged": true,
+    "waiting_user_preserved": true,
+    "index_jobs_unchanged_ready": 5,
+    "dispatch_state_unchanged": true,
+    "parse_state_unchanged": true,
+    "http_statuses": {
+      "/health/live": 200,
+      "/health/ready": 200,
+      "/api/v1/me": 401
+    },
+    "real_model_requests": 0,
+    "embedding_requests": 0
+  },
+  "checks": [
+    {
+      "name": "targeted_offline",
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "backend/tests/test_dynamic_workflow.py",
+        "backend/tests/test_assistant_workflow.py",
+        "backend/tests/test_dynamic_agent.py",
+        "backend/tests/test_assistant_agent.py",
+        "backend/tests/test_provider_contract.py",
+        "backend/tests/test_index_worker.py",
+        "backend/tests/test_outbox_dispatcher.py",
+        "backend/tests/test_case_cleanup.py",
+        "-q",
+        "-p",
+        "scripts.offline_guard"
+      ],
+      "exit_code": 0,
+      "seconds": 73.844,
+      "output": "........................................................................ [ 43%]\n........................................................................ [ 86%]\n.......................                                                  [100%]\noffline_network_attempts=0\n\n167 passed in 70.81s (0:01:10)\n"
+    },
+    {
+      "name": "ruff",
+      "command": [
+        "python",
+        "-m",
+        "ruff",
+        "check",
+        "backend",
+        "evals",
+        "scripts"
+      ],
+      "exit_code": 0,
+      "seconds": 0.266,
+      "output": "All checks passed!\n"
+    },
+    {
+      "name": "dependencies",
+      "command": [
+        "python",
+        "-m",
+        "pip",
+        "check"
+      ],
+      "exit_code": 0,
+      "seconds": 0.797,
+      "output": "No broken requirements found.\n"
+    }
+  ],
+  "container_business_smoke": {
+    "passed": true,
+    "source_run_id": "eb334fa9ebe6415f8a17ff586f0dc789",
+    "read_only_database": true,
+    "facts": 2,
+    "coverage_complete": true,
+    "needs_review": true,
+    "conflict_nonformal": true,
+    "stored_answer_matches_rendered": true,
+    "answer_sha256": "30757dd55bd8aa6897f601e657c58dd9032a43945f30518129d87a2e5ed687fc",
+    "ca_sha256": "dc611ea7e32e13cc5f9a3b27aabc0837f2c4a2a86bb04633e10d8bf1869ce636",
+    "ca_count": 151,
+    "tls_verification_enabled": true,
+    "generative_model_requests": 0,
+    "embedding_requests": 0,
+    "worker_pip_check": "No broken requirements found."
+  },
+  "evidence_sha256": {
+    "E:/PycharmProjects/docucheck/data/verification/worker-sync-live-2026-10-08/before.json": "03f7f819ca6eb721f90e6efe68834dcfda2a08258e634da21687aae6455e8ad2",
+    "E:/PycharmProjects/docucheck/data/verification/worker-sync-live-2026-10-08/after.json": "848279e8841e67594d0c3e196245b35794f3d7cbb0d7a70c39f28b721a9f93fa",
+    "E:/PycharmProjects/docucheck/data/verification/worker-sync-live-2026-10-08/preflight.json": "b0f8567567cdba26253dbd05d89fc405ba837f647159824589590ee44e58d5b4",
+    "E:/PycharmProjects/docucheck/data/verification/worker-sync-live-2026-10-08/builds.json": "c92540a84fcfad8ee7b9251fecec1262289e4453e61d4df38103b616a5a15fd7",
+    "E:/PycharmProjects/docucheck/data/verification/worker-sync-live-2026-10-08/builds-final.json": "8609a07caa83db19faaabe1b6da1734bfe870940c7df29c839d130bcf5f5f3dc",
+    "E:/PycharmProjects/docucheck/data/verification/worker-sync-live-2026-10-08/deployment.json": "9af51ec1679f52b9f5913d971f02b34ee0dacd448278ff83ad7e120cd54a0d63",
+    "E:/PycharmProjects/docucheck/data/verification/worker-sync-live-2026-10-08/checks.json": "d057111ebf6ceb6bfed8521f256f93eb070bea17c21df8b534a83922cad0bca8",
+    "E:/PycharmProjects/docucheck/data/verification/worker-sync-live-2026-10-08/container-smoke.json": "0529b32c5132f410c28e4ae11edef8232fc8c073da67cab2bdda049be4050b99",
+    "E:/PycharmProjects/docucheck/data/verification/worker-sync-live-2026-10-08/verification.json": "989bed3eb8273c315a0c32c18ba0fd4867366c0372ef0b7eccbb6de3c0ee1f3f",
+    "E:/PycharmProjects/docucheck/data/verification/worker-sync-live-2026-10-08/build-worker.log": "c315711543a9a9c757beaf462ad7ac2bd71546cf00e1335d253fd311cfc82852",
+    "E:/PycharmProjects/docucheck/data/verification/worker-sync-live-2026-10-08/build-final-worker.log": "ecaf7e1895e638992b389a59ef80a240387617459e654f4901e0344a9588181a",
+    "E:/PycharmProjects/docucheck/data/verification/worker-sync-live-2026-10-08/build-final-indexer.log": "6c92581e575d3244ac283ae9151bd08621bc44773ac2308856a30eb5d0eea494",
+    "E:/PycharmProjects/docucheck/data/verification/worker-sync-live-2026-10-08/build-final-dispatcher.log": "47008e2b9b93f742adea7aa80f6984a8525a8fa04997b3f346e0197aaf767175",
+    "E:/PycharmProjects/docucheck/data/verification/worker-sync-live-2026-10-08/stop-dispatcher.log": "e0e88c9be6c260d5870ea9f0c3f37fd9e86d68445856c53c87fdf9c24709a4bb",
+    "E:/PycharmProjects/docucheck/data/verification/worker-sync-live-2026-10-08/worker-drain.log": "5fc564b599fe573a727533215b883b3697b020df99c8f4501c37086bef1ab5af",
+    "E:/PycharmProjects/docucheck/data/verification/worker-sync-live-2026-10-08/queue-drain.log": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354",
+    "E:/PycharmProjects/docucheck/data/verification/worker-sync-live-2026-10-08/stop-background.log": "ecca63da2ace5641fdce45df3351fad0a013ba064a2e679d4551040952b7daae",
+    "E:/PycharmProjects/docucheck/data/verification/worker-sync-live-2026-10-08/start-background.log": "162db3eedc53dcfbe02e793d52dcf0b111c5f6e1fe1ad3bf87eba89733bc6c4e",
+    "E:/PycharmProjects/docucheck/data/verification/worker-sync-live-2026-10-08/container-smoke-first.log": "5bc008f03794467635fad7d3ad997df5ad315fa56fd46718e00d6c67c42a6245",
+    "E:/PycharmProjects/docucheck/data/verification/worker-sync-live-2026-10-08/container_smoke_first.py": "eec50233f2ea77a403cb4e4f520adb955fcc6a4dd58500c5f5642e796b730c03",
+    "E:/PycharmProjects/docucheck/data/verification/worker-sync-live-2026-10-08/container-smoke.log": "23df19121a73bf1b2f4885517f115e45c99f188fb4255760caefbb040b7db2ab",
+    "E:/PycharmProjects/docucheck/data/verification/worker-sync-live-2026-10-08/Dockerfile.failed-worker": "fe6f2e3a9a0514899e0bcece7312d654880fff91e7482508b5ded3c649abe4f4",
+    "E:/PycharmProjects/docucheck/data/verification/worker-sync-live-2026-10-08/context/Dockerfile.worker": "177ddbd63f5290a5eed8ca4b88818b7b01360dc0a6f9da4da94431979390310d",
+    "E:/PycharmProjects/docucheck/data/verification/worker-sync-live-2026-10-08/context/Dockerfile.indexer": "366714b0dac65e266d058cb9e0d2b86ca7fd748a298564bcd376cfba88e9f634",
+    "E:/PycharmProjects/docucheck/data/verification/worker-sync-live-2026-10-08/context/Dockerfile.dispatcher": "76e2f31afe632284f4629c219b2befa57fbd917acabcc1156eecc4e4fa7d66eb",
+    "E:/PycharmProjects/docucheck/data/verification/worker-sync-live-2026-10-08/inspect_runtime.py": "7ea0ff943d5bb1fa5de2c4082dd91c5be0ad14e2db4437df898b204acf59091f",
+    "E:/PycharmProjects/docucheck/data/verification/worker-sync-live-2026-10-08/build_runtime.py": "a10a81283e7db63cf60dd28af5facf4d65cf22b1fb59c1039f266b836b143ef2",
+    "E:/PycharmProjects/docucheck/data/verification/worker-sync-live-2026-10-08/preflight.py": "7d7d229fb5554aadcb9e5062ab16ca3c21ad6b264c2407b8656948732957b804",
+    "E:/PycharmProjects/docucheck/data/verification/worker-sync-live-2026-10-08/deploy.py": "8c5fbef45e336f02c11287a0a37c0a456c9b00a57b865405ec028f7a4616ac03",
+    "E:/PycharmProjects/docucheck/data/verification/worker-sync-live-2026-10-08/run_checks.py": "2ddff494f5ffea063dfefe86cabd40efc2b7953bb17b739fe0e2407f57fb703c",
+    "E:/PycharmProjects/docucheck/data/verification/worker-sync-live-2026-10-08/container_smoke.py": "f04be8d533ab4ef6310ea7734f906ad623ab4fa9418d9415783fafc96163f52d",
+    "E:/PycharmProjects/docucheck/data/verification/worker-sync-live-2026-10-08/verify_deployment.py": "60ad14012a3effa99e95b592a9f56de23865f2b98e0d773e6aa13319440148c7",
+    "E:/PycharmProjects/docucheck/data/verification/worker-sync-live-2026-10-08/build_evidence.py": "8ebd011b679d428f1f395eb45d8e2d4338b25d6fe321ee22a2749ed2d8d6749e",
+    "backend/app/db/dynamic_repository.py": "26ff7038c1088d0cdf2237a0a0e47bbb9438be5c46ff1b44849c1f1bab7449b2",
+    "backend/app/db/parse_repository.py": "78910f4d73b04c9193a1f756a798a72619d14b0756f62eeb878d6598022b9e6a",
+    "backend/app/agent/dynamic.py": "4046210cac2a1089305b71c355d16f35e6228a60d879cbc6eea1e5312609593f",
+    "backend/tests/test_dynamic_workflow.py": "f1dcd710ada53152f39938b5412be44fdd433a8b57e66acb6a4117dad0ec0bdc",
+    "backend/tests/test_assistant_workflow.py": "75945175d58b562690f3c624fc987d01a81c63d6960a84404495274f27393b6b",
+    "compose.yaml": "0e938153943515a994a1c314b3d6355a9ff94b33de1d4de2c3cd13463eda9604",
+    "compose.vector-app.yaml": "6ad846bf8259f6e112291f45ff2ef3aeb7040977c372de5be4342b0fd5cf3b84",
+    "compose.model-tls.yaml": "f5deb5d076be25577d41f832a5ab3ab80dee662c80f04c2b5efbbaca1620f4a2"
+  },
+  "boundaries": [
+    "local cached installed runtimes, not a clean standard Dockerfile dependency rebuild",
+    "first invalid FROM image-ID caused a remote registry auth attempt; final local-tag builds succeeded",
+    "no new model, Embedding, browser or queue-business Run acceptance; existing report read-only checked",
+    "zero active model/Embedding requests initiated; global background requests not independently metered",
+    "worker/indexer healthy; dispatcher/cleaner running without configured Docker healthchecks",
+    "rollback tags retained, rollback drill not performed; standard CI/image security and production gates remain"
+  ],
+  "independent_review": {
+    "blocking_issues": 0,
+    "verified_evidence_hashes": 41,
+    "source_files_per_container": 118,
+    "container_source_comparisons": 472,
+    "scope": "Read-only local evidence and production code-path review; hashes recomputed and before/after records compared. No independent test rerun or service, network, model, database operations."
+  }
+}

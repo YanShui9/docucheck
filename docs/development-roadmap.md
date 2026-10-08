@@ -1,6 +1,8 @@
 # DocuCheck Agent 开发路线 v2.0
 
-> **2026-10-08 实连第二部分I（当前入口）**：[索引恢复与MySQL持久检索](repair-index-recovery-2026-10-08.md)核对当前版本及项目成员后，显式重试五条failed索引，既有Docker indexer全部一次成功，11分块ready且原件hash一致。三个新诊断Run通过真实MySQL/BGE/Milvus混合检索、原文作用域、历史generation清理与终态访问拒绝；查询Embedding6次、DeepSeek0次，后台索引请求未独立计量。相关离线55项/网络0、MySQL并发1项、Ruff/pip通过。本轮是运维诊断，未做浏览器聊天/模型回答；既有waiting_user保留。worker仍有1文件差异，下一步统一部署。下方H保留恢复前索引状态及上轮测试范围。
+> **2026-10-08 实连第二部分J（当前入口）**：[后台版本统一](repair-runtime-sync-2026-10-08.md)已更新worker/indexer/dispatcher/cleaner，四容器各118源码、合计472哈希与仓库一致；原差异分别1/6/6/6，现全部清零。各自缓存环境离线应用构建，依赖包版本未变、回退标签保留；首次错误FROM触发远程解析失败如实记录。定向167项/网络0、Ruff/pip及新worker只读修正报告检查通过。原waiting_user、五条ready索引、文档解析及派发状态保留；worker只读CA和其余14容器状态一致。主动模型/Embedding请求0，未新增网页/队列审查验收或做干净基础镜像重建。下方I为索引恢复历史。
+
+> **2026-10-08 实连第二部分I（历史记录）**：[索引恢复与MySQL持久检索](repair-index-recovery-2026-10-08.md)核对当前版本及项目成员后，显式重试五条failed索引，既有Docker indexer全部一次成功，11分块ready且原件hash一致。三个新诊断Run通过真实MySQL/BGE/Milvus混合检索、原文作用域、历史generation清理与终态访问拒绝；查询Embedding6次、DeepSeek0次，后台索引请求未独立计量。相关离线55项/网络0、MySQL并发1项、Ruff/pip通过。本轮是运维诊断，未做浏览器聊天/模型回答；既有waiting_user保留。worker仍有1文件差异，下一步统一部署。下方H保留恢复前索引状态及上轮测试范围。
 
 > **2026-10-08 实连第二部分H（历史记录）**：[Milvus启动修复](repair-milvus-startup-2026-10-08.md)用同版本独立etcd与健康门禁恢复原卷，补齐新卷目录初始化；实连发现public默认跨库元数据权限在重启时恢复，已关闭自动授权并撤销三项默认权限，重启隔离验证通过。最终真实Milvus/BGE5项通过（持久化SQL层为SQLite），此前1失败/4通过保留；本步Embedding6次、DeepSeek0次。完整离线1274/41/网络0，最后新增部署用例另由最终22项覆盖，Ruff/pip/Compose通过。原集合清单与waiting_user保留，5条failed索引未重试；worker1文件差异待统一部署。下方G为恢复前失败历史。
 
