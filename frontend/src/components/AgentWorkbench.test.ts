@@ -43,7 +43,7 @@ function mockReads(formal: boolean, suppliers = ['vendor-a']) {
     })
     if (path === '/agent-runs/run-1/events') return Promise.resolve({ events: [] })
     if (path === '/agent-runs/run-1') return Promise.resolve({
-      correction_id: null, outgoing_correction_id: null,
+      workflow: 'legacy', correction_id: null, outgoing_correction_id: null,
     })
     throw new Error(`Unexpected path: ${path}`)
   })
@@ -238,4 +238,258 @@ test('followup continues the selected Run conversation', async () => {
   expect(apiRequest.mock.calls.some(([path]) =>
     path === '/conversations/conversation-older/messages')).toBe(true)
   wrapper.unmount()
+})
+
+function modernReads(workflow: 'assistant' | 'review', resultFailure = false) {
+  mockReads(true)
+  const fallback = apiRequest.getMockImplementation()!
+  apiRequest.mockImplementation((path: string, ...args: unknown[]) => {
+    if (path.startsWith('/cases/case-1/runs')) return Promise.resolve({
+      runs: [{ id: 'run-1', conversation_id: 'conversation-1', snapshot_id: 'snapshot-1',
+        revision: 1, mode: 'standard', status: 'completed', question: '苹果报价是多少？',
+        answer_text: 'RAW_UNVERIFIED', error_code: null, created_at: '', updated_at: '' }], next_offset: null,
+    })
+    if (path === '/agent-runs/run-1') return Promise.resolve({
+      workflow, correction_id: null, outgoing_correction_id: null,
+    })
+    if (path === '/agent-runs/run-1/assistant-result') {
+      if (resultFailure) return Promise.reject(new Error('assistant_source_changed'))
+      return Promise.resolve({ run_id: 'run-1', case_id: 'case-1', snapshot_id: 'snapshot-1',
+        revision: 1, is_current: true, checklist_revision: 1,
+        result: { kind: 'evidence', answer: '原文：90元/箱，含税', candidate: null, changes: [],
+          citations: [{ evidence_id: 'price-source', quote: '90元/箱，含税',
+            file_name: '苹果报价.xlsx', location: '报价!C4' }] } })
+    }
+    if (path === '/agent-runs/run-1/checks' && workflow === 'review') return Promise.resolve({
+      run_id: 'run-1', case_id: 'case-1', snapshot_id: 'snapshot-1', revision: 1,
+      run_status: 'completed', is_current: true, checklist_version_id: 'checklist-1',
+      checks: [{ criterion_id: 'price', criterion_name: '含税单价', item_id: 'apple',
+        item_name: '苹果', supplier: 'vendor-a', business_status: '满足' }],
+    })
+    return fallback(path, ...args)
+  })
+}
+
+test('assistant history shows verified excerpts and source links without a legacy matrix', async () => {
+  modernReads('assistant')
+  const wrapper = mount(AgentWorkbench, { props: {
+    caseId: 'case-1', documents: document, historyDocuments: null,
+    selectedHistoryId: null, canWrite: true, historyOnly: true,
+  } })
+  await flushPromises()
+  expect(wrapper.text()).toContain('90元/箱，含税')
+  expect(wrapper.text()).not.toContain('RAW_UNVERIFIED')
+  expect(wrapper.text()).not.toContain('八字段核验矩阵')
+  expect(wrapper.text()).not.toContain('完整审查八项')
+  expect(wrapper.find('#agent-question').exists()).toBe(false)
+  await wrapper.find('[data-test="assistant-source"]').trigger('click')
+  expect(wrapper.emitted('openEvidence')?.[0]).toEqual([{
+    caseId: 'case-1', snapshotId: 'snapshot-1', evidenceId: 'price-source',
+  }])
+  expect(apiRequest.mock.calls.some(([, , options]) => options?.method === 'POST')).toBe(false)
+  wrapper.unmount()
+})
+
+test('failed verification never falls back to raw assistant history text', async () => {
+  modernReads('assistant', true)
+  const wrapper = mount(AgentWorkbench, { props: {
+    caseId: 'case-1', documents: document, historyDocuments: null,
+    selectedHistoryId: null, canWrite: false, historyOnly: true,
+  } })
+  await flushPromises()
+  expect(wrapper.text()).not.toContain('RAW_UNVERIFIED')
+  expect(wrapper.find('[role="alert"]').exists()).toBe(true)
+  expect(wrapper.find('.matrix-table').exists()).toBe(false)
+  wrapper.unmount()
+})
+
+test('dynamic review history opens the selected report instead of the fixed eight fields', async () => {
+  modernReads('review')
+  const wrapper = mount(AgentWorkbench, { props: {
+    caseId: 'case-1', documents: document, historyDocuments: null,
+    selectedHistoryId: null, canWrite: true, historyOnly: true,
+  } })
+  await flushPromises()
+  expect(wrapper.text()).not.toContain('RAW_UNVERIFIED')
+  expect(wrapper.find('.matrix-table').exists()).toBe(false)
+  expect(wrapper.find('.correction-form').exists()).toBe(false)
+  await wrapper.find('[data-test="open-dynamic-report"]').trigger('click')
+  expect(wrapper.emitted('openReview')?.[0]).toEqual([{
+    caseId: 'case-1', snapshotId: 'snapshot-1', runId: 'run-1',
+  }])
+  wrapper.unmount()
+})
+
+test.each(['run_id', 'case_id', 'snapshot_id', 'revision'])(
+  'assistant history rejects a mismatched %s before exposing the answer', async key => {
+    modernReads('assistant')
+    const fallback = apiRequest.getMockImplementation()!
+    apiRequest.mockImplementation(async (path: string, ...args: unknown[]) => {
+      const result = await fallback(path, ...args)
+      return path.endsWith('/assistant-result') ? { ...result, [key]: key === 'revision' ? 9 : 'other' } : result
+    })
+    const wrapper = mount(AgentWorkbench, { props: {
+      caseId: 'case-1', documents: document, historyDocuments: null,
+      selectedHistoryId: null, canWrite: false, historyOnly: true,
+    } })
+    await flushPromises()
+    expect(wrapper.text()).not.toContain('90元/箱，含税')
+    expect(wrapper.text()).not.toContain('RAW_UNVERIFIED')
+    expect(wrapper.find('[role="alert"]').exists()).toBe(true)
+    wrapper.unmount()
+  },
+)
+
+test('late verified assistant response cannot restore private text after changing Case', async () => {
+  modernReads('assistant')
+  const fallback = apiRequest.getMockImplementation()!
+  let complete!: (value: unknown) => void
+  let pendingValue: unknown
+  const pending = new Promise(resolve => { complete = resolve })
+  apiRequest.mockImplementation(async (path: string, ...args: unknown[]) => {
+    if (path.startsWith('/cases/case-2/runs')) return { runs: [], next_offset: null }
+    const result = await fallback(path, ...args)
+    if (path.endsWith('/assistant-result')) { pendingValue = result; return pending }
+    return result
+  })
+  const wrapper = mount(AgentWorkbench, { props: {
+    caseId: 'case-1', documents: document, historyDocuments: null,
+    selectedHistoryId: null, canWrite: false, historyOnly: true,
+  } })
+  await flushPromises()
+  expect(pendingValue).toBeDefined()
+  expect(wrapper.text()).not.toContain('RAW_UNVERIFIED')
+  await wrapper.setProps({ caseId: 'case-2', documents: {
+    ...document, case_id: 'case-2', snapshot_id: 'snapshot-2',
+  } })
+  await flushPromises()
+  complete(pendingValue)
+  await flushPromises()
+  expect(wrapper.text()).not.toContain('90元/箱，含税')
+  expect(wrapper.find('[data-test="assistant-source"]').exists()).toBe(false)
+  expect(wrapper.find('.matrix-table').exists()).toBe(false)
+  wrapper.unmount()
+})
+
+test.each(['forbidden', 'not_found', 'session_expired', 'unauthorized', 'invalid_token', 'http_401', 'http_403'])(
+  'history clears cached answers and questions when refresh loses access (%s)', async code => {
+    modernReads('assistant')
+    const fallback = apiRequest.getMockImplementation()!
+    let denied = false
+    apiRequest.mockImplementation((path: string, ...args: unknown[]) =>
+      denied && path.startsWith('/cases/case-1/runs')
+        ? Promise.reject(new Error(code)) : fallback(path, ...args))
+    const wrapper = mount(AgentWorkbench, { props: {
+      caseId: 'case-1', documents: document, historyDocuments: null,
+      selectedHistoryId: null, canWrite: false, historyOnly: true,
+    } })
+    await flushPromises()
+    expect(wrapper.text()).toContain('90元/箱，含税')
+    denied = true
+    await wrapper.find('.run-list-title button').trigger('click')
+    await flushPromises()
+    expect(wrapper.text()).not.toContain('90元/箱，含税')
+    expect(wrapper.text()).not.toContain('苹果报价是多少？')
+    expect(wrapper.find('[data-test="assistant-source"]').exists()).toBe(false)
+    expect(wrapper.find('[role="alert"]').exists()).toBe(true)
+    wrapper.unmount()
+  },
+)
+
+test('a late detail response cannot restore content after the list reports lost access', async () => {
+  modernReads('assistant')
+  const fallback = apiRequest.getMockImplementation()!
+  let complete!: (value: unknown) => void
+  let pendingValue: unknown
+  let denied = false
+  const pending = new Promise(resolve => { complete = resolve })
+  apiRequest.mockImplementation(async (path: string, ...args: unknown[]) => {
+    if (denied && path.startsWith('/cases/case-1/runs')) throw new Error('forbidden')
+    const result = await fallback(path, ...args)
+    if (path.endsWith('/assistant-result')) { pendingValue = result; return pending }
+    return result
+  })
+  const wrapper = mount(AgentWorkbench, { props: {
+    caseId: 'case-1', documents: document, historyDocuments: null,
+    selectedHistoryId: null, canWrite: false, historyOnly: true,
+  } })
+  await flushPromises()
+  denied = true
+  await wrapper.find('.run-list-title button').trigger('click')
+  await flushPromises()
+  complete(pendingValue)
+  await flushPromises()
+  expect(wrapper.text()).not.toContain('90元/箱，含税')
+  expect(wrapper.text()).not.toContain('苹果报价是多少？')
+  expect(wrapper.find('[data-test="assistant-source"]').exists()).toBe(false)
+  wrapper.unmount()
+})
+
+test('loss of access to details clears the private list as well as the answer', async () => {
+  modernReads('assistant')
+  const fallback = apiRequest.getMockImplementation()!
+  apiRequest.mockImplementation((path: string, ...args: unknown[]) =>
+    path.endsWith('/assistant-result') ? Promise.reject(new Error('forbidden')) : fallback(path, ...args))
+  const wrapper = mount(AgentWorkbench, { props: {
+    caseId: 'case-1', documents: document, historyDocuments: null,
+    selectedHistoryId: null, canWrite: false, historyOnly: true,
+  } })
+  await flushPromises()
+  expect(wrapper.text()).not.toContain('苹果报价是多少？')
+  expect(wrapper.find('.run-item').exists()).toBe(false)
+  wrapper.unmount()
+})
+
+test.each(['not_found', 'invalid_token'])('legacy export denial clears private history (%s)', async code => {
+  mockReads(true)
+  downloadRunExport.mockRejectedValue(new Error(code))
+  const wrapper = mount(AgentWorkbench, { props: {
+    caseId: 'case-1', documents: document, historyDocuments: null,
+    selectedHistoryId: null, canWrite: false, historyOnly: true,
+  } })
+  await flushPromises()
+  expect(wrapper.find('.matrix-table').exists()).toBe(true)
+  await wrapper.find('[data-test="export-json"]').trigger('click')
+  await flushPromises()
+  expect(wrapper.find('.run-item').exists()).toBe(false)
+  expect(wrapper.find('.matrix-table').exists()).toBe(false)
+  expect(wrapper.find('.answer-text').exists()).toBe(false)
+  expect(wrapper.find('[role="alert"]').exists()).toBe(true)
+  wrapper.unmount()
+})
+
+test.each(['case_changed', 'access_denied'])('late legacy export does not download after %s', async boundary => {
+  mockReads(true)
+  const fallback = apiRequest.getMockImplementation()!
+  let denied = false
+  apiRequest.mockImplementation((path: string, ...args: unknown[]) => {
+    if (path.startsWith('/cases/case-2/runs')) return Promise.resolve({ runs: [], next_offset: null })
+    if (denied && path.startsWith('/cases/case-1/runs')) return Promise.reject(new Error('invalid_token'))
+    return fallback(path, ...args)
+  })
+  let finish!: (value: Blob) => void
+  downloadRunExport.mockReturnValue(new Promise(resolve => { finish = resolve }))
+  const createObjectURL = vi.fn().mockReturnValue('blob:private-export')
+  vi.stubGlobal('URL', { createObjectURL, revokeObjectURL: vi.fn() })
+  const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+  const wrapper = mount(AgentWorkbench, { props: {
+    caseId: 'case-1', documents: document, historyDocuments: null,
+    selectedHistoryId: null, canWrite: false, historyOnly: true,
+  } })
+  await flushPromises()
+  await wrapper.find('[data-test="export-json"]').trigger('click')
+  if (boundary === 'case_changed') await wrapper.setProps({ caseId: 'case-2', documents: {
+    ...document, case_id: 'case-2', snapshot_id: 'snapshot-2',
+  } })
+  else {
+    denied = true
+    await wrapper.find('.run-list-title button').trigger('click')
+  }
+  await flushPromises()
+  finish(new Blob(['private']))
+  await flushPromises()
+  expect(createObjectURL).not.toHaveBeenCalled()
+  expect(click).not.toHaveBeenCalled()
+  wrapper.unmount()
+  click.mockRestore()
 })

@@ -132,6 +132,25 @@ test('fact correction updates the Case list while preserving the selected histor
   expect(wrapper.findAll('.case-item')[0].text()).toContain('版本 2')
 })
 
+test('history is read only and opens the selected dynamic report in the existing panel', async () => {
+  apiRequest.mockImplementation(reads)
+  const wrapper = mount(App, { global: { stubs: {
+    DocumentsPanel: true, EvidencePanel: true, ChatWorkspace: true,
+    AgentWorkbench: true,
+    ReviewPanel: { name: 'ReviewPanel', props: ['caseId', 'snapshotId', 'runId'], template: '<div />' },
+  } } })
+  wrappers.push(wrapper)
+  await flushPromises()
+  await wrapper.findAll('button').find(button => button.text() === '历史核验')!.trigger('click')
+  await flushPromises()
+  const history = wrapper.findComponent({ name: 'AgentWorkbench' })
+  expect(history.props('historyOnly')).toBe(true)
+  history.vm.$emit('openReview', { caseId: 'case-1', snapshotId: 'snapshot-case-1', runId: 'dynamic-run' })
+  await flushPromises()
+  const report = wrapper.findComponent({ name: 'ReviewPanel' })
+  expect(report.props()).toMatchObject({ caseId: 'case-1', snapshotId: 'snapshot-case-1', runId: 'dynamic-run' })
+})
+
 test('first interaction creates only one task and late creation cannot reclaim a different task', async () => {
   const wrapper = await workbench()
   await wrapper.findComponent({ name: 'CaseSidebar' }).vm.$emit('newTask')

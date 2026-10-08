@@ -4,7 +4,7 @@ import { accessToken } from '../auth'
 import { apiRequest, downloadRunExport } from '../api'
 import type {
   CaseRunsResult, CheckResult, CorrectionRecord, DocumentsResult, FieldKey,
-  RunFactsResult, RunSummary, RunChecksResult,
+  RunFactsResult, RunSummary, RunChecksResult, AssistantResult,
 } from '../api'
 
 const props = defineProps<{
@@ -13,10 +13,12 @@ const props = defineProps<{
   historyDocuments: DocumentsResult | null
   selectedHistoryId: string | null
   canWrite: boolean
+  historyOnly?: boolean
 }>()
 const emit = defineEmits<{
   openEvidence: [target: { caseId: string; snapshotId: string; evidenceId: string }]
   changed: [target: { caseId: string; fromSnapshotId: string }]
+  openReview: [target: { caseId: string; snapshotId: string; runId: string }]
 }>()
 
 const fields: { key: FieldKey; label: string }[] = [
@@ -57,6 +59,9 @@ const checks = ref<RunChecksResult | null>(null)
 const facts = ref<RunFactsResult | null>(null)
 const events = ref<{ seq: number; kind: string; status: string }[]>([])
 const correction = ref<CorrectionRecord | null>(null)
+const runWorkflow = ref<string | null>(null)
+const assistantResult = ref<AssistantResult | null>(null)
+const resultCurrent = ref<boolean | null>(null)
 const loading = ref(false)
 const busy = ref(false)
 const exporting = ref(false)
@@ -74,13 +79,18 @@ let detailRequest = 0
 let timer: ReturnType<typeof setInterval> | undefined
 
 const selectedRun = computed(() => runs.value.find(item => item.id === selectedRunId.value) ?? null)
+const legacyResult = computed(() => runWorkflow.value === 'legacy')
+const hasDynamicReport = computed(() => runWorkflow.value === 'review'
+  || assistantResult.value?.result?.kind === 'review')
+const answerText = computed(() => legacyResult.value ? selectedRun.value?.answer_text
+  : assistantResult.value?.result?.answer ?? '')
 const allFacts = computed(() => (facts.value?.fact_sets ?? []).flatMap(set =>
   set.facts.map(fact => ({ ...fact, factSetId: set.fact_set_id,
     fieldKey: set.field_key, supplierHandle: set.supplier,
     key: `${set.fact_set_id}/${fact.fact_id}` })),
 ))
 const selectedFact = computed(() => allFacts.value.find(item => item.key === selectedFactKey.value))
-const canCorrect = computed(() => props.canWrite && !isHistory.value &&
+const canCorrect = computed(() => props.canWrite && !props.historyOnly && legacyResult.value && !isHistory.value &&
   selectedRun.value && ['completed', 'partial'].includes(selectedRun.value.status) &&
   selectedRun.value.revision === props.documents?.revision && facts.value?.available &&
   !correction.value)
@@ -97,6 +107,11 @@ function messageFor(reason: unknown): string {
     xlsx_cell_limit: '有一处原文超过 XLSX 单元格长度上限，请改用 JSON 导出。',
     source_run_not_current: '此运行已不是当前资料版本。',
     memory_scope: '结构化结果未通过来源校验。',
+    assistant_source_changed: '结果来源发生变化，暂不能展示，请刷新资料后重新读取。',
+    forbidden: '当前账号已无权查看该采购任务。',
+    session_expired: '登录已过期，请重新登录。',
+    unauthorized: '请重新登录后查看。', invalid_token: '登录凭据已失效，请重新登录。',
+    http_401: '请重新登录后查看。', http_403: '当前账号已无权查看该采购任务。',
     not_found: '资源不存在或无权访问。',
   } as Record<string, string>)[code] ?? `操作未完成（${code}）。`
 }
@@ -111,14 +126,39 @@ function openEvidence(evidenceId: string) {
   })
 }
 
+function openDynamicReport() {
+  if (props.caseId && selectedRun.value && hasDynamicReport.value) emit('openReview', {
+    caseId: props.caseId, snapshotId: selectedRun.value.snapshot_id, runId: selectedRun.value.id,
+  })
+}
+
+function clearDetail() {
+  checks.value = null; facts.value = null; events.value = []; correction.value = null
+  runWorkflow.value = null; assistantResult.value = null; resultCurrent.value = null
+}
+
+function accessLost(reason: unknown): boolean {
+  return reason instanceof Error && ['not_found', 'run_not_found', 'forbidden',
+    'session_expired', 'unauthorized', 'invalid_token', 'http_401', 'http_403',
+    'case_deleting'].includes(reason.message)
+}
+
+function invalidateAccess() {
+  ++viewVersion; ++runsRequest; ++detailRequest
+  runs.value = []; nextRunOffset.value = null; selectedRunId.value = null
+  clearDetail()
+  loading.value = false; busy.value = false; exporting.value = false
+}
+
 async function exportRun(format: 'json' | 'xlsx') {
   if (!selectedRun.value || !checks.value?.checks.length || exporting.value) return
   exporting.value = true
   error.value = ''
   const version = viewVersion
+  const runId = selectedRun.value.id
   try {
-    const runId = selectedRun.value.id
     const blob = await downloadRunExport(runId, format, accessToken)
+    if (version !== viewVersion || selectedRunId.value !== runId) return
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
@@ -128,7 +168,10 @@ async function exportRun(format: 'json' | 'xlsx') {
     link.remove()
     window.setTimeout(() => URL.revokeObjectURL(url), 1000)
   } catch (reason) {
-    if (version === viewVersion) error.value = messageFor(reason)
+    if (version === viewVersion && selectedRunId.value === runId) {
+      if (accessLost(reason)) invalidateAccess()
+      error.value = messageFor(reason)
+    }
   } finally {
     if (version === viewVersion) exporting.value = false
   }
@@ -136,30 +179,51 @@ async function exportRun(format: 'json' | 'xlsx') {
 
 async function loadRun(runId: string, version = viewVersion) {
   if (!props.caseId) return
+  const caseId = props.caseId
   const request = ++detailRequest
+  const active = () => version === viewVersion && request === detailRequest && selectedRunId.value === runId
+  clearDetail()
+  error.value = ''
   try {
-    const [result, factResult, eventResult, runDetail] = await Promise.all([
-      apiRequest<RunChecksResult>(`/agent-runs/${runId}/checks`, accessToken),
-      apiRequest<RunFactsResult>(`/agent-runs/${runId}/facts`, accessToken),
+    const [eventResult, runDetail] = await Promise.all([
       apiRequest<{ events: typeof events.value }>(`/agent-runs/${runId}/events`, accessToken),
-      apiRequest<{ correction_id: string | null; outgoing_correction_id: string | null }>(
+      apiRequest<{ workflow: string; correction_id: string | null; outgoing_correction_id: string | null }>(
         `/agent-runs/${runId}`, accessToken),
     ])
-    if (version !== viewVersion || request !== detailRequest ||
-        selectedRunId.value !== runId) return
-    checks.value = result
-    facts.value = factResult
+    if (!active()) return
+    if (runDetail.workflow === 'assistant') {
+      const result = await apiRequest<AssistantResult>(`/agent-runs/${runId}/assistant-result`, accessToken)
+      if (!active()) return
+      if (result.run_id !== runId || result.case_id !== caseId
+        || result.snapshot_id !== selectedRun.value?.snapshot_id
+        || result.revision !== selectedRun.value?.revision) throw new Error('assistant_source_changed')
+      assistantResult.value = result
+      resultCurrent.value = result.is_current
+    } else if (runDetail.workflow === 'legacy') {
+      const [result, factResult] = await Promise.all([
+        apiRequest<RunChecksResult>(`/agent-runs/${runId}/checks`, accessToken),
+        apiRequest<RunFactsResult>(`/agent-runs/${runId}/facts`, accessToken),
+      ])
+      if (!active()) return
+      const correctionId = runDetail.outgoing_correction_id ?? runDetail.correction_id
+      const loadedCorrection = correctionId
+        ? await apiRequest<CorrectionRecord>(`/cases/${caseId}/corrections/${correctionId}`, accessToken)
+        : null
+      if (!active()) return
+      checks.value = result; facts.value = factResult; correction.value = loadedCorrection
+      resultCurrent.value = result.is_current
+    } else if (!['review', 'proposal'].includes(runDetail.workflow)) {
+      throw new Error('assistant_source_changed')
+    }
+    if (!active()) return
+    runWorkflow.value = runDetail.workflow
     events.value = eventResult.events
-    const correctionId = runDetail.outgoing_correction_id ?? runDetail.correction_id
-    const loadedCorrection = correctionId
-      ? await apiRequest<CorrectionRecord>(
-        `/cases/${props.caseId}/corrections/${correctionId}`, accessToken)
-      : null
-    if (version === viewVersion && request === detailRequest &&
-        selectedRunId.value === runId) correction.value = loadedCorrection
   } catch (reason) {
-    if (version === viewVersion && request === detailRequest &&
-        selectedRunId.value === runId) error.value = messageFor(reason)
+    if (active()) {
+      if (accessLost(reason)) invalidateAccess()
+      else clearDetail()
+      error.value = messageFor(reason)
+    }
   }
 }
 
@@ -184,9 +248,12 @@ async function loadRuns(preserve = false, append = false) {
       selectedRunId.value = runs.value[0]?.id ?? null
     }
     if (selectedRunId.value) await loadRun(selectedRunId.value, version)
-    else { checks.value = null; facts.value = null; events.value = []; correction.value = null }
+    else clearDetail()
   } catch (reason) {
-    if (version === viewVersion && request === runsRequest) error.value = messageFor(reason)
+    if (version === viewVersion && request === runsRequest) {
+      if (accessLost(reason)) invalidateAccess()
+      error.value = messageFor(reason)
+    }
   } finally {
     if (version === viewVersion && request === runsRequest) loading.value = false
   }
@@ -194,10 +261,7 @@ async function loadRuns(preserve = false, append = false) {
 
 async function selectRun(runId: string) {
   selectedRunId.value = runId
-  checks.value = null
-  facts.value = null
-  events.value = []
-  correction.value = null
+  clearDetail()
   await loadRun(runId)
 }
 
@@ -216,7 +280,7 @@ async function submitQuestion(fullReview = false) {
   const caseId = props.caseId
   const boundSnapshot = props.documents?.snapshot_id
   const revision = props.documents?.revision
-  if (!caseId || !boundSnapshot || !revision || busy.value || isHistory.value || !props.canWrite) return
+  if (!caseId || !boundSnapshot || !revision || busy.value || isHistory.value || !props.canWrite || props.historyOnly) return
   const version = viewVersion
   const requestedMode = fullReview ? 'thorough' : mode.value
   const content = fullReview
@@ -244,7 +308,7 @@ async function submitQuestion(fullReview = false) {
 
 async function act(kind: 'cancel' | 'retry' | 'resume') {
   const run = selectedRun.value
-  if (!run || !props.documents || busy.value || isHistory.value || !props.canWrite) return
+  if (!run || !props.documents || busy.value || isHistory.value || !props.canWrite || props.historyOnly || !legacyResult.value) return
   const version = viewVersion
   if (kind === 'resume' && !clarification.value.trim()) {
     error.value = '请输入澄清答复。'; return
@@ -308,7 +372,7 @@ watch(selectedFactKey, () => {
 watch([() => props.caseId, snapshotId], () => {
   viewVersion += 1
   runs.value = []; nextRunOffset.value = null; selectedRunId.value = null
-  checks.value = null; facts.value = null; events.value = []; correction.value = null
+  clearDetail()
   error.value = ''
   busy.value = false; exporting.value = false
   void loadRuns()
@@ -330,7 +394,8 @@ onUnmounted(() => { if (timer) clearInterval(timer); viewVersion += 1 })
     <p v-if="isHistory" class="history-notice">正在查看历史快照。此处的结果仅供追溯，不能作为当前正式结论。</p>
     <p v-if="!caseId || !shownSnapshot?.snapshot_id" class="state-note">请选择 Case 并上传资料后开始审查。</p>
     <template v-else>
-      <div v-if="!isHistory && canWrite" class="agent-compose">
+      <p v-if="historyOnly" class="state-note">此处查看历史运行；发送问题与发起新审查请使用主对话。</p>
+      <div v-if="!historyOnly && !isHistory && canWrite" class="agent-compose">
         <label for="agent-question">向 Agent 提问</label>
         <textarea id="agent-question" v-model="question" class="field-control" rows="3"
                   maxlength="2000" placeholder="例如：供应商 A 的内存是否达标？" :disabled="busy" />
@@ -359,12 +424,21 @@ onUnmounted(() => { if (timer) clearInterval(timer); viewVersion += 1 })
         <div class="run-detail" aria-live="polite">
           <template v-if="selectedRun">
             <div class="run-detail-head"><h3>本次答复</h3><span class="status-pill" :class="`status-${selectedRun.status}`">{{ statusNames[selectedRun.status] ?? selectedRun.status }}</span></div>
-            <p v-if="selectedRun.status !== 'completed' || !checks?.is_current" class="state-note warning">
-              {{ !checks?.is_current ? '历史快照：不作为当前正式结论。' : '本次尚未完成，结果仅供查看，不作为正式结论。' }}
+            <p v-if="selectedRun.status !== 'completed' || resultCurrent === false" class="state-note warning">
+              {{ resultCurrent === false ? '历史快照：不作为当前正式结论。' : '本次尚未完成，结果仅供查看，不作为正式结论。' }}
             </p>
-            <p class="answer-text">{{ selectedRun.answer_text || (['queued', 'running'].includes(selectedRun.status) ? 'Agent 正在处理。' : '本次没有生成答复。') }}</p>
+            <p v-if="answerText" class="answer-text">{{ answerText }}</p>
+            <p v-else class="state-note">{{ ['queued', 'running'].includes(selectedRun.status) ? 'Agent 正在处理。' : !runWorkflow ? '本次答复尚未完成来源验证。' : hasDynamicReport ? '本轮按已确认的动态指标审查，请打开对应报告查看结果和来源。' : '本次没有可展示的答复。' }}</p>
+            <div v-if="assistantResult?.result?.citations.length" class="evidence-links">
+              <button v-for="citation in assistantResult.result.citations" :key="citation.evidence_id"
+                      data-test="assistant-source" type="button" class="text-button"
+                      @click="openEvidence(citation.evidence_id)">{{ citation.file_name }} · {{ citation.location }}</button>
+            </div>
+            <button v-if="hasDynamicReport" data-test="open-dynamic-report" type="button"
+                    class="button button-secondary" @click="openDynamicReport">查看动态审查报告</button>
+            <p v-if="runWorkflow === 'proposal' || ['changes', 'proposal'].includes(assistantResult?.result?.kind ?? '')" class="state-note">本轮生成的是审查指标候选，需在对应聊天的候选卡片中查看、保存并明确确认。</p>
             <p v-if="selectedRun.error_code" class="error-code">状态原因：{{ selectedRun.error_code }}</p>
-            <div v-if="!isHistory && canWrite" class="run-actions">
+            <div v-if="!historyOnly && legacyResult && !isHistory && canWrite" class="run-actions">
               <button v-if="['queued', 'running', 'waiting_user', 'interrupted'].includes(selectedRun.status)" type="button" class="button button-secondary" :disabled="busy" @click="act('cancel')">取消</button>
               <button v-if="['partial', 'failed', 'interrupted'].includes(selectedRun.status)" type="button" class="button button-secondary" :disabled="busy" @click="act('retry')">重试</button>
               <form v-if="selectedRun.status === 'waiting_user'" class="clarification-form" @submit.prevent="act('resume')">
@@ -381,7 +455,7 @@ onUnmounted(() => { if (timer) clearInterval(timer); viewVersion += 1 })
         </div>
       </div>
 
-      <div class="matrix-section"><div class="section-head"><div><span class="eyebrow">03 / 结构化结果</span><h2>八字段核验矩阵</h2></div>
+      <div v-if="legacyResult" class="matrix-section"><div class="section-head"><div><span class="eyebrow">03 / 结构化结果</span><h2>八字段核验矩阵</h2></div>
         <div v-if="selectedRun && checks?.checks.length" class="export-actions">
           <button data-test="export-json" class="button button-secondary" type="button" :disabled="exporting" @click="exportRun('json')">导出 JSON</button>
           <button data-test="export-xlsx" class="button button-secondary" type="button" :disabled="exporting" @click="exportRun('xlsx')">导出 XLSX</button>
@@ -405,7 +479,7 @@ onUnmounted(() => { if (timer) clearInterval(timer); viewVersion += 1 })
           </tr></tbody></table></div>
       </div>
 
-      <div v-if="selectedRun && (facts?.available || correction)" class="correction-section"><div class="section-head"><div><span class="eyebrow">04 / 人工复核</span><h2>提取事实修正</h2></div></div>
+      <div v-if="legacyResult && selectedRun && (facts?.available || correction)" class="correction-section"><div class="section-head"><div><span class="eyebrow">04 / 人工复核</span><h2>提取事实修正</h2></div></div>
         <p class="section-intro">只可修改原文支持的数值与单位。提交后会生成新快照并重新复核，原始事实与原件保留。</p>
         <div v-if="correction" class="review-card">
           <strong>复核：{{ correction.review_status === 'needs_review' ? '需人工复核' : correction.review_status === 'complete' ? '完成' : '处理中' }}</strong>

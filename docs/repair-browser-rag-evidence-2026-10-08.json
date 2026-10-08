@@ -1,0 +1,479 @@
+{
+  "date": "2026-10-08",
+  "base_commit": "afcd0e5",
+  "status": "browser_hybrid_context_source_and_history_fix_passed",
+  "business": {
+    "passed": true,
+    "conversation_id": "d667794016144817b06fc3ace44237eb",
+    "runs": [
+      {
+        "run_id": "8c646704c2df45aaa988c2f755bad629",
+        "question": "请从供应商报价原文中找出苹果的报价数量、含税单价，并列出来源。这次只做原文查询，不做完整审查，也不要修改审查清单。",
+        "answer": "本次找到以下原文摘录：\n[96ee855b1abdf82a35807840254172171fd7ba503759bc977253cda2a5c2dfba] synthetic-vendor-quote.xlsx · 采购资料!C3 · 供应商 qa-vendor-20261008 的资料\n原文：25箱\n[594da528c9a54d01e43f6a561dfe3f639bd328749310ca5c6238bba690263c63] synthetic-vendor-quote.xlsx · 采购资料!B3 · 供应商 qa-vendor-20261008 的资料\n原文：采购数量\n[b59afa928d93eec62b585f5007ddf26f3d1bc701642d0af9a647e885df9baab2] synthetic-vendor-quote.xlsx · 采购资料!A3 · 供应商 qa-vendor-20261008 的资料\n原文：苹果\n[a77b1d10d9384e0741329799d1aa0bec69dd122d9306a8e862ca4da10e5a1964] synthetic-vendor-quote.xlsx · 采购资料!C4 · 供应商 qa-vendor-20261008 的资料\n原文：90元/箱，含税\n[4bf858a73368b10209c92ef453242bfa8c3c2b27a2f4e6c9ba4ca59a14ed466e] synthetic-vendor-quote.xlsx · 采购资料!B4 · 供应商 qa-vendor-20261008 的资料\n原文：含税单价\n[a957a13449a073e0d63bc6498b9fb1a53970af7dffc3b02d4af481a075edaebe] synthetic-vendor-quote.xlsx · 采购资料!A4 · 供应商 qa-vendor-20261008 的资料\n原文：苹果\n这些摘录仅对应本次检索，未进行完整审查。",
+        "retrieval": {
+          "retrieval_mode": "hybrid",
+          "degraded_reason": null,
+          "complete_coverage": false
+        },
+        "citations": [
+          {
+            "cell": "C3",
+            "role": "quote",
+            "quote": "25箱",
+            "sheet": "采购资料",
+            "location": "采购资料!C3",
+            "page_idx": null,
+            "supplier": "qa-vendor-20261008",
+            "file_name": "synthetic-vendor-quote.xlsx",
+            "start_char": 0,
+            "document_id": "708998db3b864284bbdd26983a7fb62b",
+            "evidence_id": "96ee855b1abdf82a35807840254172171fd7ba503759bc977253cda2a5c2dfba"
+          },
+          {
+            "cell": "B3",
+            "role": "quote",
+            "quote": "采购数量",
+            "sheet": "采购资料",
+            "location": "采购资料!B3",
+            "page_idx": null,
+            "supplier": "qa-vendor-20261008",
+            "file_name": "synthetic-vendor-quote.xlsx",
+            "start_char": 0,
+            "document_id": "708998db3b864284bbdd26983a7fb62b",
+            "evidence_id": "594da528c9a54d01e43f6a561dfe3f639bd328749310ca5c6238bba690263c63"
+          },
+          {
+            "cell": "A3",
+            "role": "quote",
+            "quote": "苹果",
+            "sheet": "采购资料",
+            "location": "采购资料!A3",
+            "page_idx": null,
+            "supplier": "qa-vendor-20261008",
+            "file_name": "synthetic-vendor-quote.xlsx",
+            "start_char": 0,
+            "document_id": "708998db3b864284bbdd26983a7fb62b",
+            "evidence_id": "b59afa928d93eec62b585f5007ddf26f3d1bc701642d0af9a647e885df9baab2"
+          },
+          {
+            "cell": "C4",
+            "role": "quote",
+            "quote": "90元/箱，含税",
+            "sheet": "采购资料",
+            "location": "采购资料!C4",
+            "page_idx": null,
+            "supplier": "qa-vendor-20261008",
+            "file_name": "synthetic-vendor-quote.xlsx",
+            "start_char": 0,
+            "document_id": "708998db3b864284bbdd26983a7fb62b",
+            "evidence_id": "a77b1d10d9384e0741329799d1aa0bec69dd122d9306a8e862ca4da10e5a1964"
+          },
+          {
+            "cell": "B4",
+            "role": "quote",
+            "quote": "含税单价",
+            "sheet": "采购资料",
+            "location": "采购资料!B4",
+            "page_idx": null,
+            "supplier": "qa-vendor-20261008",
+            "file_name": "synthetic-vendor-quote.xlsx",
+            "start_char": 0,
+            "document_id": "708998db3b864284bbdd26983a7fb62b",
+            "evidence_id": "4bf858a73368b10209c92ef453242bfa8c3c2b27a2f4e6c9ba4ca59a14ed466e"
+          },
+          {
+            "cell": "A4",
+            "role": "quote",
+            "quote": "苹果",
+            "sheet": "采购资料",
+            "location": "采购资料!A4",
+            "page_idx": null,
+            "supplier": "qa-vendor-20261008",
+            "file_name": "synthetic-vendor-quote.xlsx",
+            "start_char": 0,
+            "document_id": "708998db3b864284bbdd26983a7fb62b",
+            "evidence_id": "a957a13449a073e0d63bc6498b9fb1a53970af7dffc3b02d4af481a075edaebe"
+          }
+        ],
+        "usage": {
+          "tools": 2,
+          "decisions": 2,
+          "model_calls": 2,
+          "actual_input": 7520,
+          "actual_output": 397,
+          "input_reserved": 7520,
+          "output_reserved": 397,
+          "unknown_usage_calls": 0
+        },
+        "context": {
+          "case_id": "832da6f4a512476c86a2cfc79a7fe30e",
+          "version": 1,
+          "revision": 2,
+          "assistant": {
+            "focus": null,
+            "version": 5,
+            "workflow": "assistant",
+            "base_digest": "96ca494c5936cfd59af70477b107ef02319b4259717a7f4b48452e2a270be23e",
+            "snapshot_id": "8fae8096390d4e53b69936cf3094a91c",
+            "source_run_id": "8c646704c2df45aaa988c2f755bad629",
+            "payload_digest": "23b983108342addc3413b775a253232d5da43e0922f795089f36665bf3e1e264",
+            "conversation_id": "d667794016144817b06fc3ace44237eb",
+            "checklist_revision": 6,
+            "checklist_version_id": "7409aeeb17604776bb7523238384daa4",
+            "pending_clarification": null
+          },
+          "summary_id": null,
+          "snapshot_id": "8fae8096390d4e53b69936cf3094a91c",
+          "history_cutoff": "2026-10-08T11:01:34",
+          "task_memory_id": null,
+          "conversation_id": "d667794016144817b06fc3ace44237eb",
+          "summary_version": null,
+          "current_message_id": "3aee7b70227f41bd89d8833336c4763e",
+          "preference_revision": 5,
+          "task_memory_version": null,
+          "resumed_memory_digest": null,
+          "preference_fingerprint": "1bc9181490ca658924889344176cf0d3b83691d548678c3efdcd4cdbec8142df",
+          "restored_checkpoint_id": null,
+          "restored_memory_digest": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+          "history_cutoff_sequence": 1,
+          "history_source_message_ids": []
+        },
+        "attempt_id": "be1e948a191e42ab9ad80f6e68ac58ca",
+        "model_id": "deepseek-flash",
+        "created_to_finished_seconds": 11.0
+      },
+      {
+        "run_id": "f8a017a7c8d34390beadef6c6ca2669a",
+        "question": "那它每箱含税多少钱？请只引用能直接回答这句话的供应商原文，不要重复数量，也不要作达标结论。",
+        "answer": "本次找到以下原文摘录：\n[a77b1d10d9384e0741329799d1aa0bec69dd122d9306a8e862ca4da10e5a1964] synthetic-vendor-quote.xlsx · 采购资料!C4 · 供应商 qa-vendor-20261008 的资料\n原文：90元/箱，含税\n[4bf858a73368b10209c92ef453242bfa8c3c2b27a2f4e6c9ba4ca59a14ed466e] synthetic-vendor-quote.xlsx · 采购资料!B4 · 供应商 qa-vendor-20261008 的资料\n原文：含税单价\n这些摘录仅对应本次检索，未进行完整审查。",
+        "retrieval": {
+          "retrieval_mode": "hybrid",
+          "degraded_reason": null,
+          "complete_coverage": false
+        },
+        "citations": [
+          {
+            "cell": "C4",
+            "role": "quote",
+            "quote": "90元/箱，含税",
+            "sheet": "采购资料",
+            "location": "采购资料!C4",
+            "page_idx": null,
+            "supplier": "qa-vendor-20261008",
+            "file_name": "synthetic-vendor-quote.xlsx",
+            "start_char": 0,
+            "document_id": "708998db3b864284bbdd26983a7fb62b",
+            "evidence_id": "a77b1d10d9384e0741329799d1aa0bec69dd122d9306a8e862ca4da10e5a1964"
+          },
+          {
+            "cell": "B4",
+            "role": "quote",
+            "quote": "含税单价",
+            "sheet": "采购资料",
+            "location": "采购资料!B4",
+            "page_idx": null,
+            "supplier": "qa-vendor-20261008",
+            "file_name": "synthetic-vendor-quote.xlsx",
+            "start_char": 0,
+            "document_id": "708998db3b864284bbdd26983a7fb62b",
+            "evidence_id": "4bf858a73368b10209c92ef453242bfa8c3c2b27a2f4e6c9ba4ca59a14ed466e"
+          }
+        ],
+        "usage": {
+          "tools": 2,
+          "decisions": 2,
+          "model_calls": 2,
+          "actual_input": 7524,
+          "actual_output": 210,
+          "input_reserved": 7524,
+          "output_reserved": 210,
+          "unknown_usage_calls": 0
+        },
+        "context": {
+          "case_id": "832da6f4a512476c86a2cfc79a7fe30e",
+          "version": 1,
+          "revision": 2,
+          "assistant": {
+            "focus": null,
+            "version": 5,
+            "workflow": "assistant",
+            "base_digest": "96ca494c5936cfd59af70477b107ef02319b4259717a7f4b48452e2a270be23e",
+            "snapshot_id": "8fae8096390d4e53b69936cf3094a91c",
+            "source_run_id": "f8a017a7c8d34390beadef6c6ca2669a",
+            "payload_digest": "9ef4a0c9d7be53677c4ac60969ea73977c02f1eb49a449b68426223c4705013b",
+            "conversation_id": "d667794016144817b06fc3ace44237eb",
+            "checklist_revision": 6,
+            "checklist_version_id": "7409aeeb17604776bb7523238384daa4",
+            "pending_clarification": null
+          },
+          "summary_id": null,
+          "snapshot_id": "8fae8096390d4e53b69936cf3094a91c",
+          "history_cutoff": "2026-10-08T11:02:59",
+          "task_memory_id": "91a83275f0d84ac6ab869278f81fa77c",
+          "conversation_id": "d667794016144817b06fc3ace44237eb",
+          "summary_version": null,
+          "current_message_id": "33286a392e8f4adcb54a19530cd96a83",
+          "preference_revision": 5,
+          "task_memory_version": 1,
+          "resumed_memory_digest": null,
+          "preference_fingerprint": "1bc9181490ca658924889344176cf0d3b83691d548678c3efdcd4cdbec8142df",
+          "restored_checkpoint_id": "91a83275f0d84ac6ab869278f81fa77c",
+          "restored_memory_digest": "be11cf104ffa870aaea9740d38a3f8704d6d1e97994fc69bd61f77af1d4168f1",
+          "history_cutoff_sequence": 2,
+          "history_source_message_ids": [
+            "3aee7b70227f41bd89d8833336c4763e"
+          ]
+        },
+        "attempt_id": "0e9c1e5bff3e47dba6d3593a9fce19ac",
+        "model_id": "deepseek-flash",
+        "created_to_finished_seconds": 7.0
+      }
+    ],
+    "model_calls": 4,
+    "input_tokens": 15044,
+    "output_tokens": 607,
+    "unknown_usage_calls": 0,
+    "embedding_sdk_request_count": null,
+    "retrieval_scope": "Two production queued browser Runs reported hybrid with no degradation; SDK retry counts and global background requests not separately metered.",
+    "source_sha256": "4cc07d6aa8132524fc63923fb776153e21f56e96bb94a24ac5e58b3116284793",
+    "task_memory_versions": [
+      1,
+      2
+    ],
+    "checklist_revision": 6,
+    "existing_report_run_id": "dfa123a1beff4f7da67f0046342e5ac8",
+    "existing_report_checks": [
+      {
+        "item_id": "apple",
+        "fact_ids": [
+          "3b94f9fc715937feb1266883a82620a8517fa7f9be86d85879873809cfb1add6"
+        ],
+        "supplier": "qa-vendor-20261008",
+        "field_key": "criterion-ba38c1ac0f0ba1be86a867a8",
+        "is_formal": true,
+        "item_name": "苹果",
+        "reason_code": "threshold_met",
+        "snapshot_id": "8fae8096390d4e53b69936cf3094a91c",
+        "criterion_id": "criterion-ba38c1ac0f0ba1be86a867a8",
+        "rule_version": "dynamic-rules-v1",
+        "evidence_refs": [
+          "b59afa928d93eec62b585f5007ddf26f3d1bc701642d0af9a647e885df9baab2",
+          "594da528c9a54d01e43f6a561dfe3f639bd328749310ca5c6238bba690263c63",
+          "96ee855b1abdf82a35807840254172171fd7ba503759bc977253cda2a5c2dfba"
+        ],
+        "criterion_name": "采购数量",
+        "business_status": "满足",
+        "check_result_id": "6705ab5f18706ec4924a0a87c7721d6c18d3bfa30ed4a3ed84b2cca5857ff2ef",
+        "processing_status": "complete",
+        "reason_evidence_refs": [
+          "b59afa928d93eec62b585f5007ddf26f3d1bc701642d0af9a647e885df9baab2",
+          "594da528c9a54d01e43f6a561dfe3f639bd328749310ca5c6238bba690263c63",
+          "96ee855b1abdf82a35807840254172171fd7ba503759bc977253cda2a5c2dfba"
+        ],
+        "checklist_version_id": "7409aeeb17604776bb7523238384daa4"
+      },
+      {
+        "item_id": "apple",
+        "fact_ids": [
+          "f05aaedad5f5c98e850dc0fa8bc89b1a8786ca3d1a2ac6357d174c5dedf90250"
+        ],
+        "supplier": "qa-vendor-20261008",
+        "field_key": "criterion-541e490f6793d9320a73fa9a",
+        "is_formal": true,
+        "item_name": "苹果",
+        "reason_code": "threshold_met",
+        "snapshot_id": "8fae8096390d4e53b69936cf3094a91c",
+        "criterion_id": "criterion-541e490f6793d9320a73fa9a",
+        "rule_version": "dynamic-rules-v1",
+        "evidence_refs": [
+          "a957a13449a073e0d63bc6498b9fb1a53970af7dffc3b02d4af481a075edaebe",
+          "4bf858a73368b10209c92ef453242bfa8c3c2b27a2f4e6c9ba4ca59a14ed466e",
+          "a77b1d10d9384e0741329799d1aa0bec69dd122d9306a8e862ca4da10e5a1964"
+        ],
+        "criterion_name": "单价",
+        "business_status": "满足",
+        "check_result_id": "0c246377ee68b5c77dbaa16fa8dbd74c3bd1870cb662298fa0846f5397ba8688",
+        "processing_status": "complete",
+        "reason_evidence_refs": [
+          "a957a13449a073e0d63bc6498b9fb1a53970af7dffc3b02d4af481a075edaebe",
+          "4bf858a73368b10209c92ef453242bfa8c3c2b27a2f4e6c9ba4ca59a14ed466e",
+          "a77b1d10d9384e0741329799d1aa0bec69dd122d9306a8e862ca4da10e5a1964"
+        ],
+        "checklist_version_id": "7409aeeb17604776bb7523238384daa4"
+      }
+    ],
+    "preserved_active_runs": [
+      {
+        "id": "d2afc28c48d547688e72d1864947cb5f",
+        "case_id": "2aceaf5ff6c84e1db95a69fe30f4342c",
+        "status": "waiting_user",
+        "active_attempt_id": "c4f962b1a64344809e124a0ea1b5142a",
+        "fence": 1
+      }
+    ],
+    "preserved_index_jobs": 5,
+    "all_container_records_unchanged": true,
+    "backend_source_files_matched": 472,
+    "browser_refresh_answers_restored": true,
+    "source_panel_checked": true,
+    "historical_dynamic_report_opened": true
+  },
+  "verification": [
+    {
+      "name": "targeted_offline",
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "backend/tests/test_assistant_agent.py",
+        "backend/tests/test_assistant_workflow.py",
+        "backend/tests/test_persisted_retrieval.py",
+        "backend/tests/test_persisted_hybrid_agent.py",
+        "backend/tests/test_layered_context.py",
+        "-q",
+        "-p",
+        "scripts.offline_guard"
+      ],
+      "exit_code": 0,
+      "seconds": 20.703,
+      "output": "................................                                         [100%]\noffline_network_attempts=0\n\n32 passed in 19.17s\n"
+    },
+    {
+      "name": "ruff",
+      "command": [
+        "python",
+        "-m",
+        "ruff",
+        "check",
+        "backend",
+        "evals",
+        "scripts"
+      ],
+      "exit_code": 0,
+      "seconds": 0.297,
+      "output": "All checks passed!\n"
+    },
+    {
+      "name": "dependencies",
+      "command": [
+        "python",
+        "-m",
+        "pip",
+        "check"
+      ],
+      "exit_code": 0,
+      "seconds": 0.719,
+      "output": "No broken requirements found.\n"
+    }
+  ],
+  "frontend_final": [
+    {
+      "name": "all_tests",
+      "command": [
+        "npm.cmd",
+        "test"
+      ],
+      "exit_code": 0,
+      "seconds": 4.078,
+      "output": "\n> docucheck-workbench@0.1.0 test\n> vitest run\n\n\n RUN  v4.1.11 E:/PycharmProjects/docucheck/frontend\n\n\n Test Files  13 passed (13)\n      Tests  170 passed (170)\n   Start at  19:14:42\n   Duration  2.76s (transform 5.07s, setup 0ms, import 7.94s, tests 2.87s, environment 10.41s)\n\n"
+    },
+    {
+      "name": "typecheck_build",
+      "command": [
+        "npm.cmd",
+        "run",
+        "build"
+      ],
+      "exit_code": 0,
+      "seconds": 4.344,
+      "output": "\n> docucheck-workbench@0.1.0 build\n> vue-tsc --noEmit && vite build\n\nvite v8.3.1 building client environment for production...\ntransforming...\n✓ 39 modules transformed.\nrendering chunks...\ncomputing gzip size...\ndist/index.html                              0.41 kB │ gzip:   0.30 kB\ndist/assets/pdf.worker.min-Dswkl-cV.mjs  1,265.41 kB\ndist/assets/ChecklistPanel-C3lJC2Bw.css      0.07 kB │ gzip:   0.09 kB\ndist/assets/index-D4wjjB5c.css              32.38 kB │ gzip:   7.88 kB\ndist/assets/MemorySettings-DSGdVKdn.js       5.13 kB │ gzip:   2.35 kB\ndist/assets/ReviewPanel-BkQUbej9.js         15.02 kB │ gzip:   6.02 kB\ndist/assets/ChecklistPanel-CPtuyIEW.js      32.13 kB │ gzip:   9.31 kB\ndist/assets/index-ClOdLzd9.js              165.02 kB │ gzip:  57.28 kB\ndist/assets/EvidencePanel-ONsLJGzx.js      435.82 kB │ gzip: 131.35 kB\n\n✓ built in 447ms\n"
+    }
+  ],
+  "preserved_runtime": {
+    "all_container_records_equal": true,
+    "active_runs_equal": true,
+    "index_jobs_equal": true,
+    "dispatch_before": [
+      {
+        "status": "delivered",
+        "count": 121
+      }
+    ],
+    "dispatch_after": [
+      {
+        "status": "delivered",
+        "count": 123
+      }
+    ],
+    "http_statuses": {
+      "/health/live": 200,
+      "/health/ready": 200,
+      "/api/v1/me": 401
+    }
+  },
+  "independent_code_review": {
+    "blocking_issues_remaining": 0,
+    "fixed_findings": [
+      "lost-access cached questions/answers and late detail responses",
+      "real OIDC 401 error vocabulary",
+      "legacy export denial and late Blob download"
+    ],
+    "scope": "Read-only code and raw red-test log review; no independent test rerun, network, model, service or database operations."
+  },
+  "evidence_sha256": {
+    "data/verification/browser-rag-live-2026-10-08/before.json": "fdb44ca92c368409fabfd484324c7b9d60a8944b9a267e43bf59221a1e619312",
+    "data/verification/browser-rag-live-2026-10-08/after.json": "4abdd1629610f52c52494a2173cf0ba2058b8d1dd7f9fd8807187549258de4f9",
+    "data/verification/browser-rag-live-2026-10-08/first-run.json": "6157f4aa4d9ca609397645e1462ea50e9ec9cd523bab6924578c9174284a8282",
+    "data/verification/browser-rag-live-2026-10-08/second-run.json": "e9801671813801467b25b6a336ea15a345794c0d797f58e7aeb2abebc8a4ade9",
+    "data/verification/browser-rag-live-2026-10-08/business-verified.json": "f12b23330c4a14dd3c8851482fe21d1500048b4c84101287a3ce4677ef69e96d",
+    "data/verification/browser-rag-live-2026-10-08/checks.json": "fcfeb4cb9a940db38cefd62651c52a0196510136af43100d5ef3d6637ac329ac",
+    "data/verification/browser-rag-live-2026-10-08/frontend-checks.json": "56aac3b2bdad8631ae25eff81767e559788885dab3d21394bb4181d2b2a70f78",
+    "data/verification/browser-rag-live-2026-10-08/frontend-checks-final.json": "55b0435d8e11f7620964b50ee8ffc895b77e4535d367f13873fb7c051fd29cba",
+    "data/verification/browser-rag-live-2026-10-08/frontend-red.log": "25555e761b2e010f75e14229b538e3a9fbd50dabc0ea1147b6b0d9ed749ce3c6",
+    "data/verification/browser-rag-live-2026-10-08/frontend-access-red.log": "44b1535aec47a714df917a8cf5e0fb499be188acd6fbed9d585645b579de852a",
+    "data/verification/browser-rag-live-2026-10-08/frontend-oidc-export-red.log": "a85bbc2566d4219e8d1edc794f621b487f754472040656a7044797f18492aa20",
+    "data/verification/browser-rag-live-2026-10-08/conversation-before-reload.txt": "02987c058fe384b8c7b2f92127482b79fa9bbf0b8bd122523a13a5b635c62b1d",
+    "data/verification/browser-rag-live-2026-10-08/conversation-after-reload.txt": "d8198260a8aa49e76846a6f9eef098ffc6b7f8b4ca38fb31b16c2dbce4786400",
+    "data/verification/browser-rag-live-2026-10-08/source-panel.txt": "840eb0476d3a43f0445c4e33f60a315d980626a894631c1726b4554d5f9cf5b9",
+    "data/verification/browser-rag-live-2026-10-08/source-panel-full.txt": "680f710340005b17d37b72174659d95674935a9d06d6e81d5f6c4016d0792627",
+    "data/verification/browser-rag-live-2026-10-08/history-fixed.txt": "46bcd7ff2b984015d8ac22cc4ee955114381de5716c7e88d883207f9e7bdbef8",
+    "data/verification/browser-rag-live-2026-10-08/dynamic-report.txt": "4c908320076b040465e1f4039cc1e2a52b8a45585a4ff7b674b03af5234bf463",
+    "data/verification/browser-rag-live-2026-10-08/source-panel.png": "58187fa394696a2388e0b74a1f153e31c7a225c3defc8eef78d241a942f17969",
+    "data/verification/browser-rag-live-2026-10-08/dynamic-report.png": "0d82efe1afa2136238006dd0527c81e72b9137be5a924514581949584e9209f1",
+    "data/verification/browser-rag-live-2026-10-08/downloaded-quote.xlsx": "4cc07d6aa8132524fc63923fb776153e21f56e96bb94a24ac5e58b3116284793",
+    "data/verification/browser-rag-live-2026-10-08/inspect_runtime.py": "498102363e4cfd82c75455ec472b72843472eb74e9e2eaf4f0d7b794df455e33",
+    "data/verification/browser-rag-live-2026-10-08/capture_runs.py": "f3710cca5230e5d0142c6d46f5e67e1cee22b696471db37830460cf4af2fa7db",
+    "data/verification/browser-rag-live-2026-10-08/run_checks.py": "e0beebb7e228e70f3008336d5e9d264f3d42d39584d5eabb7f47ffb858a805d3",
+    "data/verification/browser-rag-live-2026-10-08/check_frontend.py": "9187c6b95ffbd9151c7f96a589f3240e6ef23c6ff865d4b4cb084dbe08a2f25f",
+    "data/verification/browser-rag-live-2026-10-08/verify_business.py": "9f371766f2d15205c528c31c1937c5a09642834205b9e6ce859660bb688620b0",
+    "data/verification/browser-rag-live-2026-10-08/build_evidence.py": "1bc0227353d5e5439b372f3f421e7440f3fbdecd098eba036d3dcfd38a44f3dc",
+    "frontend/src/App.vue": "d28e748052e346dff20d366bd2de3c1200e4c59e261717b2cd0da285bb1e7244",
+    "frontend/src/App.test.ts": "83ec4048ca8beb6a26b3fdcc5de36d98eb632c41e20b9787e567e98a37d563b7",
+    "frontend/src/components/AgentWorkbench.vue": "c8ebfa787cb3d528db4170a589762f0032c4eb83b1fd82ca575e1580d89a29dc",
+    "frontend/src/components/AgentWorkbench.test.ts": "68c0d5aff032b4cfdbfa16a27f865f530e61e7a1a740d99a0b49315522db796c",
+    "backend/app/db/assistant_repository.py": "95c217826ca3c2ff13af15148cdb52f1535687b4b8ca1ec9787d3250de62de2c",
+    "backend/app/db/persisted_retrieval.py": "45908d03e5bcd81e5fde3a5a57bbf159d42ab58f812de8dcb0df0428bbc23a40",
+    "backend/app/db/memory_context.py": "3ee0ce9a953a258ff6a5b989a17ccffbcc73bc6d1dd399f3dc80d063ceb8afe9",
+    "backend/app/evidence/hybrid.py": "1bb39202b32df98514c98bdd51ab85c5e858a3d374c9da7aa97ba236e4e61548"
+  },
+  "boundaries": [
+    "one synthetic apple Case, two new source-query Runs, no fresh full review",
+    "SDK retry and global background request counts not separately metered; actual monetary cost unknown",
+    "browser refresh restored messages after selecting workspace and task, not navigation selection",
+    "access-revocation and late-response tests are automated mocks, not actual account revocation",
+    "no backend application changes or Docker restarts; offline backend targeted tests only",
+    "independent sealed evaluation and production readiness gates remain"
+  ],
+  "independent_evidence_review": {
+    "blocking_issues": 0,
+    "recomputed_sha256_matches": 34,
+    "usage_recomputed": {
+      "model_calls": 4,
+      "input_tokens": 15044,
+      "output_tokens": 607,
+      "unknown_usage_calls": 0
+    },
+    "final_log_review": "170 frontend tests / 13 files; typecheck and build; 32 targeted offline backend tests; Ruff and pip check",
+    "scope": "Read-only local hash, code, script, JSON and log comparison; no independent test rerun, browser or external operations."
+  }
+}

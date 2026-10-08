@@ -443,7 +443,7 @@ onUnmounted(() => { if (refreshTimer) clearInterval(refreshTimer) })
                      @open-evidence="evidenceTarget = $event; panel = null" @correction-submitted="trackReportCorrection" />
         <template v-else-if="panel === 'agent'">
           <label v-if="snapshots.length" class="workspace-history">查看资料版本<select class="field-control" :value="selectedHistoryId ?? ''" @change="selectHistory(($event.target as HTMLSelectElement).value || null)"><option value="">当前版本 {{ documents?.revision ?? 0 }}</option><option v-for="snapshot in snapshots.filter(item => item.revision !== documents?.revision)" :key="snapshot.id" :value="snapshot.id">历史版本 {{ snapshot.revision }}</option></select></label>
-          <AgentWorkbench :case-id="selectedCaseId" :documents="documents" :history-documents="historyDocuments" :selected-history-id="selectedHistoryId" :can-write="canWrite" @open-evidence="evidenceTarget = $event; panel = null" @changed="refreshAfterCorrection" />
+          <AgentWorkbench :case-id="selectedCaseId" :documents="documents" :history-documents="historyDocuments" :selected-history-id="selectedHistoryId" :can-write="canWrite" history-only @open-evidence="evidenceTarget = $event; panel = null" @open-review="openReviewFromChat" @changed="refreshAfterCorrection" />
         </template>
       </div>
     </aside>

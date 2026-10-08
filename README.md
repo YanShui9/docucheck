@@ -1,6 +1,8 @@
 # DocuCheck
 
-> **2026-10-08 实连第二部分J（当前入口）**：[后台版本统一](docs/repair-runtime-sync-2026-10-08.md)已更新worker/indexer/dispatcher/cleaner，四容器各118源码、合计472哈希与仓库一致；原差异分别1/6/6/6，现全部清零。各自缓存环境离线应用构建，依赖包版本未变、回退标签保留；首次错误FROM触发远程解析失败如实记录。定向167项/网络0、Ruff/pip及新worker只读修正报告检查通过。原waiting_user、五条ready索引、文档解析及派发状态保留；worker只读CA和其余14容器状态一致。主动模型/Embedding请求0，未新增网页/队列审查验收或做干净基础镜像重建。下方I为索引恢复历史。
+> **2026-10-08 实连第二部分K（当前入口）**：[浏览器RAG与历史核验修复](docs/repair-browser-rag-live-2026-10-08.md)完成统一部署后的两轮真实页面/HTTP/队列/MySQL/BGE/Milvus/DeepSeek原文查询及上下文追问，均hybrid无降级；4次模型调用、15044输入/607输出token，无未知用量，费用及SDK请求数未独立计量。任务记忆v1/v2、刷新后选择任务恢复答复、原件hash及既有动态报告通过。修复历史入口误显示八字段、未验证raw答复、失权缓存/迟到详情及旧导出边界；最终前端170项/类型构建、后端定向32项/网络0、Ruff/pip通过，独立代码复核问题已关闭。未新增完整审查或重启Docker，waiting_user/五条ready索引保留；导航选中恢复和生产质量门槛仍保留。下方J为后台同步历史。
+
+> **2026-10-08 实连第二部分J（历史记录）**：[后台版本统一](docs/repair-runtime-sync-2026-10-08.md)已更新worker/indexer/dispatcher/cleaner，四容器各118源码、合计472哈希与仓库一致；原差异分别1/6/6/6，现全部清零。各自缓存环境离线应用构建，依赖包版本未变、回退标签保留；首次错误FROM触发远程解析失败如实记录。定向167项/网络0、Ruff/pip及新worker只读修正报告检查通过。原waiting_user、五条ready索引、文档解析及派发状态保留；worker只读CA和其余14容器状态一致。主动模型/Embedding请求0，未新增网页/队列审查验收或做干净基础镜像重建。下方I为索引恢复历史。
 
 > **2026-10-08 实连第二部分I（历史记录）**：[索引恢复与MySQL持久检索](docs/repair-index-recovery-2026-10-08.md)核对当前版本及项目成员后，显式重试五条failed索引，既有Docker indexer全部一次成功，11分块ready且原件hash一致。三个新诊断Run通过真实MySQL/BGE/Milvus混合检索、原文作用域、历史generation清理与终态访问拒绝；查询Embedding6次、DeepSeek0次，后台索引请求未独立计量。相关离线55项/网络0、MySQL并发1项、Ruff/pip通过。本轮是运维诊断，未做浏览器聊天/模型回答；既有waiting_user保留。worker仍有1文件差异，下一步统一部署。下方H保留恢复前索引状态及上轮测试范围。
 
