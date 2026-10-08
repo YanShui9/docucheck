@@ -1,5 +1,7 @@
 # DocuCheck 项目上下文
 
+> **实连第二部分D（2026-10-08，当前入口）**：[苹果新资料闭环](docs/repair-apple-review-live-2026-10-08.md)已通过真实OIDC/HTTP/队列/DeepSeek完整审查、原件定位及Excel/JSON/数据库一致性核对，两项正式满足、批次1/1。修复表格事实抽取缺少指标上下文/原文单位的提示契约，批次增加有限拒绝原因；独立复核的型号绑定遗漏已关闭。最终后端1268 passed/41 skipped/网络0、定向155项、Ruff和镜像检查通过。当前worker118源码一致、只读CA保留。本步模型7次、22744输入/1066输出token，无未知用量；最终型号说明补充后未再调用模型。BGE/Milvus、新报告人工修正提交及退出验收仍待后续。下方等待登录为阶段历史。
+
 > **实连第二部分C应用（2026-10-08，当前入口）**：用户已授权应用核对后的本机CA。worker只读信任配置生效，healthy、118个Python源码哈希一致，其余6容器未重启。实际SDK TLS验证及一次合成模型工具探针成功（304输入/35输出token）；本轮138项定向/网络0、Ruff和容器pip check通过。标准在线构建受Docker Hub连接阻止，使用已验证缓存运行环境更新应用；网页重试时OIDC会话过期，未新增业务请求，苹果完整审查仍partial，等待重新登录。见[应用、证据及启动/回滚](docs/repair-model-tls-applied-2026-10-08.md)。下方待应用是上步历史，BGE/Milvus仍未复验。
 
 > **实连第二部分C（2026-10-08，待应用信任配置）**：[TLS根因与修复](docs/repair-model-tls-2026-10-08.md)已复现本机Kaspersky HTTPS检查根未受容器信任，指纹精确匹配Windows已信任根。新增安全TLS错误分类/Assistant事件、只作用于worker的可选CA只读overlay；独立复核发现共享data可写别名后已将bundle移到独立忽略目录.local-trust。最终完整后端1266 passed/41 skipped/网络0，定向138项/网络0、Ruff/pip check及Compose隔离校验通过。用户证书信任确认仍待回复，尚未应用配置、重建worker或完成新资料审查；本步诊断请求1次失败，用量未知。

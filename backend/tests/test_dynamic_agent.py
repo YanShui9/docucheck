@@ -164,6 +164,38 @@ def test_invalid_fact_cannot_turn_complete_scan_into_satisfaction():
     assert all(c["business_status"] != "满足" for c in result["payload"]["checks"])
 
 
+def test_extraction_request_explains_table_context_and_raw_unit_contract():
+    provider = ScriptProvider()
+    result = agent(repository(), provider, definition()).ask("审查")
+    assert result["status"] == "completed"
+    prompts = [messages[0].content for kind, messages, _ in provider.calls if kind == "extract"]
+    assert prompts
+    for prompt in prompts:
+        assert "同一文档、同一工作表、同一行的连续单元格" in prompt
+        assert "品目、指标名称、数值" in prompt
+        assert "空格" in prompt and "原文单位" in prompt
+        assert "CNY" in prompt and "currency" in prompt
+        assert "model" in prompt and "specification" in prompt
+
+
+def test_rejected_candidate_reasons_are_finite_and_persisted_without_raw_errors(monkeypatch):
+    from backend.app.agent import dynamic
+
+    invalid = agent(repository(), ScriptProvider(invalid=True), definition()).ask("审查")
+    assert all(b["rejection_codes"] == {"fact_value": 1}
+               for b in invalid["payload"]["batch_coverage"])
+
+    def untrusted_error(*args, **kwargs):
+        raise ValueError("secret-bearing arbitrary exception text")
+
+    monkeypatch.setattr(dynamic, "validate_fact", untrusted_error)
+    rejected = agent(repository(), ScriptProvider(), definition()).ask("审查")
+    assert rejected["status"] == "partial"
+    assert all(b["rejection_codes"] == {"candidate_invalid": 1}
+               for b in rejected["payload"]["batch_coverage"])
+    assert "secret-bearing" not in json.dumps(rejected)
+
+
 def test_invalid_model_tool_cannot_override_scope_and_server_finishes_matrix():
     result = agent(repository(), ScriptProvider(decision="execute"), definition()).ask("完整审查")
     assert result["status"] == "completed"

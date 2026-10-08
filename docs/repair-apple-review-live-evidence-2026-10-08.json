@@ -1,0 +1,94 @@
+{
+  "date": "2026-10-08",
+  "base_commit": "63d60fc",
+  "status": "synthetic_apple_full_review_sources_exports_verified",
+  "case_id": "832da6f4a512476c86a2cfc79a7fe30e",
+  "run_id": "dfa123a1beff4f7da67f0046342e5ac8",
+  "successful_attempt": "8801a4260f0943ff9fbfaaf5d0df4fec",
+  "runtime": {
+    "image": "sha256:e29168ff352c6902fbd765bb309cce95412fb739afdb02bb46a490ad575cf684",
+    "health": "healthy",
+    "python_files_matched": 118,
+    "certificate_mount_read_only": true,
+    "dynamic_source_sha256": "4046210cac2a1089305b71c355d16f35e6228a60d879cbc6eea1e5312609593f"
+  },
+  "successful_model_runtime": {
+    "image": "sha256:2360b12a9fc2e7d74ff6fdbe93f9afd00573ef5036f3d47087e3031008e82926",
+    "health": "healthy",
+    "python_files_matched": 118,
+    "certificate_mount_read_only": true,
+    "dynamic_source_sha256": "9412c39c30ec71e93454fa4d44853e410c2f6442f1ebac4e4ea32ece309fba2f"
+  },
+  "export_verification": {
+    "run_id": "dfa123a1beff4f7da67f0046342e5ac8",
+    "snapshot_id": "8fae8096390d4e53b69936cf3094a91c",
+    "checklist_version_id": "7409aeeb17604776bb7523238384daa4",
+    "payload_digest": "c0f902d467a80ffdd8f58004214bc0225abf29cded29177c3ed574c60cd57ce1",
+    "formal_checks": 2,
+    "complete_batches": 1,
+    "source_cells": [
+      "A3",
+      "A4",
+      "B3",
+      "B4",
+      "C3",
+      "C4"
+    ],
+    "json_xlsx_database_equal": true,
+    "original_hash_matches": true,
+    "waiting_user_preserved": true,
+    "file_sha256": {
+      "docucheck-dfa123a1beff4f7da67f0046342e5ac8.json": "e076a29b67a5c22184390492d5ce7c0aef7f7b4ef923348481fbc76bc235e508",
+      "docucheck-dfa123a1beff4f7da67f0046342e5ac8.xlsx": "4f3721eaa66a2a76c0e443b05471a541ee91deb950e5a7dd92631d9a821a51d2",
+      "synthetic-vendor-quote.xlsx": "4cc07d6aa8132524fc63923fb776153e21f56e96bb94a24ac5e58b3116284793"
+    }
+  },
+  "requests": {
+    "coverage_partial": 3,
+    "read_only_diagnostic": 1,
+    "successful_review": 3,
+    "total": 7,
+    "input_tokens": 22744,
+    "output_tokens": 1066,
+    "unknown_usage_calls": 0,
+    "historical_unknown_usage_not_erased": true
+  },
+  "tests": {
+    "full_passed": 1268,
+    "skipped": 41,
+    "offline_network_attempts": 0,
+    "elapsed_seconds": 270.43,
+    "targeted_dynamic_and_facts_passed": 155,
+    "ruff": "passed",
+    "image_pip_check": "passed",
+    "frontend_changed": false,
+    "frontend_tests_repeated": false
+  },
+  "review": {
+    "independent_review": "passed_after_fix",
+    "closed_finding": "preserve server-bound model and item.specification applicability"
+  },
+  "source_hashes": {
+    "backend/app/agent/dynamic.py": "4046210cac2a1089305b71c355d16f35e6228a60d879cbc6eea1e5312609593f",
+    "backend/tests/test_dynamic_agent.py": "f4b1513f7fa72be47199772a3a2d9c4ebc0d780f9ee1551e8db5e04a6e1fb653"
+  },
+  "local_evidence_sha256": {
+    "runtime.json": "5aa4a06c64ed8365942cd2c5fed25324413de4faf939274f6db2a95cbc02585c",
+    "successful-review-runtime.json": "9c8a7be3928a6c827c3a7a5122d6b122a468f5cbb33756802d895a6f0c10891b",
+    "runs.json": "f5f597213b043ee64f06357d92ad45f4aa2009469247eec5acdb9bfb8d4d2228",
+    "runs-before-fix.json": "cd6d5a5bee14616f2e25ca32f3b0dd47835088aa6fa99545bc9b457b857249dd",
+    "failed-payload.json": "80c57b4b49fb227ae791d994c5d2c3f71e681e9912361bbd29f169fba50718c2",
+    "extraction-diagnostic.json": "53e69d69f5cb751faed29d4a408c2d094fb88694310a842dbb5b20bbb65dab73",
+    "verified-payload.json": "db3fcf4879fff12849a4eb3bce5583971ebcdcc0b1449377c50a02b3d196311a",
+    "export-verification.json": "bae67252246010b62623742fe5e9c9a384718d7b733a9f79c1966f7274f44206",
+    "before-recreate.json": "975374824a3600ac1a530bd5e759e9c5ae6e2f7b28e88f94b9967037ff05d3f5",
+    "Dockerfile.cached-worker": "86f244b85f97d744cf9c99665aeb7b4235940ef920779532bca160ec066cbb99"
+  },
+  "remaining": [
+    "new report correction submission",
+    "explicit logout browser acceptance",
+    "current BGE/Milvus end-to-end",
+    "standard online image build",
+    "independent sealed benchmark and production release gates"
+  ]
+}
