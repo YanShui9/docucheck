@@ -95,3 +95,47 @@ def test_document_binding_change_blocks_old_original_read(indexed_db):
         conn.execute(update(document_versions).values(model_name="changed"))
     with pytest.raises(ValueError, match="source_access_changed"):
         retriever.repository.read(["e" * 64])
+
+
+@pytest.mark.parametrize("failed_dependency", ["embedding", "milvus"])
+def test_ready_index_dependency_outage_degrades_and_keeps_source_guard(indexed_db, failed_dependency):
+    """A ready SQL manifest must not turn a dependency outage into vector success."""
+    from backend.app.db.persisted_retrieval import ProtectedLexical
+
+    engine, _ = indexed_db
+    prepare(engine)
+    indexes = IndexRepository(engine)
+    model, store = Embedding(), Store()
+    model.revision = TARGET.revision
+    assert process_index(indexes, indexes.claim(TARGET), embedding_factory=lambda _: model,
+                         store_factory=lambda _: store) == "ready"
+    run = active_run(engine)
+    closed, factories = [], []
+    model.close = lambda: closed.append("embedding")
+
+    def embedding_factory(_):
+        factories.append("embedding")
+        if failed_dependency == "embedding":
+            raise RuntimeError("private SDK connection details")
+        return model
+
+    def store_factory(_):
+        factories.append("milvus")
+        raise RuntimeError("private SDK connection details")
+
+    retriever = persisted_retriever(
+        engine, load_agent_snapshot(engine, "case", "snap"), run, target=TARGET,
+        embedding_factory=embedding_factory, store_factory=store_factory)
+    assert isinstance(retriever, ProtectedLexical)
+    assert retriever.search("交付")
+    assert retriever.last_diagnostics == {
+        "retrieval_mode": "bm25", "degraded_reason": "vector_service_unavailable",
+        "complete_coverage": False}
+    assert factories == (["embedding"] if failed_dependency == "embedding" else ["embedding", "milvus"])
+    assert closed == ([] if failed_dependency == "embedding" else ["embedding"])
+    # Degradation still uses SQL-protected originals, including later tampering.
+    with engine.begin() as conn:
+        conn.execute(update(evidence_blocks).values(source_text="篡改资料"))
+    with pytest.raises(ValueError, match="source_access_changed"):
+        retriever.search("交付")
+    retriever.close()

@@ -1,0 +1,218 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-08",
+  "source_head": "a74aac7",
+  "recorded_at_utc": "2026-10-08T09:52:55.818553+00:00",
+  "step_status": "partial_milvus_startup_blocked",
+  "application_code_changed": false,
+  "frontend_changed": false,
+  "service_start_attempts": {
+    "ollama": 1,
+    "existing_milvus_container": 2
+  },
+  "milvus_error": {
+    "panic": "etcdserver: leader changed",
+    "frame": "sessionutil.(*Session).Init",
+    "upstream_storage_cause_established": false
+  },
+  "probe": {
+    "schema_version": 1,
+    "deepseek_requests": 0,
+    "vector_writes": 0,
+    "source": "examples/dev-pack-001 synthetic hash-checked parser cache",
+    "sql_database_used": false,
+    "receipt": "synthetic process-local fingerprint only; not a verified written index",
+    "embedding_revision": "ollama-bge-m3-7907646426070047a77226ac3e684fbbe8410524f7b4a74d02837e43f2146bab-normalized-v1",
+    "embedding": {
+      "vectors": 2,
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "norms": [
+        1.0,
+        1.0
+      ],
+      "seconds": 4.406
+    },
+    "observations": [
+      {
+        "query": "内存",
+        "diagnostics": {
+          "retrieval_mode": "bm25",
+          "degraded_reason": "vector_service_unavailable",
+          "complete_coverage": false,
+          "rrf_k": 60,
+          "bm25_candidates": 3,
+          "dense_candidates": 0
+        },
+        "hits": [
+          {
+            "text": "已装内存 32 GB",
+            "channels": [
+              "bm25"
+            ],
+            "evidence_refs": [
+              "e3d2696c1466cd50cea8acd287f271246036df7b9fd0380e400b2326860fd9c6"
+            ]
+          },
+          {
+            "text": "模拟供应商 A 报价单\n已装内存\n已装内存 16 GB",
+            "channels": [
+              "bm25"
+            ],
+            "evidence_refs": [
+              "c75d50b493125942aacbdbd3982645caccca3530c1e4fee59ab518827f6c1ed7",
+              "230fda6b2bfb3f9c01db5dd5475afd017586163bede80cb49817564b73198d91",
+              "4ee42d36775c8d9aed50e09acbc219e7376a11a0ed639b869bffeba066620a5f"
+            ]
+          },
+          {
+            "text": "已装内存至少 16 GB",
+            "channels": [
+              "bm25"
+            ],
+            "evidence_refs": [
+              "e98aae18adc58cfa6ff4b5fc1675632b581853423441f5b81f4e92783457a044"
+            ]
+          }
+        ],
+        "originals_revalidated": 5,
+        "seconds": 5.375
+      },
+      {
+        "query": "存照片和文件的硬盘有多大？",
+        "diagnostics": {
+          "retrieval_mode": "bm25",
+          "degraded_reason": "vector_service_unavailable",
+          "complete_coverage": false,
+          "rrf_k": 60,
+          "bm25_candidates": 2,
+          "dense_candidates": 0
+        },
+        "hits": [
+          {
+            "text": "标称 SSD 1 TB",
+            "channels": [
+              "bm25"
+            ],
+            "evidence_refs": [
+              "7635523d4ef2f1a6f3a003c119e813c961b77014b4884f3b796a85182f147c2e"
+            ]
+          },
+          {
+            "text": "标称存储至少 512 GB",
+            "channels": [
+              "bm25"
+            ],
+            "evidence_refs": [
+              "c4999ff3c91f9230e0047dc30d17ea3da37ecdac0442953462cdb3f5f5224fe5"
+            ]
+          }
+        ],
+        "originals_revalidated": 2,
+        "seconds": 2.265
+      }
+    ],
+    "milvus_connection_attempts": 2,
+    "embedding_requests": 3,
+    "diagnostic_passed": true,
+    "live_vector_retrieval_passed": false
+  },
+  "runtime": {
+    "existing_waiting_run_status": "waiting_user",
+    "index_job_status_counts": {
+      "failed": 5
+    },
+    "http": {
+      "/health/live": 200,
+      "/health/ready": 200,
+      "/api/v1/me": 401
+    },
+    "milvus": {
+      "status": "exited",
+      "exit_code": 134,
+      "oom": false,
+      "restart_count": 0,
+      "image": "sha256:0780292a35b94048717a1f228809d46e080128436ae229a0ec75834df2683e54"
+    },
+    "ollama_pid": 14156,
+    "ollama_version": "0.31.2"
+  },
+  "verification": {
+    "checks": [
+      {
+        "name": "dependencies",
+        "command": [
+          "python",
+          "-m",
+          "pip",
+          "check"
+        ],
+        "exit_code": 0,
+        "seconds": 0.593,
+        "output": "No broken requirements found.\n"
+      },
+      {
+        "name": "ruff",
+        "command": [
+          "python",
+          "-m",
+          "ruff",
+          "check",
+          "backend",
+          "evals",
+          "scripts"
+        ],
+        "exit_code": 0,
+        "seconds": 0.188,
+        "output": "All checks passed!\n"
+      },
+      {
+        "name": "pytest",
+        "command": [
+          "python",
+          "-m",
+          "pytest",
+          "backend/tests/test_ollama_embedding.py",
+          "backend/tests/test_hybrid_retrieval.py",
+          "backend/tests/test_persisted_retrieval.py",
+          "backend/tests/test_vector_index.py",
+          "backend/tests/test_index_repository.py",
+          "backend/tests/test_index_worker.py",
+          "backend/tests/test_milvus_foundation.py",
+          "-q",
+          "-p",
+          "scripts.offline_guard"
+        ],
+        "exit_code": 0,
+        "seconds": 11.0,
+        "output": "........................................................................ [ 78%]\n....................                                                     [100%]\noffline_network_attempts=0\n\n92 passed in 10.00s\n"
+      }
+    ]
+  },
+  "live_acceptance_not_run": [
+    "test_milvus_live.py",
+    "test_hybrid_milvus_live.py",
+    "test_persisted_bge_live.py"
+  ],
+  "limits": [
+    "BGE vector generation passed; semantic retrieval success and index writes unverified",
+    "Process-local synthetic receipt is not SQL readiness or verified Milvus readback",
+    "BM25 outage observations do not establish MySQL, queue, browser or generative answer behavior",
+    "No representative multi-category accuracy, no-answer refusal or capacity claim",
+    "Current index failed count has no before-snapshot; not attributed to this step",
+    "Background indexer may poll Ollama; embedding_requests counts only this diagnostic adapter",
+    "Worker one-file drift from a74aac7 remains; no Docker application image synchronization performed"
+  ],
+  "raw_evidence_sha256": {
+    "probe.py": "41163c71fad6909e51e5610ec8525066ff4bc38294c553d9f6cb17b4092fe2a6",
+    "probe-result.json": "f78d6aec1cd854694eba3d368ca0d346dadd347aae551cdb186729fdbef88d4b",
+    "runtime.json": "a265f4bbed6bc52d563e79516299510cfc183fe3b97bb08fc8adc6629c8434f8",
+    "targeted-verification.json": "0c57fd3c30a5fa3b4eb778553976fcfee4195e2a669a224bb87aed4e66991821",
+    "milvus-startup.log": "4cfcece01f504e8966f656ea081ac170df3ccdc0f2f5063009c9f1c2f07850d5",
+    "milvus-second-startup.log": "be1fcc4d06eb4d6d4cfd32da170dc722c90c6f4f1235988068003f00d9ebcd86",
+    "embedEtcd.yaml": "7b7e77645bc67e36c32f596be50f3e96f05f7f697efc78a47407cc5b3b719cfc"
+  },
+  "test_source_sha256": "59c30c3b3961af864be8dfd1be3204503af1c91b31bae18c4e6d4dbf232e56a3"
+}

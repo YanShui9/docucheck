@@ -35,6 +35,8 @@
 
 2026-10-08第二部分F：同源12/8箱正向修正通过真实OIDC页面/API/MySQL，旧值保留、冲突非正式、审计/聊天/检查点及导出一致，原件hash通过；初始报告是隔离Outbox的测试Provider夹具，两次各3次模拟调用，真实模型0次。实测发现并修复待复核误称抽取未完成：红阶段2失败，绿阶段定向31项/全量1269 passed41 skipped网络0，Ruff/pip check通过。API已按OIDC脚本重启，首次裸命令漏OIDC参数立即纠正并记录；worker未同步1文件不声称全容器一致。产品页面项现已勾选，下一项BGE/Milvus实连，统一部署带入worker差异。见[本步记录](../../repair-correction-positive-live-2026-10-08.md)。
 
+2026-10-08第二部分G（部分完成）：Ollama/BGE已恢复，digest与索引配置一致，1024维归一化及indexer宿主桥接HTTP200通过。既有Milvus两次启动均exit134，直接原因Session.Init遇etcd首次选主leader changed；底层触发原因未确定，未重建/清卷/改权限。真实BGE+真实SDK失败的组件诊断两条均显式BM25降级，receipt为合成进程内指纹，不证明已写入向量、SQL或网页端到端。本诊断Embedding3次/DeepSeek0次；新增ready manifest依赖故障与原文守卫两项，最终相关92项/网络0、Ruff/pip check通过。三组向量成功路径实连未运行，整项保持未勾选；下一项先解决启动再验证持久化RAG，5条failed索引须后续核对后显式重试，worker1文件差异仍保留。见[本步记录](../../repair-rag-reverification-2026-10-08.md)。
+
 ## 三、交付
 
 - [x] 第一部分记录本次证据、范围、未通过项及源码/服务版本，更新 CLAUDE.md、README.md 和路线图入口；第二部分另行补充。
