@@ -68,6 +68,24 @@ def test_tls_failure_records_safe_detail_without_replay_or_formal_result():
     assert failures[-1]['outcome_unknown'] is True
 
 
+@pytest.mark.parametrize('count,detail', [(0, 'missing_tool_call'), (2, 'multiple_tool_calls')])
+def test_invalid_tool_count_keeps_known_usage_and_safe_failure_detail(count, detail):
+    from langchain_core.messages import AIMessage
+
+    class InvalidCount:
+        def decide(self, *args, **kwargs):
+            return AIMessage(content='', tool_calls=[{'name':'chat','args':{'answer':'hello'},'id':str(i)} for i in range(count)],
+                usage_metadata={'input_tokens':100,'output_tokens':20,'total_tokens':120})
+
+    result = agent(EvidenceRepository.empty('case','snap'), InvalidCount()).ask('你好')
+    assert result['status'] == 'partial' and result['error'] == 'invalid_output'
+    assert result['usage']['actual_input'] == 100 and result['usage']['actual_output'] == 20
+    assert result['usage']['unknown_usage_calls'] == 0
+    assert result['payload']['candidate'] is None and not result['payload']['citations']
+    assert result['events'][-1]['status'] == 'failed'
+    assert result['events'][-1]['failure_detail'] == detail
+
+
 @pytest.mark.parametrize("sources", ["empty", "supplier_only", "buyer"])
 def test_buyer_file_proposal_capability_is_only_available_with_buyer_document(sources):
     repo = (EvidenceRepository.empty("case", "snap") if sources == "empty" else repository())

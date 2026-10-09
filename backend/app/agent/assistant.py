@@ -269,10 +269,13 @@ class AssistantAgent:
                     self.budget.unknown_usage_calls += 1
                     raise ProviderError("invalid_output", detail="message_type")
                 self.budget.record(reply, size, options["max_output_tokens"])
-                progress.update(status="completed", usage=reply.usage_metadata)
+                progress.update(usage=reply.usage_metadata)
                 validate_response(reply, active_schemas, extraction=False)
-                if len(reply.tool_calls) != 1 or len(json.dumps(reply.model_dump(mode="json")).encode()) > 64000:
-                    raise ProviderError("invalid_output", detail="tool_schema")
+                if len(reply.tool_calls) != 1:
+                    raise ProviderError("invalid_output", detail="missing_tool_call" if not reply.tool_calls else "multiple_tool_calls")
+                if len(json.dumps(reply.model_dump(mode="json")).encode()) > 64000:
+                    raise ProviderError("invalid_output", detail="output_limit")
+                progress.update(status="completed")
                 self._check()
                 self.budget.tool()
                 tool = reply.tool_calls[0]
