@@ -1,0 +1,83 @@
+{
+  "version": 1,
+  "code_commit": "0d5cc1900a3c5a3ab4dfcf19578cf83c46483eb0",
+  "passed": true,
+  "runtime": {
+    "source_files_per_container": 123,
+    "source_hash_matches": 492,
+    "containers_updated": [
+      "docucheck-cleaner-1",
+      "docucheck-dispatcher-1",
+      "docucheck-indexer-1",
+      "docucheck-worker-1"
+    ],
+    "other_container_count_unchanged": 14,
+    "package_counts_unchanged": [
+      77,
+      82,
+      82
+    ],
+    "configuration_unchanged": true,
+    "waiting_user_preserved": true,
+    "ready_indexes_preserved": 5,
+    "dispatch_state_unchanged": true,
+    "parse_state_unchanged": true,
+    "frontend_url": "http://127.0.0.1:15173/"
+  },
+  "worker_read_only_replay": {
+    "passed": true,
+    "source": "running worker, real MySQL bound preview/history/summary",
+    "criteria_before": 10,
+    "criteria_after": 11,
+    "old_criteria_exactly_preserved": true,
+    "request_bounds": [
+      14601,
+      15934
+    ],
+    "audit": {
+      "input_bound": 15934,
+      "prompt_limit": 16000,
+      "mandatory_overflow": false,
+      "history_turns_selected": 6,
+      "history_turns_omitted": 2,
+      "summary_entries_selected": 0,
+      "summary_entries_omitted": 0,
+      "preferences_selected": 0,
+      "max_attempt_bound": 15934,
+      "routing_requests": 1,
+      "max_request_bound": 15934,
+      "routing_schema_bytes": 3081,
+      "max_schema_bytes": 7759,
+      "edit_requests": 1,
+      "edit_schema_bytes": 7759
+    },
+    "scripted_calls": 2,
+    "real_model_requests": 0,
+    "production_writes": 0
+  },
+  "http": {
+    "passed": true,
+    "statuses": {
+      "api_live": 200,
+      "api_ready": 200,
+      "api_anonymous": 401,
+      "frontend": 200,
+      "frontend_proxy_anonymous": 401,
+      "oidc": 200
+    },
+    "real_model_requests": 0,
+    "business_requests_sent": 0
+  },
+  "business_preservation": {
+    "passed": true,
+    "heads_operations_runs_assistant_bindings_exactly_preserved": true,
+    "real_case_fingerprint": "4d45f9c30821379eacf220279e10754ad2e7622692b37d883a21fadffae6f765",
+    "real_model_requests": 0,
+    "production_writes": 0
+  },
+  "real_model_requests": 0,
+  "embedding_requests": 0,
+  "real_deepseek_behavior_verified": false,
+  "rollback_tag_suffix": "pre-assistant-audit-20261009",
+  "rollback_requires_new_payload_reader_compatibility": true
+}

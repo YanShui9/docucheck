@@ -1,5 +1,7 @@
 # 采购助手分阶段上下文修复
 
+> **后续修正**：[上下文审查与修复](repair-assistant-context-audit-2026-10-09.md)已应用 `0d5cc19`，将本报告第 6 项的每轮日期注入改为按需获取，并修复 RAG 原文窗口、历史回读和编辑品目范围。本报告保留此前实现与验证的历史记录。
+
 > **已应用本机服务：** 代码 `bf8d23d`，API 与四个后台服务已更新；脱敏[应用证据](repair-assistant-context-stages-2026-10-09-applied-evidence.json)。真实 DeepSeek 对话未代用户执行。
 
 ## 根因与修复范围
