@@ -55,6 +55,8 @@ def supports(windows, evidence_id, quote):
 
 def verify_windows(repo, payload):
     windows = payload.get("source_windows")
+    if payload.get('citation_offsets_version') == 1 and windows is None:
+        raise ValueError('assistant_source_changed')
     if windows is None:  # Backward compatible with already persisted prefix-only answers.
         windows = [{"evidence_id": ref, "start_char": 0, "text": text} for ref, text in payload["source_reads"].items()]
     latest = {}
@@ -66,3 +68,12 @@ def verify_windows(repo, payload):
         latest[row.evidence_id] = row.text
     if latest != payload["source_reads"] or any(not supports(windows, c["evidence_id"], c["quote"]) for c in payload["citations"]):
         raise ValueError("assistant_source_changed")
+    if payload.get('citation_offsets_version') == 1:
+        for citation in payload['citations']:
+            if not any(w['evidence_id'] == citation['evidence_id']
+                and w['start_char'] <= citation['start_char']
+                and citation['start_char'] + len(citation['quote']) <= w['start_char'] + len(w['text'])
+                and w['text'][citation['start_char'] - w['start_char']:
+                    citation['start_char'] - w['start_char'] + len(citation['quote'])] == citation['quote']
+                for w in windows):
+                raise ValueError('assistant_source_changed')

@@ -98,6 +98,7 @@ def execute_assistant(engine, claim, provider, *, heartbeat_interval_seconds=10.
                 "conversation_id": request["conversation_id"], "snapshot_id": claim.snapshot_id,
                 "base_digest": binding["base_digest"], "checklist_revision": binding["checklist_revision"],
                 "checklist_version_id": binding["checklist_version_id"], "payload_digest": digest(payload),
+                "citation_offsets_version": payload["citation_offsets_version"],
                 "focus": None, "pending_clarification": None}
             if result["status"] == "cancelled":
                 runs.cancel(claim.run_id)

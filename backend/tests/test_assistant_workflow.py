@@ -296,7 +296,8 @@ def test_assistant_result_unknown_run_is_not_found(ingestion_case):
     assert ingestion_case[0].get("/api/v1/agent-runs/not-a-run/assistant-result").status_code == 404
 
 
-@pytest.mark.parametrize('dynamic_case', ['背景说明。' * 200 + '交付期限为签约后17个工作日'], indirect=True)
+@pytest.mark.parametrize('dynamic_case', ['背景说明。' * 200 + '交付期限为签约后17个工作日',
+    '旧样例：交付期限为签约后17个工作日。' + '背景说明。' * 200 + '最新承诺：交付期限为签约后17个工作日'], indirect=True)
 def test_long_source_tail_survives_persistence_and_rejects_offset_tampering(dynamic_case):
     from backend.app.db.agent_snapshot import load_agent_snapshot
     from backend.app.db.models import assistant_runs
@@ -313,6 +314,16 @@ def test_long_source_tail_survives_persistence_and_rejects_offset_tampering(dyna
     result = client.get(url)
     assert result.status_code == 200, result.text
     assert result.json()['result']['source_windows'][0]['start_char'] > 0
+    assert result.json()['result']['citations'][0]['start_char'] == block.text.rindex('交付期限为签约后17个工作日')
+    with engine.begin() as connection:
+        payload = deepcopy(connection.scalar(select(assistant_runs.c.payload_json).where(assistant_runs.c.run_id == receipt['run_id'])))
+        payload['citations'][0]['start_char'] = 0
+        connection.execute(update(assistant_runs).where(assistant_runs.c.run_id == receipt['run_id']).values(payload_json=payload, payload_digest=digest(payload)))
+    assert client.get(url).status_code == 409
+    with engine.begin() as connection:
+        # Restore the valid citation so the next assertion isolates window tampering.
+        payload = deepcopy(result.json()['result'])
+        connection.execute(update(assistant_runs).where(assistant_runs.c.run_id == receipt['run_id']).values(payload_json=payload, payload_digest=digest(payload)))
     with engine.begin() as connection:
         payload = deepcopy(connection.scalar(select(assistant_runs.c.payload_json).where(assistant_runs.c.run_id == receipt['run_id'])))
         payload['source_windows'][0]['start_char'] = 0
@@ -322,7 +333,7 @@ def test_long_source_tail_survives_persistence_and_rejects_offset_tampering(dyna
 
 def test_legacy_prefix_evidence_payload_remains_readable(dynamic_case):
     from backend.app.db.agent_snapshot import load_agent_snapshot
-    from backend.app.db.models import assistant_runs
+    from backend.app.db.models import agent_runs, assistant_runs
     from backend.app.evidence.repository import digest
 
     client, engine, case, snapshot, _ = dynamic_case
@@ -335,8 +346,38 @@ def test_legacy_prefix_evidence_payload_remains_readable(dynamic_case):
     with engine.begin() as connection:
         payload = deepcopy(connection.scalar(select(assistant_runs.c.payload_json).where(assistant_runs.c.run_id == receipt['run_id'])))
         payload.pop('source_windows')
+        payload.pop('citation_offsets_version')
         connection.execute(update(assistant_runs).where(assistant_runs.c.run_id == receipt['run_id']).values(payload_json=payload, payload_digest=digest(payload)))
+        checkpoint = deepcopy(connection.scalar(select(agent_runs.c.memory_json).where(agent_runs.c.id == receipt['run_id'])))
+        checkpoint.pop('citation_offsets_version')
+        connection.execute(update(agent_runs).where(agent_runs.c.id == receipt['run_id']).values(memory_json=checkpoint))
     assert client.get(f"/api/v1/agent-runs/{receipt['run_id']}/assistant-result").status_code == 200
+
+
+@pytest.mark.parametrize('dynamic_case', ['旧样例：交付期限为签约后17个工作日。' + '背景说明。' * 200
+    + '最新承诺：交付期限为签约后17个工作日'], indirect=True)
+def test_new_citation_protocol_cannot_be_downgraded_by_removing_payload_marker(dynamic_case):
+    from backend.app.db.agent_snapshot import load_agent_snapshot
+    from backend.app.db.models import assistant_runs
+    from backend.app.evidence.repository import digest
+
+    client, engine, case, snapshot, _ = dynamic_case
+    repo = load_agent_snapshot(engine, case, snapshot)
+    block = next(b for b in repo.blocks if b.supplier == 'vendor-a')
+    quote = '交付期限为签约后17个工作日'
+    receipt = send(dynamic_case, '甲供应商交付期限')
+    report = run(dynamic_case, receipt, Decisions(('search_evidence', {'query': '交付期限', 'supplier': 'vendor-a', 'limit': 1}),
+        ('answer_evidence', {'citations': [{'evidence_id': block.evidence_id, 'quote': quote}]})))
+    assert report.status == 'completed', report
+    url = f"/api/v1/agent-runs/{receipt['run_id']}/assistant-result"
+    result = client.get(url)
+    assert result.status_code == 200
+    with engine.begin() as connection:
+        payload = deepcopy(result.json()['result'])
+        payload.pop('citation_offsets_version')
+        payload['citations'][0]['start_char'] = block.text.index(quote)
+        connection.execute(update(assistant_runs).where(assistant_runs.c.run_id == receipt['run_id']).values(payload_json=payload, payload_digest=digest(payload)))
+    assert client.get(url).status_code == 409
 
 
 @pytest.mark.parametrize('same_conversation', [True, False])

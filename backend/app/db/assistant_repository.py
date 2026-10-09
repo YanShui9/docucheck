@@ -189,6 +189,9 @@ class AssistantRepository:
             if digest(payload) != row["payload_digest"] or payload["version"] != 1 or payload["answer"] != row["answer_text"]:
                 _error("assistant_source_changed")
             AssistantPayload.model_validate(payload)
+            offset_version = (row['memory_json'] or {}).get('citation_offsets_version')
+            if offset_version != payload.get('citation_offsets_version'):
+                _error('assistant_source_changed')
             reply = connection.scalar(select(run_attempts.c.resume_message_id).where(run_attempts.c.run_id == run_id, run_attempts.c.resume_message_id.is_not(None)).order_by(run_attempts.c.attempt_no.desc()).limit(1))
             instruction = connection.scalar(select(messages.c.content).where(messages.c.id == (reply or row["message_id"])))
             if instruction != payload["instruction"]:
@@ -208,7 +211,8 @@ class AssistantRepository:
                 _error("assistant_source_changed")
         elif kind == "evidence":
             verify_windows(repo, payload)
-            citations = [checked_citation(repo, c["evidence_id"], c["quote"]) for c in payload["citations"]]
+            windows = payload.get('source_windows') if payload.get('citation_offsets_version') == 1 else None
+            citations = [checked_citation(repo, c["evidence_id"], c["quote"], windows=windows) for c in payload["citations"]]
             if citations != payload["citations"] or render_evidence(citations, payload["retrieval"]) != payload["answer"]:
                 _error("assistant_source_changed")
         elif kind in {"review", "proposal"}:

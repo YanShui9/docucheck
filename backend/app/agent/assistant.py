@@ -92,17 +92,26 @@ class AssistantPayload(Contract):
     dynamic_payload_digest: str | None = Field(pattern=r"^[a-f0-9]{64}$")
     source_reads: dict[str, str] = Field(max_length=MAX_SOURCE_READS)
     source_windows: list[SourceWindow] | None = Field(default=None, max_length=MAX_SOURCE_READS)
+    citation_offsets_version: Literal[1] | None = None
 
 
-def checked_citation(repo, evidence_id, quote):
+def checked_citation(repo, evidence_id, quote, *, windows=None):
     block = repo.read([evidence_id])[0]
     if not quote.strip() or quote not in block.text:
         raise ValueError("citation_quote")
+    start = block.text.index(quote)
+    if windows is not None:
+        window = next((w for w in windows if w['evidence_id'] == evidence_id and quote in w['text']), None)
+        if window is None:
+            raise ValueError("evidence_not_read")
+        start = window['start_char'] + window['text'].index(quote)
+        if block.text[start:start + len(quote)] != quote:
+            raise ValueError("citation_quote")
     return {"evidence_id": evidence_id, "quote": quote,
             "document_id": block.document_id, "file_name": repo.source_name(block.document_id),
             "role": block.role, "supplier": block.supplier,
             "page_idx": block.page_idx, "sheet": block.sheet, "cell": block.cell,
-            "location": _source_location(block), "start_char": block.text.index(quote)}
+            "location": _source_location(block), "start_char": start}
 
 
 def render_evidence(citations, retrieval=None):
@@ -214,7 +223,7 @@ class AssistantAgent:
         payload = {"version": 1, "kind": "chat", "answer": "", "source_digest": self.source_digest,
                    "citations": [], "candidate": None, "changes": [], "patch": None,
                    "instruction": question, "retrieval": None, "dynamic_payload_digest": None,
-                   "source_reads": {}, "source_windows": []}
+                   "source_reads": {}, "source_windows": [], "citation_offsets_version": 1}
         events, read, searched, formal_payload = [], {}, False, None
         prepared = None
         prepared_items, allowed_refs, windows, evidence_tail = set(), set(), {}, []
@@ -346,7 +355,7 @@ class AssistantAgent:
                     citations = EvidenceArgs.model_validate(args).citations
                     if any(not supports(windows.values(), c.evidence_id, c.quote) for c in citations):
                         raise ValueError("evidence_not_read")
-                    checked = [checked_citation(self.repo, c.evidence_id, c.quote) for c in citations]
+                    checked = [checked_citation(self.repo, c.evidence_id, c.quote, windows=windows.values()) for c in citations]
                     payload.update(kind="evidence", citations=checked,
                                    answer=render_evidence(checked, payload["retrieval"]))
                     break
