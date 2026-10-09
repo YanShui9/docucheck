@@ -1,0 +1,177 @@
+{
+  "version": 1,
+  "application_commit": "6601a711394904fd631027ad173463ff21bb07a1",
+  "prior_delivery_commit": "a0eb755",
+  "kind": "local_context_repair_applied",
+  "startup": {
+    "hidden_start_rejected": true,
+    "rejection_reason": "blocked by policy",
+    "managed_terminal_api_session": "72515",
+    "api_pid": 23176,
+    "managed_terminal_frontend_session": "48175",
+    "startup_mode": "tool-managed foreground sessions; no detached helper or boot autostart",
+    "api_auth": "existing local OIDC configuration"
+  },
+  "health": {
+    "frontend": 200,
+    "frontend_proxy_me": 401,
+    "api_live": 200,
+    "api_ready": 200,
+    "api_me": 401,
+    "identity": 200
+  },
+  "preflight": {
+    "queued_or_running_runs": 0,
+    "pending_dispatches": 0,
+    "parsing_documents": 0,
+    "indexing_documents": 0,
+    "redis_runs_queue": 0
+  },
+  "drain": {
+    "active": 0,
+    "reserved": 0,
+    "scheduled": 0,
+    "redis_runs_queue": 0,
+    "running_runs": 0
+  },
+  "deployment_verification": {
+    "passed": true,
+    "containers_updated": [
+      "docucheck-cleaner-1",
+      "docucheck-dispatcher-1",
+      "docucheck-indexer-1",
+      "docucheck-worker-1"
+    ],
+    "source_files_per_container": 119,
+    "source_hash_matches": 476,
+    "unchanged_containers": [
+      "clever_northcutt",
+      "docucheck-keycloak-1",
+      "docucheck-mysql-1",
+      "docucheck-redis-1",
+      "docucheck-validate-20261003-cleaner-1",
+      "docucheck-validate-20261003-dispatcher-1",
+      "docucheck-validate-20261003-mysql-1",
+      "docucheck-validate-20261003-redis-1",
+      "docucheck-validate-20261003-worker-1",
+      "docucheck-vector-etcd-1",
+      "docucheck-vector-milvus-1",
+      "docucheck-vector-storage-init-1",
+      "friendly_blackburn",
+      "milvus-standalone"
+    ],
+    "packages": {
+      "sha256:8c400afc3c3749404b3dacdad56a62091fa1df6c206d2737fc90d93f040b7492": {
+        "installed_distributions": 82,
+        "unchanged": true,
+        "package_manifest_sha256": "dd86b22a3b804fd3c775e2d9236a48ba02a15db4bf307833ff2e1ab82c294dbb"
+      },
+      "sha256:dc289137bfe0e0f3d58179be351b0ada510640238040cbc33a8348b0c9b19678": {
+        "installed_distributions": 77,
+        "unchanged": true,
+        "package_manifest_sha256": "a437dbf84d313171a90e68fd10a7136081b323fec72aae73b440374779d72f90"
+      },
+      "sha256:83f85620883d2a6ea1a089ec75413127232b4b6dc264fab150a8df34caacc47e": {
+        "installed_distributions": 82,
+        "unchanged": true,
+        "package_manifest_sha256": "dd86b22a3b804fd3c775e2d9236a48ba02a15db4bf307833ff2e1ab82c294dbb"
+      }
+    },
+    "environment_mounts_networks_users_unchanged": true,
+    "waiting_user_preserved": true,
+    "index_jobs_unchanged_ready": 5,
+    "dispatch_state_unchanged": true,
+    "parse_state_unchanged": true,
+    "http_statuses": {
+      "/health/live": 200,
+      "/health/ready": 200,
+      "/api/v1/me": 401
+    },
+    "real_model_requests": 0,
+    "embedding_requests": 0
+  },
+  "worker_context": {
+    "passed": true,
+    "criteria": 7,
+    "input_bound": 15980,
+    "prompt_limit": 16000,
+    "context": {
+      "input_bound": 15980,
+      "prompt_limit": 16000,
+      "mandatory_overflow": false,
+      "history_turns_selected": 0,
+      "history_turns_omitted": 8,
+      "summary_entries_selected": 2,
+      "summary_entries_omitted": 3,
+      "preferences_selected": 0
+    },
+    "question_preserved": true,
+    "recorded_run_unchanged": true,
+    "production_writes": 0,
+    "real_model_requests": 0,
+    "preferences_replayed": false,
+    "scope": "actual worker imports, MySQL recorded base/history/summary and budget reserve only"
+  },
+  "target_preservation": {
+    "passed": true,
+    "target_head_unchanged": true,
+    "target_save_confirm_operations_unchanged": true,
+    "target_run_count": 7,
+    "no_new_target_run": true,
+    "target_status_attempt_fence_unchanged": true,
+    "production_writes": 0
+  },
+  "runtime_images": {
+    "worker": {
+      "image": "sha256:8c400afc3c3749404b3dacdad56a62091fa1df6c206d2737fc90d93f040b7492",
+      "health": "healthy",
+      "running": true,
+      "rollback_tag": "docucheck-worker:pre-chat-context-20261009"
+    },
+    "indexer": {
+      "image": "sha256:83f85620883d2a6ea1a089ec75413127232b4b6dc264fab150a8df34caacc47e",
+      "health": "healthy",
+      "running": true,
+      "rollback_tag": "docucheck-indexer:pre-chat-context-20261009"
+    },
+    "dispatcher": {
+      "image": "sha256:dc289137bfe0e0f3d58179be351b0ada510640238040cbc33a8348b0c9b19678",
+      "health": null,
+      "running": true,
+      "rollback_tag": "docucheck-dispatcher:pre-chat-context-20261009"
+    },
+    "cleaner": {
+      "image": "sha256:dc289137bfe0e0f3d58179be351b0ada510640238040cbc33a8348b0c9b19678",
+      "health": null,
+      "running": true,
+      "rollback_tag": "docucheck-cleaner:pre-chat-context-20261009"
+    }
+  },
+  "waiting_user_runs_preserved": 2,
+  "real_model_requests": 0,
+  "embedding_requests": 0,
+  "new_business_run_created": false,
+  "browser_authenticated_chat_verified": false,
+  "previous_offline_gates": {
+    "scope": "previous turn, identical application source; not rerun this deployment",
+    "passed": 1286,
+    "skipped": 41,
+    "network_attempts": 0
+  },
+  "remaining": [
+    "unsaved candidate continuity and missing quantity",
+    "revision-zero candidate UI timing",
+    "real provider behavior validation"
+  ],
+  "evidence_sha256": {
+    "before.json": "4384548e81c30c475c6cac72c4521b04938edd11a2b7d5857866c164b7386b01",
+    "preflight.json": "f050773f27c6984201975aa78ff227096a01bdb1a6b03bb48f0acef46b47ce9c",
+    "deployment.json": "d8bb24adf29e821a3d230eb6926105f2d219004ec10aee1d2899677b3ae06ea6",
+    "after.json": "16099802ec9205e41c7d948ee1fe88eef0d3e8eedbfdbf396562abc6ae9939b7",
+    "verification.json": "953463b9f9c0a8eb11e1ef5f481386820b275fd43834ed552b39e09eb7d9e26a",
+    "worker-context-check.json": "c042dc59d89622d30f5a7a4d93a24cf83a74bf5039e6eef5a01099f3145aa340",
+    "checks.json": "90999c74f8595ab1e5824c919cd830feb70652dafbdcaec66316806ee7b4d59a",
+    "builds-final.json": "512ebd559aef953ac7d5b3a5922c57e1c3f28ee72b50d3fbde4e1e497fc37ef6",
+    "target-preservation.json": "17b2fa4700c7d819a230edeef51a73112dd602a9c5e342b0f5f4534bd57b3eea"
+  }
+}
