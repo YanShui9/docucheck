@@ -89,6 +89,8 @@ def _error(request: Request, status: int, code: str, details: object = None):
 
 
 def _domain_status(code: str) -> int:
+    if code == "assistant_preview_limit":
+        return 409
     if code in {"checklist_revision_conflict", "checklist_snapshot_changed", "checklist_source_changed", "checklist_execution_pending", "checklist_draft_missing", "checklist_changed", "batch_source_changed", "dynamic_source_changed", "assistant_source_changed", "assistant_scope"}:
         return 409
     if code in {"invalid_checklist", "invalid_checklist_selection", "checklist_confirmation_required", "checklist_needs_resolution", "checklist_source_scope", "checklist_rebase_unresolved"}:

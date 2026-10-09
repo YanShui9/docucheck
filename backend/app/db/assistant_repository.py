@@ -8,6 +8,7 @@ from ..criteria.changes import apply_changes
 from ..criteria.models import ChecklistDefinition
 from ..criteria.validation import validate_definition
 from ..evidence.repository import digest
+from .assistant_preview import authority_base, bind_preview, effective_base
 from .checklist_repository import _validated, _version
 from .dynamic_repository import DynamicRepository, _error, bind_workflow, source_digest
 from .models import (
@@ -49,6 +50,8 @@ def bind_assistant(connection, request, run_id):
     head, base = _base(connection, request.case_id, request.snapshot_id)
     if base:
         base = ChecklistDefinition.model_validate(base).model_dump(mode="json")
+    base = bind_preview(connection, request, base, head["revision"] if head else 0,
+                        head["confirmed_version_id"] if head else None)
     return {"run_id": run_id, "case_id": request.case_id, "snapshot_id": request.snapshot_id,
             "checklist_revision": head["revision"] if head else 0,
             "checklist_version_id": head["confirmed_version_id"] if head else None,
@@ -60,20 +63,21 @@ class AssistantRepository:
         self.engine = engine
 
     @staticmethod
-    def validate_binding(connection, binding):
+    def validate_binding(connection, binding, *, source=None):
         head, base = _base(connection, binding["case_id"], binding["snapshot_id"])
         if (head["revision"] if head else 0) != binding["checklist_revision"] or (head["confirmed_version_id"] if head else None) != binding["checklist_version_id"]:
             _error("checklist_changed")
         if base is not None:
             base = ChecklistDefinition.model_validate(base).model_dump(mode="json")
-        if digest(binding["base_json"]) != binding["base_digest"] or digest(base) != binding["base_digest"]:
+        if digest(binding["base_json"]) != binding["base_digest"] or digest(base) != digest(authority_base(binding["base_json"])):
             _error("assistant_source_changed")
+        return effective_base(connection, binding, source=source, current_read=True)
 
     def exists(self, run_id):
         with self.engine.connect() as connection:
             return connection.scalar(select(assistant_runs.c.run_id).where(assistant_runs.c.run_id == run_id)) is not None
 
-    def _guard(self, connection, claim):
+    def _guard(self, connection, claim, *, source=None):
         from .run_repository import RunRepository
 
         runs = RunRepository(self.engine)
@@ -84,12 +88,12 @@ class AssistantRepository:
         row = connection.execute(select(assistant_runs).where(assistant_runs.c.run_id == claim.run_id).with_for_update()).mappings().first()
         if row is None or row["case_id"] != run["case_id"] or row["snapshot_id"] != run["snapshot_id"]:
             _error("assistant_scope")
-        self.validate_binding(connection, row)
-        return dict(row)
+        definition = self.validate_binding(connection, row, source=source)
+        return dict(row) | ({"effective_definition": definition} if source is not None else {})
 
-    def binding(self, claim):
+    def binding(self, claim, *, source=None):
         with self.engine.begin() as connection:
-            return self._guard(connection, claim)
+            return self._guard(connection, claim, source=source)
 
     def validate(self, claim):
         self.binding(claim)
@@ -189,10 +193,11 @@ class AssistantRepository:
             instruction = connection.scalar(select(messages.c.content).where(messages.c.id == (reply or row["message_id"])))
             if instruction != payload["instruction"]:
                 _error("assistant_source_changed")
+            edit_base = effective_base(connection, dict(row) | {"run_id": run_id}, source=payload["source_digest"])
         repo = load_agent_snapshot(self.engine, row["case_id"], row["snapshot_id"], allow_empty=True)
         if payload["source_digest"] != source_digest(repo):
             _error("assistant_source_changed")
-        base = ChecklistDefinition.model_validate(row["base_json"]) if row["base_json"] else None
+        base = ChecklistDefinition.model_validate(edit_base) if edit_base else None
         if base:
             validate_definition(base, repo)
         kind = payload["kind"]

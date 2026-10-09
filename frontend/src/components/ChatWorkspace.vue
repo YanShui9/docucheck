@@ -53,7 +53,7 @@ const running = computed(() => !!activeRun.value && activeRun.value.status !== '
 const labels: Record<string, string> = { queued: '排队中', running: '正在处理', completed: '处理完成', partial: '部分完成', failed: '处理失败', cancelled: '已停止', waiting_user: '等待补充信息', interrupted: '处理已中断' }
 function notice(reason: unknown): string {
   const code = reason instanceof Error ? reason.message : ''
-  return ({ revision_conflict: '资料已更新，请重新查看后发送。', conversation_busy: '这个对话仍有任务正在处理，请稍后重试。', session_expired: '登录已过期，请重新登录。', case_deleting: '该采购任务正在删除。', assistant_source_changed: '结果来源发生变化，暂不能展示，请刷新资料后重新处理。', history_limit: '历史记录较多，请选择较新的对话。', run_active: '已有任务正在处理，请稍后重试。' } as Record<string, string>)[code] ?? '暂时无法完成请求。请检查服务或网络后重试。'
+  return ({ revision_conflict: '资料已更新，请重新查看后发送。', conversation_busy: '这个对话仍有任务正在处理，请稍后重试。', session_expired: '登录已过期，请重新登录。', case_deleting: '该采购任务正在删除。', assistant_source_changed: '结果来源发生变化，暂不能展示，请刷新资料后重新处理。', assistant_preview_limit: '连续修改的未保存候选较多，请先打开最新候选并保存为草稿，再继续补充要求。', history_limit: '历史记录较多，请选择较新的对话。', run_active: '已有任务正在处理，请稍后重试。' } as Record<string, string>)[code] ?? '暂时无法完成请求。请检查服务或网络后重试。'
 }
 function current(version: number) { return !disposed && version === generation }
 function fail(reason: unknown) {

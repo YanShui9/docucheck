@@ -42,6 +42,18 @@ test('empty materials can use the real assistant workflow and a stable idempoten
   expect(wrapper.text()).toContain('排队中')
 })
 
+test('preview lineage capacity gives a save-first action without discarding the typed requirement', async () => {
+  apiRequest.mockImplementation((path: string) => path === '/conversations/conv-a/messages'
+    ? Promise.reject(new Error('assistant_preview_limit')) : reads(path))
+  const wrapper = setup()
+  await flushPromises()
+  await wrapper.get('textarea').setValue('还需要增加交货地点要求')
+  await wrapper.get('[aria-label="发送消息"]').trigger('click')
+  await flushPromises()
+  expect(wrapper.text()).toContain('保存为草稿')
+  expect((wrapper.get('textarea').element as HTMLTextAreaElement).value).toBe('还需要增加交货地点要求')
+})
+
 test('restores stored questions and verified assistant answers instead of manufacturing chat history', async () => {
   apiRequest.mockImplementation((path: string) => {
     if (path.includes('/conversations?')) return Promise.resolve({ conversations: [{ id: 'conv-a', created_at: '' }], next_offset: null })

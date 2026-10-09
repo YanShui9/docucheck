@@ -2,19 +2,23 @@
 
 import os
 import time
+from uuid import uuid4
 
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, delete, func, select, update
+from sqlalchemy.exc import OperationalError
 
 from backend.app.api.auth import LocalAuthenticator
 from backend.app.api.main import create_app
+from backend.app.db import assistant_repository
+from backend.app.db.assistant_repository import bind_assistant
 from backend.app.db.case_cleanup import CaseCleanup
 from backend.app.db.case_deletion import CaseDeletion
 from backend.app.db.connection import database_url
 from backend.app.db.models import assistant_runs, cases, input_snapshots, outbox
 from backend.app.db.run_executor import execute_run
-from backend.app.db.run_repository import RunRepository
+from backend.app.db.run_repository import RunRepository, SubmitRun
 from backend.tests.test_assistant_agent import Decisions
 
 pytestmark = pytest.mark.skipif(
@@ -26,6 +30,19 @@ def test_mysql_empty_chat_reopen_retry_and_candidate_confirmation(tmp_path, monk
     engine = create_engine(database_url(), pool_pre_ping=True, hide_parameters=True)
     case_id = None
     dispatch = RunRepository._dispatch
+    resolve = assistant_repository.effective_base
+    source_guard_checks = []
+
+    def guarded_source(connection, binding, **options):
+        if options.get("source") is not None and options.get("current_read") is True:
+            # Source resolution must own the Case lock before taking child or
+            # parent locks; NOWAIT proves the lock is actually held in MySQL.
+            with engine.connect() as competing:
+                with pytest.raises(OperationalError) as denied:
+                    competing.execute(select(cases.c.id).where(cases.c.id == case_id).with_for_update(nowait=True))
+                assert denied.value.orig.args[0] == 3572
+            source_guard_checks.append(binding["run_id"])
+        return resolve(connection, binding, **options)
 
     def isolated_dispatch(self, connection, run_id, attempt_id, timestamp):
         dispatch(self, connection, run_id, attempt_id, timestamp)
@@ -34,6 +51,7 @@ def test_mysql_empty_chat_reopen_retry_and_candidate_confirmation(tmp_path, monk
         ))
 
     monkeypatch.setattr(RunRepository, "_dispatch", isolated_dispatch)
+    monkeypatch.setattr(assistant_repository, "effective_base", guarded_source)
     monkeypatch.setenv("DOCUCHECK_DATA_DIR", str(tmp_path / "data"))
     try:
         with TestClient(create_app(engine, LocalAuthenticator())) as client:
@@ -83,6 +101,31 @@ def test_mysql_empty_chat_reopen_retry_and_candidate_confirmation(tmp_path, monk
             assert preview.status_code == 200, preview.text
             candidate = preview.json()["definition"]
             assert candidate["criteria"][0]["source"]["kind"] == "user_defined"
+            continued = submit("再加入等级要求，具体等级待确认", "continue-demand")
+            reopened = create_engine(database_url(), pool_pre_ping=True, hide_parameters=True)
+            try:
+                with engine.begin() as older_read_view:
+                    # Establish a RR read view before the candidate finishes elsewhere.
+                    assert older_read_view.scalar(select(assistant_runs.c.payload_json).where(
+                        assistant_runs.c.run_id == continued["run_id"])) is None
+                    report = execute_run(reopened, continued["run_id"], continued["attempt_id"], Decisions(("propose_changes", {
+                        "items": [], "operations": [{"op": "add", "reason": "买方补充", "criterion": {
+                            "item_id": "apple", "name": "等级", "rule": {"type": "manual", "instruction": "待明确等级"}}}]})))
+                    assert report.status == "completed", report
+                    assert older_read_view.scalar(select(assistant_runs.c.payload_json).where(
+                        assistant_runs.c.run_id == continued["run_id"])) is None
+                    request = SubmitRun(case_id, conv, preview.json()["snapshot_id"], 0,
+                        "继续补充", "standard", "current-read-only", workflow="assistant")
+                    bound = bind_assistant(older_read_view, request, uuid4().hex)
+                    assert bound["base_json"]["parent"]["run_id"] == continued["run_id"]
+            finally:
+                reopened.dispose()
+            continued_url = f"/api/v1/agent-runs/{continued['run_id']}"
+            continued_preview = client.get(continued_url + "/proposal")
+            assert continued_preview.status_code == 200, continued_preview.text
+            assert continued_preview.json()["definition"]["criteria"][0] == candidate["criteria"][0]
+            candidate = continued_preview.json()["definition"]
+            assert len(candidate["criteria"]) == 2
             snapshot = client.get(url).json()["snapshot_id"]
             checklist = f"/api/v1/cases/{case_id}/snapshots/{snapshot}/checklist"
             assert client.get(checklist).json()["confirmed_version"] is None
@@ -92,15 +135,17 @@ def test_mysql_empty_chat_reopen_retry_and_candidate_confirmation(tmp_path, monk
             assert saved.status_code == 200, saved.text
             confirmed = client.post(checklist + "/confirm", headers={"Idempotency-Key": "confirm"},
                 json={"expected_revision": 0, "expected_checklist_revision": 1,
-                "criterion_ids": [candidate["criteria"][0]["criterion_id"]],
+                "criterion_ids": [c["criterion_id"] for c in candidate["criteria"]],
                 "confirmed": True, "reason": "确认买方要求"})
             assert confirmed.status_code == 200, confirmed.text
             assert client.get(url + "/proposal").json()["is_current"] is False
+            assert client.get(continued_url + "/proposal").json()["is_current"] is False
+            assert continued["run_id"] in source_guard_checks
             with engine.connect() as connection:
                 assert connection.scalar(select(func.count()).select_from(input_snapshots)
                     .where(input_snapshots.c.case_id == case_id)) == 1
                 assert connection.scalar(select(func.count()).select_from(assistant_runs)
-                    .where(assistant_runs.c.case_id == case_id)) == 2
+                    .where(assistant_runs.c.case_id == case_id)) == 3
     finally:
         try:
             if case_id:

@@ -10,7 +10,7 @@ from ..runtime.lifecycle import RunStatus
 from .agent_snapshot import SnapshotLoadError, load_agent_snapshot
 from .assistant_repository import AssistantRepository
 from .conversation_context import load_conversation_context
-from .dynamic_repository import DynamicRepository
+from .dynamic_repository import DynamicRepository, source_digest
 from .memory_context import load_memory_context
 from .models import agent_runs, document_versions
 from .persisted_retrieval import persisted_retriever
@@ -56,6 +56,9 @@ def execute_assistant(engine, claim, provider, *, heartbeat_interval_seconds=10.
             if repo.documents:
                 retriever = (retriever_factory or persisted_retriever)(engine, repo, claim)
                 repo = retriever.repository
+            # Keep source revalidation under the same Case-first lock order as
+            # submission/finish; standalone child -> parent locks can deadlock.
+            edit_base = store.binding(claim, source=source_digest(repo))["effective_definition"]
             context = load_conversation_context(engine, claim.run_id, claim.active_attempt_id)
             memory = load_memory_context(engine, repo, claim, request, context)
 
@@ -83,7 +86,7 @@ def execute_assistant(engine, claim, provider, *, heartbeat_interval_seconds=10.
                     history=context.history, memory_layers=memory.layers, history_reader=memory.history_reader)
                 return agent.ask(context.question, operation="propose_checklist" if operation == "proposal" else "review")
 
-            agent = AssistantAgent(repo, provider, mode=request["mode"], definition=binding["base_json"],
+            agent = AssistantAgent(repo, provider, mode=request["mode"], definition=edit_base,
                 retriever=retriever, formal=formal, validate=validate_context,
                 history=context.history, memory_layers=memory.layers)
             result = agent.ask(context.question)

@@ -1,0 +1,51 @@
+{
+  "kind": "assistant_preview_fix_verification",
+  "base_commit": "2532d22",
+  "offline_checks": [
+    {
+      "name": "dependencies",
+      "exit_code": 0,
+      "seconds": 1.578
+    },
+    {
+      "name": "ruff",
+      "exit_code": 0,
+      "seconds": 0.391
+    },
+    {
+      "name": "pytest",
+      "exit_code": 0,
+      "seconds": 291.078,
+      "passed": 1304,
+      "skipped": 41,
+      "failed": 0,
+      "network_guard_observed": true,
+      "network_attempts": 0
+    }
+  ],
+  "targeted_backend": {
+    "passed": 58,
+    "network_attempts": 0
+  },
+  "frontend": {
+    "passed": 172,
+    "typecheck": true,
+    "build": true
+  },
+  "mysql": {
+    "passed": 1,
+    "isolated_outbox": true,
+    "stale_read_view_reproduced_before_fix": true,
+    "latest_parent_current_read_verified": true,
+    "case_first_lock_via_nowait_verified": true,
+    "own_fixture_cleaned": true
+  },
+  "review": {
+    "blocking_issues_remaining": 0,
+    "rr_read_view_fixed": true,
+    "lock_order_fixed": true
+  },
+  "production_business_writes": 0,
+  "real_model_requests": 0,
+  "runtime_applied": false
+}

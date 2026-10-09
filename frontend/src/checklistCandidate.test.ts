@@ -45,3 +45,9 @@ test('matching old-snapshot data stays historical and a missing view stays unkno
   expect(candidateState(candidate, view({ is_current_snapshot: false }), 1, 0, false)).toBe('historical')
   expect(candidateState(candidate, undefined, 1, 0, true)).toBe('unknown')
 })
+
+test('revision zero with no saved head is a current editable candidate, later changed head is historical', () => {
+  const empty = view({ revision: 0, checklist_revision: 0, state: 'empty', draft: null })
+  expect(candidateState(candidate, empty, 0, 0, true)).toBe('candidate')
+  expect(candidateState(candidate, { ...empty, checklist_revision: 2 }, 0, 0, false)).toBe('historical')
+})
