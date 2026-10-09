@@ -49,6 +49,34 @@ def seven_patch():
         for criterion in phone_requirements().model_dump(mode="json")["criteria"]]}
 
 
+def test_ten_unsaved_verbose_requirements_survive_followup_append_and_explicit_confirmation(ingestion_case):
+    from backend.tests.test_assistant_stages import addition, definition
+
+    client, engine, _, case = ingestion_case
+    conversation = client.post(f"/api/v1/cases/{case}/conversations").json()["id"]
+    initial = definition(10, verbose=True).model_dump(mode="json")
+    receipt = submit(client, conversation, "准备十项手机采购要求", "ten-initial")
+    first = execute(client, engine, receipt, "propose_changes", {"items": initial["items"], "operations": [
+        {"op": "add", "reason": "买方明确加入", "criterion": {k: v for k, v in c.items() if k not in {"criterion_id", "source"}}}
+        for c in initial["criteria"]]})
+    original = first["result"]["candidate"]
+    receipt = submit(client, conversation, "再给审核指标加上一个交期吧", "ten-deadline")
+    latest = execute(client, engine, receipt, "propose_changes", addition())
+    candidate = latest["result"]["candidate"]
+    assert len(candidate["criteria"]) == 11
+    assert candidate["criteria"][:-1] == original["criteria"]
+    checklist = f"/api/v1/cases/{case}/snapshots/{latest['snapshot_id']}/checklist"
+    assert client.get(checklist).json()["state"] == "empty"
+    saved = client.put(checklist, headers={"Idempotency-Key": "save-eleven"}, json={**candidate,
+        "expected_revision": 0, "expected_checklist_revision": 0, "reason": "明确保存十一项"})
+    assert saved.status_code == 200, saved.text
+    confirmed = client.post(checklist + "/confirm", headers={"Idempotency-Key": "confirm-eleven"}, json={
+        "expected_revision": 0, "expected_checklist_revision": saved.json()["checklist_revision"],
+        "criterion_ids": [c["criterion_id"] for c in candidate["criteria"]], "confirmed": True, "reason": "明确确认"})
+    assert confirmed.status_code == 200, confirmed.text
+    assert confirmed.json()["confirmed_version"]["definition"] == candidate
+
+
 def test_unsaved_quantity_survives_chat_and_seven_additions_then_explicit_save_confirm(ingestion_case):
     client, engine, _, case = ingestion_case
     conversation, first, initial = first_preview(ingestion_case)

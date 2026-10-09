@@ -19,6 +19,13 @@ class Decisions:
 
     def decide(self, messages, schemas, **options):
         self.messages.append(messages)
+        # Existing business fixtures describe the intended patch. The protocol
+        # now requires explicit preparation before exposing the strict patch tool.
+        if self.actions and self.actions[0][0] == "propose_changes" and any(
+                s["function"]["name"] == "prepare_changes" for s in schemas):
+            targets = [op["criterion_id"] for op in self.actions[0][1].get("operations", [])
+                       if op.get("op") in {"update", "remove"}]
+            return call("prepare_changes", {"criterion_ids": targets, "item_ids": []})
         name, args = self.actions.popleft()
         return call(name, args)
 
@@ -69,7 +76,7 @@ def test_buyer_file_proposal_capability_is_only_available_with_buyer_document(so
             [document for document in repo.documents if document.role != "requirement"])
     tools = {schema["function"]["name"] for schema in agent(repo, Decisions()).schemas}
     assert ("propose_checklist" in tools) is (sources == "buyer")
-    assert {"propose_changes", "review_checklist"} <= tools
+    assert {"prepare_changes", "read_checklist", "review_checklist"} <= tools
 
 
 def test_evidence_answer_only_renders_verified_original_and_location():

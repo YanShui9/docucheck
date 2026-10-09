@@ -28,14 +28,14 @@ def compact_schema(schema):
     return result
 
 
-def assemble_assistant_context(guidance, question, history, layers, schemas, budget):
+def assemble_assistant_context(guidance, question, history, layers, schemas, budget, *, tail=()):
     payload, already_omitted = _memory_payload(layers)
     total_entries = len(payload["summary"]["entries"]) + already_omitted
     recent = history[-8:]
     limit = min(budget.max_prompt, budget.context_window - 1536)
     while True:
         system = guidance + MEMORY_NOTICE + "\nMEMORY_DATA=" + json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
-        messages = [SystemMessage(content=system), *(m for turn in recent for m in turn), HumanMessage(content=question)]
+        messages = [SystemMessage(content=system), *(m for turn in recent for m in turn), HumanMessage(content=question), *tail]
         fitted, dropped = fit_decision_history(messages, schemas, max_prompt=budget.max_prompt,
                                                context_window=budget.context_window, output_cap=1536)
         size = input_bound(fitted, schemas)

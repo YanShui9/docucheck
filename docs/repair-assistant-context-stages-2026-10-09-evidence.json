@@ -1,0 +1,80 @@
+{
+  "version": 1,
+  "scope": "staged assistant context, targeted edits and runtime date",
+  "failure": {
+    "input_upper_bound": 16014,
+    "prompt_limit": 16000,
+    "real_model_calls_each_attempt": [
+      0,
+      0
+    ]
+  },
+  "backend_offline": {
+    "passed": 1323,
+    "skipped": 41,
+    "failed": 0,
+    "network_attempts": 0,
+    "seconds": 284.078
+  },
+  "ruff": 0,
+  "pip_check": 0,
+  "mysql_assistant": {
+    "passed": 1,
+    "skipped": 0,
+    "isolated_fixture": true
+  },
+  "frontend": {
+    "passed": 172,
+    "files": 13,
+    "ui_changed": false
+  },
+  "independent_review": {
+    "final_targeted_passed": 40,
+    "blocking_findings_remaining": 0,
+    "closed_findings": [
+      "adaptive catalog pages with long question",
+      "independent empty-item pagination"
+    ]
+  },
+  "recorded_request_scripted_replay": {
+    "passed": true,
+    "before_bound": 16014,
+    "prompt_limit": 16000,
+    "request_bounds": [
+      14039,
+      15883
+    ],
+    "criteria_before": 10,
+    "criteria_after": 11,
+    "old_criteria_exactly_preserved": true,
+    "audit": {
+      "input_bound": 15883,
+      "prompt_limit": 16000,
+      "mandatory_overflow": false,
+      "history_turns_selected": 6,
+      "history_turns_omitted": 2,
+      "summary_entries_selected": 0,
+      "summary_entries_omitted": 0,
+      "preferences_selected": 0,
+      "routing_requests": 1,
+      "max_request_bound": 15883,
+      "routing_schema_bytes": 2610,
+      "max_schema_bytes": 7759,
+      "edit_requests": 1,
+      "edit_schema_bytes": 7759
+    },
+    "scripted_model_calls": 2,
+    "real_model_requests": 0,
+    "production_writes": 0,
+    "base_digest": "7c17ff6b224f989df32e09a952e5f5230a260d94a1c7b24caf0a98c7b3a87ed5"
+  },
+  "source_hashes": {
+    "backend/app/agent/assistant.py": "7bd3fb3cd53ed46113d420154276d596de068b276b0f664d8ceba16dfb3ab17e",
+    "backend/app/agent/assistant_context.py": "efd1d6c89f3f10ab6fd38602ad802616e2c8b3c49a8f1a532d92be72a902003a",
+    "backend/app/agent/assistant_checklist_context.py": "1b4967d58d5c0416cd11d8d4bd9ef968db794c9c0d2505dc74bb2391dfe3ad56"
+  },
+  "real_model_requests": 0,
+  "production_writes": 0,
+  "real_deepseek_behavior_verified": false,
+  "runtime_application": "reported separately after verified rollout"
+}

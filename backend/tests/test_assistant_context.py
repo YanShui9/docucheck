@@ -110,7 +110,7 @@ def test_large_history_is_removed_as_whole_turns_and_invalid_preferences_are_rej
 ])
 def test_compact_patch_schema_preserves_all_rule_types_and_rejects_invalid_patches(rule):
     assistant = AssistantAgent(EvidenceRepository.empty("case", "snap"), Decisions())
-    compact = next(s["function"]["parameters"] for s in assistant.schemas if s["function"]["name"] == "propose_changes")
+    compact = next(s["function"]["parameters"] for s in assistant.edit_schemas if s["function"]["name"] == "propose_changes")
     original = _schema("propose_changes", ChecklistPatch, "")['function']['parameters']
     # Metadata reduction must really create space, while all contracts remain enforced.
     assert len(json.dumps(compact)) < len(json.dumps(original))
