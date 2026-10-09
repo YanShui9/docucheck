@@ -1,0 +1,89 @@
+{
+  "kind": "assistant_preview_local_rollout",
+  "source_commit": "5a5412d5aa5e07b6912c94a0597dc87081f95a2e",
+  "runtime_applied": true,
+  "build_network": "none",
+  "dependencies_installed": false,
+  "images": [
+    {
+      "roles": [
+        "worker"
+      ],
+      "image": "sha256:59d99bf9fae7b415c17c07d0744be61bafd8e22a1d32a2d5a7381bfc304acf1b",
+      "base_image": "sha256:8c400afc3c3749404b3dacdad56a62091fa1df6c206d2737fc90d93f040b7492"
+    },
+    {
+      "roles": [
+        "indexer"
+      ],
+      "image": "sha256:3452baa785a56363360f6712680801d19db4a1b82841544b9bb1d815b94c9915",
+      "base_image": "sha256:83f85620883d2a6ea1a089ec75413127232b4b6dc264fab150a8df34caacc47e"
+    },
+    {
+      "roles": [
+        "dispatcher",
+        "cleaner"
+      ],
+      "image": "sha256:0f806611d87bc9bce2c84889b475c7048dc3075c02777e7fea0f189d5032e6f2",
+      "base_image": "sha256:dc289137bfe0e0f3d58179be351b0ada510640238040cbc33a8348b0c9b19678"
+    }
+  ],
+  "source_files_per_container": 120,
+  "source_hash_matches": 480,
+  "unchanged_containers": 14,
+  "packages_unchanged": true,
+  "environment_mounts_networks_users_unchanged": true,
+  "drain": {
+    "active": 0,
+    "reserved": 0,
+    "scheduled": 0,
+    "redis_runs_queue": 0,
+    "running_runs": 0
+  },
+  "http_status_codes": {
+    "frontend": 200,
+    "api_live": 200,
+    "api_ready": 200,
+    "anonymous_api": 401,
+    "anonymous_proxy": 401,
+    "oidc": 200
+  },
+  "waiting_user_preserved": true,
+  "index_jobs_unchanged_ready": 5,
+  "parse_state_unchanged": true,
+  "dispatch_state_unchanged": true,
+  "target_preservation": {
+    "passed": true,
+    "target_head_unchanged": true,
+    "target_save_confirm_operations_unchanged": true,
+    "target_run_count": 7,
+    "no_new_target_run": true,
+    "target_status_attempt_fence_unchanged": true,
+    "production_writes": 0
+  },
+  "worker_readonly_context": {
+    "passed": true,
+    "criteria": 7,
+    "input_bound": 15983,
+    "prompt_limit": 16000,
+    "context": {
+      "input_bound": 15983,
+      "prompt_limit": 16000,
+      "mandatory_overflow": false,
+      "history_turns_selected": 0,
+      "history_turns_omitted": 8,
+      "summary_entries_selected": 2,
+      "summary_entries_omitted": 3,
+      "preferences_selected": 0
+    },
+    "question_preserved": true,
+    "recorded_run_unchanged": true,
+    "production_writes": 0,
+    "real_model_requests": 0,
+    "preferences_replayed": false,
+    "scope": "actual worker imports, MySQL recorded base/history/summary and budget reserve only"
+  },
+  "real_model_requests": 0,
+  "embedding_requests": 0,
+  "browser_business_flow_retested": false
+}
