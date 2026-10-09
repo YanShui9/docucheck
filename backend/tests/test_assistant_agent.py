@@ -76,7 +76,7 @@ def test_buyer_file_proposal_capability_is_only_available_with_buyer_document(so
             [document for document in repo.documents if document.role != "requirement"])
     tools = {schema["function"]["name"] for schema in agent(repo, Decisions()).schemas}
     assert ("propose_checklist" in tools) is (sources == "buyer")
-    assert {"prepare_changes", "read_checklist", "review_checklist"} <= tools
+    assert {"prepare_changes", "read_context", "review_checklist"} <= tools
 
 
 def test_evidence_answer_only_renders_verified_original_and_location():

@@ -1,6 +1,6 @@
 """Source-grounded hybrid retrieval. A top-k hit is never a coverage certificate."""
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 
 from rank_bm25 import BM25Plus
 
@@ -138,6 +138,7 @@ class HybridRetriever(Retriever):
             chunk = allowed[chunk_id]
             text, truncated = _clip(restore_text(chunk, self.repository), MAX_TEXT_BYTES)
             results.append({"chunk_id": chunk_id, "text": text,
+                            "source_spans": [asdict(span) for span in chunk.spans],
                             "evidence_refs": list(chunk.evidence_refs), "truncated": truncated,
                             "score": sum(1 / (60 + r) for r in ranks[chunk_id].values()),
                             "channels": list(ranks[chunk_id]), "ranks": ranks[chunk_id],

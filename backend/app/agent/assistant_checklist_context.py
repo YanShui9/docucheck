@@ -19,7 +19,7 @@ class PrepareChangesArgs(Contract):
 
 
 class ReadChecklistArgs(Contract):
-    scope: Literal["criteria", "items"] = "criteria"
+    scope: Literal["criteria", "items", "current_time"] = "criteria"
     query: str = Field(default="", max_length=120)
     offset: int = Field(default=0, ge=0, le=100)
     limit: int = Field(default=8, ge=1, le=8)

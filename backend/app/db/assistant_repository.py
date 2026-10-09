@@ -167,7 +167,7 @@ class AssistantRepository:
             checked_citation,
             render_evidence,
         )
-        from ..evidence.retrieval import MAX_TEXT_BYTES, _clip
+        from ..agent.assistant_evidence import verify_windows
         from .agent_snapshot import load_agent_snapshot
 
         with self.engine.connect() as connection:
@@ -207,12 +207,7 @@ class AssistantRepository:
             if candidate.model_dump(mode="json") != payload["candidate"] or changes != payload["changes"]:
                 _error("assistant_source_changed")
         elif kind == "evidence":
-            for evidence_id, text in payload["source_reads"].items():
-                block = repo.read([evidence_id])[0]
-                if _clip(block.text, MAX_TEXT_BYTES)[0] != text:
-                    _error("assistant_source_changed")
-            if any(c["evidence_id"] not in payload["source_reads"] or c["quote"] not in payload["source_reads"][c["evidence_id"]] for c in payload["citations"]):
-                _error("assistant_source_changed")
+            verify_windows(repo, payload)
             citations = [checked_citation(repo, c["evidence_id"], c["quote"]) for c in payload["citations"]]
             if citations != payload["citations"] or render_evidence(citations, payload["retrieval"]) != payload["answer"]:
                 _error("assistant_source_changed")

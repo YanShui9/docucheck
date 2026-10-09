@@ -294,3 +294,80 @@ def test_get_rejects_citation_to_original_not_actually_read_by_this_run(dynamic_
 
 def test_assistant_result_unknown_run_is_not_found(ingestion_case):
     assert ingestion_case[0].get("/api/v1/agent-runs/not-a-run/assistant-result").status_code == 404
+
+
+@pytest.mark.parametrize('dynamic_case', ['背景说明。' * 200 + '交付期限为签约后17个工作日'], indirect=True)
+def test_long_source_tail_survives_persistence_and_rejects_offset_tampering(dynamic_case):
+    from backend.app.db.agent_snapshot import load_agent_snapshot
+    from backend.app.db.models import assistant_runs
+    from backend.app.evidence.repository import digest
+
+    client, engine, case, snapshot, _ = dynamic_case
+    repo = load_agent_snapshot(engine, case, snapshot)
+    block = next(b for b in repo.blocks if b.supplier == 'vendor-a')
+    receipt = send(dynamic_case, '甲供应商交付期限')
+    report = run(dynamic_case, receipt, Decisions(('search_evidence', {'query': '交付期限', 'supplier': 'vendor-a', 'limit': 1}),
+        ('answer_evidence', {'citations': [{'evidence_id': block.evidence_id, 'quote': '交付期限为签约后17个工作日'}]})))
+    assert report.status == 'completed', report
+    url = f"/api/v1/agent-runs/{receipt['run_id']}/assistant-result"
+    result = client.get(url)
+    assert result.status_code == 200, result.text
+    assert result.json()['result']['source_windows'][0]['start_char'] > 0
+    with engine.begin() as connection:
+        payload = deepcopy(connection.scalar(select(assistant_runs.c.payload_json).where(assistant_runs.c.run_id == receipt['run_id'])))
+        payload['source_windows'][0]['start_char'] = 0
+        connection.execute(update(assistant_runs).where(assistant_runs.c.run_id == receipt['run_id']).values(payload_json=payload, payload_digest=digest(payload)))
+    assert client.get(url).status_code == 409
+
+
+def test_legacy_prefix_evidence_payload_remains_readable(dynamic_case):
+    from backend.app.db.agent_snapshot import load_agent_snapshot
+    from backend.app.db.models import assistant_runs
+    from backend.app.evidence.repository import digest
+
+    client, engine, case, snapshot, _ = dynamic_case
+    repo = load_agent_snapshot(engine, case, snapshot)
+    block = next(b for b in repo.blocks if b.supplier == 'vendor-a')
+    receipt = send(dynamic_case, '甲供应商苹果数量')
+    report = run(dynamic_case, receipt, Decisions(('search_evidence', {'query': '苹果数量', 'supplier': 'vendor-a'}),
+        ('answer_evidence', {'citations': [{'evidence_id': block.evidence_id, 'quote': block.text}]})))
+    assert report.status == 'completed', report
+    with engine.begin() as connection:
+        payload = deepcopy(connection.scalar(select(assistant_runs.c.payload_json).where(assistant_runs.c.run_id == receipt['run_id'])))
+        payload.pop('source_windows')
+        connection.execute(update(assistant_runs).where(assistant_runs.c.run_id == receipt['run_id']).values(payload_json=payload, payload_digest=digest(payload)))
+    assert client.get(f"/api/v1/agent-runs/{receipt['run_id']}/assistant-result").status_code == 200
+
+
+@pytest.mark.parametrize('same_conversation', [True, False])
+def test_assistant_history_reader_enforces_conversation_scope_and_records_read(ingestion_case, same_conversation):
+    from backend.app.db.models import agent_runs
+    from backend.app.evidence.repository import digest
+
+    client, engine, _, case = ingestion_case
+    conv = client.post(f'/api/v1/cases/{case}/conversations').json()['id']
+
+    def submit(conversation, content):
+        return client.post(f'/api/v1/conversations/{conversation}/messages', headers={'Idempotency-Key': digest(content)},
+            json={'content': content, 'operation': 'assistant', 'expected_revision': 0}).json()
+
+    first = submit(conv, '黑色手机')
+    report = execute_run(engine, first['run_id'], first['attempt_id'], Decisions(('chat', {'answer': '已记录你的描述。'})), heartbeat_interval_seconds=60)
+    assert report.status == 'completed'
+    with engine.connect() as connection:
+        message_id = connection.scalar(select(agent_runs.c.message_id).where(agent_runs.c.id == first['run_id']))
+    destination = conv if same_conversation else client.post(f'/api/v1/cases/{case}/conversations').json()['id']
+    second = submit(destination, '我刚才说什么颜色')
+    provider = Decisions(('read_conversation_history', {'message_ids': [message_id], 'part': 'question'}),
+        ('chat', {'answer': '你先前说黑色。'}))
+    report = execute_run(engine, second['run_id'], second['attempt_id'], provider, heartbeat_interval_seconds=60)
+    with engine.connect() as connection:
+        manifest = connection.scalar(select(agent_runs.c.context_manifest_json).where(agent_runs.c.id == second['run_id']))
+    if same_conversation:
+        assert report.status == 'completed', report
+        assert '黑色手机' in provider.messages[1][-1].content
+        assert manifest['history_reads'][0]['message_id'] == message_id
+        assert manifest['assistant_context']['history_reads'] == 1
+    else:
+        assert report.status == 'partial' and report.error_code == 'history_scope'
+        assert len(provider.messages) == 1 and not manifest.get('history_reads')

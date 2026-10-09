@@ -7,6 +7,7 @@ from dataclasses import asdict, dataclass
 import jieba
 from rank_bm25 import BM25Plus
 
+from .chunks import SourceSpan
 from .models import ScopedEvidence
 from .repository import EvidenceRepository
 
@@ -48,6 +49,7 @@ class RetrievalChunk:
     text: str
     evidence_refs: tuple[str, ...]
     truncated: bool
+    spans: tuple[SourceSpan, ...] = ()
 
 
 class Retriever:
@@ -77,15 +79,17 @@ class Retriever:
             # XLSX first-row context is copied verbatim with original cell refs.
             context = self._neighbors(group[0], blocks) if group[0].sheet is not None else []
             context = [b for b in context if b not in group]
-            prefix, prefix_refs, context_cut = "", [], False
+            prefix, prefix_refs, prefix_spans, context_cut = "", [], [], False
             for block in context:
                 available = MAX_NEIGHBOR_BYTES - len(prefix.encode("utf-8")) - (1 if prefix else 0)
                 part, cut = _clip(block.text, max(0, available))
                 if part:
                     prefix += ("\n" if prefix else "") + part
                     prefix_refs.append(block.evidence_id)
+                    prefix_spans.append(SourceSpan(block.evidence_id, 0, len(part)))
                 context_cut |= cut
             text, refs, partial = prefix, list(prefix_refs), context_cut
+            spans = list(prefix_spans)
             for block in group:
                 remaining = block.text
                 while remaining:
@@ -93,18 +97,22 @@ class Retriever:
                     part, cut = _clip(remaining, max(0, available))
                     if not part:
                         if text:
-                            chunks.append(RetrievalChunk(text, tuple(dict.fromkeys(refs)), True))
+                            chunks.append(RetrievalChunk(text, tuple(dict.fromkeys(refs)), True, tuple(spans)))
                         text, refs, partial = prefix, list(prefix_refs), context_cut
+                        spans = list(prefix_spans)
                         continue
                     text += ("\n" if text else "") + part
                     refs.append(block.evidence_id)
+                    start = len(block.text) - len(remaining)
+                    spans.append(SourceSpan(block.evidence_id, start, start + len(part)))
                     remaining = remaining[len(part):]
                     partial |= cut
                     if remaining:
-                        chunks.append(RetrievalChunk(text, tuple(dict.fromkeys(refs)), True))
+                        chunks.append(RetrievalChunk(text, tuple(dict.fromkeys(refs)), True, tuple(spans)))
                         text, refs, partial = prefix, list(prefix_refs), True
+                        spans = list(prefix_spans)
             if text and any(ref not in prefix_refs for ref in refs):
-                chunks.append(RetrievalChunk(text, tuple(dict.fromkeys(refs)), partial))
+                chunks.append(RetrievalChunk(text, tuple(dict.fromkeys(refs)), partial, tuple(spans)))
         return chunks
 
     def search(self, query: str, supplier: str | None = None, limit: int = 12) -> list[dict]:
@@ -127,7 +135,8 @@ class Retriever:
         matches = [index for index, tokens in enumerate(corpus) if query_terms.intersection(tokens)]
         matches.sort(key=lambda index: (-float(scores[index]), index))
         return [{"text": chunks[index].text, "evidence_refs": list(chunks[index].evidence_refs),
-                 "score": float(scores[index]), "truncated": chunks[index].truncated}
+                 "score": float(scores[index]), "truncated": chunks[index].truncated,
+                 "source_spans": [asdict(span) for span in chunks[index].spans]}
                 for index in matches[:limit]]
 
     def read_source(

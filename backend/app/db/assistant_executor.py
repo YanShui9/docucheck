@@ -88,7 +88,7 @@ def execute_assistant(engine, claim, provider, *, heartbeat_interval_seconds=10.
 
             agent = AssistantAgent(repo, provider, mode=request["mode"], definition=edit_base,
                 retriever=retriever, formal=formal, validate=validate_context,
-                history=context.history, memory_layers=memory.layers)
+                history=context.history, memory_layers=memory.layers, history_reader=memory.history_reader)
             result = agent.ask(context.question)
             if dynamic.retain_cancelled_usage(claim, result, provider):
                 return ExecutionReport(claim.run_id, claim.active_attempt_id, "cancelled", "本次处理已取消。", "cancelled", result["usage"]["model_calls"])

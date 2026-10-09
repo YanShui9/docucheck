@@ -65,7 +65,7 @@ def test_large_checklist_can_page_to_and_update_a_late_target_without_loading_ot
     target = base.criteria[-1].model_dump(mode="json")
     edit = {k: v for k, v in target.items() if k not in {"source", "criterion_id"}}
     edit["rule"] = {"type": "manual", "instruction": "明确核对订单确认后交付的承诺"}
-    provider = StageProvider(("read_checklist", {"query": "审查要求99", "offset": 0, "limit": 8}),
+    provider = StageProvider(("read_context", {"query": "审查要求99", "offset": 0, "limit": 8}),
         ("prepare_changes", {"criterion_ids": [target["criterion_id"]], "item_ids": []}),
         ("propose_changes", {"items": [], "operations": [{"op": "update", "criterion_id": target["criterion_id"],
             "criterion": edit, "reason": "买方明确调整"}]}))
@@ -108,8 +108,8 @@ def test_runtime_beijing_date_comes_from_current_clock_not_old_chat():
     result = AssistantAgent(EvidenceRepository.empty("case", "snapshot"), provider,
         clock=lambda: datetime(2026, 10, 8, 16, 30, tzinfo=UTC)).ask("今天几号")
     assert result["status"] == "completed"
-    system = provider.requests[0][0][0].content
-    assert '"date":"2026-10-09"' in system and '"timezone":"Asia/Shanghai"' in system
+    assert '2026-10-09' in result['answer'] and '北京时间' in result['answer']
+    assert not provider.requests and result['usage']['model_calls'] == 0
 
 
 @pytest.mark.parametrize("selection", [
@@ -126,8 +126,8 @@ def test_invalid_preparation_never_exposes_editor_or_creates_candidate(selection
 
 
 def test_catalog_pages_replace_previous_page_and_do_not_load_rules():
-    provider = StageProvider(("read_checklist", {"offset": 8}),
-        ("read_checklist", {"offset": 16}), ("chat", {"answer": "已查看后面的目录。"}))
+    provider = StageProvider(("read_context", {"offset": 8}),
+        ("read_context", {"offset": 16}), ("chat", {"answer": "已查看后面的目录。"}))
     result = AssistantAgent(EvidenceRepository.empty("case", "snapshot"), provider, definition=definition(40, verbose=True)).ask("查看后面的指标")
     assert result["status"] == "completed" and result["context"]["catalog_reads"] == 2
     last = provider.requests[-1][0]
@@ -144,7 +144,7 @@ def test_long_names_across_twenty_items_still_allow_chat_and_lookup_of_last_item
     for i, criterion in enumerate(base["criteria"]):
         criterion["item_id"] = f"item-{i % 20}"
         criterion["name"] = f"要求{i}" + "详细核验方向" * 15
-    provider = StageProvider(("read_checklist", {"query": "item-19"}), ("chat", {"answer": "已找到最后一个品目。"}))
+    provider = StageProvider(("read_context", {"query": "item-19"}), ("chat", {"answer": "已找到最后一个品目。"}))
     result = AssistantAgent(EvidenceRepository.empty("case", "snapshot"), provider, definition=base).ask("查" * question_length)
     assert result["status"] == "completed", result["error"]
     assert '"item_id":"item-19"' in provider.requests[-1][0][0].content
@@ -186,7 +186,6 @@ def test_date_refreshes_on_each_question_after_beijing_midnight():
     instants = iter([datetime(2026, 10, 8, 15, 59, tzinfo=UTC), datetime(2026, 10, 8, 16, 1, tzinfo=UTC)])
     provider = StageProvider(("chat", {"answer": "8号"}), ("chat", {"answer": "9号"}))
     agent = AssistantAgent(EvidenceRepository.empty("case", "snapshot"), provider, clock=lambda: next(instants))
-    assert agent.ask("今天几号")["status"] == "completed"
-    assert agent.ask("现在呢")["status"] == "completed"
-    assert '"date":"2026-10-08"' in provider.requests[0][0][0].content
-    assert '"date":"2026-10-09"' in provider.requests[1][0][0].content
+    assert '2026-10-08' in agent.ask("今天几号")["answer"]
+    assert '2026-10-09' in agent.ask("今天几号")["answer"]
+    assert not provider.requests
