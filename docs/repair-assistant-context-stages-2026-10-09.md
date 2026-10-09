@@ -1,5 +1,7 @@
 # 采购助手分阶段上下文修复
 
+> **已应用本机服务：** 代码 `bf8d23d`，API 与四个后台服务已更新；脱敏[应用证据](repair-assistant-context-stages-2026-10-09-applied-evidence.json)。真实 DeepSeek 对话未代用户执行。
+
 ## 根因与修复范围
 
 真实“10项候选后追加交期”请求在调用模型前失败。原请求的保守输入上界为 **16014**，单次上限 **16000**；两个 attempt 均为 **0 次模型调用**。历史、摘要、偏好已经全部移除，仍然超限。这里是应用按 UTF-8 字节计算的保守上界，不是 DeepSeek 返回的实际 token 用量，也不是服务商上下文窗口不足。
@@ -28,7 +30,20 @@
 
 最终完整离线回归 **1323 passed / 41 skipped / 网络尝试 0**，Ruff 和 pip check 通过；真实 MySQL assistant 回归 **1 passed**（独立临时任务、隔离 outbox、清理自身数据），前端 **13 文件 / 172 passed**，页面代码未修改。完整回归在最后两项目录边界修复之后重新执行，早先 1320 项结果保留作阶段记录。
 
-脱敏机器证据见[验证 JSON](repair-assistant-context-stages-2026-10-09-evidence.json)。本机服务应用另行记录；本报告的离线及 MySQL 结果不代表真实 DeepSeek 在线行为验收。
+脱敏机器证据见[验证 JSON](repair-assistant-context-stages-2026-10-09-evidence.json)。本报告的离线及 MySQL 结果不代表真实 DeepSeek 在线行为验收。
+
+## 本机应用与保留检查
+
+- 使用每个现有运行镜像为基础，离线 COPY 应用代码，不下载镜像、不安装依赖；worker/indexer/dispatcher+cleaner 三个镜像的安装包数量分别为 82/82/77，包清单一致。
+- 应用前确认 queued/running、待派发、当前版本解析、索引中、Redis runs 队列均为零；停止 API 写入口及 dispatcher，确认 worker active/reserved/scheduled 为零，再更新四后台。未改 MySQL、Milvus、Redis、Keycloak 数据卷与服务。
+- 四个容器各 121 份源码，共 **484 个哈希匹配**。环境、只读 CA 挂载、用户、网络不变；其他 **14 个容器未重启**。
+- API 用原 OIDC 参数从当前 Conda 环境重启，进程 20940；live/ready 与前端 15173 均 200，API 及前端代理未登录均 401，OIDC 元数据 200。前端进程未重启，页面样式未改。
+- 两个 waiting_user 的 Run/attempt/fence 保持；五条 ready 索引、派发与解析状态保持。真实十项任务的 heads、保存/确认操作、Run 行及 assistant 绑定/候选完整指纹前后一致。
+- **实际 worker 只读回放**使用真实 MySQL 绑定、历史和摘要，加脚本化 Provider，输入上界 **14039 / 15885**。原十项逐字段保留，生成十一项内存候选；模型 API、Embedding、真实业务写入均为 0。两份回放的工具调用 ID 不同，输入上界以各自实测结果记录。
+
+本步未执行真实 DeepSeek 对话或浏览器内新增、保存按钮验收；HTTP、前端自动测试和脚本化回放各自覆盖的范围如上，不能合并解释为已完成在线模型端到端验收。
+
+原镜像标签保留为各服务的 `pre-assistant-stages-20261009`，对应上一步已支持候选绑定封套的版本。回退时仍须经过闲置门禁、整体恢复对应源码/API 与后台，并重新核对配置和业务状态；不能只回退一个进程或跳过绑定格式兼容检查。
 
 ## 保留边界
 
