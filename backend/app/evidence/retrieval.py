@@ -55,6 +55,31 @@ class RetrievalChunk:
 class Retriever:
     def __init__(self, repository: EvidenceRepository):
         self.repository = repository
+        self._item_scope = None
+        self._item_ids = frozenset()
+        self.last_diagnostics = {}
+
+    def set_item_scope(self, frozen, definition):
+        """Server-only configuration from a Run's frozen SQL authority."""
+        from ..criteria.item_bindings import review_bindings
+        from ..criteria.models import ChecklistDefinition
+
+        if self._item_scope is not None:
+            raise ValueError("item_binding_scope_frozen")
+        self._item_scope = review_bindings(frozen, definition, self.repository)
+        parsed = ChecklistDefinition.model_validate(definition) if isinstance(definition, dict) else definition
+        self._item_ids = frozenset(i.item_id for i in parsed.items)
+
+    def _item_refs(self, item_id):
+        if self._item_scope is None:
+            raise ValueError("item_binding_not_confirmed")
+        if not isinstance(item_id, str) or item_id not in self._item_ids:
+            raise ValueError("item_binding_item")
+        return self._item_scope.bindings.allowed_refs(item_id)
+
+    def _item_diagnostics(self, item_id, reason, mode="bm25"):
+        return {"retrieval_mode": mode, "degraded_reason": reason, "complete_coverage": False,
+                "item_id": item_id, **self._item_scope.identity()}
 
     @staticmethod
     def _neighbors(block: ScopedEvidence, blocks: list[ScopedEvidence]) -> list[ScopedEvidence]:
@@ -115,7 +140,8 @@ class Retriever:
                 chunks.append(RetrievalChunk(text, tuple(dict.fromkeys(refs)), partial, tuple(spans)))
         return chunks
 
-    def search(self, query: str, supplier: str | None = None, limit: int = 12) -> list[dict]:
+    def search(self, query: str, supplier: str | None = None, limit: int = 12,
+               *, item_id: str | None = None) -> list[dict]:
         if type(limit) is not int or not 1 <= limit <= 12:
             raise ValueError("retrieval_limit")
         if not isinstance(query, str) or len(query.encode("utf-8")) > 8000:
@@ -123,6 +149,11 @@ class Retriever:
         # Filter before chunk construction and BM25 corpus statistics.
         blocks = (self.repository.supplier_blocks(supplier) if supplier is not None
                   else list(self.repository.blocks))
+        self.last_diagnostics = {"retrieval_mode": "bm25", "complete_coverage": False}
+        if item_id is not None:
+            refs = self._item_refs(item_id)
+            blocks = [b for b in blocks if b.evidence_id in refs]
+            self.last_diagnostics = self._item_diagnostics(item_id, None if blocks else "item_binding_not_confirmed")
         terms = _tokens(query)
         chunks = self._chunks(blocks)
         if not terms or not chunks:
@@ -140,7 +171,7 @@ class Retriever:
                 for index in matches[:limit]]
 
     def read_source(
-        self, ids: list[str], neighbors: int = 0, start_char: int = 0
+        self, ids: list[str], neighbors: int = 0, start_char: int = 0, *, item_id: str | None = None
     ) -> list[dict]:
         if not isinstance(ids, list) or not 1 <= len(ids) <= 12:
             raise ValueError("evidence_limit")
@@ -150,6 +181,9 @@ class Retriever:
             raise ValueError("source_offset")
         if start_char and (len(ids) != 1 or neighbors):
             raise ValueError("source_offset")
+        allowed = self._item_refs(item_id) if item_id is not None else None
+        if allowed is not None and not set(ids) <= allowed:
+            raise ValueError("item_binding_scope")
         selected = self.repository.read(ids)  # Validate every ID before emitting anything.
         results: dict[str, dict] = {}
         for block in selected:
@@ -166,7 +200,8 @@ class Retriever:
         if neighbors:
             for block in selected:
                 allowance = MAX_NEIGHBOR_BYTES
-                for adjacent in self._neighbors(block, list(self.repository.blocks)):
+                blocks = [b for b in self.repository.blocks if allowed is None or b.evidence_id in allowed]
+                for adjacent in self._neighbors(block, blocks):
                     if adjacent.evidence_id in results:
                         continue
                     text, truncated = _clip(adjacent.text, allowance)
@@ -182,3 +217,22 @@ class Retriever:
                         "next_char": len(text) if truncated else None,
                     }
         return list(results.values())
+
+    def read_item_binding(self, item_id: str, *, evidence_ids: list[str], start_char: int = 0):
+        """Explicit attribution detail; anchors never widen numeric source reads."""
+        self._item_refs(item_id)
+        if not isinstance(evidence_ids, list) or not 1 <= len(evidence_ids) <= 4:
+            raise ValueError("evidence_limit")
+        anchors = set()
+        for entry in self._item_scope.bindings.entries:
+            if entry.item_id == item_id:
+                anchors.update(entry.anchor_refs)
+                sku = entry.payload().get("sku_anchor")
+                if sku:
+                    anchors.update(sku["evidence_refs"])
+        if not set(evidence_ids) <= anchors:
+            raise ValueError("item_binding_scope")
+        # Deliberate separate browsing path; no neighbors and every ref is an anchor.
+        rows = self.read_source(evidence_ids, start_char=start_char)
+        return [row | {"purpose": "item_attribution_anchor", "item_id": item_id,
+                       **self._item_scope.identity()} for row in rows]

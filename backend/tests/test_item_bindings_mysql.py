@@ -62,6 +62,13 @@ def test_mysql_run_freezes_binding_and_waiting_resume_keeps_it(mysql_checklist, 
     assert binding["item_binding_version_id"] == first["id"]
     assert binding["item_bindings"]["digest"] == first["digest"]
     assert not DynamicRepository(engine).current(run.run_id)
+    from backend.app.db.agent_snapshot import load_agent_snapshot
+    from backend.app.db.persisted_retrieval import persisted_retriever
+
+    retriever = persisted_retriever(engine, load_agent_snapshot(engine, case_id, snapshot_id), claim, target=None)
+    hits = retriever.search("数量", item_id="rice")
+    assert hits and "20件" not in str(hits)
+    assert retriever.last_diagnostics["item_binding_version_id"] == first["id"]
     runs.cancel(run.run_id)
 
 

@@ -14,6 +14,7 @@ class SourceWindow(Contract):
 class ReadSourceArgs(Contract):
     evidence_ids: list[str] = Field(min_length=1, max_length=4)
     start_char: int = Field(default=0, ge=0)
+    item_id: str | None = Field(default=None, min_length=1, max_length=80)
 
     @model_validator(mode="after")
     def single_offset(self):
@@ -22,7 +23,7 @@ class ReadSourceArgs(Contract):
         return self
 
 
-def hit_windows(retriever, hits):
+def hit_windows(retriever, hits, *, item_id=None):
     targets = []
     for hit in hits:
         spans = hit.get("source_spans")
@@ -37,8 +38,9 @@ def hit_windows(retriever, hits):
     if not targets:
         return []
     if all(start == 0 for _, start in targets):
-        return retriever.read_source([ref for ref, _ in targets])
-    return [row for ref, start in targets for row in retriever.read_source([ref], start_char=start)]
+        return retriever.read_source([ref for ref, _ in targets], **({"item_id": item_id} if item_id is not None else {}))
+    return [row for ref, start in targets for row in retriever.read_source(
+        [ref], start_char=start, **({"item_id": item_id} if item_id is not None else {}))]
 
 
 def observed(row):
@@ -53,12 +55,26 @@ def supports(windows, evidence_id, quote):
     return any(w["evidence_id"] == evidence_id and quote in w["text"] for w in windows)
 
 
-def verify_windows(repo, payload):
+def verify_windows(repo, payload, *, item_bindings=None, definition=None):
     windows = payload.get("source_windows")
     if payload.get('citation_offsets_version') == 1 and windows is None:
         raise ValueError('assistant_source_changed')
     if windows is None:  # Backward compatible with already persisted prefix-only answers.
         windows = [{"evidence_id": ref, "start_char": 0, "text": text} for ref, text in payload["source_reads"].items()]
+    retrieval = payload.get("retrieval") or {}
+    if retrieval.get("item_id") is not None:
+        from ..criteria.item_bindings import review_bindings
+        from ..criteria.models import ChecklistDefinition
+
+        if item_bindings is None or definition is None:
+            raise ValueError("assistant_source_changed")
+        context = review_bindings(item_bindings, definition, repo)
+        parsed = ChecklistDefinition.model_validate(definition) if isinstance(definition, dict) else definition
+        allowed = context.bindings.allowed_refs(retrieval["item_id"])
+        if (retrieval["item_id"] not in {i.item_id for i in parsed.items}
+                or any(retrieval.get(k) != v for k, v in context.identity().items())
+                or any(w["evidence_id"] not in allowed for w in windows)):
+            raise ValueError("assistant_source_changed")
     latest = {}
     for window in windows:
         row = SourceWindow.model_validate(window)

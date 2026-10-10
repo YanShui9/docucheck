@@ -9,6 +9,8 @@ from .config import MilvusConfig
 from .embedding import validate_vectors
 from .probe import _sdk_client
 
+MAX_CHUNK_FILTER_IDS = 100
+
 
 class VectorUnavailable(RuntimeError):
     pass
@@ -22,6 +24,7 @@ class SearchScope:
     document_ids: tuple[str, ...]
     supplier: str | None = None
     generations: tuple[tuple[str, str], ...] = ()
+    chunk_ids: tuple[str, ...] | None = None
 
     @classmethod
     def from_chunks(cls, chunks: tuple[SourceChunk, ...], supplier=None):
@@ -38,6 +41,11 @@ class SearchScope:
         return scope
 
     def __post_init__(self):
+        if self.chunk_ids is not None and (
+                not isinstance(self.chunk_ids, tuple) or not 1 <= len(self.chunk_ids) <= MAX_CHUNK_FILTER_IDS
+                or any(not isinstance(cid, str) or not re.fullmatch(r"[a-f0-9]{64}", cid) for cid in self.chunk_ids)
+                or len(set(self.chunk_ids)) != len(self.chunk_ids)):
+            raise ValueError("vector_chunk_scope")
         values = [self.project_id, self.case_id, self.snapshot_id, *self.document_ids]
         if self.supplier is not None:
             values.append(self.supplier)
@@ -53,6 +61,7 @@ class SearchScope:
         return ((chunk.project_id, chunk.case_id, chunk.snapshot_id) ==
                 (self.project_id, self.case_id, self.snapshot_id)
                 and chunk.document_id in self.document_ids
+                and (self.chunk_ids is None or chunk.chunk_id in self.chunk_ids)
                 and (not self.generations or (chunk.document_id, chunk.index_generation) in self.generations)
                 and (self.supplier is None or chunk.role == "requirement"
                      or chunk.supplier_id == self.supplier))
@@ -69,6 +78,8 @@ class SearchScope:
             result += " and (" + " or ".join(
                 f"(document_id == {quote(d)} and index_generation == {quote(g)})"
                 for d, g in self.generations) + ")"
+        if self.chunk_ids is not None:
+            result += " and chunk_id in " + quote(list(self.chunk_ids))
         return result
 
 
@@ -184,7 +195,7 @@ class MilvusIndex:
                 return False
         return True
 
-    def search(self, vector, scope: SearchScope, limit=20):
+    def search(self, vector, scope: SearchScope, limit=20, *, include_scores=False):
         if type(limit) is not int or not 1 <= limit <= 20:
             raise ValueError("vector_search_limit")
         vectors = validate_vectors([vector], count=1, dimension=self.config.dimension)
@@ -194,7 +205,8 @@ class MilvusIndex:
         if not isinstance(hits, list) or len(hits) != 1:
             raise ValueError("vector_response")
         try:
-            return [{"chunk_id": h["chunk_id"], "fingerprint": h["entity"]["fingerprint"]} for h in hits[0]]
+            return [{"chunk_id": h["chunk_id"], "fingerprint": h["entity"]["fingerprint"]}
+                    | ({"distance": h["distance"]} if include_scores else {}) for h in hits[0]]
         except (KeyError, TypeError):
             raise ValueError("vector_response") from None
 

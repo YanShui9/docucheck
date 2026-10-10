@@ -70,6 +70,103 @@ def test_stopped_report_cannot_claim_item_coverage_without_manifest():
         DynamicRepository(None)._validate_manifest({"id": "run"}, payload, definition, repo, context=frozen)
 
 
+def test_persisted_retriever_loads_run_frozen_scope_instead_of_head(binding_db):
+    from backend.app.db.agent_snapshot import load_agent_snapshot
+    from backend.app.db.persisted_retrieval import persisted_retriever
+
+    engine, _, body = binding_db
+    first = put(engine, body)["current_version"]
+    receipt = submit(engine, "rag", "assistant")
+    runs = RunRepository(engine)
+    claim = runs.claim(receipt.run_id, receipt.attempt_id)
+    runs.finish(claim.run_id, claim.active_attempt_id, claim.fence, claim.snapshot_id,
+                RunStatus.WAITING_USER, answer_text="等待", memory_json={})
+    put(engine, body | {"entries": [], "expected_binding_revision": 1}, key="clear-rag")
+    resumed = runs.resume(claim.run_id, "snap", 1, "resume-rag", "查数量")
+    claim = runs.claim(claim.run_id, resumed.attempt_id)
+    retriever = persisted_retriever(engine, load_agent_snapshot(engine, "case", "snap"), claim, target=None)
+    hits = retriever.search("数量", item_id="rice")
+    assert hits and "20件" not in str(hits)
+    assert retriever.last_diagnostics["item_binding_version_id"] == first["id"]
+    assert retriever.last_diagnostics["degraded_reason"] == "vector_disabled"
+
+
+def test_persisted_retriever_rechecks_frozen_binding_before_disclosing(binding_db):
+    from sqlalchemy import update
+
+    from backend.app.db.agent_snapshot import load_agent_snapshot
+    from backend.app.db.persisted_retrieval import persisted_retriever
+
+    engine, _, body = binding_db
+    put(engine, body)
+    receipt = submit(engine, "rag-tamper", "assistant")
+    claim = RunRepository(engine).claim(receipt.run_id, receipt.attempt_id)
+    retriever = persisted_retriever(engine, load_agent_snapshot(engine, "case", "snap"), claim, target=None)
+    with engine.begin() as conn:
+        conn.execute(update(assistant_runs).where(assistant_runs.c.run_id == claim.run_id).values(item_binding_digest="b"*64))
+    with pytest.raises(ValueError, match="item_binding_source_changed"):
+        retriever.search("数量", item_id="rice")
+
+
+@pytest.mark.parametrize("revoke", [False, True])
+def test_frozen_scope_ready_manifest_and_permission_recheck_after_embedding(binding_db, revoke):
+    from sqlalchemy import delete, insert, update
+
+    from backend.app.api.auth import Principal
+    from backend.app.db.agent_snapshot import load_agent_snapshot
+    from backend.app.db.index_repository import IndexRepository
+    from backend.app.db.index_worker import process_index
+    from backend.app.db.models import (
+        cases,
+        conversations,
+        index_manifests,
+        project_members,
+    )
+    from backend.app.db.persisted_retrieval import persisted_retriever
+    from backend.app.db.workspace import WorkspaceRepository
+    from backend.tests.test_hybrid_retrieval import Embedding, Store
+    from backend.tests.test_index_repository import NOW, TARGET
+
+    engine, _, body = binding_db
+    body["entries"][0]["selector"]["start_row"] = 1  # The header is explicitly in this confirmed range.
+    confirmed = put(engine, body)["current_version"]
+    actor = Principal("local", "scope-owner")
+    project = WorkspaceRepository(engine).create_project(actor, "范围检索测试")
+    with engine.begin() as conn:
+        conn.execute(update(cases).where(cases.c.id == "case").values(project_id=project["id"]))
+        conn.execute(insert(conversations).values(id="scope-conv", case_id="case", created_at=NOW))
+    model, store = Embedding(), Store()
+    model.revision = TARGET.revision
+    indexes = IndexRepository(engine)
+    indexes.schedule("case", "snap", 1, target=TARGET)
+    assert process_index(indexes, indexes.claim(TARGET), embedding_factory=lambda t: model,
+                         store_factory=lambda t: store) == "ready"
+    receipt = RunRepository(engine).submit(SubmitRun("case", "scope-conv", "snap", 1, "查数量", "standard", "scope-run",
+                                                    actor.key, workflow="assistant"))
+    claim = RunRepository(engine).claim(receipt.run_id, receipt.attempt_id)
+    retriever = persisted_retriever(engine, load_agent_snapshot(engine, "case", "snap"), claim, target=TARGET,
+                                   embedding_factory=lambda t: model, store_factory=lambda t: store)
+    if revoke:
+        original = model.embed
+        def embed(texts):
+            vectors = original(texts)
+            with engine.begin() as conn:
+                conn.execute(delete(project_members).where(project_members.c.project_id == project["id"]))
+            return vectors
+        model.embed = embed
+        with pytest.raises(ValueError, match="source_access_changed"):
+            retriever.search("什么时候到", item_id="rice")
+        assert not store.scopes  # The post-network permission check runs before vector search/disclosure.
+    else:
+        hits = retriever.search("什么时候到", item_id="rice")
+        assert hits and "20件" not in str(hits)
+        assert retriever.last_diagnostics["retrieval_mode"] == "hybrid"
+        assert retriever.last_diagnostics["item_binding_version_id"] == confirmed["id"]
+        assert store.scopes[-1].chunk_ids and store.scopes[-1].generations
+        with engine.connect() as conn:
+            assert len(conn.execute(select(index_manifests)).all()) == 1
+
+
 def test_uploaded_phone_review_history_export_and_empty_scope_isolation(ingestion_case):
     from copy import deepcopy
     from io import BytesIO

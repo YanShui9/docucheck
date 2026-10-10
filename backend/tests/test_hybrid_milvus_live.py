@@ -18,6 +18,64 @@ pytestmark = pytest.mark.skipif(os.getenv("DOCUCHECK_RUN_MILVUS_TESTS") != "1",
                                 reason="explicit local Milvus opt-in required")
 
 
+@pytest.mark.parametrize("count", [0, 121])
+def test_real_milvus_item_chunk_filter_without_reindexing(count):
+    from backend.app.evidence.hybrid import HybridRetriever, build_index
+    from backend.tests.test_item_binding_retrieval import fixture, many_blocks
+
+    env = dotenv_values(Path(__file__).resolve().parents[2] / ".env", interpolate=False)
+    config = MilvusConfig.from_env({k: v for k, v in env.items() if v is not None})
+    assert config.uri == "http://127.0.0.1:19530" and config.database == "docucheck_probe"
+    assert config.token.get_secret_value().startswith("docucheck_probe:")
+    definition, repo, frozen = many_blocks(count) if count else fixture(pdf=True)
+
+    class SyntheticEmbedding:
+        revision = "synthetic-item-scope-v1"
+        dimension = 1024
+
+        def embed(self, texts):
+            return [([1.0, 0.0] if t == "数量130台" or "什么时候" in t else [0.0, 1.0]) + [0.0]*1022 for t in texts]
+
+    class AuditedIndex(MilvusIndex):
+        scopes = None
+
+        def search(self, *args, **kwargs):
+            self.scopes.append(args[1])
+            return super().search(*args, **kwargs)
+
+    model = SyntheticEmbedding()
+    previous = logging.root.manager.disable
+    logging.disable(logging.CRITICAL)
+    store = None
+    collection = "docucheck_rag_test_" + uuid4().hex
+    try:
+        store = AuditedIndex(config, model.revision, ChunkPolicy().revision, collection=collection)
+        store.scopes = []
+        assert not store.client.has_collection(collection, timeout=config.timeout)
+        receipt = build_index(repo, "item-scope-test", model, store)
+        retriever = HybridRetriever(repo, "item-scope-test", model, store, receipt=receipt)
+        retriever.set_item_scope(frozen, definition)
+        hits = retriever.search("什么时候交货", item_id="rice", supplier="A")
+        allowed = set(frozen["payload"]["entries"][0]["evidence_refs"])
+        assert hits and {ref for h in hits for ref in h["evidence_refs"]} <= allowed
+        assert len(store.scopes) == (2 if count else 1)
+        if count:
+            assert hits[0]["text"] == "数量130台"
+        assert retriever.last_diagnostics["retrieval_mode"] == "hybrid"
+        assert tuple(c.chunk_id for c in retriever.chunks) == receipt.chunk_ids
+        assert "20件" in str(retriever.search("数量20件"))
+        # Scope changes only read existing vectors; the full original index still verifies.
+        assert store.verify(retriever.chunks)
+    finally:
+        try:
+            if store is not None:
+                if store.client.has_collection(collection, timeout=config.timeout):
+                    store.client.drop_collection(collection, timeout=config.timeout)
+                store.close()
+        finally:
+            logging.disable(previous)
+
+
 def test_explicit_schema_idempotent_upsert_strong_scope_and_delete():
     env = dotenv_values(Path(__file__).resolve().parents[2] / ".env", interpolate=False)
     config = MilvusConfig.from_env({k: v for k, v in env.items() if v is not None})

@@ -22,15 +22,39 @@ from .source_repository import protect_sources
 _CONFIGURED = object()
 
 
+def _scope_binding(connection, repo, run_id):
+    from .checklist_repository import _version
+    from .item_binding_repository import load_run_bindings
+    from .models import assistant_runs, dynamic_runs
+
+    binding = connection.execute(select(assistant_runs).where(assistant_runs.c.run_id == run_id)).mappings().first()
+    if binding is None:
+        binding = connection.execute(select(dynamic_runs).where(dynamic_runs.c.run_id == run_id)).mappings().first()
+    definition = frozen = None
+    if binding is not None:
+        if binding["case_id"] != repo.case_id or binding["snapshot_id"] != repo.snapshot_id:
+            raise ValueError("item_binding_source_changed")
+        if binding["checklist_version_id"]:
+            version = _version(connection, repo.case_id, binding["checklist_version_id"])
+            if version["snapshot_id"] == repo.snapshot_id:
+                definition = version["definition"]
+        frozen = load_run_bindings(connection, binding, definition)
+    return frozen, definition
+
+
 class ProtectedLexical(Retriever):
     def __init__(self, repository: EvidenceRepository, validate: Callable[[], None], reason: str):
         super().__init__(repository)
         self.revalidate = validate
+        self.reason = reason
         self.last_diagnostics = {"retrieval_mode": "bm25", "degraded_reason": reason, "complete_coverage": False}
 
     def search(self, *args, **kwargs) -> list[dict]:
         self.revalidate()
         hits = super().search(*args, **kwargs)
+        self.last_diagnostics.update(retrieval_mode="bm25", complete_coverage=False)
+        if self.last_diagnostics.get("degraded_reason") != "item_binding_not_confirmed":
+            self.last_diagnostics["degraded_reason"] = self.reason
         self.repository.read(list(dict.fromkeys(ref for hit in hits for ref in hit["evidence_refs"])))
         self.revalidate()
         return hits
@@ -67,10 +91,13 @@ def persisted_retriever(engine: Engine, repo: EvidenceRepository, run: RunState,
     with engine.connect() as connection:
         project_id = connection.scalar(select(cases.c.project_id).where(cases.c.id == repo.case_id))
     project_key = project_id or "local:" + repo.case_id
+    frozen_signature = None
     def access():
         if not runs.has_source_access(run.run_id, run.active_attempt_id, run.fence):
             raise ValueError("source_access_changed")
         with engine.connect() as connection:
+            if frozen_signature is not None and _scope_binding(connection, repo, run.run_id) != frozen_signature:
+                raise ValueError("item_binding_source_changed")
             docs = connection.execute(select(document_versions, suppliers.c.handle.label("supplier_handle"))
                 .outerjoin(suppliers, document_versions.c.supplier_id == suppliers.c.id).where(document_versions.c.case_id == repo.case_id,
                 document_versions.c.snapshot_id == repo.snapshot_id)).mappings().all()
@@ -88,13 +115,22 @@ def persisted_retriever(engine: Engine, repo: EvidenceRepository, run: RunState,
                 raise ValueError("source_access_changed")
     access()
     protected = protect_sources(engine, repo, access)
+    # SQL is the authority. Never read the mutable head or accept model-supplied refs.
+    with engine.connect() as connection:
+        frozen_signature = _scope_binding(connection, repo, run.run_id)
+        frozen, definition = frozen_signature
+
+    def scoped(retriever):
+        if frozen is not None and definition is not None:
+            retriever.set_item_scope(frozen, definition)
+        return retriever
     if target is _CONFIGURED:
         try:
             target = configured_target()
         except ValueError:
-            return ProtectedLexical(protected, access, "vector_configuration_error")
+            return scoped(ProtectedLexical(protected, access, "vector_configuration_error"))
     if target is None:
-        return ProtectedLexical(protected, access, "vector_disabled")
+        return scoped(ProtectedLexical(protected, access, "vector_disabled"))
     def ready_rows():
         with engine.connect() as connection:
             return connection.execute(select(manifests).join(jobs, jobs.c.manifest_id == manifests.c.id).where(
@@ -107,7 +143,7 @@ def persisted_retriever(engine: Engine, repo: EvidenceRepository, run: RunState,
                 manifests.c.chunk_schema == target.policy.revision)).mappings().all()
     rows = ready_rows()
     if {row["document_id"] for row in rows} != doc_ids or len(rows) != len(doc_ids):
-        return ProtectedLexical(protected, access, "vector_index_not_ready")
+        return scoped(ProtectedLexical(protected, access, "vector_index_not_ready"))
     generations = {r["document_id"]: r["generation"] for r in rows}
     if len({r["project_key"] for r in rows}) != 1:
         raise ValueError("source_access_changed")
@@ -136,11 +172,11 @@ def persisted_retriever(engine: Engine, repo: EvidenceRepository, run: RunState,
         _close(model)
         _close(store)
         validate()
-        return ProtectedLexical(protected, validate, "vector_service_unavailable")
+        return scoped(ProtectedLexical(protected, validate, "vector_service_unavailable"))
     try:
         validate()
-        return ManagedHybrid(protected, project, model, store, receipt=_receipt(chunks),
-                             policy=target.policy, generations=generations, revalidate=validate)
+        return scoped(ManagedHybrid(protected, project, model, store, receipt=_receipt(chunks),
+                                    policy=target.policy, generations=generations, revalidate=validate))
     except BaseException:
         _close(model)
         _close(store)

@@ -1,5 +1,7 @@
 # DocuCheck Agent 开发路线 v2.0
 
+> **2026-10-10 品目对应 A1/A2/A3 源码及门禁完成（未应用）**：[A3实测](document-item-binding-a3-2026-10-10.md)，[实施计划](superpowers/plans/2026-10-10-document-item-binding-backend.md)。范围同时约束BM25、既有Milvus chunk_id过滤和原文读取；冻结SQL身份、助手后续范围和历史窗口均重验，锚点独立、粗块/预算降级明确。最终全量1438/48skip/网络0、定向100、MySQL16、Milvus3及Ruff/pip通过。业务0017迁移/服务应用、前端B及真实模型/浏览器C仍未执行；原Case、waiting_user与既有索引保持。首轮省略item_id仍允许普通授权浏览，不宣称自然语言范围路由硬隔离。下方为历史。
+
 > **2026-10-10 品目对应 A2 完成（源码，未应用）**：[交付与边界](document-item-binding-a2-2026-10-10.md)，[实施计划](superpowers/plans/2026-10-10-document-item-binding-backend.md)。新Run/恢复冻结关联、v4独立行核验与品目覆盖、缓存/历史/修正、记忆/进度/API身份和独立导出依据已接入。复审型号/锚点覆盖反例关闭；最终全量1418/46skip/网络0，定向120，独立MySQL16及Ruff/pip通过。A3范围RAG尚未完成，后端A仍未整体完成；前端B/真实闭环C未执行。业务库、运行服务、原Case与既有索引保持，模型/Embedding/Milvus0；下方为阶段历史。
 
 > **2026-10-10 品目对应后端 A1 完成（源码，未应用）**：[交付报告](document-item-binding-a1-2026-10-10.md)，[A1/A2/A3实施计划](superpowers/plans/2026-10-10-document-item-binding-backend.md)。契约、MySQL不可变版本/幂等确认、授权API、原文锚点和0017迁移通过；复审三项P2关闭，完整1389/44/网络0、最终增量41、隔离MySQL14通过。尚未接入新Run/v4规则/缓存/历史/修正/导出及范围RAG；步骤A仍未全部完成。业务库/运行服务/原Case保持，模型和Embedding调用0；前端B和真实闭环C未执行。

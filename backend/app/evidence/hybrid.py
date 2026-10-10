@@ -1,14 +1,18 @@
 """Source-grounded hybrid retrieval. A top-k hit is never a coverage certificate."""
 from collections.abc import Callable
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
+from math import isfinite
 
 from rank_bm25 import BM25Plus
 
 from ..vector_store.embedding import EmbeddingError, validate_vectors
-from ..vector_store.store import SearchScope, VectorUnavailable
+from ..vector_store.store import MAX_CHUNK_FILTER_IDS, SearchScope, VectorUnavailable
 from .chunks import ChunkPolicy, chunk_snapshot, restore_text
 from .repository import EvidenceRepository, digest
 from .retrieval import MAX_TEXT_BYTES, Retriever, _clip, _tokens
+
+MAX_ITEM_SCOPE_BATCHES = 4
+MAX_ITEM_FILTER_BYTES = 16_384
 
 
 @dataclass(frozen=True)
@@ -72,7 +76,16 @@ class HybridRetriever(Retriever):
         self.revalidate()
         return result
 
-    def search(self, query: str, supplier: str | None = None, limit: int = 12) -> list[dict]:
+    def _scope_fallback(self, query, supplier, limit, item_id, reason):
+        self.revalidate()
+        hits = Retriever.search(self, query, supplier, limit, item_id=item_id)
+        self.repository.read(list(dict.fromkeys(ref for h in hits for ref in h["evidence_refs"])))
+        self.revalidate()
+        self.last_diagnostics = self._item_diagnostics(item_id, reason)
+        return [h | {"retrieval_mode": "bm25", "degraded_reason": reason, "channels": ["bm25"]} for h in hits]
+
+    def search(self, query: str, supplier: str | None = None, limit: int = 12,
+               *, item_id: str | None = None) -> list[dict]:
         if type(limit) is not int or not 1 <= limit <= 12:
             raise ValueError("retrieval_limit")
         if not isinstance(query, str) or not query.strip() or len(query.encode()) > 8000:
@@ -83,6 +96,19 @@ class HybridRetriever(Retriever):
             self.repository.assert_supplier(supplier)
         chunks = [c for c in self.chunks if supplier is None or c.role == "requirement"
                   or c.supplier_id == supplier]
+        if item_id is not None:
+            refs = self._item_refs(item_id)
+            blocks = (self.repository.supplier_blocks(supplier) if supplier else self.repository.blocks)
+            refs = refs.intersection(b.evidence_id for b in blocks if b.text)
+            safe = [c for c in chunks if set(c.evidence_refs) <= refs]
+            represented = {ref for c in safe for ref in c.evidence_refs}
+            reason = ("item_binding_not_confirmed" if not refs else
+                      "vector_item_scope_unrepresentable" if represented != refs else
+                      "vector_item_scope_budget" if len(safe) > MAX_ITEM_SCOPE_BATCHES * MAX_CHUNK_FILTER_IDS else
+                      "vector_index_not_ready" if self.receipt is None else None)
+            if reason:
+                return self._scope_fallback(query, supplier, limit, item_id, reason)
+            chunks = safe
         if not chunks:
             self.last_diagnostics = {"retrieval_mode": "bm25", "degraded_reason": "vector_index_not_ready",
                                      "complete_coverage": False}
@@ -107,22 +133,42 @@ class HybridRetriever(Retriever):
                                           dimension=self.embedding.dimension)[0]
                 _validate_model(self.chunks, self.embedding)
                 self.revalidate()
-                scope = SearchScope.from_chunks(tuple(chunks), supplier=supplier)
-                hits = self.store.search(vector, scope, limit=20)
-                if not isinstance(hits, list) or len(hits) > 20:
-                    raise ValueError("vector_hit_scope")
-                for hit in hits:
-                    if (not isinstance(hit, dict) or hit.get("chunk_id") not in allowed
-                            or hit.get("fingerprint") != allowed[hit["chunk_id"]].fingerprint):
+                batches = [chunks] if item_id is None else [chunks[i:i + MAX_CHUNK_FILTER_IDS]
+                    for i in range(0, len(chunks), MAX_CHUNK_FILTER_IDS)]
+                scored = {}
+                for batch in batches:
+                    self.revalidate()
+                    scope = SearchScope.from_chunks(tuple(batch), supplier=supplier)
+                    if item_id is not None:
+                        scope = replace(scope, chunk_ids=tuple(c.chunk_id for c in batch))
+                        if len(scope.expression().encode()) > MAX_ITEM_FILTER_BYTES:
+                            return self._scope_fallback(query, supplier, limit, item_id, "vector_item_scope_budget")
+                    hits = self.store.search(vector, scope, limit=20,
+                                             **({"include_scores": True} if len(batches) > 1 else {}))
+                    if not isinstance(hits, list) or len(hits) > 20:
                         raise ValueError("vector_hit_scope")
-                    if hit["chunk_id"] not in dense:
-                        dense.append(hit["chunk_id"])
+                    for hit in hits:
+                        if (not isinstance(hit, dict) or hit.get("chunk_id") not in allowed
+                                or not scope.allows(allowed[hit["chunk_id"]])
+                                or hit.get("fingerprint") != allowed[hit["chunk_id"]].fingerprint):
+                            raise ValueError("vector_hit_scope")
+                        if len(batches) > 1:
+                            score = hit.get("distance")
+                            if type(score) not in (float, int) or not isfinite(score) or not -1.001 <= score <= 1.001:
+                                raise ValueError("vector_hit_scope")
+                            scored[hit["chunk_id"]] = score
+                        elif hit["chunk_id"] not in dense:
+                            dense.append(hit["chunk_id"])
+                if len(batches) > 1:
+                    dense = sorted(scored, key=lambda cid: (-scored[cid], cid))[:20]
             except VectorUnavailable:
                 reason = "vector_service_unavailable"
             except EmbeddingError as exc:
                 if str(exc) not in {"embedding_service_unavailable", "embedding_model_not_installed"}:
                     raise
                 reason = str(exc)
+        if item_id is not None and reason:
+            return self._scope_fallback(query, supplier, limit, item_id, reason)
         self.revalidate()  # Recheck after network waits, before any source disclosure.
         ranks = {}
         for channel, ids in (("bm25", lexical), ("dense", dense)):
@@ -133,6 +179,8 @@ class HybridRetriever(Retriever):
         self.last_diagnostics = {"retrieval_mode": mode, "degraded_reason": reason,
                                  "complete_coverage": False, "rrf_k": 60,
                                  "bm25_candidates": len(lexical), "dense_candidates": len(dense)}
+        if item_id is not None:
+            self.last_diagnostics.update(self._item_diagnostics(item_id, reason, mode))
         results = []
         for chunk_id in ordered[:limit]:
             chunk = allowed[chunk_id]

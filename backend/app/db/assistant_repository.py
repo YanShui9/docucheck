@@ -236,7 +236,8 @@ class AssistantRepository:
             if instruction != payload["instruction"]:
                 _error("assistant_source_changed")
             edit_base = effective_base(connection, dict(row) | {"run_id": run_id}, source=payload["source_digest"])
-            load_run_bindings(connection, row, _confirmed_definition(connection, row))
+            scope_definition = _confirmed_definition(connection, row)
+            frozen = load_run_bindings(connection, row, scope_definition)
         repo = load_agent_snapshot(self.engine, row["case_id"], row["snapshot_id"], allow_empty=True)
         if payload["source_digest"] != source_digest(repo):
             _error("assistant_source_changed")
@@ -250,7 +251,7 @@ class AssistantRepository:
             if candidate.model_dump(mode="json") != payload["candidate"] or changes != payload["changes"]:
                 _error("assistant_source_changed")
         elif kind == "evidence":
-            verify_windows(repo, payload)
+            verify_windows(repo, payload, item_bindings=frozen, definition=scope_definition)
             windows = payload.get('source_windows') if payload.get('citation_offsets_version') == 1 else None
             citations = [checked_citation(repo, c["evidence_id"], c["quote"], windows=windows) for c in payload["citations"]]
             if citations != payload["citations"] or render_evidence(citations, payload["retrieval"]) != payload["answer"]:

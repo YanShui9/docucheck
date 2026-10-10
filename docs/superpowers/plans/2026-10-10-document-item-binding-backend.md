@@ -36,14 +36,22 @@
 
 ## A3：范围 RAG、统一复核与实连门禁
 
+2026-10-10：A3及后端A源码门禁完成；[范围实现与实测边界](../../document-item-binding-a3-2026-10-10.md)。最终全量1438/48skip/网络0、定向100、隔离MySQL16、真实Milvus3及Ruff/pip通过。业务库和运行服务未应用；前端B和真实模型/浏览器C未执行。
+
 主要文件：`backend/app/vector_store/store.py`、`backend/app/evidence/hybrid.py`、`backend/app/evidence/retrieval.py`、`backend/app/db/persisted_retrieval.py`；测试 `backend/tests/test_hybrid_retrieval.py`、`backend/tests/test_persisted_retrieval.py`、`backend/tests/test_persisted_hybrid_agent.py` 及新范围用例。
 
-- [ ] 先写失败测试：同文件苹果/服装，scope 只能返回本品目数值范围；BM25、dense、read_source 不能跨范围，锚点只有显式详情可读。
-- [ ] 利用现有 chunk_id 做有限分批 Milvus scalar 过滤。允许集合由服务端绑定展开；拒绝不在集合的返回或跨范围底层证据。普通授权浏览与品目范围检索分开；不修改 embedding 文本/现有原件 chunk fingerprint。
-- [ ] 粗 chunk 无法表达、过滤预算过大、索引未就绪或向量失败时返回范围内词法降级，给出明确 diagnostics。没有命中不作为正式审查完整覆盖证明。
-- [ ] 审查全部适用原文，不以 top-k 替代覆盖。核对范围变化不会主动重建索引、旧 schema 兼容及 hash 不变。
-- [ ] 全后端离线 pytest（网络请求为 0）、Ruff、依赖检查、迁移验证；通知后使用现有 Docker 的独立临时 MySQL/Milvus 资料做门禁，不改原采购任务、既有 waiting_user/索引。
-- [ ] 总体复核并修复；更新 CLAUDE/路线图和实测报告，Git 提交。仅在证据支持时标记 A 完成，未做的前端/真实模型验收保持未勾选。
+- [x] 先写失败测试：同文件苹果/服装，scope 只能返回本品目数值范围；BM25、dense、read_source 不能跨范围，锚点只有显式详情可读。
+- [x] 利用现有 chunk_id 做有限分批 Milvus scalar 过滤。允许集合由服务端绑定展开；拒绝不在集合的返回或跨范围底层证据。普通授权浏览与品目范围检索分开；不修改 embedding 文本/现有原件 chunk fingerprint。
+- [x] 粗 chunk 无法表达、过滤预算过大、索引未就绪或向量失败时返回范围内词法降级，给出明确 diagnostics。没有命中不作为正式审查完整覆盖证明。
+- [x] 审查全部适用原文，不以 top-k 替代覆盖。核对范围变化不会主动重建索引、旧 schema 兼容及 hash 不变。
+- [x] 全后端离线 pytest（网络请求为 0）、Ruff、依赖检查、迁移验证；通知后使用现有 Docker 的独立临时 MySQL/Milvus 资料做门禁，不改原采购任务、既有 waiting_user/索引。
+- [x] 总体复核并修复；更新 CLAUDE/路线图和实测报告，Git 提交。仅在证据支持时标记 A 完成，未做的前端/真实模型验收保持未勾选。
+
+## 后续交付状态
+
+- [x] A：后端版本、v4审查和范围RAG源码及门禁。
+- [ ] B：已确认的中文资料对应交互、前端测试与提交。
+- [ ] C：业务迁移/服务应用、专属合成工作区真实Provider、浏览器和导出闭环。
 
 ## 通用测试命令
 
