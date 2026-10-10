@@ -45,3 +45,15 @@ git show workflow-baseline-2026-10-10:CLAUDE.md
 ```
 
 bundle仅是Git源码备份，不含.env、数据库或采购原件；它们本轮未改。原始文档见[历史归档导航](README.md)。
+
+## 审查与收益比较
+
+使用[交付审查模板](templates/change-review.md)沿业务路径检查，输入/预期先固定；关键反例包括对象权限、版本确认、来源覆盖、状态/重试、规则口径、迁移和回滚。普通CRUD也可能触及高风险边界。
+
+```powershell
+python.exe -m scripts.dev_workflow compare --baseline data/verification/before.json --candidate data/verification/after.json
+```
+
+只接受成功且源码检查期间稳定的同类报告；profile、覆盖范围、测试语料摘要、Python/系统/依赖身份和网络守卫必须一致。旧报告没有新字段时不能比较。输出是单次耗时差和比例观察，明确不证明因果提效；报告可人工改写，摘要不是防篡改签名。测试语料变了即使同叫“full”也不比较；机器负载/缓存仍需另控。
+
+开发任务效果另外按模板记录准备时间、端到端耗时、返工、人工介入、遗漏及真实用量。在相近任务累积样本后判断是否保留；文档字节减少不等于token账单下降，测试耗时不等于业务延迟。

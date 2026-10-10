@@ -1,0 +1,106 @@
+{
+  "schema_version": 1,
+  "kind": "development_workflow_delivery_evidence",
+  "date": "2026-10-10",
+  "baseline_commit": "90ce7adb316c986a0e872b831a0b0dcc086908c4",
+  "baseline_tag": "workflow-baseline-2026-10-10",
+  "source_at_verification": {
+    "commit": "e3a74360ed391d93aabbdbd139209df360c688f4",
+    "dirty": true,
+    "worktree_sha256": "f3a9b50e63b6578a5d8a4438ed1f7d71d20767e241a23551ef87fd03b950d04b",
+    "python": "3.12.14",
+    "platform": "Windows-11-10.0.26300-SP0",
+    "dependencies_sha256": "5330522e7e43692fc6e8d9ab6e06f81fd9ce61ed83d5c3eceeefbefce208971d"
+  },
+  "test_corpus_sha256": "5f33931d5f09d2222f4930111266d0fb654b6e6ab4ea976b18d9615f60abfe55",
+  "source_files_sha256_lf": {
+    "scripts/dev_workflow.py": "02ba02798eadb759454a97c37d2d8213a70bf1c59c5cfdc5711802a81f04bffc",
+    "scripts/workflow_compare.py": "cfcd57fdd9c3b9ddf911a7a51412657292a6f1570019a1c867f62d5a6991cc53",
+    "backend/tests/test_dev_workflow.py": "d1736ff2bf42965b4f627cfbf515d90c899eaf94311d0454cf40fffc3163de4e",
+    "backend/tests/test_workflow_compare.py": "88c28de4f1e659407f2e21d46a83e66e81d41be0c7625c47ed6be60f86dbeade"
+  },
+  "backup": {
+    "bundle_verified": true,
+    "clone_tag_commit_verified": true,
+    "remote_tag_verified": true,
+    "scope": "Git source, not secrets/database/documents"
+  },
+  "document_metrics": [
+    {
+      "path": "CLAUDE.md",
+      "baseline_bytes_lf": 73104,
+      "candidate_bytes_lf": 6356,
+      "reduction_pct": 91.31,
+      "archive_content_and_links_verified": true
+    },
+    {
+      "path": "docs/development-roadmap.md",
+      "baseline_bytes_lf": 60578,
+      "candidate_bytes_lf": 4536,
+      "reduction_pct": 92.51,
+      "archive_content_and_links_verified": true
+    },
+    {
+      "path": "docs/step-by-step-plan.md",
+      "baseline_bytes_lf": 30868,
+      "candidate_bytes_lf": 2775,
+      "reduction_pct": 91.01,
+      "archive_content_and_links_verified": true
+    }
+  ],
+  "backend_checks": [
+    {
+      "name": "dependencies",
+      "exit_code": 0,
+      "seconds": 0.75
+    },
+    {
+      "name": "ruff",
+      "exit_code": 0,
+      "seconds": 0.156
+    },
+    {
+      "name": "pytest",
+      "exit_code": 0,
+      "seconds": 377.704,
+      "passed": 1481,
+      "skipped": 48,
+      "network_attempts": 0
+    }
+  ],
+  "full_workflow_seconds": 380.063,
+  "source_changed_during_full_check": false,
+  "targeted": {
+    "passed": 60,
+    "network_attempts": 0,
+    "pytest_seconds": 2.34
+  },
+  "frontend": {
+    "test_files_passed": 13,
+    "tests_passed": 172,
+    "test_command_seconds": 11.547,
+    "build_command_seconds": 7.171,
+    "build_exit_code": 0,
+    "network_guard": "not_instrumented"
+  },
+  "unchanged": [
+    "backend/app",
+    "backend/migrations",
+    "frontend source",
+    ".github/workflows/offline-ci.yml",
+    "scripts/verify_offline.py",
+    "scripts/offline_guard.py"
+  ],
+  "benefit_limits": {
+    "model_tokens_saved": null,
+    "model_cost_saved": null,
+    "task_lead_time_improvement": null,
+    "causal_improvement_established": false
+  },
+  "remaining": [
+    "same_type_task_baselines_and_trials",
+    "latest_item_binding_frontend_and_deployment_e2e",
+    "independent_multicategory_quality",
+    "production_load_and_disaster_recovery"
+  ]
+}

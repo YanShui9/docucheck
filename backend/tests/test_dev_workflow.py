@@ -123,6 +123,10 @@ def test_full_profile_reuses_original_gate_and_disallows_test_selection(monkeypa
     captured = []
     def fake_execute(command, *a, **k):
         captured.extend(command)
+        Path(command[-1]).write_text(json.dumps({"passed": True, "checks": [
+            {"name": "dependencies", "exit_code": 0}, {"name": "ruff", "exit_code": 0},
+            {"name": "pytest", "exit_code": 0, "passed": 1, "network_attempts": 0}]}),
+            encoding="utf-8")
         return {"exit_code": 0, "seconds": 1, "timed_out": False,
                 "output": "1 passed\noffline_network_attempts=0\n"}
     monkeypatch.setattr(tool, "execute", fake_execute)
@@ -154,3 +158,29 @@ def test_execution_error_leaves_a_failed_structured_report(tmp_path, monkeypatch
     assert tool.main(["check", "--profile", "docs", "--report", str(report)]) == 1
     result = json.loads(report.read_text(encoding="utf-8"))
     assert not result["passed"] and result["error"] == "fixture_failure"
+
+
+def test_verification_identity_changes_when_selected_tests_change(tmp_path):
+    tool = module()
+    folder = tmp_path / "backend/tests"
+    folder.mkdir(parents=True)
+    path = folder / "test_fixture.py"
+    path.write_text("def test_one(): assert True\n", encoding="utf-8")
+    first = tool.verification_identity("targeted", ["backend/tests/test_fixture.py"], tmp_path)
+    path.write_text("def test_two(): assert True\n", encoding="utf-8")
+    assert tool.verification_identity("targeted", ["backend/tests/test_fixture.py"], tmp_path) != first
+
+
+def test_full_profile_rejects_missing_or_failed_backend_evidence(monkeypatch, tmp_path):
+    tool = module()
+    monkeypatch.setattr(tool, "execute", lambda *a, **k: {
+        "exit_code": 0, "seconds": 1, "timed_out": False,
+        "output": "1 passed\noffline_network_attempts=0\n"})
+    assert not tool.run_check("full", [], tmp_path / "missing.json")["passed"]
+    report = tmp_path / "failed.json"
+    def fake_execute(*a, **k):
+        report.write_text(json.dumps({"passed": False, "checks": []}), encoding="utf-8")
+        return {"exit_code": 0, "seconds": 1, "timed_out": False,
+                "output": "1 passed\noffline_network_attempts=0\n"}
+    monkeypatch.setattr(tool, "execute", fake_execute)
+    assert not tool.run_check("full", [], report)["passed"]

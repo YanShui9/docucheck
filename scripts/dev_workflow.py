@@ -56,6 +56,34 @@ def doctor(root: Path = ROOT) -> dict:
                             "not_business_e2e"]}
 
 
+def verification_identity(profile: str, tests: list[str], root: Path = ROOT) -> str:
+    """Fingerprint the selected assertions/fixtures, separate from application changes."""
+    files = set()
+    if profile == "targeted":
+        files.update(root / name for name in select_tests(root, tests))
+        files.update(root / name for name in ("conftest.py", "backend/conftest.py",
+                                              "backend/tests/conftest.py"))
+        files.update((root / "backend/tests").glob("*helpers.py"))
+    elif profile == "full":
+        for folder in ("backend/tests", "examples", "evals"):
+            files.update((root / folder).rglob("*"))
+    elif profile == "frontend":
+        files.update((root / "frontend/src").rglob("*.test.*"))
+        files.update((root / "frontend/tests").rglob("*"))
+        files.update(root / name for name in ("frontend/package.json", "frontend/package-lock.json",
+                                              "frontend/vite.config.ts", "frontend/tsconfig.json"))
+    else:
+        return hashlib.sha256(json.dumps(ENTRY_DOCS).encode()).hexdigest()
+    files.update(root / name for name in ("scripts/offline_guard.py", "scripts/verify_offline.py"))
+    digest = hashlib.sha256()
+    for path in sorted(files):
+        if (path.is_file() and not path.is_symlink() and "__pycache__" not in path.parts
+                and path.suffix not in (".pyc", ".pyo")):
+            digest.update(path.relative_to(root).as_posix().encode())
+            digest.update(hashlib.sha256(path.read_bytes()).digest())
+    return digest.hexdigest()
+
+
 def changed_paths(base: str, root: Path = ROOT) -> list[str]:
     ref = git("rev-parse", "--verify", "--end-of-options", f"{base}^{{commit}}", root=root)
     tracked = git("diff", "--name-only", "-z", ref.decode().strip(), "--", root=root)
@@ -194,6 +222,17 @@ def run_check(profile: str, tests: list[str], backend_report: Path | None = None
         passed = passed and bool(observed) and all(int(n) == 0 for n in observed)
         if profile == "targeted":
             passed = passed and bool(re.search(r"\b[1-9]\d* passed\b", rows[0]["output"]))
+        else:
+            try:
+                backend = json.loads(backend_report.read_text(encoding="utf-8"))
+                checks = {c["name"]: c for c in backend["checks"]}
+                passed = (passed and backend.get("passed") is True
+                          and all(checks[name]["exit_code"] == 0
+                                  for name in ("dependencies", "ruff", "pytest"))
+                          and checks["pytest"]["passed"] > 0
+                          and checks["pytest"]["network_attempts"] == 0)
+            except (OSError, ValueError, KeyError, TypeError):
+                passed = False
     return {"profile": profile, "coverage": coverage, "passed": bool(passed), "checks": rows,
             "network_guard": "scripts.offline_guard" if guarded else "not_instrumented",
             "network_attempts": sum(map(int, observed)) if observed else None,
@@ -206,6 +245,9 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("doctor")
     plan = sub.add_parser("plan")
     plan.add_argument("--base", default="HEAD")
+    compare = sub.add_parser("compare")
+    compare.add_argument("--baseline", type=Path, required=True)
+    compare.add_argument("--candidate", type=Path, required=True)
     check = sub.add_parser("check")
     check.add_argument("--profile", choices=("docs", "targeted", "full", "frontend"), required=True)
     check.add_argument("--tests", nargs="+", default=[])
@@ -219,8 +261,15 @@ def main(argv: list[str] | None = None) -> int:
         if args.action == "plan":
             print(json.dumps(risk_plan(changed_paths(args.base)), ensure_ascii=False))
             return 0
+        if args.action == "compare":
+            from scripts.workflow_compare import compare
+            result = compare(json.loads(args.baseline.read_text(encoding="utf-8")),
+                             json.loads(args.candidate.read_text(encoding="utf-8")))
+            print(json.dumps(result, ensure_ascii=False))
+            return 0
         if args.report.exists():
             raise ValueError("report_exists")
+        args.report = args.report.resolve()
         if sys.version_info[:2] != (3, 12):
             raise ValueError("python_312_required")
         if args.profile == "targeted":
@@ -234,7 +283,8 @@ def main(argv: list[str] | None = None) -> int:
         with args.report.open("x", encoding="utf-8") as stream:
             started = time.monotonic()
             record = {"schema_version": 1, "kind": "development_workflow_check",
-                      "started_at_utc": datetime.now(UTC).isoformat(), "identity": source_identity()}
+                      "started_at_utc": datetime.now(UTC).isoformat(), "identity": source_identity(),
+                      "verification_sha256": verification_identity(args.profile, args.tests)}
             try:
                 record.update(run_check(args.profile, args.tests, backend_report))
                 after = source_identity()

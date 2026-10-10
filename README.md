@@ -146,6 +146,8 @@ docs/             架构、验证、复现与阶段记录
 
 ## 公开展示与反馈
 
+开发者可使用[统一验证入口](docs/development-workflow.md)检查文档、生成风险建议并运行定向/全量/前端门禁；[流程复审记录](docs/development-workflow-review-2026-10-10.md)说明备份、验证证据和收益边界。
+
 源码、合成演示截图、评估协议与阶段报告供技术交流和面试审阅。真实配置、账号口令、API 密钥、运行数据库和用户上传资料不随仓库提供。公开材料说明见[安全与展示边界](SECURITY.md)。
 
 项目尚未指定开源许可证；公开可见不代表额外授予第三方素材或代码的使用许可。问题反馈可通过 [GitHub Issues](https://github.com/YanShui9/docucheck/issues)，请勿附带密钥或未脱敏采购文件。
