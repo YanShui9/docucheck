@@ -178,6 +178,33 @@ def test_extraction_request_explains_table_context_and_raw_unit_contract():
         assert "model" in prompt and "specification" in prompt
 
 
+@pytest.mark.parametrize('always_wrong', [False, True])
+def test_extraction_supplier_identity_is_bound_in_schema_and_repaired_once(always_wrong):
+    class DisplayNameFirst(ScriptProvider):
+        def extract(self, messages, schema, **options):
+            reply = super().extract(messages, schema, **options)
+            if always_wrong or self.extractions == 1:
+                reply.tool_calls[0]['args']['facts'][0]['supplier'] = '展示名不是机器标识'
+            return reply
+
+    provider = DisplayNameFirst()
+    result = agent(repository(), provider, definition()).ask('审查')
+    if always_wrong:
+        assert result['status'] == 'partial' and result['error'] == 'invalid_output'
+        assert provider.extractions == 2
+        assert all(not check['is_formal'] for check in result['payload']['checks'])
+    else:
+        assert result['status'] == 'completed'
+        assert provider.extractions == 3
+        assert {fact['supplier'] for fact in result['payload']['facts']} == {'甲供应商', '乙供应商'}
+    assert sum(event.get('structured_repair') is True for event in result['events']) == 1
+    for kind, messages, schema in provider.calls:
+        if kind == 'extract':
+            data = json.loads(messages[-1].content)
+            field = schema['function']['parameters']['$defs']['FactCandidate']['properties']['supplier']
+            assert field.get('enum') == [data['supplier']]
+
+
 def test_rejected_candidate_reasons_are_finite_and_persisted_without_raw_errors(monkeypatch):
     from backend.app.agent import dynamic
 

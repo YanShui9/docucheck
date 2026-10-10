@@ -105,6 +105,21 @@ def _schema(name: str, model: type[BaseModel], description: str) -> dict:
             "parameters": model.model_json_schema()}}
 
 
+def _facts_schema(supplier: str) -> dict:
+    schema = _schema('DynamicFactCandidates', DynamicFactCandidates, '当前供应商的原文事实候选')
+    field = schema['function']['parameters']['$defs']['FactCandidate']['properties']['supplier']
+    field['enum'] = [supplier]
+    field['description'] = '当前批次供应商机器标识，必须使用枚举值，不得使用原文展示名。'
+    return schema
+
+
+def _bound_candidates(args: dict, supplier: str) -> dict:
+    candidates = DynamicFactCandidates.model_validate(args)
+    if any(fact.supplier != supplier for fact in candidates.facts):
+        raise ValueError('supplier_identifier')
+    return candidates.model_dump(mode='json')
+
+
 def _proposal_schema() -> dict:
     schema = _schema("ChecklistDefinition", ChecklistDefinition, "仅从买方原文提出完整清单候选，用户确认前不生效")
     # Model-local labels are only references within this response. Stable valid
@@ -554,9 +569,8 @@ class DynamicAgent:
                     if raw is None:
                         messages = [SystemMessage(content=EXTRACTION_SYSTEM),
                                     HumanMessage(content=json.dumps(data, ensure_ascii=False))]
-                        raw = model_call("extract", messages, _schema("DynamicFactCandidates", DynamicFactCandidates,
-                                         "当前供应商的原文事实候选"),
-                                         lambda args: DynamicFactCandidates.model_validate(args).model_dump(mode="json"))
+                        raw = model_call("extract", messages, _facts_schema(supplier),
+                                         lambda args, bound_supplier=supplier: _bound_candidates(args, bound_supplier))
                         validated, rejections = checked_candidates(raw, batch, supplier, manifest["criterion_ids"])
                     rejected = sum(rejections.values())
                     complete = complete and rejected == 0
