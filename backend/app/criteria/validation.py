@@ -115,11 +115,12 @@ def source_comparator(text: str) -> str:
     return candidates[0] if len(candidates) == 1 else "unknown" if candidates else "eq"
 
 
-def number_pairs(text: str, unit: str) -> list[Decimal]:
+def number_pairs(text: str, unit: str, *, legacy_duration=True) -> list[Decimal]:
     if not unit:
         return []
     suffix = r"(?![A-Za-z])" if unit[-1:].isascii() and unit[-1:].isalpha() else ""
-    pattern = rf"({NUMBER_PATTERN})\s*{re.escape(unit)}{suffix}"
+    measure_word = r"(?:个\s*)?" if not legacy_duration and unit in {"自然日", "工作日", "月"} else ""
+    pattern = rf"({NUMBER_PATTERN})\s*{measure_word}{re.escape(unit)}{suffix}"
     flags = 0 if unit.casefold() in {"mb", "gb", "tb", "mib", "gib", "tib"} else re.IGNORECASE
     return [Decimal(match[1]) for match in re.finditer(pattern, text, flags)]
 
@@ -143,27 +144,50 @@ def money_basis(text: str, unit: str):
 
 
 _DURATION_UNITS = {
-    "natural_days": ("自然日", "天", "日", "natural_day", "natural_days", "day", "days"),
-    "working_days": ("工作日", "working_day", "working_days", "workday", "workdays"),
+    "natural_days": ("自然日", "个自然日", "天", "日", "natural_day", "natural_days", "day", "days"),
+    "working_days": ("工作日", "个工作日", "working_day", "working_days", "workday", "workdays"),
     "months": ("个月", "月", "month", "months"),
 }
 
+DURATION_START_EVENTS = ("合同签订", "订单确认", "收到预付款", "收到付款", "收到通知", "下单", "验收", "交付")
 
-def duration_unit_calendar(unit: str) -> str | None:
+
+def duration_start_events(text: str, *, hints=(), legacy_duration=False) -> list[str]:
+    if not legacy_duration:
+        # Explicit metric labels do not describe a start event. Remove only
+        # the label, so a separate delivery/start condition remains visible.
+        text = re.sub(r"交\s*付\s*(?:期\s*限|时\s*间|周\s*期)", "", text)
+    possible = [event for event in dict.fromkeys((*hints, *DURATION_START_EVENTS))
+                if event and mentions(text, event)]
+    measurement = re.search(NUMBER_PATTERN, text)
+    # A bare terminal delivery verb is an end point. Explicit conditions
+    # elsewhere in the source remain visible, including after the number.
+    if (not legacy_duration and measurement is not None
+            and not mentions(text[:measurement.start()], "交付")
+            and re.fullmatch(r".*(?:内|前)交付(?:完成|完毕)?\s*", text[measurement.start():])):
+        possible = [event for event in possible if event != "交付"]
+    return possible
+
+
+def duration_unit_calendar(unit: str, *, legacy_duration=False) -> str | None:
+    if legacy_duration and unit in {"个自然日", "个工作日"}:
+        return None
     return next((calendar for calendar, units in _DURATION_UNITS.items()
                  if unit.casefold() in units), None)
 
 
-def duration_measurements(text: str) -> list[tuple[Decimal, str]]:
+def duration_measurements(text: str, *, legacy_duration=False) -> list[tuple[Decimal, str]]:
     units = [unit for group in _DURATION_UNITS.values() for unit in group]
+    if legacy_duration:
+        units = [unit for unit in units if unit not in {"个自然日", "个工作日"}]
     units.extend(("自然周", "周", "年", "小时", "分钟", "week", "weeks", "year", "years", "hour", "hours"))
     choices = "|".join(re.escape(unit) for unit in sorted(units, key=len, reverse=True))
     return [(Decimal(match[1]), match[2]) for match in re.finditer(
         rf"({NUMBER_PATTERN})\s*({choices})(?![A-Za-z])", text, re.IGNORECASE)]
 
 
-def duration_calendar(text: str, unit: str) -> str | None:
-    calendar = duration_unit_calendar(unit)
+def duration_calendar(text: str, unit: str, *, legacy_duration=False) -> str | None:
+    calendar = duration_unit_calendar(unit, legacy_duration=legacy_duration)
     if calendar is None:
         return None
     calendars = {calendar}
@@ -189,7 +213,7 @@ def validate_definition(definition: ChecklistDefinition | dict, repo: EvidenceRe
             raise ValueError("requirement_quote_incomplete")
 
 
-def rule_supported(criterion: Criterion, item: ProcurementItem) -> bool:
+def rule_supported(criterion: Criterion, item: ProcurementItem, *, legacy_duration=False) -> bool:
     """Prove a finite document rule; unresolved prose remains a candidate."""
     if criterion.requires_manual_review:
         return False
@@ -217,11 +241,14 @@ def rule_supported(criterion: Criterion, item: ProcurementItem) -> bool:
     if rule.type == "duration":
         if not mentions(text, rule.start_event):
             return False
-        if len(duration_measurements(text)) != 1 or len(re.findall(NUMBER_PATTERN, text)) != 1:
+        if not legacy_duration and duration_start_events(original, hints=(rule.start_event,)) != [rule.start_event]:
+            return False
+        if len(duration_measurements(text, legacy_duration=legacy_duration)) != 1 or len(re.findall(NUMBER_PATTERN, text)) != 1:
             return False
         unit = next((alias for alias in _DURATION_UNITS[rule.calendar]
-                     if number_pairs(text, alias)), "")
-        if duration_calendar(text, unit) != rule.calendar:
+                     if not (legacy_duration and alias in {"个自然日", "个工作日"})
+                     and number_pairs(text, alias, legacy_duration=legacy_duration)), "")
+        if duration_calendar(text, unit, legacy_duration=legacy_duration) != rule.calendar:
             return False
     if rule.type == "money":
         currencies = {"CNY": ("元", "人民币", "CNY", "RMB"),
@@ -234,6 +261,6 @@ def rule_supported(criterion: Criterion, item: ProcurementItem) -> bool:
         pattern = rf"({NUMBER_PATTERN})\s*(?:{re.escape(unit)})?\s*(?:至|到|[-~～])\s*({NUMBER_PATTERN})\s*{re.escape(unit)}"
         return any(Decimal(m[1]) == Decimal(rule.lower) and Decimal(m[2]) == Decimal(rule.upper)
                    for m in re.finditer(pattern, text, re.IGNORECASE))
-    pairs = number_pairs(text, unit)
+    pairs = number_pairs(text, unit, legacy_duration=legacy_duration or rule.type != "duration")
     return (len(pairs) == 1 and pairs[0] == Decimal(rule.value)
             and source_comparator(text) == rule.operator)

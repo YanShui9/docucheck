@@ -42,6 +42,75 @@ def test_fact_id_and_metadata_are_server_owned_and_replayable():
         facts_module().revalidate_fact(tampered, make_definition(), repo, "A")
 
 
+@pytest.mark.parametrize(('unit', 'calendar', 'expected'), [
+    ('自然日', 'natural_days', '不满足'),
+    ('个自然日', 'natural_days', '不满足'),
+    ('工作日', 'working_days', '待人工确认'),
+    ('个工作日', 'working_days', '待人工确认'),
+])
+def test_chinese_duration_measure_word_preserves_value_and_calendar(unit, calendar, expected):
+    day_word = '工作日' if calendar == 'working_days' else '自然日'
+    repo = make_repo(offers=[('A', f'苹果交期订单确认后18个{day_word}内交付', None)])
+    definition = make_definition(name='交期', rule={'type':'duration', 'operator':'lte',
+        'value':'14', 'calendar':'natural_days', 'start_event':'订单确认'})
+    fact = checked(repo, definition, candidate(repo, '18', unit, calendar=calendar, start_event='订单确认'))
+    assert not fact['ambiguous'] and fact['calendar'] == calendar
+    assert evaluate(repo, definition, [fact])[0]['business_status'] == expected
+    assert facts_module().revalidate_fact(fact, definition, repo, 'A') == fact
+
+
+def test_duration_does_not_ignore_an_explicit_start_condition_after_the_number():
+    repo = make_repo(offers=[('A', '苹果交期订单确认后18自然日内交付并以收到付款为起算点', None)])
+    definition = make_definition(name='交期', rule={'type':'duration', 'operator':'lte',
+        'value':'20', 'calendar':'natural_days', 'start_event':'订单确认'})
+    fact = checked(repo, definition, candidate(repo, '18', '自然日'))
+    assert fact['ambiguous'] and fact['start_event'] is None
+    assert evaluate(repo, definition, [fact])[0]['business_status'] == '待人工确认'
+
+
+@pytest.mark.parametrize('text', [
+    '苹果订单确认后交付期限不超过10自然日',
+    '苹果订单确认后交付时间不超过10自然日',
+    '苹果交付后交付期限不超过10自然日',
+])
+def test_duration_delivery_metric_label_is_not_a_second_start_event(text):
+    event = '交付' if '交付后' in text else '订单确认'
+    repo = make_repo(offers=[('A', text, None)])
+    definition = make_definition(name='交付期限', rule={'type': 'duration', 'operator': 'lte',
+        'value': '14', 'calendar': 'natural_days', 'start_event': event})
+    # Matching the source metric is required independently of event parsing.
+    if '交付时间' in text:
+        body = definition.model_dump()
+        body['criteria'][0]['name'] = '交付时间'
+        definition = ChecklistDefinition.model_validate(body)
+    fact = checked(repo, definition, candidate(repo, '10', '自然日'))
+    assert not fact['ambiguous'] and fact['start_event'] == event
+    assert evaluate(repo, definition, [fact])[0]['business_status'] == '满足'
+
+
+def test_duration_v1_fact_and_checks_keep_their_original_semantics():
+    repo = make_repo(offers=[('A', '苹果交期订单确认后18自然日内交付', None)])
+    definition = make_definition(name='交期', rule={'type':'duration', 'operator':'lte',
+        'value':'14', 'calendar':'natural_days', 'start_event':'订单确认'})
+    body = candidate(repo, '18', '自然日')
+    old = facts_module().validate_fact(body, definition, repo, 'A', rule_version='dynamic-rules-v1')
+    assert old['ambiguous'] and old['start_event'] is None
+    assert facts_module().revalidate_fact(old, definition, repo, 'A', rule_version='dynamic-rules-v1') == old
+    old_checks = facts_module().evaluate_checklist(definition, [old], {'A':True},
+        snapshot_id=repo.snapshot_id, rule_version='dynamic-rules-v1')
+    assert old_checks[0]['business_status'] == '待人工确认'
+    assert old_checks[0]['rule_version'] == 'dynamic-rules-v1'
+    current = checked(repo, definition, body)
+    assert evaluate(repo, definition, [current])[0]['business_status'] == '不满足'
+
+
+def test_duration_measure_word_fix_does_not_relax_numeric_exact_units():
+    repo = make_repo(offers=[('A', '苹果期限18个月', None)])
+    definition = make_definition(name='期限', rule={'type':'numeric', 'operator':'eq', 'value':'18', 'unit':'月'})
+    with pytest.raises(ValueError, match='fact_value'):
+        checked(repo, definition, candidate(repo, '18', '月'))
+
+
 @pytest.mark.parametrize("text", ["苹果 数量25箱", "苹果 数 量25箱"])
 def test_chinese_metric_name_accepts_layout_spaces_in_exact_source(text):
     repo = make_repo(offers=[("A", text, None)])
@@ -140,7 +209,7 @@ def test_generic_numeric_rules_use_decimal_and_finite_unit_conversion(rule, text
     checks = evaluate(repo, definition, [checked(repo, definition, candidate(repo, value, unit))])
     assert checks[0]["business_status"] == status
     assert checks[0]["field_key"] == checks[0]["criterion_id"] == "weight"
-    assert checks[0]["rule_version"] == "dynamic-rules-v1"
+    assert checks[0]["rule_version"] == "dynamic-rules-v2"
 
 
 def test_complete_review_enumerates_all_enabled_criteria_and_suppliers():

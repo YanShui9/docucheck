@@ -19,7 +19,12 @@ from langgraph.graph import END, START, StateGraph
 from langsmith import tracing_context
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
-from ..criteria.facts import FactCandidate, evaluate_checklist, validate_fact
+from ..criteria.facts import (
+    RULE_VERSION,
+    FactCandidate,
+    evaluate_checklist,
+    validate_fact,
+)
 from ..criteria.models import ChecklistDefinition, Criterion
 from ..criteria.validation import rule_supported, validate_definition
 from ..evidence.repository import digest
@@ -29,7 +34,6 @@ from ..providers.chat_model import validate_response
 from .context import MEMORY_NOTICE, _memory_payload, fit_decision_history
 from .policy import MODE_LIMITS, Budget, RunStopped, input_bound
 
-RULE_VERSION = "dynamic-rules-v1"
 MAX_RESPONSE_BYTES = 64_000
 MAX_SOURCE_SECTION_CHARS = 16_000
 MAX_SOURCE_QUOTE_CHARS = 600
@@ -221,7 +225,7 @@ def _criterion_groups(definition: ChecklistDefinition) -> list[list[dict]]:
     return groups
 
 
-def review_plan(repo, definition: ChecklistDefinition | dict) -> tuple[dict, dict]:
+def review_plan(repo, definition: ChecklistDefinition | dict, *, rule_version=RULE_VERSION) -> tuple[dict, dict]:
     """Pure deterministic source x contract plan, also used on SQL result reads.
 
     Plans map supplier to ordered (evidence_batch, extraction_data, manifest)
@@ -253,7 +257,7 @@ def review_plan(repo, definition: ChecklistDefinition | dict) -> tuple[dict, dic
                 criterion_ids = [c["criterion_id"] for c in group]
                 batch_id = digest(["review", supplier, source_ordinal, criterion_ids,
                                    [b["evidence_id"] for b in batch]])
-                input_digest = digest([repo.snapshot_id, source_digest, definition_digest, RULE_VERSION, data])
+                input_digest = digest([repo.snapshot_id, source_digest, definition_digest, rule_version, data])
                 manifest = {"batch_id": batch_id, "input_digest": input_digest, "supplier": supplier,
                             "ordinal": len(plans[supplier]), "source_ordinal": source_ordinal,
                             "criterion_ids": criterion_ids}
@@ -450,19 +454,20 @@ class DynamicAgent:
             planned = review_plan(self.repo, self.definition)
             return planned
 
-        def reuse_report():
+        def reuse_report(*, for_carry=False):
             old = self._report
             if old is None or self.definition is None:
                 return None
             try:
                 self._check(budget)
+                old_rules = old.get("rule_version")
                 if (old.get("version") != 1 or old.get("source_digest") != self.source_digest
-                        or old.get("rule_version") != RULE_VERSION
+                        or old_rules not in ({"dynamic-rules-v1", RULE_VERSION} if for_carry else {RULE_VERSION})
                         or old.get("definition") != self.definition.model_dump(mode="json")
                         or set(old.get("coverage", {})) != set(suppliers)):
                     raise ValueError("report_invalid")
                 validate_definition(self.definition, self.repo)
-                plans, source_complete = get_review_plan()
+                plans, source_complete = review_plan(self.repo, self.definition, rule_version=old_rules)
                 manifest = [entry for supplier in suppliers for _, _, entry in plans[supplier]]
                 if old.get("batch_manifest") != manifest:
                     raise ValueError("report_invalid")
@@ -475,11 +480,11 @@ class DynamicAgent:
                 for fact in old["facts"]:
                     fields = {k: v for k, v in fact.items() if k in FactCandidate.model_fields}
                     self._read(fact["evidence_refs"], budget)
-                    validated = validate_fact(FactCandidate.model_validate(fields), self.definition, self.repo, fact["supplier"])
+                    validated = validate_fact(FactCandidate.model_validate(fields), self.definition, self.repo, fact["supplier"], rule_version=old_rules)
                     if validated != fact:
                         raise ValueError("report_invalid")
                 copied = deepcopy(old)
-                copied["checks"] = evaluate_checklist(self.definition, copied["facts"], copied["coverage"], snapshot_id=self.snapshot_id)
+                copied["checks"] = evaluate_checklist(self.definition, copied["facts"], copied["coverage"], snapshot_id=self.snapshot_id, rule_version=old_rules)
                 self._check(budget)
                 return copied
             except (ValueError, KeyError, TypeError):
@@ -498,10 +503,17 @@ class DynamicAgent:
             # cache predates the correction. Revalidate the whole old report,
             # carry its facts, then process the complete fresh plan below.
             if self._report is not None and self._report.get("needs_review"):
-                previous = reuse_report()
-                if previous is not None:
-                    facts.update({fact["fact_id"]: fact for fact in previous["facts"]})
-                    payload["needs_review"] = True
+                previous = reuse_report(for_carry=True)
+                if previous is None:
+                    raise RunStopped("manual_alternative_revalidation_required")
+                for old_fact in previous["facts"]:
+                    fields = {k: v for k, v in old_fact.items() if k in FactCandidate.model_fields}
+                    try:
+                        fact = validate_fact(fields, self.definition, self.repo, old_fact["supplier"])
+                    except (ValueError, ValidationError):
+                        raise RunStopped("manual_alternative_revalidation_required") from None
+                    facts[fact["fact_id"]] = fact
+                payload["needs_review"] = True
             enabled = [c for c in self.definition.criteria if c.enabled]
             if not suppliers or not enabled:
                 return {"status": "waiting_user", "error": "review_scope_empty",

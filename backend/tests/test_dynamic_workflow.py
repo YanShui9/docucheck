@@ -32,6 +32,28 @@ def workbook(text):
     return output.getvalue()
 
 
+def test_v1_persisted_report_still_reads_and_new_plan_invalidates_its_cache(dynamic_case, monkeypatch):
+    import backend.app.agent.dynamic as workflow
+    from backend.app.criteria.facts import evaluate_checklist, validate_fact
+
+    confirm(dynamic_case)
+    old_id = message(dynamic_case, key='legacy-review')
+    plan = workflow.review_plan
+    with monkeypatch.context() as patch:
+        patch.setattr(workflow, 'RULE_VERSION', 'dynamic-rules-v1')
+        patch.setattr(workflow, 'review_plan', lambda repo, definition: plan(repo, definition, rule_version='dynamic-rules-v1'))
+        patch.setattr(workflow, 'validate_fact', lambda *args: validate_fact(*args, rule_version='dynamic-rules-v1'))
+        patch.setattr(workflow, 'evaluate_checklist', lambda *args, **kwargs: evaluate_checklist(*args, **kwargs, rule_version='dynamic-rules-v1'))
+        assert run(dynamic_case, old_id, ScriptProvider()).status == 'completed'
+    row, payload, repo = DynamicRepository(dynamic_case[1]).verified(old_id)
+    assert row['status'] == 'completed' and payload['rule_version'] == 'dynamic-rules-v1'
+    assert dynamic_case[0].get(f'/api/v1/agent-runs/{old_id}/checks').status_code == 200
+    assert dynamic_case[0].get(f'/api/v1/agent-runs/{old_id}/export').status_code == 200
+    new_plan, _ = plan(repo, payload['definition'])
+    new_digests = {entry['input_digest'] for batches in new_plan.values() for _, _, entry in batches}
+    assert not new_digests.intersection(entry['input_digest'] for entry in payload['batch_manifest'])
+
+
 @pytest.fixture
 def dynamic_case(ingestion_case, request):
     client, engine, storage, case_id = ingestion_case

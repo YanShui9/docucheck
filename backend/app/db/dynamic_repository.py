@@ -457,7 +457,7 @@ class DynamicRepository:
             candidate = FactCandidate.model_validate(
                 {k: v for k, v in encoded.items() if k in FactCandidate.model_fields}
             )
-            actual = validate_fact(candidate, definition, repo, candidate.supplier)
+            actual = validate_fact(candidate, definition, repo, candidate.supplier, rule_version=payload.get("rule_version"))
             if actual != encoded:
                 _error("dynamic_source_changed")
             facts.append(actual)
@@ -473,14 +473,14 @@ class DynamicRepository:
             _error("dynamic_scope")
         self._validate_manifest(row, payload, definition, repo)
         checks = evaluate_checklist(
-            definition, facts, coverage, snapshot_id=repo.snapshot_id
+            definition, facts, coverage, snapshot_id=repo.snapshot_id, rule_version=payload.get("rule_version")
         )
         items = {i.item_id: i.name for i in definition.items}
         stored_checks = [
             {**c, "item_name": c.get("item_name", items.get(c.get("item_id")))}
             for c in payload.get("checks", [])
         ]
-        if stored_checks != checks or payload.get("rule_version") != "dynamic-rules-v1":
+        if stored_checks != checks or payload.get("rule_version") not in {"dynamic-rules-v1", "dynamic-rules-v2"}:
             _error("dynamic_source_changed")
         return dict(row) | {"definition": version["definition"]}, payload, repo
 
@@ -488,7 +488,7 @@ class DynamicRepository:
         from ..agent.dynamic import review_plan
         from ..criteria.facts import validate_fact
 
-        plans, source_complete = review_plan(repo, definition)
+        plans, source_complete = review_plan(repo, definition, rule_version=payload.get("rule_version"))
         expected = [
             entry for supplier in sorted(plans) for _, _, entry in plans[supplier]
         ]
@@ -538,7 +538,7 @@ class DynamicRepository:
                         or candidate["criterion_id"] not in entry["criterion_ids"]
                     ):
                         _error("batch_source_changed")
-                    verified = validate_fact(candidate, definition, repo, supplier)
+                    verified = validate_fact(candidate, definition, repo, supplier, rule_version=payload.get("rule_version"))
                     if verified["fact_id"] not in reported_facts:
                         _error("batch_source_changed")
             if payload["coverage"][supplier] and not source_complete[supplier]:
@@ -797,7 +797,7 @@ class DynamicRepository:
             try:
                 definition = ChecklistDefinition.model_validate(payload["definition"])
                 corrected = validate_fact(
-                    candidate, definition, repo, candidate.supplier
+                    candidate, definition, repo, candidate.supplier, rule_version=payload.get("rule_version")
                 )
             except ValueError:
                 _error("unsupported_correction")
@@ -811,6 +811,7 @@ class DynamicRepository:
                 changed["facts"],
                 changed["coverage"],
                 snapshot_id=row["snapshot_id"],
+                rule_version=payload.get("rule_version"),
             )
             if len(json.dumps(changed, ensure_ascii=False).encode()) > 512000:
                 _error("dynamic_capacity")

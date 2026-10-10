@@ -21,6 +21,7 @@ from .validation import (
     compact,
     duration_calendar,
     duration_measurements,
+    duration_start_events,
     duration_unit_calendar,
     enum_choices,
     item_supported,
@@ -34,11 +35,11 @@ from .validation import (
     source_span,
 )
 
-RULE_VERSION = "dynamic-rules-v1"
+RULE_VERSION = "dynamic-rules-v2"
+SUPPORTED_RULE_VERSIONS = {"dynamic-rules-v1", RULE_VERSION}
 _VALUE_NUMBER = re.compile(r"^-?\d{1,12}(?:\.\d{1,6})?$")
 _UNCERTAIN = re.compile(r"最大|最高|最多支持|支持扩展|参考|宣传|另一型号|其他型号|"
                         r"不属于本次|次日|翌日|next day", re.IGNORECASE)
-_START_EVENTS = ("合同签订", "订单确认", "收到预付款", "收到付款", "收到通知", "下单", "验收", "交付")
 
 
 class FactCandidate(Contract):
@@ -97,7 +98,10 @@ def _presence_value(text: str, description: str) -> bool:
 
 
 def validate_fact(candidate: dict | FactCandidate, definition: ChecklistDefinition | dict,
-                  repo: EvidenceRepository, supplier: str) -> dict:
+                  repo: EvidenceRepository, supplier: str, *, rule_version=RULE_VERSION) -> dict:
+    if rule_version not in SUPPORTED_RULE_VERSIONS:
+        raise ValueError("rule_version")
+    legacy_duration = rule_version == "dynamic-rules-v1"
     candidate = (candidate if isinstance(candidate, FactCandidate)
                  else FactCandidate.model_validate(candidate))
     definition = _definition(definition)
@@ -120,19 +124,19 @@ def validate_fact(candidate: dict | FactCandidate, definition: ChecklistDefiniti
             raise ValueError("fact_value")
         if rule.type in {"money", "duration"} and Decimal(candidate.value) < 0:
             raise ValueError("fact_value")
-        values = number_pairs(clause, candidate.unit)
+        legacy_pairs = legacy_duration or rule.type != "duration"
+        values = number_pairs(clause, candidate.unit, legacy_duration=legacy_pairs)
         if Decimal(candidate.value) not in values:
             raise ValueError("fact_value")
-        ambiguous = ambiguous or len(values) != 1 or len(number_pairs(text, candidate.unit)) != 1
+        ambiguous = ambiguous or len(values) != 1 or len(number_pairs(text, candidate.unit, legacy_duration=legacy_pairs)) != 1
         if rule.type == "money":
             observed["currency"], observed["per_unit"], observed["tax_basis"] = money_basis(clause, candidate.unit)
         if rule.type == "duration":
-            observed["calendar"] = duration_calendar(clause, candidate.unit)
+            observed["calendar"] = duration_calendar(clause, candidate.unit, legacy_duration=legacy_duration)
             ambiguous = (ambiguous or observed["calendar"] is None
-                         or len(duration_measurements(text)) != 1
+                         or len(duration_measurements(text, legacy_duration=legacy_duration)) != 1
                          or len(re.findall(NUMBER_PATTERN, clause)) != 1)
-            possible = [event for event in dict.fromkeys((candidate.start_event, rule.start_event, *_START_EVENTS))
-                        if event and mentions(clause, event)]
+            possible = duration_start_events(clause, hints=(candidate.start_event, rule.start_event), legacy_duration=legacy_duration)
             if len(possible) == 1:
                 observed["start_event"] = possible[0]
             elif possible:
@@ -168,9 +172,9 @@ def validate_fact(candidate: dict | FactCandidate, definition: ChecklistDefiniti
 
 
 def revalidate_fact(fact: dict, definition: ChecklistDefinition | dict,
-                    repo: EvidenceRepository, supplier: str) -> dict:
+                    repo: EvidenceRepository, supplier: str, *, rule_version=RULE_VERSION) -> dict:
     candidate = {key: fact[key] for key in FactCandidate.model_fields if key in fact}
-    verified = validate_fact(candidate, definition, repo, supplier)
+    verified = validate_fact(candidate, definition, repo, supplier, rule_version=rule_version)
     if verified != fact:
         raise ValueError("fact_integrity")
     return verified
@@ -210,9 +214,10 @@ def _passes(rule, actual):
             "gt": actual > required, "lt": actual < required}[rule.operator]
 
 
-def _evaluate(criterion, item, offered):
+def _evaluate(criterion, item, offered, *, rule_version):
+    legacy_duration = rule_version == "dynamic-rules-v1"
     rule = criterion.rule
-    if criterion.requires_manual_review or not rule_supported(criterion, item):
+    if criterion.requires_manual_review or not rule_supported(criterion, item, legacy_duration=legacy_duration):
         return "待人工确认", "requirement_manual"
     if not offered:
         return "证据不足", "supplier_fact_missing"
@@ -234,7 +239,7 @@ def _evaluate(criterion, item, offered):
                 return "待人工确认", "money_basis_mismatch"
             actual = [Decimal(fact["value"]) for fact in offered]
         elif rule.type == "duration":
-            if any(duration_unit_calendar(fact.get("unit", "")) != rule.calendar
+            if any(duration_unit_calendar(fact.get("unit", ""), legacy_duration=legacy_duration) != rule.calendar
                    or (fact.get("calendar"), fact.get("start_event")) != (rule.calendar, rule.start_event)
                    for fact in offered):
                 return "待人工确认", "duration_basis_mismatch"
@@ -267,9 +272,11 @@ def _evaluate(criterion, item, offered):
 
 
 def evaluate_checklist(definition: ChecklistDefinition | dict, facts: list[dict],
-                       coverage: dict[str, bool], *, snapshot_id: str) -> list[dict]:
+                       coverage: dict[str, bool], *, snapshot_id: str, rule_version=RULE_VERSION) -> list[dict]:
     """Enumerate every enabled criterion and supplier after complete extraction."""
     definition = _definition(definition)
+    if rule_version not in SUPPORTED_RULE_VERSIONS:
+        raise ValueError("rule_version")
     if any(not isinstance(supplier, str) or type(complete) is not bool
            for supplier, complete in coverage.items()):
         raise ValueError("coverage_state")
@@ -289,7 +296,7 @@ def evaluate_checklist(definition: ChecklistDefinition | dict, facts: list[dict]
                        and fact["criterion_id"] == criterion.criterion_id]
             offered = sorted({fact["fact_id"]: fact for fact in offered}.values(), key=lambda fact: fact["fact_id"])
             refs = list(dict.fromkeys(ref for fact in offered for ref in fact["evidence_refs"]))
-            status, reason = (_evaluate(criterion, items[criterion.item_id], offered)
+            status, reason = (_evaluate(criterion, items[criterion.item_id], offered, rule_version=rule_version)
                               if complete else (None, "coverage_incomplete"))
             processing = "complete" if complete else "partial"
             result = {"snapshot_id": snapshot_id, "supplier": supplier,
@@ -299,7 +306,7 @@ def evaluate_checklist(definition: ChecklistDefinition | dict, facts: list[dict]
                       "processing_status": processing, "business_status": status,
                       "reason_code": reason, "evidence_refs": refs, "reason_evidence_refs": refs,
                       "fact_ids": [fact["fact_id"] for fact in offered],
-                      "rule_version": RULE_VERSION, "is_formal": complete}
+                      "rule_version": rule_version, "is_formal": complete}
             identity = digest([definition.model_dump(mode="json"), offered, result])
             results.append({"check_result_id": identity, **result})
     return results

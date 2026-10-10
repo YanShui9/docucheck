@@ -119,7 +119,7 @@ def test_review_enumerates_all_suppliers_for_arbitrary_chinese_metrics(item, met
     assert {c["supplier"] for c in result["payload"]["checks"]} == {"甲供应商", "乙供应商"}
     assert {c["business_status"] for c in result["payload"]["checks"]} == {"满足", "不满足"}
     assert result["payload"]["source_digest"] == digest([asdict(b) for b in repo.blocks])
-    assert result["payload"]["rule_version"] == "dynamic-rules-v1"
+    assert result["payload"]["rule_version"] == "dynamic-rules-v2"
     assert result["payload"]["version"] == 1
 
 
@@ -495,7 +495,48 @@ def test_dynamic_validation_change_keeps_specific_safe_code(code):
     assert result["status"] == "partial" and result["error"] == code
 
 
-def test_full_review_keeps_revalidated_manual_alternatives_and_reviews_all_batches():
+def test_manual_alternative_conversion_failure_cannot_publish_formal_results(monkeypatch):
+    from backend.app.criteria.facts import evaluate_checklist, validate_fact
+    from backend.tests.test_dynamic_requirements import make_definition, make_repo
+
+    workflow = import_module('backend.app.agent.dynamic')
+    repo = make_repo(offers=[('A', '苹果交期18自然日前交付', None)])
+    rules = make_definition(name='交期', rule={'type': 'duration', 'operator': 'lte',
+        'value': '20', 'calendar': 'natural_days', 'start_event': '交付'})
+
+    class DeliveryStart(ScriptProvider):
+        extractions = 0
+
+        def extract(self, messages, schema, **options):
+            self.extractions += 1
+            block = repo.blocks[-1]
+            fact = {'criterion_id': 'weight', 'item_id': 'apple', 'supplier': 'A',
+                    'value': '18', 'unit': '自然日', 'calendar': 'natural_days',
+                    'start_event': '交付', 'quote': block.text,
+                    'evidence_refs': [block.evidence_id]}
+            return call(schema['function']['name'], {'facts': [fact]})
+
+    plan = workflow.review_plan
+    with monkeypatch.context() as patch:
+        patch.setattr(workflow, 'RULE_VERSION', 'dynamic-rules-v1')
+        patch.setattr(workflow, 'review_plan', lambda *args, **kwargs: plan(*args, rule_version='dynamic-rules-v1'))
+        patch.setattr(workflow, 'validate_fact', lambda *args, **kwargs: validate_fact(*args, rule_version='dynamic-rules-v1'))
+        patch.setattr(workflow, 'evaluate_checklist', lambda *args, **kwargs: evaluate_checklist(*args, **kwargs, rule_version='dynamic-rules-v1'))
+        previous = agent(repo, DeliveryStart(), rules).ask('审查')['payload']
+    assert previous['facts'][0]['start_event'] == '交付'
+    previous['needs_review'] = True
+    provider = DeliveryStart(decision='review_checklist')
+    result = agent(repo, provider, rules, previous_payload=previous).ask('重新完整审查')
+    assert result['status'] == 'partial'
+    assert result['error'] == 'manual_alternative_revalidation_required'
+    assert result['payload']['facts'] == []
+    assert result['payload']['checks']
+    assert all(not check['is_formal'] for check in result['payload']['checks'])
+    assert provider.extractions == 0
+
+
+@pytest.mark.parametrize('legacy', [False, True])
+def test_full_review_keeps_revalidated_manual_alternatives_and_reviews_all_batches(monkeypatch, legacy):
     from backend.app.criteria.facts import evaluate_checklist, validate_fact
 
     original, rules, documents, saved = repository(), definition(), [], {}
@@ -521,15 +562,24 @@ def test_full_review_keeps_revalidated_manual_alternatives_and_reviews_all_batch
         return deepcopy(saved.get((batch_id, input_digest)))
     def save(batch_id, input_digest, output):
         saved[(batch_id, input_digest)] = deepcopy(output)
-    previous = agent(repo, OneValue(), rules, cache_load=load, cache_save=save).ask("审查")["payload"]
+    workflow = import_module('backend.app.agent.dynamic')
+    plan = workflow.review_plan
+    with monkeypatch.context() as patch:
+        if legacy:
+            patch.setattr(workflow, 'RULE_VERSION', 'dynamic-rules-v1')
+            patch.setattr(workflow, 'review_plan', lambda *args, **kwargs: plan(*args, rule_version='dynamic-rules-v1'))
+            patch.setattr(workflow, 'validate_fact', lambda *args, **kwargs: validate_fact(*args, rule_version='dynamic-rules-v1'))
+            patch.setattr(workflow, 'evaluate_checklist', lambda *args, **kwargs: evaluate_checklist(*args, **kwargs, rule_version='dynamic-rules-v1'))
+        previous = agent(repo, OneValue(), rules, cache_load=load, cache_save=save).ask("审查")["payload"]
     source = next(b for b in repo.blocks if b.supplier == "甲供应商" and b.role == "quote")
     alternative = validate_fact({"criterion_id": "metric-1", "item_id": "item-1", "supplier": "甲供应商",
                                  "value": "8", "unit": "箱", "quote": source.text,
                                  "evidence_refs": [source.evidence_id]}, rules, repo, "甲供应商")
     previous["facts"].append(alternative)
     previous["needs_review"] = True
-    previous["checks"] = evaluate_checklist(rules, previous["facts"], previous["coverage"], snapshot_id=repo.snapshot_id)
-    provider = ScriptProvider(decision="review_checklist")
+    previous["checks"] = evaluate_checklist(rules, previous["facts"], previous["coverage"], snapshot_id=repo.snapshot_id,
+                                           rule_version=previous['rule_version'])
+    provider = OneValue(decision="review_checklist")
     result = agent(repo, provider, rules, previous_payload=previous, cache_load=load).ask("重新完整审查")
     assert result["status"] == "completed"
     assert result["payload"].get("needs_review") is True
@@ -537,7 +587,7 @@ def test_full_review_keeps_revalidated_manual_alternatives_and_reviews_all_batch
     assert next(c for c in result["payload"]["checks"] if c["supplier"] == "甲供应商")["business_status"] == "资料冲突"
     assert "仍需人工复核" in result["answer"]
     assert len(result["payload"]["batch_coverage"]) == len(result["payload"]["batch_manifest"]) == 2
-    assert all(b["complete"] and b["cached"] for b in result["payload"]["batch_coverage"])
+    assert all(b["complete"] and b["cached"] is (not legacy) for b in result["payload"]["batch_coverage"])
 
 
 def test_user_defined_checklist_completes_without_an_extra_buyer_document():

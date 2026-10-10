@@ -185,6 +185,21 @@ def test_document_money_and_duration_have_explicit_supported_basis(text, rule, n
     assert validation().rule_supported(definition.criteria[0], definition.items[0])
 
 
+def test_duration_document_measure_word_is_supported_only_under_the_new_semantics():
+    repo = make_repo('苹果交期订单确认后不超过14个自然日')
+    definition = make_definition(repo, document=True, name='交期', rule={'type':'duration',
+        'operator':'lte', 'value':'14', 'calendar':'natural_days', 'start_event':'订单确认'})
+    assert validation().rule_supported(definition.criteria[0], definition.items[0])
+    assert not validation().rule_supported(definition.criteria[0], definition.items[0], legacy_duration=True)
+
+
+def test_duration_document_with_competing_start_events_cannot_be_formalized():
+    repo = make_repo('苹果交期订单确认后不超过14个自然日内交付并以收到付款为起算点')
+    definition = make_definition(repo, document=True, name='交期', rule={'type':'duration',
+        'operator':'lte', 'value':'14', 'calendar':'natural_days', 'start_event':'订单确认'})
+    assert not validation().rule_supported(definition.criteria[0], definition.items[0])
+
+
 @pytest.mark.parametrize(("operator", "supported"), [("eq", True), ("lte", False)])
 def test_newline_preserves_comparator_association_with_its_metric(operator, supported):
     repo = make_repo("苹果净重100 g\n苹果价格不超过20 元/斤")

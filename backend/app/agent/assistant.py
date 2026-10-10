@@ -188,6 +188,9 @@ class AssistantAgent:
         guidance += "\n当前资料=" + json.dumps(self.repo.sources(), ensure_ascii=False, separators=(",", ":"))
         if self.runtime_context is not None:
             guidance += "\n本轮按需读取时间=" + json.dumps(self.runtime_context, ensure_ascii=False, separators=(",", ":"))
+            guidance += ("\n时间工具仅提供当前日期、星期和时区，没有截止日计算能力。"
+                         "时间说明只报告这些值及通用起算点/自然日原则，不引用本任务供应商数值；"
+                         "不要自行给出具体截止日期或日期计算示例。具体交期判断须读取证据并使用正式审查。")
         extra = self.recalled_history if self.recalled_history != tail else []
         messages, audit = assemble_assistant_context(guidance, question, self.history,
             self.memory_layers, schemas, self.budget, tail=[*extra, *tail], history_available=self.history_reader is not None)
