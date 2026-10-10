@@ -78,6 +78,9 @@ def test_retry_after_rules_upgrade_uses_new_sql_batch_namespace(dynamic_case, mo
         patch.setattr(workflow, 'validate_fact', lambda *args: validate_fact(*args, rule_version=old_version))
         patch.setattr(workflow, 'evaluate_checklist', lambda *args, **kwargs: evaluate_checklist(*args, **kwargs, rule_version=old_version))
         assert run(dynamic_case, run_id, SecondBatchFails()).status == 'partial'
+    progress_url = f'/api/v1/agent-runs/{run_id}/progress'
+    old_progress = dynamic_case[0].get(progress_url).json()
+    assert (old_progress['validated_batches'], old_progress['planned_batches']) == (1, 2)
     response = dynamic_case[0].post(f'/api/v1/agent-runs/{run_id}/retry',
         headers={'Idempotency-Key': 'upgrade-retry'}, json={'expected_revision': 3})
     assert response.status_code == 202
@@ -86,6 +89,8 @@ def test_retry_after_rules_upgrade_uses_new_sql_batch_namespace(dynamic_case, mo
     assert result.status == 'completed', result
     assert provider.extractions == 2
     assert DynamicRepository(dynamic_case[1]).verified(run_id)[1]['rule_version'] == workflow.RULE_VERSION
+    current_progress = dynamic_case[0].get(progress_url).json()
+    assert (current_progress['validated_batches'], current_progress['planned_batches']) == (2, 2)
 
 
 @pytest.fixture
@@ -686,6 +691,31 @@ def test_completed_batch_facts_cannot_be_omitted_from_recomputed_payload(dynamic
             .values(payload_json=payload, payload_digest=digest(payload))
         )
     response = client.get(f"/api/v1/agent-runs/{run_id}/checks")
+    assert response.status_code == 409, response.text
+
+
+@pytest.mark.parametrize('completed_claim', [False, True])
+def test_progress_rejects_batch_claim_without_manifest(dynamic_case, completed_claim):
+    from backend.app.evidence.repository import digest
+    from backend.app.providers.base import ProviderError
+
+    class FailedDecision(ScriptProvider):
+        def decide(self, *args, **kwargs):
+            raise ProviderError('timeout', outcome_unknown=True)
+
+    confirm(dynamic_case)
+    client, engine, _, _, _ = dynamic_case
+    run_id = message(dynamic_case, key='unplanned-progress')
+    assert run(dynamic_case, run_id, FailedDecision()).status == 'partial'
+    _, payload, _ = DynamicRepository(engine).verified(run_id)
+    assert not payload['facts'] and not any(payload['coverage'].values())
+    payload = deepcopy(payload)
+    payload['batch_manifest'] = []
+    payload['batch_coverage'] = [{'batch_id': 'x' * 64, 'complete': completed_claim}]
+    with engine.begin() as connection:
+        connection.execute(update(dynamic_runs).where(dynamic_runs.c.run_id == run_id)
+                           .values(payload_json=payload, payload_digest=digest(payload)))
+    response = client.get(f'/api/v1/agent-runs/{run_id}/progress')
     assert response.status_code == 409, response.text
 
 

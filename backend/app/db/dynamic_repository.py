@@ -503,6 +503,7 @@ class DynamicRepository:
                 not payload.get("facts")
                 and not any(payload["coverage"].values())
                 and not payload.get("batch_manifest")
+                and not payload.get("batch_coverage")
             ):
                 return
             _error("dynamic_source_changed")
@@ -679,14 +680,10 @@ class DynamicRepository:
 
     def progress(self, run_id):
         row, payload, _ = self.verified(run_id)
-        with self.engine.connect() as connection:
-            batches = list(
-                connection.scalars(
-                    select(dynamic_batches.c.batch_id).where(
-                        dynamic_batches.c.run_id == run_id
-                    )
-                )
-            )
+        # A Run may retain cache rows from earlier rule versions. Count only
+        # completed batches in the verified current report's manifest coverage.
+        batches = {entry['batch_id'] for entry in (payload or {}).get('batch_coverage', [])
+                   if entry.get('complete') is True}
         return {
             "run_id": run_id,
             "workflow": row["workflow"],
