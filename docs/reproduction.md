@@ -1,10 +1,17 @@
 # 安装、离线验证与本地启动
 
-适用日期：2026-10-08（本轮更新本地前端与 OIDC 端口；其他历史实测日期以对应记录为准）。Windows + Miniconda 是本机开发入口；Linux Celery worker 由 Docker 运行。各命令在仓库根目录执行，前端命令除外。项目形态是有身份、权限、异步任务与证据版本的面试演示工作台。
+适用日期：2026-10-10。Windows + Miniconda 是开发入口；Linux Celery worker 由 Docker 运行。各命令在仓库根目录执行，前端命令除外。项目是开发中的中文采购助手，具备身份、权限、异步任务和证据版本；当前没有公网演示站。
+
+先按第 1 节运行无需模型和 Docker 的离线验证。完整网页需要配置额外服务，启用 worker 后会产生实际模型调用。最新品目对应后端已通过源码门禁，前端和该版本应用闭环尚未完成；不要把安装命令或旧界面回放当作最新功能验收。
 
 ## 1. 先复现代码测试
 
-新机器先取得**包含当前阶段文件的完整源码**。每步已按约定提交本地 Git；仓库尚未配置远程，不代表已发布远程版本。不要复制旧 `.env`、`data/`、`.venv` 或 `node_modules/`。
+新机器取得完整源码；已有工作区不必重复克隆。运行数据与账号在本机创建，避免复制他人的 `.env`、`data/`、`.venv` 或 `node_modules/`。
+
+```powershell
+git clone https://github.com/YanShui9/docucheck.git
+Set-Location docucheck
+```
 
 ```powershell
 conda create -n docucheck-repro python=3.12.14 pip -y
@@ -13,7 +20,7 @@ python.exe -m pip install --no-deps -r backend/requirements-dev.lock.txt
 python.exe -m pip check
 ```
 
-开发和 Windows 锁当前均锁定 102 个包（原 97 包加 Milvus SDK 的 5 个新依赖）；worker 锁仍为 75 包，尚未把向量索引任务接入该 worker。共同依赖对齐已实测 worker 的版本，包括 OpenAI SDK 3.23.0、LangSmith 0.14.3；原开发 Conda 环境曾分别为 3.19.2、0.14.0。新环境检验与旧环境检验分别记录。`backend/environment.yml` 是 Conda 引导文件，精确复现再安装完整锁。`--no-deps` 要求锁闭包完整，随后 `pip check` 检查缺包及版本约束。
+开发、Windows、基础 worker 和向量 worker 使用仓库中的不同完整锁，以各锁文件为准。`backend/environment.yml` 是 Conda 引导文件，精确复现再安装完整锁。`--no-deps` 要求锁闭包完整，随后 `pip check` 检查缺包及版本约束。历史新环境验收与当前源码 CI 分别记录，不能把旧锁的通过成绩自动转移到新依赖。
 
 Milvus SDK 为 2.6.17，可选闭包见 `backend/requirements-vector.lock.txt`（17 包，与主锁共有版本一致）；本机与服务 2.6.25 实连及安装后完整离线回归已通过。新增 SDK 闭包的 Linux 新环境安装尚未实测，历史 M5-C 三环境结果对应旧 97 包锁，不能当作新锁验收。详见 [Milvus 实连报告](milvus-live-acceptance-2026-10-03.md)。
 
@@ -86,7 +93,7 @@ python.exe -m alembic -c backend/alembic.ini upgrade head
 python.exe -m alembic -c backend/alembic.ini current
 ```
 
-当前迁移头为 `0016_assistant_runs`。生成器创建 alice/bob/reviewer 的演示账号，密码只在本机 `.env` 查看。Keycloak `start-dev`、本机 HTTP 和 H2 卷用于演示；正式企业部署需 HTTPS、生产配置、身份数据库和企业 SSO。已有 Keycloak realm 不会因重写导入文件自动更新，不能把重新生成文件当成重置现有账号。
+当前源码迁移头为 `0017_item_bindings`；截至本次文档整理，已有演示业务库仍为 `0016_assistant_runs`，最新迁移尚未应用。新安装执行上述 `upgrade head` 会应用最新迁移，已有实例需按阶段应用计划执行并先备份。生成器创建 alice/bob/reviewer 的演示账号，密码只在本机 `.env` 查看。Keycloak `start-dev`、本机 HTTP 和 H2 卷用于演示；正式企业部署需 HTTPS、生产配置、身份数据库和企业 SSO。已有 Keycloak realm 不会因重写导入文件自动更新，不能把重新生成文件当成重置现有账号。
 
 已有本机 Keycloak 更换前端端口时，在根目录 `.env` 设置 `DOCUCHECK_WEB_PORT`，保持当前 Keycloak 运行，执行下列命令，再重启 Vite。端口只接受1–65535的字面十进制值，两端都忽略模式文件和 `.env.local` 对此键的覆盖，不展开 `${...}`；若用进程环境变量覆盖，须在同一个环境内执行同步和前端启动。它只同步既有 `docucheck-web` 的登录/退出回调和来源地址，并读取回验；不生成凭据、不重建 realm 或账号。默认仅绑定 `127.0.0.1`，不要用 `--host`/`--port` 覆盖绕开这份共用配置。
 
@@ -106,8 +113,9 @@ python.exe -m backend.app.dev_oidc_realm --sync-client
 PDF 解析依赖单独的 MinerU 环境。本机验证版本为 MinerU 4.0.7、Python 3.12.14，使用 Basic/text 模式；安装方法和解析边界见[环境记录](environment/2026-09-24.md)。新机器可在独立 Conda 环境安装 `mineru==4.0.7` 并核对 `mineru-kit version` 和 `pip check`，首次解析可能下载模型资产。此环境不属于本轮 97 包锁与离线 CI，**未在 M5-C 再安装或重新下载模型**。
 
 ```powershell
-# 本机终端 A：使用自己的 MinerU 实际路径
-python.exe -m backend.app.parse_background --mineru-executable 'E:/developTools/miniconda3/envs/docucheck-mineru/Scripts/mineru-kit.exe'
+# 本机终端 A：先在 .env 的 DOCUCHECK_MINERU_EXECUTABLE 配置自己的解析器路径
+# 只演示 XLSX 时不需要 MinerU；未配置解析器不会伪造 PDF 解析完成
+python.exe -m backend.app.parse_background
 ```
 
 ```powershell
