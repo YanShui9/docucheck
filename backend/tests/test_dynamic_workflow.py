@@ -32,7 +32,8 @@ def workbook(text):
     return output.getvalue()
 
 
-def test_v1_persisted_report_still_reads_and_new_plan_invalidates_its_cache(dynamic_case, monkeypatch):
+@pytest.mark.parametrize('old_version', ['dynamic-rules-v1', 'dynamic-rules-v2'])
+def test_v1_persisted_report_still_reads_and_new_plan_invalidates_its_cache(dynamic_case, monkeypatch, old_version):
     import backend.app.agent.dynamic as workflow
     from backend.app.criteria.facts import evaluate_checklist, validate_fact
 
@@ -40,18 +41,51 @@ def test_v1_persisted_report_still_reads_and_new_plan_invalidates_its_cache(dyna
     old_id = message(dynamic_case, key='legacy-review')
     plan = workflow.review_plan
     with monkeypatch.context() as patch:
-        patch.setattr(workflow, 'RULE_VERSION', 'dynamic-rules-v1')
-        patch.setattr(workflow, 'review_plan', lambda repo, definition: plan(repo, definition, rule_version='dynamic-rules-v1'))
-        patch.setattr(workflow, 'validate_fact', lambda *args: validate_fact(*args, rule_version='dynamic-rules-v1'))
-        patch.setattr(workflow, 'evaluate_checklist', lambda *args, **kwargs: evaluate_checklist(*args, **kwargs, rule_version='dynamic-rules-v1'))
+        patch.setattr(workflow, 'RULE_VERSION', old_version)
+        patch.setattr(workflow, 'review_plan', lambda repo, definition: plan(repo, definition, rule_version=old_version))
+        patch.setattr(workflow, 'validate_fact', lambda *args: validate_fact(*args, rule_version=old_version))
+        patch.setattr(workflow, 'evaluate_checklist', lambda *args, **kwargs: evaluate_checklist(*args, **kwargs, rule_version=old_version))
         assert run(dynamic_case, old_id, ScriptProvider()).status == 'completed'
     row, payload, repo = DynamicRepository(dynamic_case[1]).verified(old_id)
-    assert row['status'] == 'completed' and payload['rule_version'] == 'dynamic-rules-v1'
+    assert row['status'] == 'completed' and payload['rule_version'] == old_version
     assert dynamic_case[0].get(f'/api/v1/agent-runs/{old_id}/checks').status_code == 200
     assert dynamic_case[0].get(f'/api/v1/agent-runs/{old_id}/export').status_code == 200
     new_plan, _ = plan(repo, payload['definition'])
     new_digests = {entry['input_digest'] for batches in new_plan.values() for _, _, entry in batches}
     assert not new_digests.intersection(entry['input_digest'] for entry in payload['batch_manifest'])
+    new_ids = {entry['batch_id'] for batches in new_plan.values() for _, _, entry in batches}
+    assert not new_ids.intersection(entry['batch_id'] for entry in payload['batch_manifest'])
+
+
+@pytest.mark.parametrize('old_version', ['dynamic-rules-v1', 'dynamic-rules-v2'])
+def test_retry_after_rules_upgrade_uses_new_sql_batch_namespace(dynamic_case, monkeypatch, old_version):
+    import backend.app.agent.dynamic as workflow
+    from backend.app.criteria.facts import evaluate_checklist, validate_fact
+    from backend.app.providers.base import ProviderError
+
+    class SecondBatchFails(ScriptProvider):
+        def extract(self, *args, **kwargs):
+            if self.extractions == 1:
+                self.failure = ProviderError('unavailable')
+            return super().extract(*args, **kwargs)
+
+    confirm(dynamic_case)
+    run_id = message(dynamic_case, key='old-version-partial')
+    plan = workflow.review_plan
+    with monkeypatch.context() as patch:
+        patch.setattr(workflow, 'RULE_VERSION', old_version)
+        patch.setattr(workflow, 'review_plan', lambda repo, definition: plan(repo, definition, rule_version=old_version))
+        patch.setattr(workflow, 'validate_fact', lambda *args: validate_fact(*args, rule_version=old_version))
+        patch.setattr(workflow, 'evaluate_checklist', lambda *args, **kwargs: evaluate_checklist(*args, **kwargs, rule_version=old_version))
+        assert run(dynamic_case, run_id, SecondBatchFails()).status == 'partial'
+    response = dynamic_case[0].post(f'/api/v1/agent-runs/{run_id}/retry',
+        headers={'Idempotency-Key': 'upgrade-retry'}, json={'expected_revision': 3})
+    assert response.status_code == 202
+    provider = ScriptProvider()
+    result = run(dynamic_case, run_id, provider)
+    assert result.status == 'completed', result
+    assert provider.extractions == 2
+    assert DynamicRepository(dynamic_case[1]).verified(run_id)[1]['rule_version'] == workflow.RULE_VERSION
 
 
 @pytest.fixture

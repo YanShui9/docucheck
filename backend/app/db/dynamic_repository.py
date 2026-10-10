@@ -377,7 +377,12 @@ class DynamicRepository:
 
     def _verified(self, run_id):
         """Historical results use their original immutable definition; never promote stale ones."""
-        from ..criteria.facts import FactCandidate, evaluate_checklist, validate_fact
+        from ..criteria.facts import (
+            SUPPORTED_RULE_VERSIONS,
+            FactCandidate,
+            evaluate_checklist,
+            validate_fact,
+        )
         from ..criteria.validation import validate_definition
         from .agent_snapshot import load_agent_snapshot
 
@@ -480,7 +485,7 @@ class DynamicRepository:
             {**c, "item_name": c.get("item_name", items.get(c.get("item_id")))}
             for c in payload.get("checks", [])
         ]
-        if stored_checks != checks or payload.get("rule_version") not in {"dynamic-rules-v1", "dynamic-rules-v2"}:
+        if stored_checks != checks or payload.get("rule_version") not in SUPPORTED_RULE_VERSIONS:
             _error("dynamic_source_changed")
         return dict(row) | {"definition": version["definition"]}, payload, repo
 

@@ -21,6 +21,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from ..criteria.facts import (
     RULE_VERSION,
+    SUPPORTED_RULE_VERSIONS,
     FactCandidate,
     evaluate_checklist,
     validate_fact,
@@ -255,8 +256,14 @@ def review_plan(repo, definition: ChecklistDefinition | dict, *, rule_version=RU
                         "items": [i.model_dump(mode="json") for i in definition.items if i.item_id in item_ids],
                         "criteria": group, "evidence": batch}
                 criterion_ids = [c["criterion_id"] for c in group]
-                batch_id = digest(["review", supplier, source_ordinal, criterion_ids,
-                                   [b["evidence_id"] for b in batch]])
+                identity = ["review", supplier, source_ordinal, criterion_ids,
+                            [b["evidence_id"] for b in batch]]
+                # v1/v2 rows used a Run-local identity independent of rules.
+                # Keep their replay stable; new versions need distinct SQL keys
+                # as well as input digests to retry without replacing old rows.
+                if rule_version not in {"dynamic-rules-v1", "dynamic-rules-v2"}:
+                    identity.append(rule_version)
+                batch_id = digest(identity)
                 input_digest = digest([repo.snapshot_id, source_digest, definition_digest, rule_version, data])
                 manifest = {"batch_id": batch_id, "input_digest": input_digest, "supplier": supplier,
                             "ordinal": len(plans[supplier]), "source_ordinal": source_ordinal,
@@ -462,7 +469,7 @@ class DynamicAgent:
                 self._check(budget)
                 old_rules = old.get("rule_version")
                 if (old.get("version") != 1 or old.get("source_digest") != self.source_digest
-                        or old_rules not in ({"dynamic-rules-v1", RULE_VERSION} if for_carry else {RULE_VERSION})
+                        or old_rules not in (SUPPORTED_RULE_VERSIONS if for_carry else {RULE_VERSION})
                         or old.get("definition") != self.definition.model_dump(mode="json")
                         or set(old.get("coverage", {})) != set(suppliers)):
                     raise ValueError("report_invalid")

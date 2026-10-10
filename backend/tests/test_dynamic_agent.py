@@ -119,7 +119,7 @@ def test_review_enumerates_all_suppliers_for_arbitrary_chinese_metrics(item, met
     assert {c["supplier"] for c in result["payload"]["checks"]} == {"甲供应商", "乙供应商"}
     assert {c["business_status"] for c in result["payload"]["checks"]} == {"满足", "不满足"}
     assert result["payload"]["source_digest"] == digest([asdict(b) for b in repo.blocks])
-    assert result["payload"]["rule_version"] == "dynamic-rules-v2"
+    assert result["payload"]["rule_version"] == "dynamic-rules-v3"
     assert result["payload"]["version"] == 1
 
 

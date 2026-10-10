@@ -35,8 +35,8 @@ from .validation import (
     source_span,
 )
 
-RULE_VERSION = "dynamic-rules-v2"
-SUPPORTED_RULE_VERSIONS = {"dynamic-rules-v1", RULE_VERSION}
+RULE_VERSION = "dynamic-rules-v3"
+SUPPORTED_RULE_VERSIONS = {"dynamic-rules-v1", "dynamic-rules-v2", RULE_VERSION}
 _VALUE_NUMBER = re.compile(r"^-?\d{1,12}(?:\.\d{1,6})?$")
 _UNCERTAIN = re.compile(r"最大|最高|最多支持|支持扩展|参考|宣传|另一型号|其他型号|"
                         r"不属于本次|次日|翌日|next day", re.IGNORECASE)
