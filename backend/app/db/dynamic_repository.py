@@ -13,6 +13,12 @@ from sqlalchemy.exc import OperationalError
 from ..criteria.models import ChecklistDefinition
 from ..evidence.repository import digest
 from .checklist_repository import ChecklistError, _version, ensure_legacy_run_allowed
+from .item_binding_repository import (
+    ItemBindingError,
+    freeze_current,
+    load_run_bindings,
+    run_bindings_current,
+)
 from .models import (
     agent_runs,
     assistant_runs,
@@ -35,7 +41,7 @@ def source_digest(repo):
     return digest([asdict(b) for b in repo.blocks])
 
 
-def bind_workflow(connection, request, run_id):
+def bind_workflow(connection, request, run_id, *, item_binding_override=None):
     """Caller holds the Case lock; use current reads after prior RR selects."""
     head = (
         connection.execute(
@@ -78,6 +84,12 @@ def bind_workflow(connection, request, run_id):
             _error(exc.code)
         if version["snapshot_id"] != request.snapshot_id:
             _error("checklist_confirmation_required")
+    try:
+        frozen = (item_binding_override if item_binding_override is not None else
+                  freeze_current(connection, request.case_id, request.snapshot_id,
+                                 version["id"] if version else None, version["definition"] if version else None))
+    except ItemBindingError as exc:
+        _error(exc.code)
     return {
         "run_id": run_id,
         "case_id": request.case_id,
@@ -86,6 +98,8 @@ def bind_workflow(connection, request, run_id):
         "checklist_revision": head["revision"] if head else 0,
         "checklist_version_id": version["id"] if version else None,
         "definition_digest": digest(version["definition"]) if version else None,
+        "item_binding_version_id": frozen["version_id"],
+        "item_binding_digest": frozen["digest"],
     }
 
 
@@ -95,6 +109,7 @@ class DynamicRepository:
 
     @staticmethod
     def validate_binding(connection, binding):
+        definition = None
         head = (
             connection.execute(
                 select(checklist_heads)
@@ -124,6 +139,11 @@ class DynamicRepository:
                 _error(exc.code)
             if digest(version["definition"]) != binding["definition_digest"]:
                 _error("checklist_changed")
+            definition = version["definition"]
+        try:
+            load_run_bindings(connection, binding, definition, current_read=True)
+        except ItemBindingError as exc:
+            _error(exc.code)
 
     def _guard(self, connection, claim):
         from .run_repository import RunRepository
@@ -190,6 +210,7 @@ class DynamicRepository:
                 if binding["checklist_version_id"]
                 else None
             )
+            binding["item_bindings"] = load_run_bindings(connection, binding, binding["definition"], current_read=True)
             return binding
 
     def validate(self, claim):
@@ -367,7 +388,10 @@ class DynamicRepository:
                 .mappings()
                 .first()
             )
-            return (head["revision"] if head else 0) == binding["checklist_revision"]
+            if (head["revision"] if head else 0) != binding["checklist_revision"]:
+                return False
+            definition = _version(connection, binding["case_id"], binding["checklist_version_id"])["definition"] if binding["checklist_version_id"] else None
+            return run_bindings_current(connection, binding, definition)
 
     def verified(self, run_id):
         try:
@@ -395,6 +419,8 @@ class DynamicRepository:
                         dynamic_runs.c.checklist_version_id,
                         dynamic_runs.c.checklist_revision,
                         dynamic_runs.c.definition_digest,
+                        dynamic_runs.c.item_binding_version_id,
+                        dynamic_runs.c.item_binding_digest,
                         dynamic_runs.c.payload_json,
                         dynamic_runs.c.payload_digest,
                         cases.c.revision.label("current_revision"),
@@ -416,6 +442,7 @@ class DynamicRepository:
                 if row["checklist_version_id"]
                 else None
             )
+            frozen = load_run_bindings(connection, row, version["definition"] if version else None)
         payload = row["payload_json"]
         if payload is None:
             return dict(row), None, None
@@ -451,6 +478,15 @@ class DynamicRepository:
                 validate_definition(definition, repo)
             return dict(row), payload, repo
         definition = ChecklistDefinition.model_validate(version["definition"])
+        from ..criteria.facts import BINDING_RULE_VERSION
+        from ..criteria.item_bindings import review_bindings
+
+        context = review_bindings(frozen, definition, repo) if frozen is not None else None
+        if context is not None:
+            if payload.get("rule_version") != BINDING_RULE_VERSION or any(payload.get(k) != v for k, v in context.identity().items()):
+                _error("dynamic_source_changed")
+        elif payload.get("rule_version") == BINDING_RULE_VERSION:
+            _error("dynamic_source_changed")
         if (
             digest(version["definition"]) != row["definition_digest"]
             or payload.get("definition") != version["definition"]
@@ -462,7 +498,7 @@ class DynamicRepository:
             candidate = FactCandidate.model_validate(
                 {k: v for k, v in encoded.items() if k in FactCandidate.model_fields}
             )
-            actual = validate_fact(candidate, definition, repo, candidate.supplier, rule_version=payload.get("rule_version"))
+            actual = validate_fact(candidate, definition, repo, candidate.supplier, rule_version=payload.get("rule_version"), item_bindings=context)
             if actual != encoded:
                 _error("dynamic_source_changed")
             facts.append(actual)
@@ -476,9 +512,10 @@ class DynamicRepository:
             facts
         ):
             _error("dynamic_scope")
-        self._validate_manifest(row, payload, definition, repo)
+        self._validate_manifest(row, payload, definition, repo, context=context)
         checks = evaluate_checklist(
-            definition, facts, coverage, snapshot_id=repo.snapshot_id, rule_version=payload.get("rule_version")
+            definition, facts, coverage, snapshot_id=repo.snapshot_id, rule_version=payload.get("rule_version"),
+            item_coverage=payload.get("item_coverage"), item_bindings=context,
         )
         items = {i.item_id: i.name for i in definition.items}
         stored_checks = [
@@ -487,13 +524,13 @@ class DynamicRepository:
         ]
         if stored_checks != checks or payload.get("rule_version") not in SUPPORTED_RULE_VERSIONS:
             _error("dynamic_source_changed")
-        return dict(row) | {"definition": version["definition"]}, payload, repo
+        return dict(row) | {"definition": version["definition"], "item_bindings": frozen}, payload, repo
 
-    def _validate_manifest(self, row, payload, definition, repo):
+    def _validate_manifest(self, row, payload, definition, repo, *, context=None):
         from ..agent.dynamic import review_plan
         from ..criteria.facts import validate_fact
 
-        plans, source_complete = review_plan(repo, definition, rule_version=payload.get("rule_version"))
+        plans, source_complete = review_plan(repo, definition, rule_version=payload.get("rule_version"), item_bindings=context)
         expected = [
             entry for supplier in sorted(plans) for _, _, entry in plans[supplier]
         ]
@@ -504,6 +541,7 @@ class DynamicRepository:
                 and not any(payload["coverage"].values())
                 and not payload.get("batch_manifest")
                 and not payload.get("batch_coverage")
+                and (context is None or not any(done for items in payload.get("item_coverage", {}).values() for done in items.values()))
             ):
                 return
             _error("dynamic_source_changed")
@@ -525,7 +563,7 @@ class DynamicRepository:
         for supplier, batches in plans.items():
             for batch, _, entry in batches:
                 if entry["batch_id"] not in complete:
-                    if payload["coverage"][supplier]:
+                    if (payload["item_coverage"][supplier][entry["item_id"]] if context else payload["coverage"][supplier]):
                         _error("dynamic_source_changed")
                     continue
                 cached = rows.get(entry["batch_id"])
@@ -544,10 +582,13 @@ class DynamicRepository:
                         or candidate["criterion_id"] not in entry["criterion_ids"]
                     ):
                         _error("batch_source_changed")
-                    verified = validate_fact(candidate, definition, repo, supplier, rule_version=payload.get("rule_version"))
+                    verified = validate_fact(candidate, definition, repo, supplier, rule_version=payload.get("rule_version"), item_bindings=context)
                     if verified["fact_id"] not in reported_facts:
                         _error("batch_source_changed")
-            if payload["coverage"][supplier] and not source_complete[supplier]:
+            if context:
+                if any(done and not source_complete[supplier][item] for item, done in payload["item_coverage"][supplier].items()):
+                    _error("dynamic_source_changed")
+            elif payload["coverage"][supplier] and not source_complete[supplier]:
                 _error("dynamic_source_changed")
 
     def checks(self, run_id):
@@ -590,6 +631,8 @@ class DynamicRepository:
             "checks": [],
             "payload_digest": row["payload_digest"],
         }
+        if row["item_binding_digest"] is not None:
+            result.update(item_binding_version_id=row["item_binding_version_id"], item_binding_digest=row["item_binding_digest"])
         if (
             payload
             and row["workflow"] == "review"
@@ -633,7 +676,7 @@ class DynamicRepository:
             groups.setdefault(key, []).append(
                 {**fact, "raw_value": fact["value"], "raw_unit": fact["unit"]}
             )
-        return {
+        result = {
             "run_id": run_id,
             "case_id": row["case_id"],
             "snapshot_id": row["snapshot_id"],
@@ -654,6 +697,9 @@ class DynamicRepository:
                 for key, facts in groups.items()
             ],
         }
+        if row["item_binding_digest"] is not None:
+            result.update(item_binding_version_id=row["item_binding_version_id"], item_binding_digest=row["item_binding_digest"])
+        return result
 
     def proposal(self, run_id):
         row, payload, _ = self.verified(run_id)
@@ -684,7 +730,7 @@ class DynamicRepository:
         # completed batches in the verified current report's manifest coverage.
         batches = {entry['batch_id'] for entry in (payload or {}).get('batch_coverage', [])
                    if entry.get('complete') is True}
-        return {
+        result = {
             "run_id": run_id,
             "workflow": row["workflow"],
             "run_status": row["status"],
@@ -693,6 +739,10 @@ class DynamicRepository:
             "planned_batches": len((payload or {}).get("batch_manifest", [])),
             "coverage": (payload or {}).get("coverage", {}),
         }
+        if row["item_binding_digest"] is not None:
+            result.update(item_binding_version_id=row["item_binding_version_id"], item_binding_digest=row["item_binding_digest"],
+                          item_coverage=(payload or {}).get("item_coverage", {}))
+        return result
 
     def correction(self, run_id, body, *, actor, key):
         """Append source-supported alternatives; never overwrite originals or auto resolve."""
@@ -757,6 +807,8 @@ class DynamicRepository:
                 .one()
             )
             self.validate_binding(connection, binding)
+            if not run_bindings_current(connection, binding, row["definition"]):
+                _error("dynamic_source_changed")
             if (
                 binding["payload_digest"] != row["payload_digest"]
                 or body["expected_payload_digest"] != row["payload_digest"]
@@ -799,7 +851,7 @@ class DynamicRepository:
             try:
                 definition = ChecklistDefinition.model_validate(payload["definition"])
                 corrected = validate_fact(
-                    candidate, definition, repo, candidate.supplier, rule_version=payload.get("rule_version")
+                    candidate, definition, repo, candidate.supplier, rule_version=payload.get("rule_version"), item_bindings=row.get("item_bindings")
                 )
             except ValueError:
                 _error("unsupported_correction")
@@ -814,6 +866,7 @@ class DynamicRepository:
                 changed["coverage"],
                 snapshot_id=row["snapshot_id"],
                 rule_version=payload.get("rule_version"),
+                item_coverage=payload.get("item_coverage"), item_bindings=row.get("item_bindings"),
             )
             if len(json.dumps(changed, ensure_ascii=False).encode()) > 512000:
                 _error("dynamic_capacity")

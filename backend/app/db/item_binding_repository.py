@@ -385,6 +385,27 @@ def freeze_current(
     return {"version_id": None, "digest": digest(payload), "payload": payload}
 
 
+def load_run_bindings(connection: Connection, row, definition: dict | None,
+                      *, current_read: bool = False) -> dict | None:
+    """NULL/NULL replays pre-0017 semantics; a non-null digest freezes even empty scope."""
+    if row.get("item_binding_digest") is None:
+        if row.get("item_binding_version_id") is not None:
+            raise ItemBindingError("item_binding_source_changed")
+        return None
+    return load_frozen(connection, row["case_id"], row["snapshot_id"], row["checklist_version_id"] if definition is not None else None,
+                       definition, row["item_binding_version_id"], row["item_binding_digest"],
+                       current_read=current_read)
+
+
+def run_bindings_current(connection: Connection, row, definition: dict | None) -> bool:
+    if row.get("item_binding_digest") is None:
+        return connection.scalar(select(item_binding_heads.c.case_id).where(
+            item_binding_heads.c.case_id == row["case_id"])) is None
+    current = freeze_current(connection, row["case_id"], row["snapshot_id"],
+                             row["checklist_version_id"] if definition is not None else None, definition, current_read=False)
+    return current["version_id"] == row["item_binding_version_id"] and current["digest"] == row["item_binding_digest"]
+
+
 class ItemBindingRepository:
     def __init__(self, engine: Engine):
         self.engine = engine

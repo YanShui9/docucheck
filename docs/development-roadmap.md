@@ -1,5 +1,7 @@
 # DocuCheck Agent 开发路线 v2.0
 
+> **2026-10-10 品目对应 A2 完成（源码，未应用）**：[交付与边界](document-item-binding-a2-2026-10-10.md)，[实施计划](superpowers/plans/2026-10-10-document-item-binding-backend.md)。新Run/恢复冻结关联、v4独立行核验与品目覆盖、缓存/历史/修正、记忆/进度/API身份和独立导出依据已接入。复审型号/锚点覆盖反例关闭；最终全量1418/46skip/网络0，定向120，独立MySQL16及Ruff/pip通过。A3范围RAG尚未完成，后端A仍未整体完成；前端B/真实闭环C未执行。业务库、运行服务、原Case与既有索引保持，模型/Embedding/Milvus0；下方为阶段历史。
+
 > **2026-10-10 品目对应后端 A1 完成（源码，未应用）**：[交付报告](document-item-binding-a1-2026-10-10.md)，[A1/A2/A3实施计划](superpowers/plans/2026-10-10-document-item-binding-backend.md)。契约、MySQL不可变版本/幂等确认、授权API、原文锚点和0017迁移通过；复审三项P2关闭，完整1389/44/网络0、最终增量41、隔离MySQL14通过。尚未接入新Run/v4规则/缓存/历史/修正/导出及范围RAG；步骤A仍未全部完成。业务库/运行服务/原Case保持，模型和Embedding调用0；前端B和真实闭环C未执行。
 
 > **2026-10-10 最新进度：真实验收已核对，业务门禁仍有保留项**：[应用证据与下一步](repair-assistant-duration-applied-2026-10-10.md)，运行`89cf909`、API及四后台492源码一致。真实候选10→11、hybrid/长文引用、日期0模型、报告/SQL/下载/刷新恢复通过；十一项审查处理2/2完成，数量/交期仍因item_model_unclear人工确认。**下一步设计显式文档/产品→item_id绑定，SKU独立；不能扩大跨行引用或改已确认清单来绕过。** 工作区导航恢复、引用精简、主动原文分页实测、多品类/容量仍保留。完整1358/41属于交期v2基线，v3/schema/progress分别增量验证；以配套报告为实际测试范围，下方是历史阶段记录。

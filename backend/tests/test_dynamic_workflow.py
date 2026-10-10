@@ -37,14 +37,16 @@ def test_v1_persisted_report_still_reads_and_new_plan_invalidates_its_cache(dyna
     import backend.app.agent.dynamic as workflow
     from backend.app.criteria.facts import evaluate_checklist, validate_fact
 
-    confirm(dynamic_case)
+    confirm(dynamic_case, bindings=False)
     old_id = message(dynamic_case, key='legacy-review')
+    with dynamic_case[1].begin() as conn:
+        conn.execute(update(dynamic_runs).where(dynamic_runs.c.run_id == old_id).values(item_binding_version_id=None, item_binding_digest=None))
     plan = workflow.review_plan
     with monkeypatch.context() as patch:
         patch.setattr(workflow, 'RULE_VERSION', old_version)
-        patch.setattr(workflow, 'review_plan', lambda repo, definition: plan(repo, definition, rule_version=old_version))
-        patch.setattr(workflow, 'validate_fact', lambda *args: validate_fact(*args, rule_version=old_version))
-        patch.setattr(workflow, 'evaluate_checklist', lambda *args, **kwargs: evaluate_checklist(*args, **kwargs, rule_version=old_version))
+        patch.setattr(workflow, 'review_plan', lambda repo, definition, **kwargs: plan(repo, definition, rule_version=old_version))
+        patch.setattr(workflow, 'validate_fact', lambda *args, **kwargs: validate_fact(*args, rule_version=old_version))
+        patch.setattr(workflow, 'evaluate_checklist', lambda *args, **kwargs: evaluate_checklist(*args, **(kwargs | {"rule_version": old_version})))
         assert run(dynamic_case, old_id, ScriptProvider()).status == 'completed'
     row, payload, repo = DynamicRepository(dynamic_case[1]).verified(old_id)
     assert row['status'] == 'completed' and payload['rule_version'] == old_version
@@ -69,14 +71,16 @@ def test_retry_after_rules_upgrade_uses_new_sql_batch_namespace(dynamic_case, mo
                 self.failure = ProviderError('unavailable')
             return super().extract(*args, **kwargs)
 
-    confirm(dynamic_case)
+    confirm(dynamic_case, bindings=False)
     run_id = message(dynamic_case, key='old-version-partial')
+    with dynamic_case[1].begin() as conn:
+        conn.execute(update(dynamic_runs).where(dynamic_runs.c.run_id == run_id).values(item_binding_version_id=None, item_binding_digest=None))
     plan = workflow.review_plan
     with monkeypatch.context() as patch:
         patch.setattr(workflow, 'RULE_VERSION', old_version)
-        patch.setattr(workflow, 'review_plan', lambda repo, definition: plan(repo, definition, rule_version=old_version))
-        patch.setattr(workflow, 'validate_fact', lambda *args: validate_fact(*args, rule_version=old_version))
-        patch.setattr(workflow, 'evaluate_checklist', lambda *args, **kwargs: evaluate_checklist(*args, **kwargs, rule_version=old_version))
+        patch.setattr(workflow, 'review_plan', lambda repo, definition, **kwargs: plan(repo, definition, rule_version=old_version))
+        patch.setattr(workflow, 'validate_fact', lambda *args, **kwargs: validate_fact(*args, rule_version=old_version))
+        patch.setattr(workflow, 'evaluate_checklist', lambda *args, **kwargs: evaluate_checklist(*args, **(kwargs | {"rule_version": old_version})))
         assert run(dynamic_case, run_id, SecondBatchFails()).status == 'partial'
     progress_url = f'/api/v1/agent-runs/{run_id}/progress'
     old_progress = dynamic_case[0].get(progress_url).json()
@@ -160,8 +164,8 @@ def run(case, run_id, provider):
     )
 
 
-def confirm(case):
-    client, _, case_id, snapshot, _ = case
+def confirm(case, *, bindings=True):
+    client, engine, case_id, snapshot, _ = case
     proposal_id = message(case, proposal=True)
     result = run(case, proposal_id, ScriptProvider(decision="propose_checklist"))
     assert result.status == "completed", result
@@ -201,6 +205,9 @@ def confirm(case):
         },
     )
     assert accepted.status_code == 200, accepted.text
+    if bindings:
+        from backend.tests.item_binding_helpers import confirm_single_item_bindings
+        confirm_single_item_bindings(engine, case_id, snapshot, accepted.json())
     return accepted.json(), preview["definition"]
 
 

@@ -109,6 +109,13 @@ def execute_dynamic(engine, claim, provider, *, heartbeat_interval_seconds=10.0)
                         == binding["checklist_version_id"]
                         and old["payload_digest"]
                         == checkpoint_memory.get("payload_digest")
+                        and old.get("item_binding_version_id") == binding["item_binding_version_id"]
+                        and old.get("item_binding_digest") == binding["item_binding_digest"]
+                        and (binding["item_binding_digest"] is None or (
+                            checkpoint_memory.get("item_binding_version_id") == binding["item_binding_version_id"]
+                            and checkpoint_memory.get("item_binding_digest") == binding["item_binding_digest"]
+                            and checkpoint_memory.get("rule_version") == (previous or {}).get("rule_version")
+                        ))
                     ):
                         previous_payload = previous
                         if previous:
@@ -148,6 +155,7 @@ def execute_dynamic(engine, claim, provider, *, heartbeat_interval_seconds=10.0)
                 memory_layers=memory.layers,
                 history_reader=memory.history_reader,
                 previous_payload=previous_payload,
+                item_bindings=binding["item_bindings"],
             )
             result = agent.ask(
                 context.question,
@@ -179,6 +187,9 @@ def execute_dynamic(engine, claim, provider, *, heartbeat_interval_seconds=10.0)
                 "focus": None,
                 "pending_clarification": None,
             }
+            if binding["item_binding_digest"] is not None:
+                checkpoint.update(item_binding_version_id=binding["item_binding_version_id"], item_binding_digest=binding["item_binding_digest"],
+                                  rule_version=payload["rule_version"])
             manifest = memory.manifest | {
                 "dynamic": {
                     "checklist_version_id": binding["checklist_version_id"],
@@ -186,6 +197,9 @@ def execute_dynamic(engine, claim, provider, *, heartbeat_interval_seconds=10.0)
                     "payload_digest": digest(payload),
                 }
             }
+            if binding["item_binding_digest"] is not None:
+                manifest["dynamic"].update(item_binding_version_id=binding["item_binding_version_id"],
+                                           item_binding_digest=binding["item_binding_digest"])
             if result["status"] == "cancelled":
                 runs.cancel(claim.run_id)
             else:

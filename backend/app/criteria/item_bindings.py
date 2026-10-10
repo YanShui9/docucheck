@@ -11,18 +11,28 @@ from pydantic import Field, model_validator
 from ..evidence.models import Document, ScopedEvidence
 from ..evidence.repository import EvidenceRepository, digest
 from .models import ChecklistDefinition, Contract, EvidenceContext, Identifier, Label
-from .validation import mentions, negated, source_span
+from .validation import mentions, source_span
 
 MAX_ENTRIES = 140
 MAX_REFS = 25_000
 
 
-def explicit_skus(text: str) -> frozenset[str]:
-    """Only explicitly labelled concrete identifiers are SKU constraints.
+def identity_negated(text: str, value: str) -> bool:
+    """Negate the product itself, not a following certificate/property."""
+    label = re.escape(value)
+    before = r"(?:未提供|不提供|不具备|没有|缺少|不采用|不使用|不含|不是|并非|非|无|不属于)"
+    after = r"(?:未提供|不提供|缺失|没有|不存在)"
+    return bool(re.search(rf"{before}\s*{label}|{label}\s*{after}(?=\s*(?:$|[，。；,;\n]))", text))
+
+
+def explicit_skus(text: str, *, allow_bare: bool = False) -> frozenset[str]:
+    """Labelled identifiers or a standalone ASCII SKU are exact constraints.
 
     Quantity prose or a pending model question is not an exact model request.
     More complex/non-ASCII model requirements remain subject to manual review.
     """
+    if allow_bare and re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,79}", text.strip()):
+        return frozenset({text.strip().casefold()})
     return frozenset(
         value.casefold()
         for value in re.findall(
@@ -31,6 +41,43 @@ def explicit_skus(text: str) -> frozenset[str]:
             re.IGNORECASE,
         )
     )
+
+
+def unsupported_sku_declaration(text: str) -> bool:
+    """An unparsed explicit SKU is a guard, never an absent constraint."""
+    values = re.findall(r"(?:型号|款号|SKU)\s*[:：]?\s*([^，。；,;\n]*)", text, re.IGNORECASE)
+    for value in values:
+        value = value.strip()
+        if re.fullmatch(r"(?:待|等待|尚待|未明确|未确定|未指定|不限|任意).*", value):
+            continue
+        if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,79}", value):
+            return True
+    return False
+
+
+def pure_identity_block(text: str, item_name: str, supplier_sku: str | None) -> bool:
+    """Only an entire identity-only block may be exempt from fact coverage."""
+    label = rf"(?:(?:品目|品名|商品名称|采购品目)\s*[:：]?\s*)?{re.escape(item_name)}"
+    if re.fullmatch(label + r"\s*[。.]?", text.strip()):
+        return True
+    if not supplier_sku or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,79}", supplier_sku):
+        return False
+    sku = rf"(?:型号|款号|SKU)\s*[:：]?\s*{re.escape(supplier_sku)}"
+    return bool(re.fullmatch(rf"(?:{label}\s*[,，;；]?\s*)?{sku}\s*[。.]?", text.strip(), re.IGNORECASE))
+
+
+def unresolved_buyer_specification(text: str, item_name: str) -> bool:
+    """Finite safe cases only; a free-text specification is not silently dropped.
+
+    Complex model/specification constraints require manual review until represented
+    by a supported explicit SKU or separate confirmed criteria.
+    """
+    if not text.strip() or text.strip() == item_name or explicit_skus(text, allow_bare=True):
+        return False
+    clauses = re.split(r"[，,；;。\n]", text)
+    pending = r"(?:(?:具体)?型号)?(?:待|等待|尚待|未明确|未确定|未指定).*(?:确认|明确|确定|指定)"
+    quantity = r"(?:采购)?(?:数量)?\s*[:：]?\s*\d+(?:\.\d+)?\s*(?:台|件|箱|个|部|套|只|双|批|公斤|kg)"
+    return any(clause.strip() and not re.fullmatch(rf"(?:{pending}|{quantity})", clause.strip()) for clause in clauses)
 
 
 class WholeSelector(Contract):
@@ -149,6 +196,47 @@ class ValidatedBindings:
         return self.for_refs(item_id, refs, supplier)
 
 
+@dataclass(frozen=True)
+class ReviewBindings:
+    """Validated server context, reused across extraction batches and facts."""
+
+    version_id: str | None
+    digest: str
+    case_id: str
+    snapshot_id: str
+    checklist_digest: str
+    bindings: ValidatedBindings
+
+    def identity(self) -> dict:
+        return {"item_binding_version_id": self.version_id, "item_binding_digest": self.digest}
+
+
+def review_bindings(
+    value: dict | ReviewBindings,
+    definition: ChecklistDefinition | dict,
+    repo: EvidenceRepository,
+) -> ReviewBindings:
+    definition = (definition if isinstance(definition, ChecklistDefinition)
+                  else ChecklistDefinition.model_validate(definition))
+    if isinstance(value, ReviewBindings):
+        if (value.case_id != repo.case_id or value.snapshot_id != repo.snapshot_id
+                or value.checklist_digest != digest(definition.model_dump(mode="json"))):
+            raise ValueError("item_binding_source_changed")
+        return value
+    bound = validated_from_frozen(value, definition, repo)
+    return ReviewBindings(value["version_id"], value["digest"], repo.case_id, repo.snapshot_id,
+                         value["payload"]["checklist_digest"], bound)
+
+
+def binding_identity(value: dict | ReviewBindings) -> dict:
+    if isinstance(value, ReviewBindings):
+        return value.identity()
+    if (not isinstance(value, dict) or value.get("digest") != digest(value.get("payload"))
+            or not isinstance(value.get("payload"), dict)):
+        raise ValueError("item_binding_source_changed")
+    return {"item_binding_version_id": value["version_id"], "item_binding_digest": value["digest"]}
+
+
 def _expand(
     selector: WholeSelector | XlsxSelector | PdfSelector,
     document: Document,
@@ -227,7 +315,7 @@ def validate_bindings(
             if (
                 any(b.document_id != doc.document_id for b in sku_blocks)
                 or not mentions(entry.sku_anchor.quote, entry.supplier_sku)
-                or negated(sku_text, entry.supplier_sku)
+                or identity_negated(sku_text, entry.supplier_sku)
             ):
                 raise ValueError("item_binding_sku")
         anchor_sku = (
@@ -238,7 +326,7 @@ def validate_bindings(
         if (
             not mentions(entry.anchor.quote, item.name)
             and not (anchor_sku and mentions(entry.anchor.quote, anchor_sku))
-        ) or negated(text, item.name):
+        ) or identity_negated(text, item.name):
             raise ValueError("item_binding_anchor")
         if (
             entry.identifier_class == "category"
@@ -256,7 +344,7 @@ def validate_bindings(
         selected = _expand(entry.selector, doc, blocks)
         if not selected:
             raise ValueError("item_binding_range")
-        required_skus = explicit_skus(item.specification)
+        required_skus = explicit_skus(item.specification, allow_bare=True)
         if (
             required_skus
             and entry.supplier_sku
@@ -265,12 +353,12 @@ def validate_bindings(
             raise ValueError("item_binding_conflict")
         owner = (item.item_id, entry.identifier_class, entry.supplier_sku)
         for block in selected:
-            if negated(block.text, item.name) or (
-                entry.supplier_sku and negated(block.text, entry.supplier_sku)
+            if identity_negated(block.text, item.name) or (
+                entry.supplier_sku and identity_negated(block.text, entry.supplier_sku)
             ):
                 raise ValueError("item_binding_conflict")
             if any(
-                mentions(block.text, other.name) and not negated(block.text, other.name)
+                mentions(block.text, other.name) and not identity_negated(block.text, other.name)
                 for other in definition.items
                 if other.item_id != item.item_id
             ):

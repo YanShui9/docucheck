@@ -13,9 +13,15 @@ from pydantic import (
 
 
 class DynamicCompatibleOut(BaseModel):
+    item_binding_version_id: str | None = None
+    item_binding_digest: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
+
     @model_serializer(mode="wrap")
     def omit_absent_dynamic_fields(self, handler):
         output = handler(self)
+        if output.get("item_binding_digest") is None:
+            output.pop("item_binding_version_id", None)
+            output.pop("item_binding_digest", None)
         for key in (
             "criterion_id",
             "item_id",

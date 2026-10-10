@@ -195,7 +195,7 @@ class ApiQueries:
     def get_run(self, run_id: str) -> dict:
         from .assistant_repository import AssistantRepository
         from .dynamic_repository import DynamicRepository
-        from .models import dynamic_runs
+        from .models import assistant_runs, dynamic_runs
         with self.engine.connect() as connection:
             row = connection.execute(select(
                 agent_runs, cases.c.revision.label("current_revision"),
@@ -219,7 +219,9 @@ class ApiQueries:
                 corrections.c.source_run_id == run_id,
             ).order_by(corrections.c.created_at.desc()).limit(1))
             binding = connection.execute(select(dynamic_runs).where(dynamic_runs.c.run_id == run_id)).mappings().first()
-            return {
+            assistant_binding = connection.execute(select(assistant_runs).where(assistant_runs.c.run_id == run_id)).mappings().first()
+            attribution = assistant_binding or binding
+            result = {
                 "id": row["id"], "case_id": row["case_id"],
                 "conversation_id": row["conversation_id"],
                 "message_id": row["message_id"],
@@ -242,6 +244,10 @@ class ApiQueries:
                 "created_at": _utc(row["created_at"]),
                 "updated_at": _utc(row["updated_at"]),
             }
+            if attribution and attribution["item_binding_digest"] is not None:
+                result.update(item_binding_version_id=attribution["item_binding_version_id"],
+                              item_binding_digest=attribution["item_binding_digest"])
+            return result
 
     def get_run_checks(self, run_id: str) -> dict:
         """Expose verified structured checks without promoting incomplete Runs."""

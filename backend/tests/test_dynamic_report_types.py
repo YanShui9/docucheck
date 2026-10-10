@@ -49,6 +49,8 @@ def test_nonnumeric_facts_keep_confirmed_rule_types_and_source_constraints(
         "expected_revision": 1, "expected_checklist_revision": saved.json()["checklist_revision"],
         "criterion_ids": ["metric"], "confirmed": True, "reason": "确认要求"})
     assert accepted.status_code == 200, accepted.text
+    from backend.tests.item_binding_helpers import confirm_single_item_bindings
+    confirm_single_item_bindings(engine, case_id, snapshot, accepted.json())
     conversation = client.post(f"/api/v1/cases/{case_id}/conversations").json()["id"]
     submitted = client.post(f"/api/v1/conversations/{conversation}/messages",
         headers={"Idempotency-Key": "typed-review"}, json={"content": "审查苹果", "expected_revision": 1})

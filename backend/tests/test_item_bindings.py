@@ -309,3 +309,13 @@ def test_all_explicit_sku_labels_in_selected_range_keep_buyer_conflicts(label):
     repo = EvidenceRepository("case", 1, [replace(document, parsed=parsed)])
     with pytest.raises(ValueError, match="item_binding_conflict"):
         validate([entry(repo)], data, repo)
+
+
+def test_negative_certificate_is_not_a_negative_product_identity():
+    spec, original = sample()
+    document = original.documents[0]
+    parsed = replace(document.parsed, blocks=tuple(
+        replace(b, text="苹果手机 未提供质保证明") if n == 1 else b
+        for n, b in enumerate(document.parsed.blocks)))
+    repo = EvidenceRepository("case", 1, [replace(document, parsed=parsed)])
+    assert validate([entry(repo)], spec, repo).entries

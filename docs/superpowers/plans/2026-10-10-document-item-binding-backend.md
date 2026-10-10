@@ -23,14 +23,16 @@
 
 ## A2：v4 规则、Run、缓存、历史和修正
 
+2026-10-10：A2 源码及复审完成，最终全量1418/46skip/网络0、定向120、隔离MySQL16通过；[交付与保守边界](../../document-item-binding-a2-2026-10-10.md)。业务库和运行服务未应用；A3/B/C未执行。
+
 主要文件：`backend/app/criteria/facts.py`、`backend/app/agent/dynamic.py`、`backend/app/db/dynamic_repository.py`、`backend/app/db/dynamic_executor.py`、`backend/app/db/assistant_repository.py`、`backend/app/db/assistant_executor.py`，以及实际报告导出、进度与 task memory 接口。测试扩展 `backend/tests/test_dynamic_run_binding.py`、`backend/tests/test_dynamic_facts.py`、`backend/tests/test_dynamic_batch_retry.py`、`backend/tests/test_dynamic_report_types.py`，新增品目绑定执行回归。
 
-- [ ] 首先 ScriptProvider/真实规则失败回归：苹果手机泛品目、数量独立行 10 台、订单确认后 18 个自然日，对 10 台/14 日要求；预期数量满足、交期不满足，manual 指标保持原状。
-- [ ] 新提交动态/助手 Run 冻结 A1 返回的对应身份，内部 formal 注册沿用助手提交时的身份。retry/resume 不换版本；waiting_user 之后的绑定变更须新 Run。
-- [ ] v4 才以明确对应支持事实 item applicability；数值、单位、同一行连续引用、supplier/hash/parser、原文反证和明确 SKU 守卫仍有效。范围未确认或解析 partial 不能当完整缺失；不改旧 v1/v2/v3 dump 和 digest。
-- [ ] 批次 ID/input_digest、payload/report、结果重验、人工修正/备选事实、记忆与进度包括绑定身份。跨品目/版本缓存不复用；旧报告用冻结身份重放，原件变化拒绝。
-- [ ] 模型每批仅看到必要范围/品目锚点说明，服务端持有全表。无绑定仍使用明确 v4 空身份并保守判定，普通聊天不重复注入对应表。
-- [ ] 回归旧规则、助手上下文、修正、历史、缓存、权限与任务记忆；规格和代码复核后 Git 提交。
+- [x] 首先 ScriptProvider/真实规则失败回归：苹果手机泛品目、数量独立行 10 台、订单确认后 18 个自然日，对 10 台/14 日要求；预期数量满足、交期不满足，manual 指标保持原状。
+- [x] 新提交动态/助手 Run 冻结 A1 返回的对应身份，内部 formal 注册沿用助手提交时的身份。retry/resume 不换版本；waiting_user 之后的绑定变更须新 Run。
+- [x] v4 才以明确对应支持事实 item applicability；数值、单位、同一行连续引用、supplier/hash/parser、原文反证和明确 SKU 守卫仍有效。范围未确认或解析 partial 不能当完整缺失；不改旧 v1/v2/v3 dump 和 digest。
+- [x] 批次 ID/input_digest、payload/report、结果重验、人工修正/备选事实、记忆与进度包括绑定身份。跨品目/版本缓存不复用；旧报告用冻结身份重放，原件变化拒绝。
+- [x] 模型每批仅看到必要范围/品目锚点说明，服务端持有全表。无绑定仍使用明确 v4 空身份并保守判定，普通聊天不重复注入对应表。
+- [x] 回归旧规则、助手上下文、修正、历史、缓存、权限与任务记忆；规格和代码复核后 Git 提交。
 
 ## A3：范围 RAG、统一复核与实连门禁
 

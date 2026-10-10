@@ -25,6 +25,7 @@ def export_payload(engine: Engine, result: dict) -> dict:
         for evidence_id in check[key]
     }
     sources = []
+    attribution = None
     if evidence_ids:
         ordered_ids = sorted(evidence_ids)
         with engine.connect() as connection:
@@ -72,7 +73,27 @@ def export_payload(engine: Engine, result: dict) -> dict:
         dynamic = DynamicRepository(engine)
         if dynamic.checks(result["run_id"]) != result:
             raise ApiQueryError("run_changed")
-        _, _, repo = dynamic.verified(result["run_id"])
+        row, _, repo = dynamic.verified(result["run_id"])
+        frozen = row.get("item_bindings")
+        if frozen is not None:
+            from ..db.item_binding_repository import ItemBindingRepository
+
+            version = (ItemBindingRepository(engine).version(result["case_id"], frozen["version_id"])
+                       if frozen["version_id"] is not None else {
+                           "id": None, "digest": frozen["digest"], "payload": frozen["payload"],
+                           "confirmed_by": None, "reason": "提交时没有可用的确认对应", "confirmed_at": None,
+                       })
+            anchor_ids = {ref for entry in frozen["payload"]["entries"]
+                          for anchor in (entry["anchor"], entry.get("sku_anchor") or {})
+                          for ref in anchor.get("evidence_refs", [])}
+            attribution = {
+                "version": version,
+                "anchors": [{"evidence_id": b.evidence_id, "document_id": b.document_id,
+                             "document_name": repo.source_name(b.document_id), "source_text": b.text,
+                             "page": b.page_idx + 1 if b.page_idx is not None else None,
+                             "sheet": b.sheet, "cell": b.cell} for b in repo.read(sorted(anchor_ids))],
+                "notice": "品目对应锚点仅说明归属；数值结论以核验结果引用的原文为准。",
+            }
         verified_sources = {
             b.evidence_id: {
                 "source_text": b.text,
@@ -92,11 +113,16 @@ def export_payload(engine: Engine, result: dict) -> dict:
             for source in sources
         ):
             raise ApiQueryError("dynamic_source_changed")
-    return {
+    if result.get("checklist_version_id") and dynamic.checks(result["run_id"]) != result:
+        raise ApiQueryError("run_changed")
+    payload = {
         "schema_version": 1,
         "result": result,
         "sources": sorted(sources, key=lambda item: item["evidence_id"]),
     }
+    if attribution is not None:
+        payload["item_attribution"] = attribution
+    return payload
 
 
 def render_json(payload: dict) -> bytes:
@@ -148,6 +174,34 @@ def render_xlsx(payload: dict) -> bytes:
     if result.get("checklist_version_id"):
         _text(info, 10, 1, "清单版本")
         _text(info, 10, 2, result["checklist_version_id"])
+    if payload.get("item_attribution") is not None:
+        attribution = payload["item_attribution"]
+        version = attribution["version"]
+        sheet = workbook.create_sheet("品目对应依据")
+        metadata = (("对应版本", version["id"]), ("摘要", version["digest"]),
+                    ("确认人", version["confirmed_by"]), ("确认时间", version["confirmed_at"]),
+                    ("原因", version["reason"]), ("说明", attribution["notice"]))
+        for row, (label, value) in enumerate(metadata, 1):
+            _text(sheet, row, 1, label)
+            _text(sheet, row, 2, value)
+        for row, entry in enumerate(version["payload"]["entries"], 8):
+            values = (entry["document_id"], entry["item_id"], entry["identifier_class"],
+                      entry.get("supplier_sku"), json.dumps(entry["selector"], ensure_ascii=False),
+                      "\n".join(entry["anchor"]["evidence_refs"]), entry["anchor"]["quote"],
+                      json.dumps(entry.get("sku_anchor"), ensure_ascii=False))
+            for column, value in enumerate(values, 1):
+                _text(sheet, row, column, value)
+        for column, label in enumerate(("文档ID", "品目ID", "标识类型", "供应商SKU", "确认范围", "锚点ID", "锚点摘录", "SKU锚点"), 1):
+            _text(sheet, 7, column, label)
+        anchor_sheet = workbook.create_sheet("对应锚点原文")
+        for column, label in enumerate(("来源ID", "文档ID", "文件名", "页码", "工作表", "单元格", "完整原文"), 1):
+            _text(anchor_sheet, 1, column, label)
+        for row, anchor in enumerate(attribution["anchors"], 2):
+            for column, key in enumerate(("evidence_id", "document_id", "document_name", "page", "sheet", "cell", "source_text"), 1):
+                _text(anchor_sheet, row, column, anchor[key])
+        for target in (sheet, anchor_sheet):
+            target.column_dimensions["A"].width = 31
+            target.column_dimensions["G"].width = 50
 
     headers = (
         "供应商",

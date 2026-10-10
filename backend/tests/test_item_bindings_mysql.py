@@ -28,6 +28,43 @@ pytestmark = pytest.mark.skipif(
 )
 
 
+@pytest.mark.parametrize("workflow", ["auto", "assistant"])
+def test_mysql_run_freezes_binding_and_waiting_resume_keeps_it(mysql_checklist, workflow):
+    from backend.app.db.assistant_repository import AssistantRepository
+    from backend.app.db.dynamic_repository import DynamicRepository
+    from backend.app.db.models import assistant_runs, dynamic_runs, outbox
+    from backend.app.db.run_repository import RunRepository, SubmitRun
+    from backend.app.runtime.lifecycle import RunStatus
+
+    engine, case_id, snapshot_id, conversation_id = mysql_checklist
+    body = prepare(mysql_checklist)
+    first = ItemBindingRepository(engine).put(case_id, snapshot_id, idempotency_key="bind", **body)["current_version"]
+
+    class Isolated(RunRepository):
+        def _dispatch(self, connection, run_id, attempt_id, timestamp):
+            super()._dispatch(connection, run_id, attempt_id, timestamp)
+            connection.execute(update(outbox).where(outbox.c.run_id == run_id).values(event_type="test.binding." + case_id[:16]))
+
+    runs = Isolated(engine)
+    run = runs.submit(SubmitRun(case_id, conversation_id, snapshot_id, 1, "审查", "standard", "run", workflow=workflow))
+    table = assistant_runs if workflow == "assistant" else dynamic_runs
+    with engine.connect() as connection:
+        row = connection.execute(select(table).where(table.c.run_id == run.run_id)).mappings().one()
+    assert row["item_binding_version_id"] == first["id"] and row["item_binding_digest"] == first["digest"]
+    claim = runs.claim(run.run_id, run.attempt_id)
+    runs.finish(run.run_id, claim.active_attempt_id, claim.fence, snapshot_id, RunStatus.WAITING_USER, answer_text="等待", memory_json={})
+    ItemBindingRepository(engine).put(case_id, snapshot_id, idempotency_key="clear",
+        **(body | {"entries": [], "expected_binding_revision": 1}))
+    resumed = runs.resume(run.run_id, snapshot_id, 1, "resume", "继续")
+    claim = runs.claim(run.run_id, resumed.attempt_id)
+    binding = (AssistantRepository(engine).register_formal(claim, "review") if workflow == "assistant"
+               else DynamicRepository(engine).binding(claim))
+    assert binding["item_binding_version_id"] == first["id"]
+    assert binding["item_bindings"]["digest"] == first["digest"]
+    assert not DynamicRepository(engine).current(run.run_id)
+    runs.cancel(run.run_id)
+
+
 def prepare(fixture):
     from datetime import UTC, datetime
 

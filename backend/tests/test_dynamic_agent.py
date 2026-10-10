@@ -548,7 +548,7 @@ def test_manual_alternative_conversion_failure_cannot_publish_formal_results(mon
         patch.setattr(workflow, 'RULE_VERSION', 'dynamic-rules-v1')
         patch.setattr(workflow, 'review_plan', lambda *args, **kwargs: plan(*args, rule_version='dynamic-rules-v1'))
         patch.setattr(workflow, 'validate_fact', lambda *args, **kwargs: validate_fact(*args, rule_version='dynamic-rules-v1'))
-        patch.setattr(workflow, 'evaluate_checklist', lambda *args, **kwargs: evaluate_checklist(*args, **kwargs, rule_version='dynamic-rules-v1'))
+        patch.setattr(workflow, 'evaluate_checklist', lambda *args, **kwargs: evaluate_checklist(*args, **(kwargs | {'rule_version': 'dynamic-rules-v1'})))
         previous = agent(repo, DeliveryStart(), rules).ask('审查')['payload']
     assert previous['facts'][0]['start_event'] == '交付'
     previous['needs_review'] = True
@@ -596,7 +596,7 @@ def test_full_review_keeps_revalidated_manual_alternatives_and_reviews_all_batch
             patch.setattr(workflow, 'RULE_VERSION', 'dynamic-rules-v1')
             patch.setattr(workflow, 'review_plan', lambda *args, **kwargs: plan(*args, rule_version='dynamic-rules-v1'))
             patch.setattr(workflow, 'validate_fact', lambda *args, **kwargs: validate_fact(*args, rule_version='dynamic-rules-v1'))
-            patch.setattr(workflow, 'evaluate_checklist', lambda *args, **kwargs: evaluate_checklist(*args, **kwargs, rule_version='dynamic-rules-v1'))
+            patch.setattr(workflow, 'evaluate_checklist', lambda *args, **kwargs: evaluate_checklist(*args, **(kwargs | {'rule_version': 'dynamic-rules-v1'})))
         previous = agent(repo, OneValue(), rules, cache_load=load, cache_save=save).ask("审查")["payload"]
     source = next(b for b in repo.blocks if b.supplier == "甲供应商" and b.role == "quote")
     alternative = validate_fact({"criterion_id": "metric-1", "item_id": "item-1", "supplier": "甲供应商",

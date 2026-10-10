@@ -7,6 +7,15 @@ from typing import Annotated, Literal
 from pydantic import Field, model_validator
 
 from ..evidence.repository import EvidenceRepository, digest
+from .item_bindings import (
+    ReviewBindings,
+    binding_identity,
+    explicit_skus,
+    identity_negated,
+    review_bindings,
+    unresolved_buyer_specification,
+    unsupported_sku_declaration,
+)
 from .models import (
     ChecklistDefinition,
     Contract,
@@ -36,7 +45,8 @@ from .validation import (
 )
 
 RULE_VERSION = "dynamic-rules-v3"
-SUPPORTED_RULE_VERSIONS = {"dynamic-rules-v1", "dynamic-rules-v2", RULE_VERSION}
+BINDING_RULE_VERSION = "dynamic-rules-v4"
+SUPPORTED_RULE_VERSIONS = {"dynamic-rules-v1", "dynamic-rules-v2", RULE_VERSION, BINDING_RULE_VERSION}
 _VALUE_NUMBER = re.compile(r"^-?\d{1,12}(?:\.\d{1,6})?$")
 _UNCERTAIN = re.compile(r"最大|最高|最多支持|支持扩展|参考|宣传|另一型号|其他型号|"
                         r"不属于本次|次日|翌日|next day", re.IGNORECASE)
@@ -98,7 +108,8 @@ def _presence_value(text: str, description: str) -> bool:
 
 
 def validate_fact(candidate: dict | FactCandidate, definition: ChecklistDefinition | dict,
-                  repo: EvidenceRepository, supplier: str, *, rule_version=RULE_VERSION) -> dict:
+                  repo: EvidenceRepository, supplier: str, *, rule_version=RULE_VERSION,
+                  item_bindings: dict | ReviewBindings | None = None) -> dict:
     if rule_version not in SUPPORTED_RULE_VERSIONS:
         raise ValueError("rule_version")
     legacy_duration = rule_version == "dynamic-rules-v1"
@@ -113,7 +124,17 @@ def validate_fact(candidate: dict | FactCandidate, definition: ChecklistDefiniti
     if any(block.role not in {"quote", "spec"} or block.supplier != supplier for block in blocks):
         raise ValueError("supplier_scope")
     model = blocks[0].model
-    clause = _fact_clause(text, criterion, item, model=model, multi_item=len(definition.items) > 1)
+    bound, entry = None, None
+    if rule_version == BINDING_RULE_VERSION:
+        if item_bindings is None:
+            raise ValueError("item_binding_required")
+        bound = review_bindings(item_bindings, definition, repo)
+        entry = bound.bindings.assert_fact_scope(item.item_id, candidate.evidence_refs, supplier)
+        if any(b.document_id != entry.document_id or b.source_hash != entry.source_sha256
+               or b.parser_version != entry.parser_version for b in blocks):
+            raise ValueError("item_binding_source_changed")
+    clause = _fact_clause(text, criterion, item, model=model,
+                         multi_item=entry is None and len(definition.items) > 1)
     rule = criterion.rule
     ambiguous = bool(COMPLEX.search(text) or _UNCERTAIN.search(text))
     comparator = source_comparator(clause)
@@ -163,18 +184,38 @@ def validate_fact(candidate: dict | FactCandidate, definition: ChecklistDefiniti
                   and not bool(re.search(r"另一型号|其他型号|不属于本次", clause)))
     if item.specification and model and not mentions(item.specification, model):
         applicable = False
+    if entry is not None and entry.identifier_class in {"category", "sku"}:
+        applicable = not (identity_negated(text, item.name) or re.search(r"另一型号|其他型号|不属于本次", text))
+        required = explicit_skus(item.specification, allow_bare=True)
+        identity_refs = {*entry.anchor_refs, *((entry.payload().get("sku_anchor") or {}).get("evidence_refs", []))}
+        identity_text = "\n".join(b.text for b in repo.read(list(identity_refs)))
+        actual = explicit_skus(identity_text + "\n" + text)
+        if (unsupported_sku_declaration(item.specification) or unresolved_buyer_specification(item.specification, item.name)
+                or unsupported_sku_declaration(identity_text + "\n" + text)):
+            applicable = False
+        if required and (not entry.supplier_sku or entry.supplier_sku.casefold() not in required):
+            applicable = False
+        if actual and (entry.supplier_sku and actual != {entry.supplier_sku.casefold()}
+                       or required and not actual <= required):
+            applicable = False
+        model = entry.supplier_sku
+        # Unknown classification must retain the old raw model applicability.
     ambiguous = ambiguous or not applicable
     canonical = candidate.model_dump(mode="json") | observed
     canonical.update(evidence_refs=[block.evidence_id for block in blocks], quote=compact(candidate.quote),
                      case_id=repo.case_id, snapshot_id=repo.snapshot_id, model=model,
                      comparator=comparator, ambiguous=ambiguous, applicable=applicable)
+    if bound is not None:
+        canonical.update(bound.identity(), item_binding_entry_digest=digest(entry.payload()))
     return canonical | {"fact_id": digest([repo.snapshot_id, canonical])}
 
 
 def revalidate_fact(fact: dict, definition: ChecklistDefinition | dict,
-                    repo: EvidenceRepository, supplier: str, *, rule_version=RULE_VERSION) -> dict:
+                    repo: EvidenceRepository, supplier: str, *, rule_version=RULE_VERSION,
+                    item_bindings: dict | ReviewBindings | None = None) -> dict:
     candidate = {key: fact[key] for key in FactCandidate.model_fields if key in fact}
-    verified = validate_fact(candidate, definition, repo, supplier, rule_version=rule_version)
+    verified = validate_fact(candidate, definition, repo, supplier, rule_version=rule_version,
+                             item_bindings=item_bindings)
     if verified != fact:
         raise ValueError("fact_integrity")
     return verified
@@ -272,7 +313,9 @@ def _evaluate(criterion, item, offered, *, rule_version):
 
 
 def evaluate_checklist(definition: ChecklistDefinition | dict, facts: list[dict],
-                       coverage: dict[str, bool], *, snapshot_id: str, rule_version=RULE_VERSION) -> list[dict]:
+                       coverage: dict[str, bool], *, snapshot_id: str, rule_version=RULE_VERSION,
+                       item_coverage: dict[str, dict[str, bool]] | None = None,
+                       item_bindings: dict | ReviewBindings | None = None) -> list[dict]:
     """Enumerate every enabled criterion and supplier after complete extraction."""
     definition = _definition(definition)
     if rule_version not in SUPPORTED_RULE_VERSIONS:
@@ -280,25 +323,46 @@ def evaluate_checklist(definition: ChecklistDefinition | dict, facts: list[dict]
     if any(not isinstance(supplier, str) or type(complete) is not bool
            for supplier, complete in coverage.items()):
         raise ValueError("coverage_state")
+    bound_identity = None
+    if rule_version == BINDING_RULE_VERSION:
+        bound_identity = binding_identity(item_bindings)
+        binding_snapshot = (item_bindings.snapshot_id if isinstance(item_bindings, ReviewBindings)
+                            else item_bindings["payload"].get("snapshot_id"))
+        binding_checklist = (item_bindings.checklist_digest if isinstance(item_bindings, ReviewBindings)
+                             else item_bindings["payload"].get("checklist_digest"))
+        if binding_snapshot != snapshot_id or binding_checklist != digest(definition.model_dump(mode="json")):
+            raise ValueError("item_binding_source_changed")
+        enabled_items = {c.item_id for c in definition.criteria if c.enabled}
+        if (not isinstance(item_coverage, dict) or set(item_coverage) != set(coverage)
+                or any(not isinstance(v, dict) or set(v) != enabled_items
+                       or any(type(done) is not bool for done in v.values())
+                       or coverage[s] != (bool(v) and all(v.values())) for s, v in item_coverage.items())):
+            raise ValueError("coverage_state")
     for fact in facts:
         if fact.get("snapshot_id") != snapshot_id:
             raise ValueError("fact_snapshot")
         _criterion(definition, fact.get("criterion_id"), fact.get("item_id"))
         if fact.get("supplier") not in coverage:
             raise ValueError("supplier_scope")
+        if bound_identity and any(fact.get(k) != v for k, v in bound_identity.items()):
+            raise ValueError("fact_integrity")
     items = {item.item_id: item for item in definition.items}
     results = []
     for supplier, complete in coverage.items():
         for criterion in definition.criteria:
             if not criterion.enabled:
                 continue
+            criterion_complete = (item_coverage[supplier][criterion.item_id]
+                                  if bound_identity else complete)
             offered = [fact for fact in facts if fact["supplier"] == supplier
                        and fact["criterion_id"] == criterion.criterion_id]
             offered = sorted({fact["fact_id"]: fact for fact in offered}.values(), key=lambda fact: fact["fact_id"])
             refs = list(dict.fromkeys(ref for fact in offered for ref in fact["evidence_refs"]))
             status, reason = (_evaluate(criterion, items[criterion.item_id], offered, rule_version=rule_version)
-                              if complete else (None, "coverage_incomplete"))
-            processing = "complete" if complete else "partial"
+                              if criterion_complete else (None, "coverage_incomplete"))
+            if bound_identity and not criterion_complete and criterion.requires_manual_review:
+                status, reason = "待人工确认", "requirement_manual"
+            processing = "complete" if criterion_complete else "partial"
             result = {"snapshot_id": snapshot_id, "supplier": supplier,
                       "field_key": criterion.criterion_id, "criterion_id": criterion.criterion_id,
                       "item_id": criterion.item_id, "item_name": items[criterion.item_id].name,
@@ -306,7 +370,9 @@ def evaluate_checklist(definition: ChecklistDefinition | dict, facts: list[dict]
                       "processing_status": processing, "business_status": status,
                       "reason_code": reason, "evidence_refs": refs, "reason_evidence_refs": refs,
                       "fact_ids": [fact["fact_id"] for fact in offered],
-                      "rule_version": rule_version, "is_formal": complete}
+                      "rule_version": rule_version, "is_formal": criterion_complete}
+            if bound_identity:
+                result.update(bound_identity)
             identity = digest([definition.model_dump(mode="json"), offered, result])
             results.append({"check_result_id": identity, **result})
     return results

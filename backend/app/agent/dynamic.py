@@ -20,11 +20,17 @@ from langsmith import tracing_context
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from ..criteria.facts import (
+    BINDING_RULE_VERSION,
     RULE_VERSION,
     SUPPORTED_RULE_VERSIONS,
     FactCandidate,
     evaluate_checklist,
     validate_fact,
+)
+from ..criteria.item_bindings import (
+    ReviewBindings,
+    pure_identity_block,
+    review_bindings,
 )
 from ..criteria.models import ChecklistDefinition, Criterion
 from ..criteria.validation import rule_supported, validate_definition
@@ -206,6 +212,8 @@ def render_review(checks: list[dict], *, complete: bool, needs_review: bool = Fa
         status = check["processing_status"]
         if status == "complete":
             status = check["business_status"]
+        elif check.get("rule_version") == BINDING_RULE_VERSION and check.get("business_status") == "待人工确认":
+            status = "待人工确认（资料处理未完成）"
         else:
             status = "处理未完成"
         item_name = check.get("item_name") or check.get("item_id")
@@ -241,7 +249,57 @@ def _criterion_groups(definition: ChecklistDefinition) -> list[list[dict]]:
     return groups
 
 
-def review_plan(repo, definition: ChecklistDefinition | dict, *, rule_version=RULE_VERSION) -> tuple[dict, dict]:
+def _bound_review_plan(repo, definition: ChecklistDefinition, context: ReviewBindings) -> tuple[dict, dict]:
+    source_digest = digest([asdict(b) for b in repo.blocks])
+    definition_digest = digest(definition.model_dump(mode="json"))
+    plans, completeness = {}, {}
+    item_ids = {c.item_id for c in definition.criteria if c.enabled}
+    for supplier in sorted({d.supplier for d in repo.documents if d.supplier}):
+        entries = [e for e in context.bindings.entries if e.supplier == supplier]
+        assigned = {ref for e in entries for ref in e.evidence_refs}
+        item_names = {item.item_id: item.name for item in definition.items}
+        for entry in entries:
+            anchor_refs = {*entry.anchor_refs, *((entry.payload().get("sku_anchor") or {}).get("evidence_refs", []))}
+            assigned.update(block.evidence_id for block in repo.read(list(anchor_refs))
+                            if pure_identity_block(block.text, item_names[entry.item_id], entry.supplier_sku))
+        # Unassigned tails and other unbound supplier files can hide conflicts.
+        inventory_complete = all(b.evidence_id in assigned for b in repo.blocks if b.supplier == supplier)
+        documents = [d for d in repo.documents if d.role == "requirement" or d.supplier == supplier]
+        parsed_complete = all(d.parsed.status == "complete" and not d.parsed.coverage_issues
+                              and d.parsed.blocks for d in documents)
+        plans[supplier], completeness[supplier] = [], {}
+        for item in definition.items:
+            if item.item_id not in item_ids:
+                continue
+            refs = context.bindings.allowed_refs(item.item_id, supplier)
+            blocks = [b for b in repo.blocks if b.evidence_id in refs]
+            batches, issues = _batches(blocks)
+            completeness[supplier][item.item_id] = bool(batches) and not issues and inventory_complete and parsed_complete
+            target = definition.model_copy(update={"criteria": [c for c in definition.criteria if c.item_id == item.item_id]})
+            for group in _criterion_groups(target):
+                for source_ordinal, batch in enumerate(batches):
+                    batch_refs = {b["evidence_id"] for b in batch}
+                    anchors = [{"document_id": e.document_id, "item_id": e.item_id,
+                                "identifier_class": e.identifier_class, "supplier_sku": e.supplier_sku,
+                                "anchor": e.payload()["anchor"]}
+                               for e in entries if e.item_id == item.item_id and batch_refs.intersection(e.evidence_refs)]
+                    data = {"supplier": supplier, "items": [item.model_dump(mode="json")],
+                            "criteria": group, "evidence": batch, "item_attribution": anchors}
+                    criterion_ids = [c["criterion_id"] for c in group]
+                    identity = ["review", supplier, item.item_id, source_ordinal, criterion_ids,
+                                [b["evidence_id"] for b in batch], BINDING_RULE_VERSION, context.identity()]
+                    manifest = {"batch_id": digest(identity),
+                                "input_digest": digest([repo.snapshot_id, source_digest, definition_digest,
+                                                        BINDING_RULE_VERSION, context.identity(), data]),
+                                "supplier": supplier, "ordinal": len(plans[supplier]),
+                                "source_ordinal": source_ordinal, "criterion_ids": criterion_ids,
+                                "item_id": item.item_id, **context.identity()}
+                    plans[supplier].append((batch, data, manifest))
+    return plans, completeness
+
+
+def review_plan(repo, definition: ChecklistDefinition | dict, *, rule_version=RULE_VERSION,
+                item_bindings: dict | ReviewBindings | None = None) -> tuple[dict, dict]:
     """Pure deterministic source x contract plan, also used on SQL result reads.
 
     Plans map supplier to ordered (evidence_batch, extraction_data, manifest)
@@ -250,6 +308,10 @@ def review_plan(repo, definition: ChecklistDefinition | dict, *, rule_version=RU
     """
     if not isinstance(definition, ChecklistDefinition):
         definition = ChecklistDefinition.model_validate(definition)
+    if rule_version == BINDING_RULE_VERSION:
+        if item_bindings is None:
+            raise ValueError("item_binding_required")
+        return _bound_review_plan(repo, definition, review_bindings(item_bindings, definition, repo))
     definition_digest = digest(definition.model_dump(mode="json"))
     source_digest = digest([asdict(b) for b in repo.blocks])
     groups = _criterion_groups(definition)
@@ -292,12 +354,15 @@ class DynamicAgent:
                  validate: Callable[[], None] = lambda: None,
                  cache_load=None, cache_save=None, history=None,
                  memory_layers=None, history_reader=None, previous_payload=None,
-                 budget=None):
+                 budget=None, item_bindings=None):
         if mode not in MODE_LIMITS:
             raise ValueError("invalid_mode")
         self.repo, self.provider, self.mode = repo, provider, mode
         self.definition = (definition if isinstance(definition, ChecklistDefinition) or definition is None
                            else ChecklistDefinition.model_validate(definition))
+        self.item_bindings = (review_bindings(item_bindings, self.definition, repo)
+                              if item_bindings is not None and self.definition is not None else None)
+        self.rule_version = BINDING_RULE_VERSION if self.item_bindings is not None else RULE_VERSION
         self.validate = validate
         self.cache_load, self.cache_save = cache_load, cache_save
         self.history = list(history or [])
@@ -376,12 +441,16 @@ class DynamicAgent:
                         cancelled=lambda: self._cancelled)
         events, facts, batch_coverage = [], {}, []
         suppliers = sorted({d.supplier for d in self.repo.documents if d.supplier})
-        payload = {"version": 1, "source_digest": self.source_digest, "rule_version": RULE_VERSION,
+        payload = {"version": 1, "source_digest": self.source_digest, "rule_version": self.rule_version,
                    "definition": (self.definition.model_dump(mode="json")
                                   if operation == "review" and self.definition else None),
                    "facts": [], "checks": [],
                    "coverage": {s: False for s in suppliers}, "batch_coverage": batch_coverage,
                    "batch_manifest": [], "needs_resolution": []}
+        if self.item_bindings is not None:
+            payload.update(self.item_bindings.identity(),
+                           item_coverage={s: {c.item_id: False for c in self.definition.criteria if c.enabled}
+                                          for s in suppliers})
         planned = None
 
         def event(kind, **values):
@@ -462,7 +531,8 @@ class DynamicAgent:
                     if candidate.criterion_id not in criterion_ids:
                         raise ValueError("candidate_criterion")
                     self._read(candidate.evidence_refs, budget)
-                    validated.append(validate_fact(candidate, self.definition, self.repo, supplier))
+                    validated.append(validate_fact(candidate, self.definition, self.repo, supplier,
+                                                   rule_version=self.rule_version, item_bindings=self.item_bindings))
                     self._check(budget)
                 except ValueError as exc:
                     code = str(exc)
@@ -473,7 +543,7 @@ class DynamicAgent:
             nonlocal planned
             if planned is not None:
                 return planned
-            planned = review_plan(self.repo, self.definition)
+            planned = review_plan(self.repo, self.definition, rule_version=self.rule_version, item_bindings=self.item_bindings)
             return planned
 
         def reuse_report(*, for_carry=False):
@@ -484,17 +554,26 @@ class DynamicAgent:
                 self._check(budget)
                 old_rules = old.get("rule_version")
                 if (old.get("version") != 1 or old.get("source_digest") != self.source_digest
-                        or old_rules not in (SUPPORTED_RULE_VERSIONS if for_carry else {RULE_VERSION})
+                        or old_rules not in ((SUPPORTED_RULE_VERSIONS - {BINDING_RULE_VERSION}) if for_carry and self.item_bindings is None else {self.rule_version})
                         or old.get("definition") != self.definition.model_dump(mode="json")
                         or set(old.get("coverage", {})) != set(suppliers)):
                     raise ValueError("report_invalid")
+                if self.item_bindings is not None and any(old.get(k) != v for k, v in self.item_bindings.identity().items()):
+                    raise ValueError("report_invalid")
                 validate_definition(self.definition, self.repo)
-                plans, source_complete = review_plan(self.repo, self.definition, rule_version=old_rules)
+                plans, source_complete = review_plan(self.repo, self.definition, rule_version=old_rules, item_bindings=self.item_bindings)
                 manifest = [entry for supplier in suppliers for _, _, entry in plans[supplier]]
                 if old.get("batch_manifest") != manifest:
                     raise ValueError("report_invalid")
                 covered = {b["batch_id"]: b for b in old.get("batch_coverage", []) if b.get("complete") is True}
                 for supplier, complete in old["coverage"].items():
+                    if self.item_bindings is not None:
+                        for item, done in old["item_coverage"][supplier].items():
+                            if done and (not source_complete[supplier][item] or any(
+                                entry["batch_id"] not in covered or covered[entry["batch_id"]]["input_digest"] != entry["input_digest"]
+                                for _, _, entry in plans[supplier] if entry["item_id"] == item)):
+                                raise ValueError("report_invalid")
+                        continue
                     if type(complete) is not bool or (complete and (not source_complete[supplier] or any(
                             entry["batch_id"] not in covered or covered[entry["batch_id"]]["input_digest"] != entry["input_digest"]
                             for _, _, entry in plans[supplier]))):
@@ -502,11 +581,12 @@ class DynamicAgent:
                 for fact in old["facts"]:
                     fields = {k: v for k, v in fact.items() if k in FactCandidate.model_fields}
                     self._read(fact["evidence_refs"], budget)
-                    validated = validate_fact(FactCandidate.model_validate(fields), self.definition, self.repo, fact["supplier"], rule_version=old_rules)
+                    validated = validate_fact(FactCandidate.model_validate(fields), self.definition, self.repo, fact["supplier"], rule_version=old_rules, item_bindings=self.item_bindings)
                     if validated != fact:
                         raise ValueError("report_invalid")
                 copied = deepcopy(old)
-                copied["checks"] = evaluate_checklist(self.definition, copied["facts"], copied["coverage"], snapshot_id=self.snapshot_id, rule_version=old_rules)
+                copied["checks"] = evaluate_checklist(self.definition, copied["facts"], copied["coverage"], snapshot_id=self.snapshot_id, rule_version=old_rules,
+                                                     item_coverage=copied.get("item_coverage"), item_bindings=self.item_bindings)
                 self._check(budget)
                 return copied
             except (ValueError, KeyError, TypeError):
@@ -531,7 +611,7 @@ class DynamicAgent:
                 for old_fact in previous["facts"]:
                     fields = {k: v for k, v in old_fact.items() if k in FactCandidate.model_fields}
                     try:
-                        fact = validate_fact(fields, self.definition, self.repo, old_fact["supplier"])
+                        fact = validate_fact(fields, self.definition, self.repo, old_fact["supplier"], rule_version=self.rule_version, item_bindings=self.item_bindings)
                     except (ValueError, ValidationError):
                         raise RunStopped("manual_alternative_revalidation_required") from None
                     facts[fact["fact_id"]] = fact
@@ -567,15 +647,26 @@ class DynamicAgent:
                                 event("tool", tool="batch_cache", status="rejected", error="cache_invalid")
                                 raw = None
                     if raw is None:
-                        messages = [SystemMessage(content=EXTRACTION_SYSTEM),
+                        extraction_system = EXTRACTION_SYSTEM
+                        if self.item_bindings is not None:
+                            extraction_system += "\n服务端已确认item_attribution所述品目对应。anchor只作归属依据，不是事实范围，不得引用或拼入数值quote。事实只能引用evidence中的原文格；型号冲突或不明仍须保留。"
+                        messages = [SystemMessage(content=extraction_system),
                                     HumanMessage(content=json.dumps(data, ensure_ascii=False))]
                         raw = model_call("extract", messages, _facts_schema(supplier),
                                          lambda args, bound_supplier=supplier: _bound_candidates(args, bound_supplier))
                         validated, rejections = checked_candidates(raw, batch, supplier, manifest["criterion_ids"])
                     rejected = sum(rejections.values())
-                    complete = complete and rejected == 0
+                    if self.item_bindings is not None:
+                        item_id = manifest["item_id"]
+                    else:
+                        complete = complete and rejected == 0
                     progress.update(complete=rejected == 0, rejected_count=rejected,
                                     rejection_codes=rejections, cached=cached)
+                    if self.item_bindings is not None:
+                        covered = {p["batch_id"] for p in batch_coverage if p["complete"]}
+                        payload["item_coverage"][supplier][item_id] = source_complete[supplier][item_id] and all(
+                            m["batch_id"] in covered for _, _, m in plans[supplier] if m["item_id"] == item_id)
+                        payload["coverage"][supplier] = all(payload["item_coverage"][supplier].values())
                     for fact in validated:
                         facts[fact["fact_id"]] = fact
                     event("tool", tool="review_checklist", status="completed" if not rejected else "rejected",
@@ -585,9 +676,10 @@ class DynamicAgent:
                         self._check(budget)
                         self.cache_save(batch_id, input_digest, raw)
                         self._check(budget)
-                payload["coverage"][supplier] = complete
+                payload["coverage"][supplier] = (all(payload["item_coverage"][supplier].values()) if self.item_bindings else complete)
             payload["facts"] = list(facts.values())
-            payload["checks"] = evaluate_checklist(self.definition, payload["facts"], payload["coverage"], snapshot_id=self.snapshot_id)
+            payload["checks"] = evaluate_checklist(self.definition, payload["facts"], payload["coverage"], snapshot_id=self.snapshot_id,
+                                                  rule_version=self.rule_version, item_coverage=payload.get("item_coverage"), item_bindings=self.item_bindings)
             self._check(budget)
             complete = all(payload["coverage"].values())
             return {"status": "completed" if complete else "partial", "error": None if complete else "coverage_incomplete",
@@ -759,7 +851,8 @@ class DynamicAgent:
             payload["facts"] = list(facts.values())
         if operation == "review" and self.definition and not payload["checks"]:
             try:
-                payload["checks"] = evaluate_checklist(self.definition, payload["facts"], payload["coverage"], snapshot_id=self.snapshot_id)
+                payload["checks"] = evaluate_checklist(self.definition, payload["facts"], payload["coverage"], snapshot_id=self.snapshot_id,
+                                                      rule_version=self.rule_version, item_coverage=payload.get("item_coverage"), item_bindings=self.item_bindings)
             except ValueError:
                 payload["facts"], payload["checks"] = [], []
         if state["status"] in {"completed", "partial", "waiting_user"}:

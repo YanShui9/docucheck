@@ -12,6 +12,10 @@ from backend.app.db.ingestion import DocumentIngestion
 from backend.app.db.models import document_versions
 from backend.app.db.run_executor import execute_run
 from backend.tests import test_document_ingestion
+from backend.tests.item_binding_helpers import (
+    confirm_single_item_bindings,
+    confirm_xlsx_item_ranges,
+)
 from backend.tests.test_dynamic_agent import ScriptProvider, call
 from backend.tests.test_dynamic_workflow import workbook
 
@@ -84,6 +88,7 @@ def test_uploaded_arbitrary_metric_proposal_confirmation_and_formal_export(
                                   "criterion_ids": [preview["definition"]["criteria"][0]["criterion_id"]],
                                   "confirmed": True, "reason": "确认本次采购要求"})
     assert confirmed.status_code == 200, confirmed.text
+    confirm_single_item_bindings(engine, case_id, snapshot, confirmed.json())
     review_id = submit("review", "category-review", "完整审查两家供应商")
     checks = client.get(f"/api/v1/agent-runs/{review_id}/checks").json()
     assert checks["checklist_version_id"] == confirmed.json()["confirmed_version"]["id"]
@@ -141,6 +146,7 @@ def test_multi_item_partial_confirmation_reports_only_confirmed_scope(ingestion_
                               "reason": "先核验已确认数量，报告真伪另外复核"})
     assert first.status_code == 200, first.text
     assert first.json()["excluded_criterion_ids"] == ["apple-authenticity"]
+    confirm_xlsx_item_ranges(engine, case_id, snapshot, first.json())
     conversation = client.post(f"/api/v1/cases/{case_id}/conversations").json()["id"]
 
     class ItemProvider(ScriptProvider):
@@ -181,6 +187,7 @@ def test_multi_item_partial_confirmation_reports_only_confirmed_scope(ingestion_
                                "confirmed": True, "criterion_ids": ["apple-authenticity"],
                                "reason": "把人工真实性复核项纳入清单"})
     assert second.status_code == 200, second.text
+    confirm_xlsx_item_ranges(engine, case_id, snapshot, second.json())
     _, complete = review("multi-item-review-rest")
     assert len(complete["checks"]) == 3
     assert next(c for c in complete["checks"] if c["criterion_id"] == "apple-authenticity")[

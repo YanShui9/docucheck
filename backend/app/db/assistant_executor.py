@@ -83,7 +83,8 @@ def execute_assistant(engine, claim, provider, *, heartbeat_interval_seconds=10.
                     mode=request["mode"], budget=budget, validate=validate_context,
                     cache_load=lambda batch, fingerprint: dynamic.load_batch(claim, batch, fingerprint),
                     cache_save=lambda batch, fingerprint, output: dynamic.save_batch(claim, batch, fingerprint, output),
-                    history=context.history, memory_layers=memory.layers, history_reader=memory.history_reader)
+                    history=context.history, memory_layers=memory.layers, history_reader=memory.history_reader,
+                    item_bindings=formal_binding["item_bindings"])
                 return agent.ask(context.question, operation="propose_checklist" if operation == "proposal" else "review")
 
             agent = AssistantAgent(repo, provider, mode=request["mode"], definition=edit_base,
@@ -100,6 +101,8 @@ def execute_assistant(engine, claim, provider, *, heartbeat_interval_seconds=10.
                 "checklist_version_id": binding["checklist_version_id"], "payload_digest": digest(payload),
                 "citation_offsets_version": payload["citation_offsets_version"],
                 "focus": None, "pending_clarification": None}
+            if binding["item_binding_digest"] is not None:
+                checkpoint.update(item_binding_version_id=binding["item_binding_version_id"], item_binding_digest=binding["item_binding_digest"])
             if result["status"] == "cancelled":
                 runs.cancel(claim.run_id)
                 dynamic.retain_cancelled_usage(claim, result, provider)

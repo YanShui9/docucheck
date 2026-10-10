@@ -11,6 +11,12 @@ from ..evidence.repository import digest
 from .assistant_preview import authority_base, bind_preview, effective_base
 from .checklist_repository import _validated, _version
 from .dynamic_repository import DynamicRepository, _error, bind_workflow, source_digest
+from .item_binding_repository import (
+    ItemBindingError,
+    freeze_current,
+    load_run_bindings,
+    run_bindings_current,
+)
 from .models import (
     agent_runs,
     assistant_runs,
@@ -46,16 +52,34 @@ def _base(connection, case_id, snapshot_id):
     return head, base
 
 
+def _confirmed_definition(connection, binding, *, current_read=False):
+    if binding["checklist_version_id"] is None:
+        return None
+    version = _version(connection, binding["case_id"], binding["checklist_version_id"], current_read=current_read)
+    return version["definition"] if version["snapshot_id"] == binding["snapshot_id"] else None
+
+
 def bind_assistant(connection, request, run_id):
     head, base = _base(connection, request.case_id, request.snapshot_id)
     if base:
         base = ChecklistDefinition.model_validate(base).model_dump(mode="json")
     base = bind_preview(connection, request, base, head["revision"] if head else 0,
                         head["confirmed_version_id"] if head else None)
+    version_id = head["confirmed_version_id"] if head else None
+    confirmed = _version(connection, request.case_id, version_id, current_read=True) if version_id else None
+    # Drafts and unconfirmed chat candidates never authorize source attribution.
+    if confirmed and confirmed["snapshot_id"] != request.snapshot_id:
+        version_id, confirmed = None, None
+    try:
+        frozen = freeze_current(connection, request.case_id, request.snapshot_id, version_id,
+                                confirmed["definition"] if confirmed else None)
+    except ItemBindingError as exc:
+        _error(exc.code)
     return {"run_id": run_id, "case_id": request.case_id, "snapshot_id": request.snapshot_id,
             "checklist_revision": head["revision"] if head else 0,
             "checklist_version_id": head["confirmed_version_id"] if head else None,
-            "base_json": base, "base_digest": digest(base)}
+            "base_json": base, "base_digest": digest(base),
+            "item_binding_version_id": frozen["version_id"], "item_binding_digest": frozen["digest"]}
 
 
 class AssistantRepository:
@@ -71,6 +95,11 @@ class AssistantRepository:
             base = ChecklistDefinition.model_validate(base).model_dump(mode="json")
         if digest(binding["base_json"]) != binding["base_digest"] or digest(base) != digest(authority_base(binding["base_json"])):
             _error("assistant_source_changed")
+        definition = _confirmed_definition(connection, binding, current_read=True)
+        try:
+            load_run_bindings(connection, binding, definition, current_read=True)
+        except ItemBindingError as exc:
+            _error(exc.code)
         return effective_base(connection, binding, source=source, current_read=True)
 
     def exists(self, run_id):
@@ -89,7 +118,8 @@ class AssistantRepository:
         if row is None or row["case_id"] != run["case_id"] or row["snapshot_id"] != run["snapshot_id"]:
             _error("assistant_scope")
         definition = self.validate_binding(connection, row, source=source)
-        return dict(row) | ({"effective_definition": definition} if source is not None else {})
+        frozen = load_run_bindings(connection, row, _confirmed_definition(connection, row, current_read=True), current_read=True)
+        return dict(row) | {"item_bindings": frozen} | ({"effective_definition": definition} if source is not None else {})
 
     def binding(self, claim, *, source=None):
         with self.engine.begin() as connection:
@@ -105,13 +135,16 @@ class AssistantRepository:
         from .run_repository import SubmitRun
 
         with self.engine.begin() as connection:
-            self._guard(connection, claim)
+            assistant_binding = self._guard(connection, claim)
             run = connection.execute(select(agent_runs).where(agent_runs.c.id == claim.run_id).with_for_update()).mappings().one()
             if run["revision"] < 1 and operation != "review":
                 _error("snapshot_not_ready")
             request = SubmitRun(run["case_id"], run["conversation_id"], run["snapshot_id"], run["revision"], "formal", run["mode"], "internal")
             request = replace(request, workflow="proposal" if operation == "proposal" else "auto")
-            binding = bind_workflow(connection, request, claim.run_id)
+            frozen = {"version_id": assistant_binding["item_binding_version_id"], "digest": assistant_binding["item_binding_digest"]}
+            if operation == "proposal" and frozen["digest"] is not None:
+                frozen = freeze_current(connection, run["case_id"], run["snapshot_id"], None, None)
+            binding = bind_workflow(connection, request, claim.run_id, item_binding_override=frozen)
             if binding is None:
                 _error("checklist_confirmation_required")
             old = connection.execute(select(dynamic_runs).where(dynamic_runs.c.run_id == claim.run_id).with_for_update()).mappings().first()
@@ -149,7 +182,10 @@ class AssistantRepository:
             if row is None:
                 return True
             head = connection.execute(select(checklist_heads).where(checklist_heads.c.case_id == row["case_id"])).mappings().first()
-            return (head["revision"] if head else 0) == row["checklist_revision"]
+            if (head["revision"] if head else 0) != row["checklist_revision"]:
+                return False
+            definition = _confirmed_definition(connection, row)
+            return run_bindings_current(connection, row, definition)
 
     def verified(self, run_id):
         from .run_repository import RepositoryError
@@ -173,6 +209,7 @@ class AssistantRepository:
         with self.engine.connect() as connection:
             row = connection.execute(select(agent_runs, assistant_runs.c.checklist_revision,
                 assistant_runs.c.checklist_version_id, assistant_runs.c.base_json, assistant_runs.c.base_digest,
+                assistant_runs.c.item_binding_version_id, assistant_runs.c.item_binding_digest,
                 assistant_runs.c.payload_json, assistant_runs.c.payload_digest,
                 cases.c.revision.label("current_revision"), cases.c.deletion_requested_at)
                 .join(assistant_runs, assistant_runs.c.run_id == agent_runs.c.id).join(cases, cases.c.id == agent_runs.c.case_id)
@@ -190,6 +227,8 @@ class AssistantRepository:
                 _error("assistant_source_changed")
             AssistantPayload.model_validate(payload)
             offset_version = (row['memory_json'] or {}).get('citation_offsets_version')
+            if row["item_binding_digest"] is not None and any((row["memory_json"] or {}).get(k) != row[k] for k in ("item_binding_version_id", "item_binding_digest")):
+                _error("assistant_source_changed")
             if offset_version != payload.get('citation_offsets_version'):
                 _error('assistant_source_changed')
             reply = connection.scalar(select(run_attempts.c.resume_message_id).where(run_attempts.c.run_id == run_id, run_attempts.c.resume_message_id.is_not(None)).order_by(run_attempts.c.attempt_no.desc()).limit(1))
@@ -197,6 +236,7 @@ class AssistantRepository:
             if instruction != payload["instruction"]:
                 _error("assistant_source_changed")
             edit_base = effective_base(connection, dict(row) | {"run_id": run_id}, source=payload["source_digest"])
+            load_run_bindings(connection, row, _confirmed_definition(connection, row))
         repo = load_agent_snapshot(self.engine, row["case_id"], row["snapshot_id"], allow_empty=True)
         if payload["source_digest"] != source_digest(repo):
             _error("assistant_source_changed")
@@ -218,6 +258,8 @@ class AssistantRepository:
         elif kind in {"review", "proposal"}:
             dynamic_row, dynamic_payload, _ = DynamicRepository(self.engine).verified(run_id)
             if dynamic_row["workflow"] != kind or digest(dynamic_payload) != payload["dynamic_payload_digest"]:
+                _error("assistant_source_changed")
+            if kind == "review" and any(dynamic_row[k] != row[k] for k in ("item_binding_version_id", "item_binding_digest")):
                 _error("assistant_source_changed")
             if kind == "proposal" and payload["candidate"] != (dynamic_payload or {}).get("definition"):
                 _error("assistant_source_changed")
@@ -241,11 +283,14 @@ class AssistantRepository:
 
     def result(self, run_id):
         row, payload, _ = self.verified(run_id)
-        return {"run_id": run_id, "case_id": row["case_id"], "snapshot_id": row["snapshot_id"],
+        result = {"run_id": run_id, "case_id": row["case_id"], "snapshot_id": row["snapshot_id"],
                 "revision": row["revision"], "workflow": "assistant", "run_status": row["status"],
                 "is_current": row["revision"] == row["current_revision"] and self.current(run_id),
                 "base_digest": row["base_digest"], "checklist_revision": row["checklist_revision"],
                 "checklist_version_id": row["checklist_version_id"], "payload_digest": row["payload_digest"], "result": payload}
+        if row["item_binding_digest"] is not None:
+            result.update(item_binding_version_id=row["item_binding_version_id"], item_binding_digest=row["item_binding_digest"])
+        return result
 
     def proposal(self, run_id):
         result = self.result(run_id)
