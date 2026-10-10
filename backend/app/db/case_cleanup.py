@@ -27,6 +27,9 @@ from .models import (
     evidence_blocks,
     idempotency_records,
     input_snapshots,
+    item_binding_heads,
+    item_binding_operations,
+    item_binding_versions,
     messages,
     outbox,
     run_attempts,
@@ -235,6 +238,8 @@ class CaseCleanup:
                 connection.execute(delete(table).where(table.c.run_id.in_(dynamic_ids)))
             connection.execute(delete(dynamic_runs).where(dynamic_runs.c.case_id == claim.case_id))
             connection.execute(delete(assistant_runs).where(assistant_runs.c.case_id == claim.case_id))
+            for table in (item_binding_operations, item_binding_heads, item_binding_versions):
+                connection.execute(delete(table).where(table.c.case_id == claim.case_id))
             connection.execute(delete(checklist_operations).where(checklist_operations.c.case_id == claim.case_id))
             connection.execute(delete(checklist_heads).where(checklist_heads.c.case_id == claim.case_id))
             connection.execute(delete(checklist_versions).where(checklist_versions.c.case_id == claim.case_id))

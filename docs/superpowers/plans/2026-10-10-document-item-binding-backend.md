@@ -10,14 +10,16 @@
 
 ## A1：对应契约、持久化与授权 API
 
+2026-10-10：A1 源码、复审及隔离测试已完成，业务数据库未迁移、服务未更新。[实测交付记录](../../document-item-binding-a1-2026-10-10.md)。A2/A3 未执行，不以 A1 声明整个步骤 A 完成。
+
 主要文件：新增 `backend/app/criteria/item_bindings.py`、`backend/app/db/item_binding_schema_v1.py`、`backend/app/db/item_binding_repository.py`、`backend/app/api/item_bindings.py`、`backend/migrations/versions/0017_item_bindings.py`；接入 `backend/app/db/models.py`、`backend/app/db/case_cleanup.py`、`backend/app/api/main.py`。测试新增 `backend/tests/test_item_bindings.py`、`backend/tests/test_item_binding_api.py`、`backend/tests/test_item_bindings_mysql.py`，更新迁移测试。
 
-- [ ] 先写并运行失败测试：whole/XLSX 矩形/PDF 页面；同原件锚点；错误品目、旧 hash、跨文档、越界、不同品目重叠；旧泛品目名与 SKU 分类。
-- [ ] 实现严格契约及 canonical 展开。每个 entry 保存 document_id/hash/parser、item_id、选择器、展开证据 refs、锚点和型号分类。未知类别不能消除型号守卫；具体 SKU 须有原文支持。
-- [ ] 新建 versions/head/幂等操作表；Run adjunct 新列 `item_binding_version_id`、`item_binding_digest` 为 nullable，NULL/NULL 表示历史无此机制，不能默认为最新绑定。冻结旧迁移 schema 不改。
-- [ ] PUT 确认整个对应清单，必须 explicit confirmed、前置资料/清单/对应 revision、actor、reason、Idempotency-Key。Case-first/current read，拒绝 queued/running 和失权；GET 当前与历史均受当前成员/删除检查。变化后旧 head 只读，不自动重用。
-- [ ] Repository 提供事务内 `freeze_current`/冻结版本加载能力，供 A2 调用。无确认对应时冻结可验证的空集合及摘要；身份包含 Case、snapshot、清单版本。载入重验 hash/parser/范围/锚点及 canonical digest，不读取最新 head 重解释历史。
-- [ ] 增加 Case 清理依赖顺序、SQLite 升降迁移/MySQL 方言与隔离 MySQL 并发测试；测试通过、复核后提交本地 Git。
+- [x] 先写并运行失败测试：whole/XLSX 矩形/PDF 页面；同原件锚点；错误品目、旧 hash、跨文档、越界、不同品目重叠；旧泛品目名与 SKU 分类。
+- [x] 实现严格契约及 canonical 展开。每个 entry 保存 document_id/hash/parser、item_id、选择器、展开证据 refs、锚点和型号分类。未知类别不能消除型号守卫；具体 SKU 须有原文支持。
+- [x] 新建 versions/head/幂等操作表；Run adjunct 新列 `item_binding_version_id`、`item_binding_digest` 为 nullable，NULL/NULL 表示历史无此机制，不能默认为最新绑定。冻结旧迁移 schema 不改。
+- [x] PUT 确认整个对应清单，必须 explicit confirmed、前置资料/清单/对应 revision、actor、reason、Idempotency-Key。Case-first/current read，拒绝 queued/running 和失权；GET 当前与历史均受当前成员/删除检查。变化后旧 head 只读，不自动重用。
+- [x] Repository 提供事务内 `freeze_current`/冻结版本加载能力，供 A2 调用。无确认对应时冻结可验证的空集合及摘要；身份包含 Case、snapshot、清单版本。载入重验 hash/parser/范围/锚点及 canonical digest，不读取最新 head 重解释历史。
+- [x] 增加 Case 清理依赖顺序、SQLite 升降迁移/MySQL 方言与隔离 MySQL 并发测试；测试通过、复核后提交本地 Git。
 
 ## A2：v4 规则、Run、缓存、历史和修正
 

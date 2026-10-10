@@ -361,3 +361,9 @@ dynamic_runs, dynamic_batches, dynamic_corrections = define_dynamic_tables(metad
 from .assistant_schema_v1 import define_assistant_table
 
 assistant_runs = define_assistant_table(metadata)
+
+from .item_binding_schema_v1 import add_run_binding_columns, define_item_binding_tables
+
+item_binding_versions, item_binding_heads, item_binding_operations = define_item_binding_tables(metadata)
+add_run_binding_columns(dynamic_runs)
+add_run_binding_columns(assistant_runs)

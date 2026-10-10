@@ -36,6 +36,7 @@ from ..db.correction_repository import (
 from ..db.document_repository import DocumentError, DocumentRepository, UploadCommand
 from ..db.index_repository import IndexError, IndexRepository
 from ..db.ingestion import DocumentIngestion, IngestionError
+from ..db.item_binding_repository import ItemBindingError
 from ..db.memory_repository import MemoryError, MemoryRepository
 from ..db.models import cases, conversations
 from ..db.run_repository import RepositoryError, RunRepository, SubmitRun
@@ -46,6 +47,7 @@ from .body_limit import MAX_UPLOAD_BODY_BYTES, UploadBodyLimitMiddleware
 from .checklists import checklist_router
 from .dynamic_schemas import DynamicCorrectionIn
 from .index_schemas import IndexAccepted, IndexesOut, IndexIn
+from .item_bindings import item_binding_router
 from .memory_schemas import MemoryPreferenceIn, MemoryProfileOut
 from .route_auth import AuthorizedRoute
 from .run_export import export_payload, render_json, render_xlsx
@@ -89,6 +91,12 @@ def _error(request: Request, status: int, code: str, details: object = None):
 
 
 def _domain_status(code: str) -> int:
+    if code in {"item_binding_checklist_changed", "item_binding_revision_conflict", "item_binding_source_changed"}:
+        return 409
+    if code in {"item_binding_invalid", "item_binding_confirmation_required", "item_binding_source", "item_binding_range"}:
+        return 422
+    if code == "item_binding_capacity":
+        return 413
     if code == "assistant_preview_limit":
         return 409
     if code in {"checklist_revision_conflict", "checklist_snapshot_changed", "checklist_source_changed", "checklist_execution_pending", "checklist_draft_missing", "checklist_changed", "batch_source_changed", "dynamic_source_changed", "assistant_source_changed", "assistant_scope"}:
@@ -199,6 +207,7 @@ def create_app(engine: Engine | None = None, authenticator=None) -> FastAPI:
     @app.exception_handler(IndexError)
     @app.exception_handler(MemoryError)
     @app.exception_handler(ChecklistError)
+    @app.exception_handler(ItemBindingError)
     async def domain_error(request: Request, exc: ApiQueryError | RepositoryError | DocumentError | UploadError | IngestionError | CorrectionError | CaseDeletionError | IndexError):
         return _error(request, _domain_status(exc.code), exc.code)
 
@@ -617,4 +626,5 @@ def create_app(engine: Engine | None = None, authenticator=None) -> FastAPI:
 
     app.include_router(router)
     app.include_router(checklist_router(engine))
+    app.include_router(item_binding_router(engine))
     return app
