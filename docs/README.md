@@ -31,6 +31,7 @@
 - [原 README 开发历史](development-history.md)：归档原入口，保留成功、失败与改进过程。
 - [旧项目上下文](archive/2026-10-10-claude.md)、[旧路线图](archive/2026-10-10-roadmap.md)、[旧小步计划](archive/2026-10-10-step-by-step.md)：保留完整阶段记录，当前执行从简洁入口开始。
 - [当前协作协议](step-by-step-plan.md)、[流程优化设计](superpowers/specs/2026-10-10-development-workflow-design.md)、[三步实施计划](superpowers/plans/2026-10-10-development-workflow.md)。
+- [统一开发验证入口](development-workflow.md)：风险计划、离线定向/全量、前端门禁与真实业务验收协议。
 - [CLAUDE.md](../CLAUDE.md) 与 [AGENTS.md](../AGENTS.md)：AI 开发协作约定，不是产品用户手册。
 - `superpowers/specs/` 与 `superpowers/plans/`：设计讨论、范围约束与分阶段计划。
 
