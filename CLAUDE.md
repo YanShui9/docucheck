@@ -54,4 +54,4 @@
 - 全量：`python.exe -m scripts.verify_offline --report data/verification/<新文件名>.json`，网络守卫/报告不可覆盖。前端在frontend执行npm test和npm run build；安装沿用锁与既有约定。
 - 新行为补回归，答案先由业务契约确定。离线/实连/真实模型分别报告，skip不算通过。独立质量、容量、费用和灾备不能以合成开发集代替。
 
-业务下一步：品目对应后端A源码完成，前端B与应用/真实闭环C未完成。见[路线图](docs/development-roadmap.md)及[有效计划](docs/superpowers/plans/2026-10-10-document-item-binding-backend.md)。
+业务下一步：品目对应后端A与前端B源码及门禁完成；业务迁移、服务更新和真实闭环C未完成。见[路线图](docs/development-roadmap.md)、[B交付](docs/document-item-binding-b-2026-10-10.md)及[有效计划](docs/superpowers/plans/2026-10-10-document-item-binding-backend.md)。

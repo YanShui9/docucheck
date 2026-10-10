@@ -41,7 +41,7 @@ const wrappers: ReturnType<typeof mount>[] = []
 async function workbench() {
   apiRequest.mockImplementation(reads)
   const wrapper = mount(App, { global: { stubs: {
-    DocumentsPanel: { name: 'DocumentsPanel', props: ['selectedCase'],
+    DocumentsPanel: { name: 'DocumentsPanel', props: ['selectedCase', 'notifyBindingsConfirmed'],
       template: '<div class="documents-stub">{{ selectedCase?.id }}</div>' },
     AgentWorkbench: true, EvidencePanel: true, ChatWorkspace: true,
   } } })
@@ -51,6 +51,21 @@ async function workbench() {
   await flushPromises()
   return wrapper
 }
+
+test('item binding confirmation refreshes chat currentness without resetting the documents checklist scope', async () => {
+  const wrapper = await workbench()
+  const documents = wrapper.findComponent({ name: 'DocumentsPanel' })
+  const notify = documents.props('notifyBindingsConfirmed') as (target: { caseId: string; snapshotId: string }) => void
+  await wrapper.find('.work-panel-heading button').trigger('click')
+  notify({ caseId: 'case-1', snapshotId: 'snapshot-case-1' })
+  await flushPromises()
+  expect(wrapper.findComponent({ name: 'ChatWorkspace' }).props('bindingChanges')).toEqual({ 'snapshot-case-1': 1 })
+  expect(wrapper.findComponent({ name: 'ChatWorkspace' }).props('checklistChanges')).toEqual({})
+  notify({ caseId: 'case-2', snapshotId: 'snapshot-case-2' })
+  notify({ caseId: 'case-1', snapshotId: 'old-snapshot' })
+  await flushPromises()
+  expect(wrapper.findComponent({ name: 'ChatWorkspace' }).props('bindingChanges')).toEqual({ 'snapshot-case-1': 1 })
+})
 
 afterEach(() => {
   wrappers.splice(0).forEach(wrapper => wrapper.unmount())

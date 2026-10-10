@@ -11,6 +11,7 @@ import { accessToken } from '../auth'
 import ChatComposer from './ChatComposer.vue'
 const props = defineProps<{ caseId: string | null; scopeKey?: string; revision: number; canWrite: boolean; prepareCase: () => Promise<string | null>;
   checklistChanges?: Record<string, number>;
+  bindingChanges?: Record<string, number>;
   pendingReportCorrections?: Record<string, { caseId: string; snapshotId: string; count: number }> }>()
 const emit = defineEmits<{
   upload: []
@@ -471,6 +472,23 @@ watch(() => props.checklistChanges, (changes, previous) => {
     }
   }
 }, { flush: 'sync' })
+watch(() => props.bindingChanges, (changes, previous) => {
+  for (const snapshotId of Object.keys(changes ?? {})) {
+    if (changes?.[snapshotId] === previous?.[snapshotId]) continue
+    for (const [runId, run] of Object.entries(runs.value)) {
+      if (run.snapshot_id !== snapshotId) continue
+      const version = generation
+      // Stop presenting cached currentness before the server revalidates its frozen binding.
+      runs.value[runId] = { ...run, is_current: false, answer_text: null }
+      delete results.value[runId]
+      resultErrors.value[runId] = '资料对应关系已变化，正在核对历史结果。'
+      readVersions.set(runId, (readVersions.get(runId) ?? 0) + 1)
+      void readRun(runId, version).catch(reason => {
+        if (current(version)) resultErrors.value = { ...resultErrors.value, [runId]: notice(reason) }
+      })
+    }
+  }
+}, { flush: 'sync' })
 watch(() => [props.caseId, props.scopeKey] as const, (_, previous) => {
   drafts.set(`${previous?.[1] ?? ''}:${previous?.[0] ?? 'new'}:${conversationId.value ?? 'new'}`, draft.value)
   ++generation
@@ -532,7 +550,7 @@ onUnmounted(() => { disposed = true; ++generation; if (timer) clearTimeout(timer
             <div v-if="runs[message.run_id]" class="message-status" :role="['queued', 'running'].includes(runs[message.run_id]!.status) ? 'status' : undefined">
               {{ labels[runs[message.run_id]!.status] ?? '状态待确认' }}
               <span v-if="runs[message.run_id]!.revision !== revision"> · 历史资料版本 {{ runs[message.run_id]!.revision }}</span>
-              <span v-else-if="results[message.run_id] && !results[message.run_id]!.is_current && !candidateOf(message)"> · 历史审查要求</span>
+              <span v-else-if="results[message.run_id] && !results[message.run_id]!.is_current && !candidateOf(message)"> · 历史资料对应或审查要求</span>
             </div>
             <p v-if="runs[message.run_id]?.outcome_unknown" class="state-note">上次模型请求的结果未知，重新处理可能再次调用模型。</p>
             <button v-if="runs[message.run_id]?.is_current && runs[message.run_id]!.revision === revision && ['failed', 'partial', 'interrupted'].includes(runs[message.run_id]!.status) && canWrite" class="text-button" :disabled="sending || loading || uncertain || !!activeRun" @click="retryRun(message.run_id)">重新处理</button>

@@ -1,8 +1,13 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, onUnmounted, ref, watch } from 'vue'
+import { accessToken } from '../auth'
+import { fetchItemBindings } from '../itemBindings'
+import type { ItemBindingView } from '../itemBindings'
 import type {
   CaseRecord, DocumentRecord, DocumentsResult, SnapshotRecord,
 } from '../api'
+
+const DocumentItemBindings = defineAsyncComponent(() => import('./DocumentItemBindings.vue'))
 
 const props = defineProps<{
   selectedCase: CaseRecord | null
@@ -14,6 +19,9 @@ const props = defineProps<{
   historyDocuments: DocumentsResult | null
   canWrite: boolean
   busy: boolean
+  refreshKey?: number
+  bindingRefreshKey?: number
+  notifyBindingsConfirmed?: (target: { caseId: string; snapshotId: string }) => void
 }>()
 
 const emit = defineEmits<{
@@ -27,6 +35,7 @@ const emit = defineEmits<{
   selectHistory: [snapshotId: string | null]
   loadOlderSnapshots: []
   refreshDocuments: []
+  bindingsConfirmed: [target: { caseId: string; snapshotId: string }]
 }>()
 
 const fileInput = ref<HTMLInputElement | null>(null)
@@ -39,6 +48,46 @@ const needsSupplier = computed(() => role.value !== 'requirement')
 const shownDocuments = computed(() =>
   props.selectedHistoryId ? props.historyDocuments : props.documents)
 const isHistorical = computed(() => props.selectedHistoryId !== null)
+const bindingView = ref<ItemBindingView | null>(null)
+const bindingLoading = ref(false)
+const bindingError = ref(false)
+const bindingDocumentId = ref<string | null>(null)
+const bindingDocument = computed(() => shownDocuments.value?.documents.find(document => document.id === bindingDocumentId.value) ?? null)
+let bindingGeneration = 0
+
+async function refreshBindings() {
+  const current = ++bindingGeneration
+  const data = shownDocuments.value
+  bindingView.value = null; bindingError.value = false; bindingLoading.value = false
+  if (!data?.snapshot_id || !data.documents.some(document => document.role !== 'requirement') || !props.selectedCase) return
+  bindingLoading.value = true
+  try {
+    const result = await fetchItemBindings(props.selectedCase.id, data.snapshot_id, accessToken)
+    if (current === bindingGeneration) {
+      if (result.case_id !== props.selectedCase?.id || result.snapshot_id !== data.snapshot_id) throw new Error('binding_scope')
+      bindingView.value = result
+    }
+  } catch { if (current === bindingGeneration) bindingError.value = true }
+  finally { if (current === bindingGeneration) bindingLoading.value = false }
+}
+function bindingLabel(documentId: string): string {
+  if (bindingLoading.value) return '正在读取对应状态…'
+  if (bindingError.value) return '对应状态暂时无法读取'
+  if (isHistorical.value || bindingView.value?.state === 'stale') return '历史对应关系，仅供追溯'
+  const count = bindingView.value?.current_version?.payload.entries.filter(entry => entry.document_id === documentId).length ?? 0
+  return count ? `已确认 ${count} 个对应范围` : '尚未确认对应品目'
+}
+function bindingsConfirmed(target: { caseId: string; snapshotId: string }) {
+  if (target.caseId !== props.selectedCase?.id || target.snapshotId !== props.documents?.snapshot_id) return
+  void refreshBindings()
+  emit('bindingsConfirmed', target)
+}
+watch([() => props.selectedCase?.id, () => shownDocuments.value?.snapshot_id, () => shownDocuments.value?.revision,
+  () => props.refreshKey],
+() => { bindingDocumentId.value = null; void refreshBindings() }, { immediate: true })
+watch(() => shownDocuments.value?.documents.map(document => document.parse_status).join(','), () => { void refreshBindings() })
+watch(() => props.bindingRefreshKey, () => { void refreshBindings() })
+onUnmounted(() => { bindingGeneration++ })
 
 watch(() => props.documents?.revision, (revision, previous) => {
   if (revision !== previous && fileInput.value) fileInput.value.value = ''
@@ -182,12 +231,23 @@ function roleLabel(value: string): string {
           <div class="document-details">
             <strong>{{ document.original_name }}</strong>
             <span>{{ roleLabel(document.role) }}<template v-if="document.supplier_handle"> · {{ document.supplier_handle }}</template><template v-if="document.model_name"> · 产品标识 {{ document.model_name }}</template><template v-else-if="document.supplier_handle"> · 未设置产品标识</template></span>
+            <span v-if="document.role !== 'requirement'">{{ bindingLabel(document.id) }}</span>
+            <span v-else>买方资料用于整理采购要求</span>
+            <button v-if="document.role !== 'requirement'" class="text-button binding-document-action" type="button" :disabled="busy"
+                    @click="bindingDocumentId = document.id">{{ isHistorical || !canWrite ? '查看品目对应' : '关联采购品目' }}</button>
           </div>
           <span class="status-pill" :class="`status-${document.parse_status}`">
             {{ statusLabel(document.parse_status) }}
           </span>
         </li>
       </ul>
+      <DocumentItemBindings v-if="bindingDocument && shownDocuments?.snapshot_id && selectedCase"
+                            :key="`${selectedCase.id}/${shownDocuments.snapshot_id}/${bindingDocument.id}`"
+                            :case-id="selectedCase.id" :snapshot-id="shownDocuments.snapshot_id"
+                            :revision="shownDocuments.revision" :document="bindingDocument" :can-write="canWrite" :busy="busy"
+                            :historical="isHistorical" :refresh-key="refreshKey ?? 0"
+                            :notify-confirmed="notifyBindingsConfirmed"
+                            @close="bindingDocumentId = null" @confirmed="bindingsConfirmed" />
       <p v-if="!isHistorical && documents?.documents.some(item => item.parse_status === 'pending')" class="state-note">
         有资料等待后台解析。请确认解析服务已启动；页面会自动刷新状态。
       </p>

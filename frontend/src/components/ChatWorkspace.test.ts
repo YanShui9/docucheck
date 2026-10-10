@@ -24,6 +24,27 @@ function reads(path: string) {
 }
 afterEach(() => { wrappers.splice(0).forEach(w => w.unmount()); apiRequest.mockReset(); vi.useRealTimers() })
 
+test.each(['success', 'failure'])('binding confirmation reloads report currentness and disables stale retries: %s', async outcome => {
+  let changed = false
+  apiRequest.mockImplementation((path: string) => {
+    if (path.includes('/conversations?')) return Promise.resolve({ conversations: [{ id: 'conv-a', created_at: '' }], next_offset: null })
+    if (path.includes('/messages?')) return Promise.resolve({ messages: [{ id: 'message-a', role: 'user', content: '审查苹果', run_id: 'run-a' }], next_offset: null })
+    if (path === '/agent-runs/run-a') return changed && outcome === 'failure' ? Promise.reject(new Error('offline'))
+      : Promise.resolve({ id: 'run-a', conversation_id: 'conv-a', snapshot_id: 'snap-1', revision: 0, status: 'partial', workflow: 'assistant', is_current: !changed })
+    if (path.endsWith('/assistant-result')) return Promise.resolve({ run_id: 'run-a', case_id: 'case-a', snapshot_id: 'snap-1', is_current: !changed,
+      result: { kind: 'review', answer: '苹果采购旧审查', citations: [] } })
+    return reads(path)
+  })
+  const wrapper = setup(); await flushPromises()
+  expect(wrapper.text()).toContain('苹果采购旧审查')
+  expect(wrapper.findAll('button').some(button => button.text() === '重新处理')).toBe(true)
+  changed = true
+  await wrapper.setProps({ bindingChanges: { 'snap-1': 1 } }); await flushPromises()
+  expect(wrapper.findAll('button').some(button => button.text() === '重新处理')).toBe(false)
+  if (outcome === 'success') expect(wrapper.text()).toContain('历史资料对应或审查要求')
+  else expect(wrapper.text()).not.toContain('苹果采购旧审查')
+})
+
 test('empty materials can use the real assistant workflow and a stable idempotency header', async () => {
   let accepted = false
   apiRequest.mockImplementation((path: string) => {

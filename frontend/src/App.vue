@@ -37,6 +37,7 @@ const evidenceTarget = ref<{ caseId: string; snapshotId: string; evidenceId: str
 const evidenceWidth = ref(390)
 const checklistTarget = ref<ChecklistTarget | null>(null)
 const checklistChanges = ref<Record<string, number>>({})
+const bindingChanges = ref<Record<string, number>>({})
 const reviewTarget = ref<{ caseId: string; snapshotId: string; runId: string } | null>(null)
 const pendingReportCorrections = ref<Record<string, { caseId: string; snapshotId: string; count: number }>>({})
 const memoryOpen = ref(false)
@@ -103,6 +104,11 @@ function checklistChanged(target: { caseId: string; snapshotId: string }) {
   if (target.caseId !== selectedCaseId.value) return
   checklistChanges.value = { ...checklistChanges.value,
     [target.snapshotId]: (checklistChanges.value[target.snapshotId] ?? 0) + 1 }
+}
+function bindingsChanged(target: { caseId: string; snapshotId: string }) {
+  if (target.caseId !== selectedCaseId.value || target.snapshotId !== documents.value?.snapshot_id) return
+  bindingChanges.value = { ...bindingChanges.value,
+    [target.snapshotId]: (bindingChanges.value[target.snapshotId] ?? 0) + 1 }
 }
 
 function openReviewFromChat(target: { caseId: string; snapshotId: string; runId: string }) {
@@ -417,7 +423,7 @@ onUnmounted(() => { if (refreshTimer) clearInterval(refreshTimer) })
       <div v-if="error" class="alert" role="alert"><span>{{ error }}</span><button class="text-button" @click="error = ''">关闭</button></div>
       <div v-if="loading" class="loading-state" role="status">正在读取工作区…</div>
       <ChatWorkspace v-else :case-id="selectedCaseId" :scope-key="selectedProjectId ?? ''" :revision="documents?.revision ?? selectedCase?.revision ?? 0" :pending-report-corrections="pendingReportCorrections"
-                     :checklist-changes="checklistChanges"
+                     :checklist-changes="checklistChanges" :binding-changes="bindingChanges"
                      :can-write="canWrite && !busy" :prepare-case="prepareCase"
                      @upload="openDocuments" @title="taskTitles[$event.caseId] = $event.title"
                      @open-evidence="evidenceTarget = $event; panel = null"
@@ -429,6 +435,8 @@ onUnmounted(() => { if (refreshTimer) clearInterval(refreshTimer) })
         <DocumentsPanel v-if="panel === 'documents'" :selected-case="selectedCase" :documents="documents"
                         :snapshots="snapshots" :next-snapshot-before="nextSnapshotBefore" :loading-older="loadingOlder"
                         :selected-history-id="selectedHistoryId" :history-documents="historyDocuments" :can-write="canWrite" :busy="busy"
+                        :refresh-key="checklistChanges[documents?.snapshot_id ?? ''] ?? 0"
+                        :binding-refresh-key="bindingChanges[documents?.snapshot_id ?? ''] ?? 0" :notify-bindings-confirmed="bindingsChanged"
                         @upload="handleUpload" @select-history="selectHistory" @load-older-snapshots="loadOlderSnapshots" @refresh-documents="refreshDocuments(true)" />
         <ChecklistPanel v-else-if="panel === 'checklist' && checklistSnapshotId"
                         :case-id="selectedCaseId!" :snapshot-id="checklistSnapshotId"
