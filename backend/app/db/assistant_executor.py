@@ -25,6 +25,7 @@ def execute_assistant(engine, claim, provider, *, heartbeat_interval_seconds=10.
 
     runs, store, dynamic = RunRepository(engine), AssistantRepository(engine), DynamicRepository(engine)
     retriever, result, memory = None, None, None
+    manual_stamp = None
     try:
         with run_heartbeat(runs, claim, interval_seconds=heartbeat_interval_seconds):
             binding = store.binding(claim)
@@ -64,13 +65,19 @@ def execute_assistant(engine, claim, provider, *, heartbeat_interval_seconds=10.
 
             def validate_context():
                 validate()
+                if manual_stamp is not None:
+                    dynamic.validate_manual_previous(claim, manual_stamp)
                 try:
                     memory.validate()
                 except ValueError:
                     raise RepositoryError("memory_context_changed") from None
 
             def formal(operation, budget):
+                nonlocal manual_stamp
                 formal_binding = store.register_formal(claim, operation)
+                previous_payload = None
+                if operation == "review":
+                    previous_payload, manual_stamp = dynamic.manual_previous(claim)
                 formal_repo = repo
                 if operation == "proposal":
                     buyer_ids = tuple(d.document_id for d in repo.documents if d.role == "requirement")
@@ -84,6 +91,7 @@ def execute_assistant(engine, claim, provider, *, heartbeat_interval_seconds=10.
                     cache_load=lambda batch, fingerprint: dynamic.load_batch(claim, batch, fingerprint),
                     cache_save=lambda batch, fingerprint, output: dynamic.save_batch(claim, batch, fingerprint, output),
                     history=context.history, memory_layers=memory.layers, history_reader=memory.history_reader,
+                    previous_payload=previous_payload,
                     item_bindings=formal_binding["item_bindings"])
                 return agent.ask(context.question, operation="propose_checklist" if operation == "proposal" else "review")
 

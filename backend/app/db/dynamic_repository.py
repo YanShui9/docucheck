@@ -217,6 +217,70 @@ class DynamicRepository:
         with self.engine.begin() as connection:
             self._guard(connection, claim)
 
+    def _manual_review_rows(self, claim):
+        """Select bounded durable review state under the current Run's authority."""
+        with self.engine.begin() as connection:
+            binding = self._guard(connection, claim)
+            conversation = connection.scalar(select(agent_runs.c.conversation_id).where(agent_runs.c.id == claim.run_id))
+            rows = list(connection.execute(select(agent_runs.c.id, dynamic_runs.c.payload_digest)
+                .join(dynamic_runs, dynamic_runs.c.run_id == agent_runs.c.id).where(
+                    agent_runs.c.id != claim.run_id,
+                    agent_runs.c.case_id == binding["case_id"],
+                    agent_runs.c.conversation_id == conversation,
+                    agent_runs.c.snapshot_id == binding["snapshot_id"],
+                    agent_runs.c.status.in_(("completed", "partial")),
+                    dynamic_runs.c.workflow == "review",
+                    dynamic_runs.c.checklist_version_id == binding["checklist_version_id"],
+                    dynamic_runs.c.item_binding_version_id == binding["item_binding_version_id"],
+                    dynamic_runs.c.item_binding_digest == binding["item_binding_digest"],
+                    dynamic_runs.c.payload_json["needs_review"].as_boolean().is_(True))
+                .order_by(agent_runs.c.created_at.desc(), agent_runs.c.id.desc()).limit(33)).mappings())
+        if len(rows) > 32:
+            _error("dynamic_capacity")
+        stamp = digest([conversation, {k: binding[k] for k in (
+            "case_id", "snapshot_id", "checklist_version_id", "item_binding_version_id", "item_binding_digest")},
+            [dict(row) for row in rows]])
+        return rows, stamp
+
+    def validate_manual_previous(self, claim, stamp):
+        if self._manual_review_rows(claim)[1] != stamp:
+            _error("dynamic_source_changed")
+
+    def manual_previous(self, claim):
+        """Use verified unresolved facts, independent from ordinary chat checkpoints."""
+        from ..criteria.facts import (
+            BINDING_RULE_VERSION,
+            RULE_VERSION,
+            FactCandidate,
+            validate_fact,
+        )
+
+        rows, stamp = self._manual_review_rows(claim)
+        latest, inherited = None, None
+        for selected in rows:
+            old, payload, repo = self.verified(selected["id"])
+            if old["payload_digest"] != selected["payload_digest"] or not payload or not payload.get("needs_review"):
+                _error("dynamic_source_changed")
+            definition = ChecklistDefinition.model_validate(old["definition"])
+            rule_version = BINDING_RULE_VERSION if old["item_bindings"] is not None else RULE_VERSION
+            try:
+                # Rebuild derived fields in the current rules before comparing
+                # inheritance; historical grammar may produce different IDs.
+                normalized = [validate_fact({k: f[k] for k in FactCandidate.model_fields}, definition,
+                    repo, f["supplier"], rule_version=rule_version, item_bindings=old["item_bindings"])
+                    for f in payload["facts"]]
+            except ValueError:
+                _error("dynamic_source_changed")
+            facts = {digest({k: f[k] for k in FactCandidate.model_fields}) for f in normalized}
+            if latest is None:
+                latest, inherited = payload, facts
+            elif not facts <= inherited:
+                # Independent correction branches need reconciliation. Never
+                # silently choose one or manufacture a merged prior report.
+                _error("dynamic_source_changed")
+        self.validate_manual_previous(claim, stamp)
+        return latest, stamp
+
     def retain_cancelled_usage(self, claim, result, provider):
         from .models import run_attempts
 

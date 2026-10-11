@@ -22,6 +22,7 @@ def execute_dynamic(engine, claim, provider, *, heartbeat_interval_seconds=10.0)
     runs, store = RunRepository(engine), DynamicRepository(engine)
     result = None
     memory = None
+    manual_stamp = None
     try:
         with run_heartbeat(runs, claim, interval_seconds=heartbeat_interval_seconds):
             binding = store.binding(claim)
@@ -90,13 +91,18 @@ def execute_dynamic(engine, claim, provider, *, heartbeat_interval_seconds=10.0)
 
             def validate_context():
                 validate()
+                if manual_stamp is not None:
+                    store.validate_manual_previous(claim, manual_stamp)
                 memory.validate()
 
             previous_payload = None
+            if binding["workflow"] == "review":
+                previous_payload, manual_stamp = store.manual_previous(claim)
             checkpoint_memory = context.memory or memory.task_memory
             if (
                 isinstance(checkpoint_memory, dict)
                 and checkpoint_memory.get("version") == 4
+                and previous_payload is None
             ):
                 previous_id = checkpoint_memory.get("source_run_id")
                 if previous_id and binding["workflow"] == "review":
