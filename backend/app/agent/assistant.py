@@ -5,7 +5,7 @@ from dataclasses import asdict
 from datetime import UTC, datetime
 from typing import Literal
 
-from langchain_core.messages import AIMessage, ToolMessage
+from langchain_core.messages import AIMessage, SystemMessage, ToolMessage
 from pydantic import Field
 
 from ..criteria.changes import ChecklistPatch, apply_changes
@@ -252,6 +252,7 @@ class AssistantAgent:
                         "dynamic_payload": None, "events": events, "usage": self.budget.summary(), "context": self.context}
             messages = self._messages(question)
             active_schemas = self.schemas
+            tool_count_repaired = False
             while True:
                 self._check()
                 self.budget.decision()
@@ -283,7 +284,18 @@ class AssistantAgent:
                 progress.update(usage=reply.usage_metadata)
                 validate_response(reply, active_schemas, extraction=False)
                 if len(reply.tool_calls) != 1:
-                    raise ProviderError("invalid_output", detail="missing_tool_call" if not reply.tool_calls else "multiple_tool_calls")
+                    detail = "missing_tool_call" if not reply.tool_calls else "multiple_tool_calls"
+                    progress.update(status="failed", error="invalid_output", failure_detail=detail, outcome_unknown=False)
+                    # Nothing from the invalid response has executed. Only a
+                    # known response can receive one correction, under the same
+                    # call/decision/token/deadline budget.
+                    if len(reply.tool_calls) > 1 and not tool_count_repaired:
+                        tool_count_repaired = True
+                        messages = [messages[0], SystemMessage(content=(
+                            "上次返回了多个工具，全部未执行。本轮只选择一个工具。"
+                            "多个品目可一起准备并写入同一候选，不要为每个品目分别调用工具。")), *messages[1:]]
+                        continue
+                    raise ProviderError("invalid_output", detail=detail)
                 if len(json.dumps(reply.model_dump(mode="json")).encode()) > 64000:
                     raise ProviderError("invalid_output", detail="output_limit")
                 progress.update(status="completed")

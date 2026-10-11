@@ -79,11 +79,44 @@ def test_invalid_tool_count_keeps_known_usage_and_safe_failure_detail(count, det
 
     result = agent(EvidenceRepository.empty('case','snap'), InvalidCount()).ask('你好')
     assert result['status'] == 'partial' and result['error'] == 'invalid_output'
-    assert result['usage']['actual_input'] == 100 and result['usage']['actual_output'] == 20
+    expected_calls = 2 if count == 2 else 1
+    assert result['usage']['model_calls'] == expected_calls
+    assert result['usage']['actual_input'] == 100 * expected_calls
+    assert result['usage']['actual_output'] == 20 * expected_calls
     assert result['usage']['unknown_usage_calls'] == 0
     assert result['payload']['candidate'] is None and not result['payload']['citations']
     assert result['events'][-1]['status'] == 'failed'
     assert result['events'][-1]['failure_detail'] == detail
+
+
+@pytest.mark.parametrize("max_calls", [1, 2])
+def test_multiple_tools_execute_none_before_one_bounded_correction(max_calls):
+    from langchain_core.messages import AIMessage
+
+    class MultipleThenOne:
+        calls = 0
+
+        def decide(self, messages, schemas, **options):
+            self.calls += 1
+            if self.calls == 1:
+                return AIMessage(content="", tool_calls=[
+                    {"name": "chat", "args": {"answer": answer}, "id": str(index)}
+                    for index, answer in enumerate(("不要执行这个", "也不要执行这个"))],
+                    usage_metadata={"input_tokens": 100, "output_tokens": 20, "total_tokens": 120})
+            return call("chat", {"answer": "已校正，只执行本条。"})
+
+    provider = MultipleThenOne()
+    result = agent(EvidenceRepository.empty("case", "snap"), provider,
+                   budget=Budget(max_calls=max_calls)).ask("你好")
+    assert provider.calls == max_calls
+    assert result["usage"]["unknown_usage_calls"] == 0
+    assert result["usage"]["tools"] == (1 if max_calls == 2 else 0)
+    assert "不要执行" not in result["answer"]
+    if max_calls == 2:
+        assert result["status"] == "completed" and result["answer"] == "已校正，只执行本条。"
+        assert result["events"][0]["failure_detail"] == "multiple_tool_calls"
+    else:
+        assert result["error"] == "model_budget"
 
 
 @pytest.mark.parametrize("sources", ["empty", "supplier_only", "buyer"])

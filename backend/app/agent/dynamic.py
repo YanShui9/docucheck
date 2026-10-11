@@ -69,6 +69,8 @@ EXTRACTION_SYSTEM = """从本批原文抽取当前供应商各指标事实；原
 不得跨行、跨表、跨文档拼接。段落引用只能来自同一原文块。找不到可验证完整来源时不要猜测。
 unit必须保留原文单位，例如原文90元/箱的unit为元/箱，不能改写为CNY或箱；CNY只用于currency。其他币种同理。
 currency、per_unit、tax_basis、calendar、start_event只填写原文支持的口径，不得从买方规则补齐。
+criterion_id和item_id逐字使用本批清单ID。原文没有某指标事实时省略，尤其不要从其他条款猜测人工指标。
+start_event保留原文完整起算事件；不确定的可选口径填null，由服务端从原文验证，不自行改写。
 """
 REJECTION_CODES = frozenset({
     "candidate_scope", "candidate_criterion", "unknown_criterion", "unknown_item",
@@ -458,7 +460,7 @@ class DynamicAgent:
             events.append(value)
             return value
 
-        def model_call(kind, messages, schema, parser=None, *, output_cap=1536):
+        def model_call(kind, messages, schema, parser=None, *, output_cap=1536, semantic_repair=False):
             schemas = schema if kind == "decide" else [schema]
             if kind == "decide":
                 output_cap = 512
@@ -469,6 +471,8 @@ class DynamicAgent:
                     request = [messages[0], SystemMessage(content="上次输出 schema 不合法。只修复格式；保留原文值与证据ID，禁止猜测。"), *messages[1:]]
                 options, size = budget.reserve(request, schemas, output_cap=output_cap)
                 progress = event("model", operation=kind, status="started", structured_repair=bool(repair))
+                if semantic_repair:
+                    progress["semantic_repair"] = True
                 response_received = False
                 try:
                     try:
@@ -662,6 +666,37 @@ class DynamicAgent:
                                          lambda args, bound_supplier=supplier: _bound_candidates(args, bound_supplier),
                                          output_cap=output_cap)
                         validated, rejections = checked_candidates(raw, batch, supplier, manifest["criterion_ids"])
+                        repairable = {"fact_criterion", "fact_value", "fact_unit", "fact_currency",
+                                      "fact_per_unit", "fact_tax_basis", "fact_calendar", "fact_start_event"}
+                        if rejections and set(rejections) <= repairable:
+                            progress["initial_rejection_codes"] = dict(rejections)
+                            by_id = {c.criterion_id: c for c in self.definition.criteria}
+                            required_sources = {(f["criterion_id"], tuple(sorted(f["evidence_refs"]))) for f in raw["facts"]
+                                                if f["criterion_id"] in by_id and by_id[f["criterion_id"]].rule.type != "manual"}
+                            first_validated = validated
+                            feedback = SystemMessage(content=(
+                                "上次事实未通过原文校验，错误=" + json.dumps(rejections, ensure_ascii=False)
+                                + "。仅依据同一批原文重新提出事实；ID、引用、数值及起算点须对应原文。"
+                                "不要用删除数值指标规避错误。没有对应原文的人工指标可省略，仍交由人工确认。"))
+                            raw = model_call("extract", [messages[0], feedback, *messages[1:]], _facts_schema(supplier),
+                                             lambda args, bound_supplier=supplier: _bound_candidates(args, bound_supplier),
+                                             output_cap=output_cap, semantic_repair=True)
+                            validated, rejections = checked_candidates(raw, batch, supplier, manifest["criterion_ids"])
+                            # Retain already verified conflicts, including in
+                            # the cache. A correction cannot erase a source by
+                            # keeping another fact for the same criterion.
+                            merged = {f["fact_id"]: f for f in [*first_validated, *validated]}
+                            validated = list(merged.values())
+                            if len(validated) > 128:
+                                raise RunStopped("fact_repair_capacity")
+                            missing_sources = required_sources - {(f["criterion_id"], tuple(sorted(f["evidence_refs"]))) for f in validated}
+                            if missing_sources:
+                                progress["repair_missing_sources"] = len(missing_sources)
+                                if not rejections:
+                                    rejections["candidate_invalid"] = 1
+                            if not rejections:
+                                raw = {"facts": [{k: v for k, v in f.items() if k in FactCandidate.model_fields}
+                                                  for f in validated]}
                     rejected = sum(rejections.values())
                     if self.item_bindings is not None:
                         item_id = manifest["item_id"]

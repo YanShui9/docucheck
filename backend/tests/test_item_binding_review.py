@@ -137,6 +137,122 @@ class Provider:
         return call("DynamicFactCandidates", {"facts": facts})
 
 
+@pytest.mark.parametrize("second", ["valid", "same_error", "drop_numeric"])
+def test_fact_basis_correction_is_once_and_cannot_turn_dropped_numeric_fact_into_coverage(second):
+    definition, repo, frozen = sample()
+
+    class BasisCorrection(Provider):
+        def extract(self, messages, schema, **options):
+            reply = super().extract(messages, schema, **options)
+            if len(self.batches) == 1 or second == "same_error":
+                # The original contains 订单确认后, not 合同签订后.
+                reply.tool_calls[0]["args"]["facts"][1]["start_event"] = "合同签订后"
+            elif second == "drop_numeric":
+                reply.tool_calls[0]["args"]["facts"] = []
+            return reply
+
+    provider = BasisCorrection()
+    result = DynamicAgent(repo, provider, definition, item_bindings=frozen).ask("审查", operation="review")
+    assert len(provider.batches) == 2
+    assert provider.batches[0] == provider.batches[1]
+    if second == "valid":
+        assert result["status"] == "completed"
+        assert [c["business_status"] for c in result["payload"]["checks"]] == ["满足", "不满足", "待人工确认"]
+    else:
+        assert result["error"] == "coverage_incomplete"
+        assert not any(c["is_formal"] for c in result["payload"]["checks"])
+
+
+def test_out_of_scope_candidates_are_not_replayed_for_semantic_correction():
+    definition, repo, frozen = sample(extra=True)
+
+    class WrongScope(Provider):
+        def extract(self, messages, schema, **options):
+            super().extract(messages, schema, **options)
+            return call("DynamicFactCandidates", {"facts": [candidate(repo) | {
+                "evidence_refs": [repo.blocks[-1].evidence_id], "quote": repo.blocks[-1].text, "value": "200"}]})
+
+    provider = WrongScope()
+    result = DynamicAgent(repo, provider, definition, item_bindings=frozen).ask("审查", operation="review")
+    assert len(provider.batches) == 1
+    assert result["error"] == "coverage_incomplete"
+    assert result["payload"]["facts"] == []
+
+
+@pytest.mark.parametrize("invalid_conflict", [False, True])
+def test_fact_correction_keeps_verified_conflict_or_incomplete_source_in_result_and_cache(invalid_conflict):
+    from dataclasses import replace
+
+    definition, repo, frozen = sample()
+    original = repo.documents[0]
+    parsed = replace(original.parsed, blocks=(*original.parsed.blocks,
+                     EvidenceBlock("conflict", "quote", "数量20台", sheet="报价", cell="B6")))
+    repo = EvidenceRepository("case", 1, [replace(original, parsed=parsed)])
+    requests = [{"document_id": "quote", "source_sha256": "a" * 64, "parser_version": "parser", "item_id": "phone",
+                 "selector": {"kind": "xlsx", "sheet": "报价", "start_row": 4, "end_row": 6, "start_column": 2, "end_column": 2},
+                 "anchor": {"evidence_refs": [repo.blocks[0].evidence_id], "quote": "苹果手机"}, "identifier_class": "category"}]
+    frozen["payload"].update(snapshot_id=repo.snapshot_id, entries=validate_bindings(requests, definition, repo).payload())
+    frozen["digest"] = digest(frozen["payload"])
+
+    class ConflictCorrection(Provider):
+        def extract(self, messages, schema, **options):
+            reply = super().extract(messages, schema, **options)
+            if len(self.batches) == 1:
+                reply.tool_calls[0]["args"]["facts"][1]["start_event"] = "合同签订后"
+                reply.tool_calls[0]["args"]["facts"].append(candidate(repo) | {
+                    "value": "19" if invalid_conflict else "20", "quote": repo.blocks[-1].text,
+                    "evidence_refs": [repo.blocks[-1].evidence_id]})
+            else:
+                # Deliberately omit the conflicting source in the correction;
+                # the production merge must retain it, or keep coverage partial.
+                reply.tool_calls[0]["args"]["facts"] = [
+                    f for f in reply.tool_calls[0]["args"]["facts"]
+                    if repo.blocks[-1].evidence_id not in f["evidence_refs"]]
+            return reply
+
+    cache = {}
+    provider = ConflictCorrection()
+    result = DynamicAgent(repo, provider, definition, item_bindings=frozen,
+                          cache_save=lambda key, identity, raw: cache.update({(key, identity): raw})).ask("审查", operation="review")
+    if invalid_conflict:
+        assert result["error"] == "coverage_incomplete"
+        assert not any(c["is_formal"] for c in result["payload"]["checks"])
+        assert cache == {}
+        return
+    assert result["status"] == "completed"
+    assert result["payload"]["checks"][0]["business_status"] == "资料冲突"
+    assert {f["value"] for f in result["payload"]["facts"] if f["criterion_id"] == "qty"} == {"10", "20"}
+    reused = Provider()
+    cached = DynamicAgent(repo, reused, definition, item_bindings=frozen,
+                          cache_load=lambda key, identity: cache.get((key, identity))).ask("审查", operation="review")
+    assert reused.batches == [] and cached["status"] == "completed"
+    assert cached["payload"]["checks"][0]["business_status"] == "资料冲突"
+
+
+def test_semantic_correction_does_not_replay_unknown_request_or_exceed_call_budget():
+    from backend.app.agent.policy import Budget
+    from backend.app.providers.base import ProviderError
+
+    definition, repo, frozen = sample()
+
+    class UnknownCorrection(Provider):
+        def extract(self, messages, schema, **options):
+            reply = super().extract(messages, schema, **options)
+            if len(self.batches) == 1:
+                reply.tool_calls[0]["args"]["facts"][1]["start_event"] = "合同签订后"
+                return reply
+            raise ProviderError("connection_error", outcome_unknown=True)
+
+    for max_calls, expected in [(2, "model_budget"), (3, "connection_error")]:
+        provider = UnknownCorrection()
+        result = DynamicAgent(repo, provider, definition, item_bindings=frozen,
+                              budget=Budget(max_calls=max_calls)).ask("审查", operation="review")
+        assert result["error"] == expected
+        assert len(provider.batches) == max_calls - 1
+        assert result["usage"]["unknown_usage_calls"] == (1 if max_calls == 3 else 0)
+        assert not any(c["is_formal"] for c in result["payload"]["checks"])
+
+
 def test_v4_agent_uses_only_bound_range_and_keeps_binding_in_cache_identity():
     definition, repo, frozen = sample()
     provider = Provider()
