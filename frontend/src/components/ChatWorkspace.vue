@@ -10,6 +10,7 @@ import type { ChecklistTarget } from '../checklistCandidate'
 import { accessToken } from '../auth'
 import ChatComposer from './ChatComposer.vue'
 const props = defineProps<{ caseId: string | null; scopeKey?: string; revision: number; canWrite: boolean; prepareCase: () => Promise<string | null>;
+  busy?: boolean;
   checklistChanges?: Record<string, number>;
   bindingChanges?: Record<string, number>;
   pendingReportCorrections?: Record<string, { caseId: string; snapshotId: string; count: number }> }>()
@@ -309,7 +310,7 @@ async function selectConversation(id: string | null) {
   finally { if (current(version)) loading.value = false }
 }
 async function send(retry = false) {
-  if (!props.canWrite || sending.value || loading.value || olderLoading.value || running.value || !historyReady.value) return
+  if (!props.canWrite || props.busy || sending.value || loading.value || olderLoading.value || running.value || !historyReady.value) return
   const content = retry && pending ? pending.content : draft.value.trim()
   if ((!content && !(retry && pending?.retry)) || (!retry && uncertain.value)) return
   let version = generation
@@ -365,7 +366,7 @@ async function send(retry = false) {
 }
 async function stop() {
   const run = activeRun.value; const version = generation
-  if (!run || sending.value || !props.canWrite) return
+  if (!run || sending.value || !props.canWrite || props.busy) return
   sending.value = true
   try { await apiRequest(`/agent-runs/${run.id}/cancel`, accessToken, { method: 'POST' }); if (current(version)) { await readRun(run.id, version); schedule(version) } }
   catch (reason) { if (current(version)) fail(reason) }
@@ -373,7 +374,7 @@ async function stop() {
 }
 async function retryRun(runId: string) {
   const run = runs.value[runId]
-  if (!props.caseId || !props.canWrite || sending.value || loading.value || uncertain.value || activeRun.value || !run?.is_current || run.revision !== props.revision || !['failed', 'partial', 'interrupted'].includes(run.status)) return
+  if (!props.caseId || !props.canWrite || props.busy || sending.value || loading.value || uncertain.value || activeRun.value || !run?.is_current || run.revision !== props.revision || !['failed', 'partial', 'interrupted'].includes(run.status)) return
   pending = { caseId: props.caseId, conversationId: run.conversation_id, content: '', revision: props.revision, key: crypto.randomUUID(), path: `/agent-runs/${runId}/retry`, resume: false, retry: true }
   await send(true)
 }
@@ -508,7 +509,7 @@ onUnmounted(() => { disposed = true; ++generation; if (timer) clearTimeout(timer
       <label>对话 <select aria-label="选择对话" :value="conversationId ?? ''" :disabled="sending || uncertain" @change="selectConversation(($event.target as HTMLSelectElement).value)">
         <option v-for="(item, index) in conversations" :key="item.id" :value="item.id">对话 {{ index + 1 }} · {{ new Date(item.created_at).toLocaleDateString('zh-CN') }}</option>
       </select></label>
-      <button class="text-button" :disabled="sending || loading || uncertain || !canWrite || !!activeRun" @click="selectConversation(null)">新对话</button>
+      <button class="text-button" :disabled="sending || loading || uncertain || !canWrite || busy || !!activeRun" @click="selectConversation(null)">新对话</button>
     </div>
     <div ref="scrollArea" class="chat-scroll" @scroll="updateScroll">
       <div v-if="loading && !messages.length" class="chat-loading" role="status">正在读取对话…</div>
@@ -518,8 +519,8 @@ onUnmounted(() => { disposed = true; ++generation; if (timer) clearTimeout(timer
         <h1>今天要采购什么？</h1>
         <p>可以先描述需求，也可以上传需求单和供应商资料。</p>
         <div class="starter-actions">
-          <button :disabled="!canWrite" @click="draft = '我要采购20箱苹果，帮我梳理需要确认的采购要求。'"><strong>梳理采购需求</strong><span>从品类、数量和交付要求开始</span></button>
-          <button :disabled="!canWrite" @click="emit('upload')"><strong>上传资料开始审查</strong><span>需求单、供应商报价与产品说明</span></button>
+          <button :disabled="!canWrite || busy" @click="draft = '我要采购20箱苹果，帮我梳理需要确认的采购要求。'"><strong>梳理采购需求</strong><span>从品类、数量和交付要求开始</span></button>
+          <button :disabled="!canWrite || busy" @click="emit('upload')"><strong>上传资料开始审查</strong><span>需求单、供应商报价与产品说明</span></button>
         </div>
       </div>
       <div v-else class="chat-transcript">
@@ -553,7 +554,7 @@ onUnmounted(() => { disposed = true; ++generation; if (timer) clearTimeout(timer
               <span v-else-if="results[message.run_id] && !results[message.run_id]!.is_current && !candidateOf(message)"> · 历史资料对应或审查要求</span>
             </div>
             <p v-if="runs[message.run_id]?.outcome_unknown" class="state-note">上次模型请求的结果未知，重新处理可能再次调用模型。</p>
-            <button v-if="runs[message.run_id]?.is_current && runs[message.run_id]!.revision === revision && ['failed', 'partial', 'interrupted'].includes(runs[message.run_id]!.status) && canWrite" class="text-button" :disabled="sending || loading || uncertain || !!activeRun" @click="retryRun(message.run_id)">重新处理</button>
+            <button v-if="runs[message.run_id]?.is_current && runs[message.run_id]!.revision === revision && ['failed', 'partial', 'interrupted'].includes(runs[message.run_id]!.status) && canWrite" class="text-button" :disabled="sending || loading || uncertain || busy || !!activeRun" @click="retryRun(message.run_id)">重新处理</button>
           </article>
         </template>
       </div>
@@ -562,9 +563,9 @@ onUnmounted(() => { disposed = true; ++generation; if (timer) clearTimeout(timer
       <button v-if="!atBottom" class="back-to-latest" @click="goLatest">↓ 回到最新</button>
       <div v-if="error" class="chat-error" role="alert">{{ error }} <button v-if="uncertain" class="text-button" @click="send(true)">重试原请求</button><button v-else class="text-button" @click="refresh">刷新对话</button></div>
       <button v-else-if="Object.keys(resultErrors).length" class="text-button" :disabled="loading || sending || olderLoading" @click="refresh">刷新对话</button>
-      <div v-if="activeRun?.status === 'waiting_user'" class="state-note">请补充信息后发送，或<button class="text-button" :disabled="sending || !canWrite" @click="stop">结束本次处理</button>。</div>
-      <ChatComposer v-model="draft" :disabled="!canWrite || loading || sending || olderLoading || uncertain || !historyReady" :running="running && canWrite" @send="send()" @upload="emit('upload')" @stop="stop" />
-      <p class="composer-disclaimer">{{ canWrite ? '助手结论供采购审查参考，请结合原文确认。' : '当前为只读权限，可查看对话和资料。' }}</p>
+      <div v-if="activeRun?.status === 'waiting_user'" class="state-note">请补充信息后发送，或<button class="text-button" :disabled="sending || !canWrite || busy" @click="stop">结束本次处理</button>。</div>
+      <ChatComposer v-model="draft" :disabled="!canWrite || busy || loading || sending || olderLoading || uncertain || !historyReady" :running="running && canWrite && !busy" @send="send()" @upload="emit('upload')" @stop="stop" />
+      <p class="composer-disclaimer">{{ !canWrite ? '当前为只读权限，可查看对话和资料。' : busy ? '正在更新采购任务，完成后可继续发送消息。' : '助手结论供采购审查参考，请结合原文确认。' }}</p>
     </div>
   </section>
 </template>

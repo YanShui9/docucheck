@@ -73,6 +73,24 @@ afterEach(() => {
   uploadDocument.mockReset()
 })
 
+test('upload busy state blocks chat writes without changing owner permissions', async () => {
+  const wrapper = await workbench()
+  const upload = deferred<void>()
+  uploadDocument.mockReturnValue(upload.promise)
+  wrapper.findComponent({ name: 'DocumentsPanel' }).vm.$emit('upload', {
+    file: new File(['test'], 'test.xlsx'), role: 'quote',
+    supplierHandle: 'vendor-a', supplierName: 'Vendor A', modelName: '',
+  })
+  await flushPromises()
+  const chat = wrapper.findComponent({ name: 'ChatWorkspace' })
+  expect(chat.props('canWrite')).toBe(true)
+  expect(chat.props('busy')).toBe(true)
+  upload.resolve()
+  await flushPromises()
+  expect(chat.props('canWrite')).toBe(true)
+  expect(chat.props('busy')).toBe(false)
+})
+
 test.each(['success', 'failure'])('late upload %s cannot replace a newly selected Case', async outcome => {
   const wrapper = await workbench()
   const upload = deferred<void>()

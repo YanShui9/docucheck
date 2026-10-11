@@ -424,7 +424,7 @@ onUnmounted(() => { if (refreshTimer) clearInterval(refreshTimer) })
       <div v-if="loading" class="loading-state" role="status">正在读取工作区…</div>
       <ChatWorkspace v-else :case-id="selectedCaseId" :scope-key="selectedProjectId ?? ''" :revision="documents?.revision ?? selectedCase?.revision ?? 0" :pending-report-corrections="pendingReportCorrections"
                      :checklist-changes="checklistChanges" :binding-changes="bindingChanges"
-                     :can-write="canWrite && !busy" :prepare-case="prepareCase"
+                     :can-write="canWrite" :busy="busy" :prepare-case="prepareCase"
                      @upload="openDocuments" @title="taskTitles[$event.caseId] = $event.title"
                      @open-evidence="evidenceTarget = $event; panel = null"
                      @open-checklist="openChecklistFromChat" @open-review="openReviewFromChat" />

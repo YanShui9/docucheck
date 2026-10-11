@@ -24,6 +24,29 @@ function reads(path: string) {
 }
 afterEach(() => { wrappers.splice(0).forEach(w => w.unmount()); apiRequest.mockReset(); vi.useRealTimers() })
 
+test('external busy state disables input while keeping write permission and draft', async () => {
+  apiRequest.mockImplementation(reads)
+  const wrapper = setup(); await flushPromises()
+  await wrapper.get('textarea').setValue('请核对采购数量')
+  await wrapper.setProps({ busy: true }); await flushPromises()
+  expect(wrapper.get('textarea').attributes('disabled')).toBeDefined()
+  expect(wrapper.text()).not.toContain('当前为只读权限')
+  expect(wrapper.text()).toContain('正在更新采购任务')
+  await wrapper.get('[aria-label="发送消息"]').trigger('click'); await flushPromises()
+  expect(apiRequest.mock.calls.filter(([, , init]) => init?.method === 'POST')).toHaveLength(0)
+  await wrapper.setProps({ busy: false }); await flushPromises()
+  expect(wrapper.get('textarea').attributes('disabled')).toBeUndefined()
+  expect((wrapper.get('textarea').element as HTMLTextAreaElement).value).toBe('请核对采购数量')
+})
+
+test('read only permission remains visible during an external busy state', async () => {
+  apiRequest.mockImplementation(reads)
+  const wrapper = setup(); await flushPromises()
+  await wrapper.setProps({ canWrite: false, busy: true }); await flushPromises()
+  expect(wrapper.get('textarea').attributes('disabled')).toBeDefined()
+  expect(wrapper.text()).toContain('当前为只读权限')
+})
+
 test.each(['success', 'failure'])('binding confirmation reloads report currentness and disables stale retries: %s', async outcome => {
   let changed = false
   apiRequest.mockImplementation((path: string) => {
