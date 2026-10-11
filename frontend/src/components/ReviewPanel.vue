@@ -256,7 +256,7 @@ onBeforeUnmount(() => { mounted = false; ++scope })
       <span class="panel-revision" v-if="checks">资料版本 v{{ checks.revision }}</span>
     </div>
     <p v-if="checks && !checks.is_current" class="state-note warning">
-      这份报告属于历史资料版本（v{{ checks.revision }}），仅供追溯，不作为当前正式结论。
+      这份报告的资料、审查清单或品目对应已变化，仅供追溯，不作为当前正式结论。
     </p>
     <p v-if="checks && ['partial', 'queued', 'running', 'waiting_user'].includes(checks.run_status)"
        class="state-note warning">本次处理尚未完成，未完成部分不会算作业务结论。</p>

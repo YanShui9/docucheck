@@ -54,4 +54,4 @@
 - 全量：`python.exe -m scripts.verify_offline --report data/verification/<新文件名>.json`，网络守卫/报告不可覆盖。前端在frontend执行npm test和npm run build；安装沿用锁与既有约定。
 - 新行为补回归，答案先由业务契约确定。离线/实连/真实模型分别报告，skip不算通过。独立质量、容量、费用和灾备不能以合成开发集代替。
 
-业务下一步：C1业务迁移0017已应用；v6水果/服装四项正式审查、苹果范围混合检索和JSON/Excel通过。手机重审暴露人工事实未继承，已补两执行器的权威报告读取、版本边界和摘要重验；[人工复核继承补修](docs/document-item-binding-c-manual-carry-2026-10-11.md)全量1583通过/48跳过、网络0，先本地提交再应用。C2/C3仍待手机真实重审及范围变更后的历史/导出。见[路线图](docs/development-roadmap.md)及[C计划](docs/superpowers/plans/2026-10-10-document-item-binding-live.md)。
+业务下一步：[品目对应C1/C2/C3指定合成闭环](docs/document-item-binding-c-acceptance-2026-10-11.md)完成，后台源码6ff2a96、0017已应用。手机人工继承/非正式标记、水果服装四项正式审查、苹果范围混合检索、范围变更后的历史只读及JSON/Excel通过。最终后端1583通过/48跳过、网络0，前端221通过及类型/构建通过。接下来做动态多品类独立资料/预期答案，再检索对照与生产容量/恢复；独立封存仍0，不把本次合成开发场景称独立质量。见[路线图](docs/development-roadmap.md)。

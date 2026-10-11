@@ -86,6 +86,8 @@ test('historical runs are labelled and never presented as current conclusions', 
   const wrapper = setup()
   await flushPromises()
   expect(wrapper.text()).toContain('历史结果')
+  expect(wrapper.text()).toContain('资料、审查清单或品目对应已变化')
+  expect(wrapper.text()).not.toContain('属于历史资料版本')
 })
 
 test('evidence links open the original document panel', async () => {

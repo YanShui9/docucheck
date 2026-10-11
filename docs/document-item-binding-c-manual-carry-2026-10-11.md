@@ -20,3 +20,5 @@
 最终全量 **1583 通过、48 跳过、网络 0**，Ruff 和依赖检查通过，466.031 秒，检查期间源码未变。48 项是真实服务显式 opt-in 场景，不能计为本次实连通过。前端未修改，沿用指标与原件补修的 221 项、类型检查及构建结果。
 
 本机记录：`data/verification/item-binding-c-manual-carry-valid-red-2026-10-11.json`、`item-binding-c-manual-carry-green-2026-10-11.json`、`item-binding-c-manual-carry-final-target-2026-10-11.json`、`item-binding-c-manual-carry-full-2026-10-11.json`。首次提交时待应用本次源码并验证手机重审／历史，不能据离线通过称 C2/C3 已完成。本地 Git 保存，不推送 GitHub。
+
+后续已应用 `6ff2a96`，手机真实重审和历史隔离／冻结导出通过，见[C2/C3最终验收](document-item-binding-c-acceptance-2026-10-11.md)。首次尝试因无效指标 partial，页面显式重试后完成；两次均保留人工事实和待复核，新问题未指定修正值。历史提示文案另行校验，最终前端221通过、类型/构建通过。

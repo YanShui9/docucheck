@@ -21,3 +21,5 @@
 本机最终记录：`data/verification/item-binding-c-v6-literal-verified-full-2026-10-11.json`、`item-binding-c-literal-final-target-2026-10-11.json`、`item-binding-c-original-front-settled-final-2026-10-11.json`。原数据对比已核对 30 张表、475 份原件无业务改变；23 条已删除索引的定期维护字段单列。离线跳过项目及独立质量、容量、账单、异机恢复仍未验收。
 
 本记录提交时尚待代码应用与后续 C2/C3 闭环。本地 Git 保存，不推送 GitHub。
+
+后续 v6 已应用，水果／服装正式审查和范围检索通过；手机执行器人工继承缺陷另经修复并实连验证，历史导出通过。最新状态见[C2/C3最终验收](document-item-binding-c-acceptance-2026-10-11.md)，本页保留补修首次提交的阶段证据。
