@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, onUnmounted, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, nextTick, onUnmounted, ref, watch } from 'vue'
 import { accessToken } from '../auth'
 import { fetchChecklist } from '../api'
 import type { ChecklistView, DocumentRecord, EvidenceRecord } from '../api'
@@ -35,6 +35,7 @@ const editingIndex = ref<number | null>(null)
 const confirmed = ref(false)
 const reason = ref('已核对品目名称与原文范围，确认资料对应关系')
 const originalTarget = ref<{ caseId: string; snapshotId: string; evidenceId: string } | null>(null)
+const originalContainer = ref<HTMLElement | null>(null)
 let generation = 0
 const items = computed(() => checklist.value?.confirmed_version?.definition.items ?? [])
 const writable = computed(() => !accessRejected.value && props.canWrite && !props.historical && props.document.role !== 'requirement' && checklist.value?.is_current_snapshot
@@ -158,7 +159,15 @@ function stage() {
 }
 function edit(index: number) { if (!locked.value) { draft.value = draftFromEntry(working.value[index]!); editingIndex.value = index; confirmed.value = false } }
 function remove(index: number) { if (!locked.value) { working.value = working.value.filter((_, position) => position !== index); resetDraft(); confirmed.value = false } }
-function preview(id: string) { if (!accessRejected.value) originalTarget.value = { caseId: props.caseId, snapshotId: props.snapshotId, evidenceId: id } }
+async function preview(id: string) {
+  if (accessRejected.value) return
+  originalTarget.value = { caseId: props.caseId, snapshotId: props.snapshotId, evidenceId: id }
+  await scrollOriginal()
+}
+async function scrollOriginal() {
+  await nextTick()
+  originalContainer.value?.scrollIntoView?.({ block: 'start' })
+}
 async function save(retry = false) {
   if (saving.value || props.busy || !writable.value || loading.value || conflicted.value || (retry ? !uncertain.value || !pending.value : !canSave.value)) return
   const current = generation; const { caseId, snapshotId } = props
@@ -302,6 +311,6 @@ onUnmounted(() => { generation++ })
         <button class="button button-primary" data-test="binding-save" :disabled="!canSave" @click="save()">{{ saving ? '保存中…' : '确认资料对应关系' }}</button>
       </div>
     </template>
-    <div v-if="originalTarget" class="binding-original"><EvidencePanel :target="originalTarget" :width="390" @close="originalTarget = null" /></div>
+    <div v-if="originalTarget" ref="originalContainer" class="binding-original"><EvidencePanel :target="originalTarget" :width="390" @close="originalTarget = null" @settled="scrollOriginal" /></div>
   </section>
 </template>

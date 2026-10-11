@@ -6,6 +6,7 @@ import pytest
 
 from backend.app.agent.dynamic import DynamicAgent, review_plan
 from backend.app.criteria.facts import (
+    BINDING_RULE_VERSION,
     evaluate_checklist,
     revalidate_fact,
     validate_fact,
@@ -68,7 +69,8 @@ def test_v5_real_multiple_start_events_remain_ambiguous():
 
 @pytest.mark.parametrize("decision", ["review_checklist", "get_checklist"])
 @pytest.mark.parametrize("tampered", [False, True])
-def test_v4_manual_alternative_is_revalidated_then_carried_into_full_v5_review(monkeypatch, decision, tampered):
+@pytest.mark.parametrize("old_rule", ["dynamic-rules-v4", "dynamic-rules-v5"])
+def test_old_manual_alternative_is_revalidated_then_carried_into_current_review(monkeypatch, decision, tampered, old_rule):
     from backend.app.agent import dynamic
 
     definition, repo, frozen = sample()
@@ -82,12 +84,12 @@ def test_v4_manual_alternative_is_revalidated_then_carried_into_full_v5_review(m
     frozen["payload"].update(snapshot_id=repo.snapshot_id, entries=validate_bindings([request], definition, repo).payload())
     frozen["digest"] = digest(frozen["payload"])
     with monkeypatch.context() as patch:
-        patch.setattr(dynamic, "BINDING_RULE_VERSION", "dynamic-rules-v4")
+        patch.setattr(dynamic, "BINDING_RULE_VERSION", old_rule)
         result = DynamicAgent(repo, Provider(), definition, item_bindings=frozen).ask("审查")
     assert result["status"] == "completed"
     previous = deepcopy(result["payload"])
     alternative = validate_fact(candidate(repo) | {"value": "20"}, definition, repo, "A",
-                                rule_version="dynamic-rules-v4", item_bindings=frozen)
+                                rule_version=old_rule, item_bindings=frozen)
     previous["facts"].append(alternative)
     previous["needs_review"] = True
     if tampered:
@@ -106,7 +108,7 @@ def test_v4_manual_alternative_is_revalidated_then_carried_into_full_v5_review(m
         assert not any(c["is_formal"] for c in current["payload"]["checks"])
         return
     assert current["status"] == "completed" and current["payload"]["needs_review"]
-    assert current["payload"]["rule_version"] == "dynamic-rules-v5"
+    assert current["payload"]["rule_version"] == BINDING_RULE_VERSION
     assert len(provider.batches) == len(current["payload"]["batch_manifest"]) == 1
     assert {f["value"] for f in current["payload"]["facts"] if f["criterion_id"] == "qty"} == {"10", "20"}
     assert current["payload"]["checks"][0]["business_status"] == "资料冲突"

@@ -54,4 +54,4 @@
 - 全量：`python.exe -m scripts.verify_offline --report data/verification/<新文件名>.json`，网络守卫/报告不可覆盖。前端在frontend执行npm test和npm run build；安装沿用锁与既有约定。
 - 新行为补回归，答案先由业务契约确定。离线/实连/真实模型分别报告，skip不算通过。独立质量、容量、费用和灾备不能以合成开发集代替。
 
-业务下一步：品目对应后端A与前端B源码及门禁完成；C1业务迁移0017和服务更新已应用，C2真实闭环正在验收。合成手机资料已解析/索引并确认11项清单，品目对应与正式审查尚未完成。见[路线图](docs/development-roadmap.md)、[C1记录](docs/document-item-binding-c1-2026-10-11.md)及[C计划](docs/superpowers/plans/2026-10-10-document-item-binding-live.md)。
+业务下一步：C1业务迁移0017已应用，C2真实闭环正在验收。合成手机已确认品目对应，v5审查/原件/导出通过；受控格式修正后保持人工复核。水果/服装已确认两品目四指标和不重叠范围，完整审查与范围检索待v6应用后验证。本轮[指标及原件补修](docs/document-item-binding-c-metric-labels-2026-10-11.md)门禁通过，先本地提交再应用。见[路线图](docs/development-roadmap.md)及[C计划](docs/superpowers/plans/2026-10-10-document-item-binding-live.md)。

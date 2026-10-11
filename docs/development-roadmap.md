@@ -16,7 +16,7 @@
 
 品目对应：[批准设计](superpowers/specs/2026-10-10-document-item-binding-design.md)、[后端计划](superpowers/plans/2026-10-10-document-item-binding-backend.md)、[前端计划](superpowers/plans/2026-10-10-document-item-binding-frontend.md)、[A1](document-item-binding-a1-2026-10-10.md)、[A2](document-item-binding-a2-2026-10-10.md)、[A3](document-item-binding-a3-2026-10-10.md)、[B](document-item-binding-b-2026-10-10.md)。
 
-C进度：[应用记录](document-item-binding-c1-2026-10-11.md)、[运行验收计划](superpowers/plans/2026-10-10-document-item-binding-live.md)。合成手机资料已真实解析/索引，11项清单已确认；品目对应版本0，正式审查尚未执行。机器重启后服务已恢复，用户已重新登录。
+C进度：[运行验收计划](superpowers/plans/2026-10-10-document-item-binding-live.md)。手机品目对应已确认，v5审查/原件/JSON/Excel通过；受控格式修正保留人工复核。水果/服装两品目四指标和不重叠范围已确认，重叠/不同SKU被拒绝。本轮[指标与原件补修](document-item-binding-c-metric-labels-2026-10-11.md)后端1574通过/48跳过、前端221通过，待v6应用并继续完整审查、范围检索与历史验收。
 
 ## 业务下一步：C应用及真实闭环
 

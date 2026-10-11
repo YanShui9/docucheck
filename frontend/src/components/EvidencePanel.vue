@@ -12,7 +12,7 @@ const props = defineProps<{
   target: { caseId: string; snapshotId: string; evidenceId: string } | null
   width: number
 }>()
-const emit = defineEmits<{ close: []; resize: [width: number] }>()
+const emit = defineEmits<{ close: []; resize: [width: number]; settled: [] }>()
 const evidence = ref<EvidenceRecord | null>(null)
 const document = ref<DocumentRecord | null>(null)
 const original = ref<Blob | null>(null)
@@ -126,6 +126,8 @@ async function loadEvidence() {
     if (current === sequence) {
       loading.value = false
       if (pdf) void safelyRenderPage()
+      await nextTick()
+      if (current === sequence) emit('settled')
     }
   }
 }

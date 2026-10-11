@@ -33,6 +33,7 @@ function read(path: string, _token?: unknown, init?: RequestInit): Promise<unkno
   throw new Error(`Unexpected path ${path}`)
 }
 const wrappers: ReturnType<typeof mount>[] = []
+const originalScrollIntoView = HTMLElement.prototype.scrollIntoView
 async function editor(props: Record<string, unknown> = {}) {
   apiRequest.mockImplementation(read)
   const wrapper = mount(DocumentItemBindings, { props: { caseId: 'case-a', snapshotId: 'snap-a', revision: 2,
@@ -50,7 +51,7 @@ async function stage(wrapper: ReturnType<typeof mount>) {
   await wrapper.get('[data-test="binding-entry-form"]').trigger('submit')
 }
 function writes() { return apiRequest.mock.calls.filter(([, , init]) => init?.method === 'PUT') }
-afterEach(() => { wrappers.splice(0).forEach(wrapper => wrapper.unmount()); apiRequest.mockReset() })
+afterEach(() => { wrappers.splice(0).forEach(wrapper => wrapper.unmount()); apiRequest.mockReset(); HTMLElement.prototype.scrollIntoView = originalScrollIntoView })
 
 test('staging is local; explicit confirmation preserves other documents and sends all revision guards', async () => {
   const wrapper = await editor()
@@ -104,6 +105,8 @@ test('stale bindings remain historical and are never included silently in a new 
 })
 
 test('range preview and original preview preserve the local entry form', async () => {
+  const scroll = vi.fn()
+  HTMLElement.prototype.scrollIntoView = scroll
   const wrapper = await editor()
   await wrapper.get('[data-test="binding-kind"]').setValue('xlsx')
   await wrapper.get('[data-test="binding-sheet"]').setValue('报价')
@@ -116,6 +119,11 @@ test('range preview and original preview preserve the local entry form', async (
   await wrapper.get('[data-test="binding-anchor"]').setValue('title')
   await wrapper.get('[data-test="binding-original"]').trigger('click'); await flushPromises()
   expect(wrapper.find('.original-preview').exists()).toBe(true)
+  expect((wrapper.get('[data-test="binding-start-row"]').element as HTMLInputElement).value).toBe('4')
+  expect(scroll).toHaveBeenCalledWith({ block: 'start' })
+  wrapper.findComponent({ name: 'EvidencePanel' }).vm.$emit('settled')
+  await flushPromises()
+  expect(scroll).toHaveBeenCalledTimes(2)
   expect((wrapper.get('[data-test="binding-start-row"]').element as HTMLInputElement).value).toBe('4')
 })
 

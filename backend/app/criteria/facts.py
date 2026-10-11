@@ -46,8 +46,8 @@ from .validation import (
 )
 
 RULE_VERSION = "dynamic-rules-v3"
-BINDING_RULE_VERSION = "dynamic-rules-v5"
-BINDING_RULE_VERSIONS = {"dynamic-rules-v4", BINDING_RULE_VERSION}
+BINDING_RULE_VERSION = "dynamic-rules-v6"
+BINDING_RULE_VERSIONS = {"dynamic-rules-v4", "dynamic-rules-v5", BINDING_RULE_VERSION}
 SUPPORTED_RULE_VERSIONS = {"dynamic-rules-v1", "dynamic-rules-v2", RULE_VERSION, *BINDING_RULE_VERSIONS}
 _VALUE_NUMBER = re.compile(r"^-?\d{1,12}(?:\.\d{1,6})?$")
 _UNCERTAIN = re.compile(r"最大|最高|最多支持|支持扩展|参考|宣传|另一型号|其他型号|"
@@ -94,8 +94,30 @@ def _criterion(definition, criterion_id, item_id):
 
 
 def _fact_clause(text: str, criterion: Criterion, item: ProcurementItem, *, model: str | None,
-                 multi_item: bool) -> str:
+                 multi_item: bool, bound_aliases=False) -> str:
+    # Current bound money facts must retain their full source basis even when
+    # the display label matches literally. Older rule identities stay frozen.
+    if (bound_aliases and criterion.rule.type == "money"
+            and re.search(r"预算|平均|总价|总额|参考|指导|建议", text)):
+        raise ValueError("fact_criterion")
     clause = metric_clause(text, criterion.name)
+    if clause is None and bound_aliases:
+        # Finite display aliases only, after the server has validated this
+        # item's source range. Never infer a metric from its type or value.
+        label = criterion.name.removeprefix(item.name).strip()
+        aliases = (("采购数量", "数量") if label in {"数量", "采购数量"} and criterion.rule.type == "numeric" else
+                   ("含税单价", "采购单价", "单价") if label in {
+                       "含税单价", "采购单价", "单价", "含税单价上限", "采购单价上限", "单价上限"}
+                   and criterion.rule.type == "money" else ())
+        matches = {matched for name in aliases if (matched := metric_clause(text, name)) is not None
+                   and re.match(rf"^\s*{re.escape(name)}\s*[:：=]?\s*"
+                                r"(?:(?:至少|至多|不超过|不低于|不少于|最多|最少)\s*)?"
+                                r"(?:(?:人民币|CNY|￥|¥)\s*)?-?\d", matched)
+                   # Qualifiers may follow a comma/newline outside the metric
+                   # fragment. Keep the complete verified source span in scope.
+                   and not re.search(r"预算|平均|总价|总额|参考|指导|建议", text)}
+        if len(matches) == 1:
+            clause = matches.pop()
     if clause is None:
         raise ValueError("fact_criterion")
     if multi_item and not item_supported(clause, item, model=model):
@@ -115,7 +137,7 @@ def validate_fact(candidate: dict | FactCandidate, definition: ChecklistDefiniti
     if rule_version not in SUPPORTED_RULE_VERSIONS:
         raise ValueError("rule_version")
     legacy_duration = rule_version == "dynamic-rules-v1"
-    normalize_start = rule_version == "dynamic-rules-v5"
+    normalize_start = rule_version in {"dynamic-rules-v5", "dynamic-rules-v6"}
     candidate = (candidate if isinstance(candidate, FactCandidate)
                  else FactCandidate.model_validate(candidate))
     definition = _definition(definition)
@@ -137,7 +159,8 @@ def validate_fact(candidate: dict | FactCandidate, definition: ChecklistDefiniti
                or b.parser_version != entry.parser_version for b in blocks):
             raise ValueError("item_binding_source_changed")
     clause = _fact_clause(text, criterion, item, model=model,
-                         multi_item=entry is None and len(definition.items) > 1)
+                         multi_item=entry is None and len(definition.items) > 1,
+                         bound_aliases=entry is not None and rule_version == "dynamic-rules-v6")
     rule = criterion.rule
     ambiguous = bool(COMPLEX.search(text) or _UNCERTAIN.search(text))
     comparator = source_comparator(clause)
@@ -263,7 +286,7 @@ def _passes(rule, actual):
 
 def _evaluate(criterion, item, offered, *, rule_version):
     legacy_duration = rule_version == "dynamic-rules-v1"
-    normalize_start = rule_version == "dynamic-rules-v5"
+    normalize_start = rule_version in {"dynamic-rules-v5", "dynamic-rules-v6"}
     rule = criterion.rule
     if criterion.requires_manual_review or not rule_supported(criterion, item, legacy_duration=legacy_duration, normalize_start=normalize_start):
         return "待人工确认", "requirement_manual"
