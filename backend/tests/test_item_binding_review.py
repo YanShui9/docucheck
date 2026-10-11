@@ -150,6 +150,73 @@ def test_v4_agent_uses_only_bound_range_and_keeps_binding_in_cache_identity():
     assert old_plan["A"][0][-1]["batch_id"] != new_plan["A"][0][-1]["batch_id"]
 
 
+@pytest.mark.parametrize("manual_count", [1, 9])
+def test_review_output_allocation_handles_eleven_metrics_without_changing_batches(manual_count):
+    from backend.app.providers.base import ProviderError
+
+    definition, repo, frozen = sample()
+    data = definition.model_dump(mode="json")
+    for index in range(manual_count - 1):
+        data["criteria"].append({**deepcopy(data["criteria"][-1]),
+                                 "criterion_id": f"manual-{index}", "name": f"人工指标{index}"})
+    definition = ChecklistDefinition.model_validate(data)
+    frozen["payload"]["checklist_digest"] = digest(data)
+    frozen["digest"] = digest(frozen["payload"])
+    planned, _ = review_plan(repo, definition, rule_version=V4, item_bindings=frozen)
+
+    class OutputLimited(Provider):
+        def __init__(self):
+            super().__init__()
+            self.output_caps = []
+
+        def extract(self, messages, schema, **options):
+            self.output_caps.append(options["max_output_tokens"])
+            # Reproduce the live eleven-metric response truncated by the old
+            # 1536-token cap. No replay or relaxed evidence validation is used.
+            if manual_count == 9 and options["max_output_tokens"] < 2000:
+                raise ProviderError("invalid_output", detail="output_limit")
+            return super().extract(messages, schema, **options)
+
+    provider = OutputLimited()
+    result = DynamicAgent(repo, provider, definition, item_bindings=frozen).ask("审查", operation="review")
+    assert result["status"] == "completed", result["error"]
+    assert len(result["payload"]["checks"]) == manual_count + 2
+    assert [c["business_status"] for c in result["payload"]["checks"]] == ["满足", "不满足", *(["待人工确认"] * manual_count)]
+    assert provider.output_caps == [1536 if manual_count == 1 else 4096]
+    assert result["payload"]["batch_manifest"] == [entry for _, _, entry in planned["A"]]
+
+
+def test_review_output_allocation_still_obeys_shared_output_budget(monkeypatch):
+    from backend.app.agent.policy import MODE_LIMITS
+    from backend.app.providers.base import ProviderError
+
+    definition, repo, frozen = sample()
+    data = definition.model_dump(mode="json")
+    for index in range(8):
+        data["criteria"].append({**deepcopy(data["criteria"][-1]),
+                                 "criterion_id": f"manual-{index}", "name": f"人工指标{index}"})
+    definition = ChecklistDefinition.model_validate(data)
+    frozen["payload"]["checklist_digest"] = digest(data)
+    frozen["digest"] = digest(frozen["payload"])
+    monkeypatch.setitem(MODE_LIMITS, "standard", {**MODE_LIMITS["standard"], "max_output": 800})
+
+    class Limited(Provider):
+        def __init__(self):
+            super().__init__()
+            self.output_caps = []
+
+        def extract(self, messages, schema, **options):
+            self.output_caps.append(options["max_output_tokens"])
+            raise ProviderError("invalid_output", detail="output_limit")
+
+    provider = Limited()
+    result = DynamicAgent(repo, provider, definition, item_bindings=frozen).ask("审查", operation="review")
+    assert result["status"] == "partial" and result["error"] == "invalid_output"
+    assert provider.output_caps == [775]
+    assert result["usage"]["output_reserved"] <= 800
+    assert not any(c["is_formal"] for c in result["payload"]["checks"])
+
+
 def test_anchor_full_block_business_fact_is_not_coverage():
     definition, repo, frozen = sample(title="苹果手机，数量20台")
     result = DynamicAgent(repo, Provider(), definition, item_bindings=frozen).ask("审查", operation="review")

@@ -458,9 +458,10 @@ class DynamicAgent:
             events.append(value)
             return value
 
-        def model_call(kind, messages, schema, parser=None):
+        def model_call(kind, messages, schema, parser=None, *, output_cap=1536):
             schemas = schema if kind == "decide" else [schema]
-            output_cap = 512 if kind == "decide" else 1536
+            if kind == "decide":
+                output_cap = 512
             for repair in range(2):
                 self._check(budget)
                 request = messages
@@ -652,8 +653,14 @@ class DynamicAgent:
                             extraction_system += "\n服务端已确认item_attribution所述品目对应。anchor只作归属依据，不是事实范围，不得引用或拼入数值quote。事实只能引用evidence中的原文格；型号冲突或不明仍须保留。"
                         messages = [SystemMessage(content=extraction_system),
                                     HumanMessage(content=json.dumps(data, ensure_ascii=False))]
+                        # JSON fact candidates include long IDs, source refs and
+                        # basis fields. Larger criterion groups need more output
+                        # room; Budget.reserve still owns the shared hard limit.
+                        # Keep the plan/manifest unchanged for historical runs.
+                        output_cap = min(4096, max(1536, 384 * len(data["criteria"])))
                         raw = model_call("extract", messages, _facts_schema(supplier),
-                                         lambda args, bound_supplier=supplier: _bound_candidates(args, bound_supplier))
+                                         lambda args, bound_supplier=supplier: _bound_candidates(args, bound_supplier),
+                                         output_cap=output_cap)
                         validated, rejections = checked_candidates(raw, batch, supplier, manifest["criterion_ids"])
                     rejected = sum(rejections.values())
                     if self.item_bindings is not None:
