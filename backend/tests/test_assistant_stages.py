@@ -38,6 +38,34 @@ def addition():
         "item_id": "phone", "name": "交期", "rule": {"type": "manual", "instruction": "需明确交付起算事件、天数、自然日或工作日"}}}]}
 
 
+@pytest.mark.parametrize("max_output,expected", [(6000, "completed"), (1000, "partial")])
+def test_candidate_editor_has_json_capacity_inside_shared_budget(max_output, expected):
+    from backend.app.agent.policy import Budget
+    from backend.app.providers.base import ProviderError
+
+    class OutputLimited(StageProvider):
+        def decide(self, messages, schemas, **options):
+            editing = any(s["function"]["name"] == "propose_changes" for s in schemas)
+            if editing and options["max_output_tokens"] < 2000:
+                raise ProviderError("invalid_output", detail="output_limit")
+            if editing:
+                assert options["max_output_tokens"] <= 4096
+            else:
+                assert options["max_output_tokens"] == min(1536, max_output)
+            return super().decide(messages, schemas, **options)
+
+    provider = OutputLimited(("prepare_changes", {"criterion_ids": [], "item_ids": ["phone"]}),
+                             ("propose_changes", addition()))
+    result = AssistantAgent(EvidenceRepository.empty("case", "snapshot"), provider, definition=definition(10),
+                            budget=Budget(max_output=max_output)).ask("增加交期")
+    assert result["status"] == expected
+    assert result["usage"]["output_reserved"] <= max_output
+    if expected == "completed":
+        assert len(result["payload"]["candidate"]["criteria"]) == 11
+    else:
+        assert result["payload"]["candidate"] is None
+
+
 @pytest.mark.parametrize("count", [10, 40, 99])
 def test_append_deadline_to_growing_preview_preserves_all_existing_requirements(count):
     base = definition(count, verbose=True)

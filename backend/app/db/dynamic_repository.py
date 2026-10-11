@@ -478,14 +478,14 @@ class DynamicRepository:
                 validate_definition(definition, repo)
             return dict(row), payload, repo
         definition = ChecklistDefinition.model_validate(version["definition"])
-        from ..criteria.facts import BINDING_RULE_VERSION
+        from ..criteria.facts import BINDING_RULE_VERSIONS
         from ..criteria.item_bindings import review_bindings
 
         context = review_bindings(frozen, definition, repo) if frozen is not None else None
         if context is not None:
-            if payload.get("rule_version") != BINDING_RULE_VERSION or any(payload.get(k) != v for k, v in context.identity().items()):
+            if payload.get("rule_version") not in BINDING_RULE_VERSIONS or any(payload.get(k) != v for k, v in context.identity().items()):
                 _error("dynamic_source_changed")
-        elif payload.get("rule_version") == BINDING_RULE_VERSION:
+        elif payload.get("rule_version") in BINDING_RULE_VERSIONS:
             _error("dynamic_source_changed")
         if (
             digest(version["definition"]) != row["definition_digest"]

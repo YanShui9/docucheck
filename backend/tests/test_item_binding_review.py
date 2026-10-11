@@ -6,6 +6,7 @@ import pytest
 
 from backend.app.agent.dynamic import DynamicAgent, review_plan
 from backend.app.criteria.facts import (
+    BINDING_RULE_VERSION,
     evaluate_checklist,
     revalidate_fact,
     validate_fact,
@@ -278,7 +279,7 @@ def test_review_output_allocation_handles_eleven_metrics_without_changing_batche
     definition = ChecklistDefinition.model_validate(data)
     frozen["payload"]["checklist_digest"] = digest(data)
     frozen["digest"] = digest(frozen["payload"])
-    planned, _ = review_plan(repo, definition, rule_version=V4, item_bindings=frozen)
+    planned, _ = review_plan(repo, definition, rule_version=BINDING_RULE_VERSION, item_bindings=frozen)
 
     class OutputLimited(Provider):
         def __init__(self):

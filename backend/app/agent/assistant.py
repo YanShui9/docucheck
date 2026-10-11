@@ -258,10 +258,11 @@ class AssistantAgent:
                 self.budget.decision()
                 phase = "edit" if prepared is not None else "evidence" if searched else "routing"
                 size = input_bound(messages, active_schemas)
-                limit = min(self.budget.max_prompt, self.budget.context_window - min(1536, self.budget.max_output - self.budget.output_reserved))
+                output_cap = 4096 if prepared is not None else 1536
+                limit = min(self.budget.max_prompt, self.budget.context_window - min(output_cap, self.budget.max_output - self.budget.output_reserved))
                 self.context.update(input_bound=size, prompt_limit=limit, mandatory_overflow=size > limit)
                 self.context["max_attempt_bound"] = max(size, self.context.get("max_attempt_bound", 0))
-                options, size = self.budget.reserve(messages, active_schemas, output_cap=1536)
+                options, size = self.budget.reserve(messages, active_schemas, output_cap=output_cap)
                 self.context[phase + "_requests"] = self.context.get(phase + "_requests", 0) + 1
                 self.context["max_request_bound"] = max(size, self.context.get("max_request_bound", 0))
                 schema_bytes = len(json.dumps(active_schemas, ensure_ascii=False, separators=(",", ":")).encode())

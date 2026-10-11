@@ -152,13 +152,23 @@ _DURATION_UNITS = {
 DURATION_START_EVENTS = ("合同签订", "订单确认", "收到预付款", "收到付款", "收到通知", "下单", "验收", "交付")
 
 
-def duration_start_events(text: str, *, hints=(), legacy_duration=False) -> list[str]:
+def canonical_start_event(value: str | None) -> str | None:
+    # Only trailing temporal grammar is removed, never business events or
+    # conjunctions. Distinct payment/contract/order conditions stay distinct.
+    if value is None:
+        return None
+    return re.sub(r"(?:之日起|之后|以后|后|起)$", "", value.strip()).strip()
+
+
+def duration_start_events(text: str, *, hints=(), legacy_duration=False, normalize_start=False) -> list[str]:
     if not legacy_duration:
         # Explicit metric labels do not describe a start event. Remove only
         # the label, so a separate delivery/start condition remains visible.
         text = re.sub(r"交\s*付\s*(?:期\s*限|时\s*间|周\s*期)", "", text)
     possible = [event for event in dict.fromkeys((*hints, *DURATION_START_EVENTS))
                 if event and mentions(text, event)]
+    if normalize_start:
+        possible = list(dict.fromkeys(canonical_start_event(event) for event in possible))
     measurement = re.search(NUMBER_PATTERN, text)
     # A bare terminal delivery verb is an end point. Explicit conditions
     # elsewhere in the source remain visible, including after the number.
@@ -213,7 +223,7 @@ def validate_definition(definition: ChecklistDefinition | dict, repo: EvidenceRe
             raise ValueError("requirement_quote_incomplete")
 
 
-def rule_supported(criterion: Criterion, item: ProcurementItem, *, legacy_duration=False) -> bool:
+def rule_supported(criterion: Criterion, item: ProcurementItem, *, legacy_duration=False, normalize_start=False) -> bool:
     """Prove a finite document rule; unresolved prose remains a candidate."""
     if criterion.requires_manual_review:
         return False
@@ -241,7 +251,8 @@ def rule_supported(criterion: Criterion, item: ProcurementItem, *, legacy_durati
     if rule.type == "duration":
         if not mentions(text, rule.start_event):
             return False
-        if not legacy_duration and duration_start_events(original, hints=(rule.start_event,)) != [rule.start_event]:
+        expected_start = canonical_start_event(rule.start_event) if normalize_start else rule.start_event
+        if not legacy_duration and duration_start_events(original, hints=(rule.start_event,), normalize_start=normalize_start) != [expected_start]:
             return False
         if len(duration_measurements(text, legacy_duration=legacy_duration)) != 1 or len(re.findall(NUMBER_PATTERN, text)) != 1:
             return False

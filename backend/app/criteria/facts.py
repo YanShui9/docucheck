@@ -27,6 +27,7 @@ from .models import (
 from .validation import (
     COMPLEX,
     NUMBER_PATTERN,
+    canonical_start_event,
     compact,
     duration_calendar,
     duration_measurements,
@@ -45,8 +46,9 @@ from .validation import (
 )
 
 RULE_VERSION = "dynamic-rules-v3"
-BINDING_RULE_VERSION = "dynamic-rules-v4"
-SUPPORTED_RULE_VERSIONS = {"dynamic-rules-v1", "dynamic-rules-v2", RULE_VERSION, BINDING_RULE_VERSION}
+BINDING_RULE_VERSION = "dynamic-rules-v5"
+BINDING_RULE_VERSIONS = {"dynamic-rules-v4", BINDING_RULE_VERSION}
+SUPPORTED_RULE_VERSIONS = {"dynamic-rules-v1", "dynamic-rules-v2", RULE_VERSION, *BINDING_RULE_VERSIONS}
 _VALUE_NUMBER = re.compile(r"^-?\d{1,12}(?:\.\d{1,6})?$")
 _UNCERTAIN = re.compile(r"最大|最高|最多支持|支持扩展|参考|宣传|另一型号|其他型号|"
                         r"不属于本次|次日|翌日|next day", re.IGNORECASE)
@@ -113,6 +115,7 @@ def validate_fact(candidate: dict | FactCandidate, definition: ChecklistDefiniti
     if rule_version not in SUPPORTED_RULE_VERSIONS:
         raise ValueError("rule_version")
     legacy_duration = rule_version == "dynamic-rules-v1"
+    normalize_start = rule_version == "dynamic-rules-v5"
     candidate = (candidate if isinstance(candidate, FactCandidate)
                  else FactCandidate.model_validate(candidate))
     definition = _definition(definition)
@@ -125,7 +128,7 @@ def validate_fact(candidate: dict | FactCandidate, definition: ChecklistDefiniti
         raise ValueError("supplier_scope")
     model = blocks[0].model
     bound, entry = None, None
-    if rule_version == BINDING_RULE_VERSION:
+    if rule_version in BINDING_RULE_VERSIONS:
         if item_bindings is None:
             raise ValueError("item_binding_required")
         bound = review_bindings(item_bindings, definition, repo)
@@ -157,7 +160,8 @@ def validate_fact(candidate: dict | FactCandidate, definition: ChecklistDefiniti
             ambiguous = (ambiguous or observed["calendar"] is None
                          or len(duration_measurements(text, legacy_duration=legacy_duration)) != 1
                          or len(re.findall(NUMBER_PATTERN, clause)) != 1)
-            possible = duration_start_events(clause, hints=(candidate.start_event, rule.start_event), legacy_duration=legacy_duration)
+            possible = duration_start_events(clause, hints=(candidate.start_event, rule.start_event),
+                                              legacy_duration=legacy_duration, normalize_start=normalize_start)
             if len(possible) == 1:
                 observed["start_event"] = possible[0]
             elif possible:
@@ -178,6 +182,8 @@ def validate_fact(candidate: dict | FactCandidate, definition: ChecklistDefiniti
             ambiguous = ambiguous or enum_choices(clause, criterion.name) != [candidate.value]
     for name, observed_value in observed.items():
         proposed = getattr(candidate, name)
+        if normalize_start and name == "start_event":
+            proposed = canonical_start_event(proposed)
         if proposed is not None and proposed != observed_value:
             raise ValueError(f"fact_{name}")
     applicable = (item_supported(clause, item, model=model)
@@ -257,8 +263,9 @@ def _passes(rule, actual):
 
 def _evaluate(criterion, item, offered, *, rule_version):
     legacy_duration = rule_version == "dynamic-rules-v1"
+    normalize_start = rule_version == "dynamic-rules-v5"
     rule = criterion.rule
-    if criterion.requires_manual_review or not rule_supported(criterion, item, legacy_duration=legacy_duration):
+    if criterion.requires_manual_review or not rule_supported(criterion, item, legacy_duration=legacy_duration, normalize_start=normalize_start):
         return "待人工确认", "requirement_manual"
     if not offered:
         return "证据不足", "supplier_fact_missing"
@@ -280,8 +287,9 @@ def _evaluate(criterion, item, offered, *, rule_version):
                 return "待人工确认", "money_basis_mismatch"
             actual = [Decimal(fact["value"]) for fact in offered]
         elif rule.type == "duration":
+            expected_start = canonical_start_event(rule.start_event) if normalize_start else rule.start_event
             if any(duration_unit_calendar(fact.get("unit", ""), legacy_duration=legacy_duration) != rule.calendar
-                   or (fact.get("calendar"), fact.get("start_event")) != (rule.calendar, rule.start_event)
+                   or (fact.get("calendar"), fact.get("start_event")) != (rule.calendar, expected_start)
                    for fact in offered):
                 return "待人工确认", "duration_basis_mismatch"
             actual = [Decimal(fact["value"]) for fact in offered]
@@ -324,7 +332,7 @@ def evaluate_checklist(definition: ChecklistDefinition | dict, facts: list[dict]
            for supplier, complete in coverage.items()):
         raise ValueError("coverage_state")
     bound_identity = None
-    if rule_version == BINDING_RULE_VERSION:
+    if rule_version in BINDING_RULE_VERSIONS:
         bound_identity = binding_identity(item_bindings)
         binding_snapshot = (item_bindings.snapshot_id if isinstance(item_bindings, ReviewBindings)
                             else item_bindings["payload"].get("snapshot_id"))

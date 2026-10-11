@@ -21,6 +21,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from ..criteria.facts import (
     BINDING_RULE_VERSION,
+    BINDING_RULE_VERSIONS,
     RULE_VERSION,
     SUPPORTED_RULE_VERSIONS,
     FactCandidate,
@@ -214,7 +215,7 @@ def render_review(checks: list[dict], *, complete: bool, needs_review: bool = Fa
         status = check["processing_status"]
         if status == "complete":
             status = check["business_status"]
-        elif check.get("rule_version") == BINDING_RULE_VERSION and check.get("business_status") == "待人工确认":
+        elif check.get("rule_version") in BINDING_RULE_VERSIONS and check.get("business_status") == "待人工确认":
             status = "待人工确认（资料处理未完成）"
         else:
             status = "处理未完成"
@@ -251,7 +252,7 @@ def _criterion_groups(definition: ChecklistDefinition) -> list[list[dict]]:
     return groups
 
 
-def _bound_review_plan(repo, definition: ChecklistDefinition, context: ReviewBindings) -> tuple[dict, dict]:
+def _bound_review_plan(repo, definition: ChecklistDefinition, context: ReviewBindings, rule_version: str) -> tuple[dict, dict]:
     source_digest = digest([asdict(b) for b in repo.blocks])
     definition_digest = digest(definition.model_dump(mode="json"))
     plans, completeness = {}, {}
@@ -289,10 +290,10 @@ def _bound_review_plan(repo, definition: ChecklistDefinition, context: ReviewBin
                             "criteria": group, "evidence": batch, "item_attribution": anchors}
                     criterion_ids = [c["criterion_id"] for c in group]
                     identity = ["review", supplier, item.item_id, source_ordinal, criterion_ids,
-                                [b["evidence_id"] for b in batch], BINDING_RULE_VERSION, context.identity()]
+                                [b["evidence_id"] for b in batch], rule_version, context.identity()]
                     manifest = {"batch_id": digest(identity),
                                 "input_digest": digest([repo.snapshot_id, source_digest, definition_digest,
-                                                        BINDING_RULE_VERSION, context.identity(), data]),
+                                                        rule_version, context.identity(), data]),
                                 "supplier": supplier, "ordinal": len(plans[supplier]),
                                 "source_ordinal": source_ordinal, "criterion_ids": criterion_ids,
                                 "item_id": item.item_id, **context.identity()}
@@ -310,10 +311,10 @@ def review_plan(repo, definition: ChecklistDefinition | dict, *, rule_version=RU
     """
     if not isinstance(definition, ChecklistDefinition):
         definition = ChecklistDefinition.model_validate(definition)
-    if rule_version == BINDING_RULE_VERSION:
+    if rule_version in BINDING_RULE_VERSIONS:
         if item_bindings is None:
             raise ValueError("item_binding_required")
-        return _bound_review_plan(repo, definition, review_bindings(item_bindings, definition, repo))
+        return _bound_review_plan(repo, definition, review_bindings(item_bindings, definition, repo), rule_version)
     definition_digest = digest(definition.model_dump(mode="json"))
     source_digest = digest([asdict(b) for b in repo.blocks])
     groups = _criterion_groups(definition)
@@ -558,8 +559,11 @@ class DynamicAgent:
             try:
                 self._check(budget)
                 old_rules = old.get("rule_version")
+                allowed_rules = ({self.rule_version} if not for_carry else
+                                 BINDING_RULE_VERSIONS if self.item_bindings is not None else
+                                 SUPPORTED_RULE_VERSIONS - BINDING_RULE_VERSIONS)
                 if (old.get("version") != 1 or old.get("source_digest") != self.source_digest
-                        or old_rules not in ((SUPPORTED_RULE_VERSIONS - {BINDING_RULE_VERSION}) if for_carry and self.item_bindings is None else {self.rule_version})
+                        or old_rules not in allowed_rules
                         or old.get("definition") != self.definition.model_dump(mode="json")
                         or set(old.get("coverage", {})) != set(suppliers)):
                     raise ValueError("report_invalid")
@@ -595,7 +599,10 @@ class DynamicAgent:
                 self._check(budget)
                 return copied
             except (ValueError, KeyError, TypeError):
-                self._report = None
+                # A read attempt cannot discard manual alternatives before
+                # review has validated their frozen identity and converted them.
+                if not old.get("needs_review"):
+                    self._report = None
                 event("tool", tool="get_checklist", status="rejected", error="report_invalid")
                 return None
 
