@@ -1,0 +1,1556 @@
+{
+  "schema_version": 1,
+  "protocol_id": "dynamic-dev-v1",
+  "created_on": "2026-10-11",
+  "status": "draft_blueprints_not_generated_not_scored",
+  "reference_commit": "eb67ded",
+  "data_class": "ai_authored_seen_development",
+  "independent_sealed_packs": 0,
+  "planned_pack_count": 12,
+  "planned_primary_cell_count": 104,
+  "planned_criterion_definition_count": 55,
+  "scoring_key": [
+    "pack_id",
+    "supplier_handle",
+    "item_id",
+    "criterion_id"
+  ],
+  "planned_processing_status": "complete",
+  "expected_business_states_to_cover": [
+    "满足",
+    "不满足",
+    "资料冲突",
+    "证据不足",
+    "待人工确认"
+  ],
+  "companion_scenarios_outside_primary_denominator": [
+    "单独预定的授权拒绝反例",
+    "单独预定的解析失败或覆盖不完整反例",
+    "单独预定的取消及未知请求反例",
+    "显式重试轮次",
+    "历史操作",
+    "检索问答",
+    "指标候选抽取"
+  ],
+  "primary_failure_policy": "主轨运行发生的解析失败、partial、failed、漏格仍占固定104格分母并算错；额外反例不增加或减少主轨分母",
+  "constraints": [
+    "全部为规划，不是原件、已确认清单或gold",
+    "供应商响应及逐格gold必须先于产品运行固定",
+    "D1不以生产规则生成答案",
+    "基于公开需求的案例为同来源家族，不用于宣称独立封存"
+  ],
+  "packs": [
+    {
+      "pack_id": "dyn-d01",
+      "title": "手机采购基础口径",
+      "category": "phone",
+      "source_ids": [],
+      "data_class": "ai_authored_seen_development",
+      "source_family_ids": ["self-authored-phone-and-accessories"],
+      "artifact_status": "blueprint_only",
+      "supplier_handles": [
+        "vendor-a"
+      ],
+      "checklist_definition": {
+        "items": [
+          {
+            "item_id": "phone",
+            "name": "苹果手机",
+            "specification": "演示SKU-P256"
+          }
+        ],
+        "criteria": [
+          {
+            "criterion_id": "quantity",
+            "item_id": "phone",
+            "name": "采购数量",
+            "rule": {
+              "type": "numeric",
+              "operator": "eq",
+              "value": "10",
+              "unit": "台"
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "D1人工编写的合成评估蓝图；未在产品中保存或确认"
+            },
+            "required": true,
+            "enabled": true,
+            "conditions": []
+          },
+          {
+            "criterion_id": "capacity",
+            "item_id": "phone",
+            "name": "存储容量",
+            "rule": {
+              "type": "numeric",
+              "operator": "gte",
+              "value": "256",
+              "unit": "GB"
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "D1人工编写的合成评估蓝图；未在产品中保存或确认"
+            },
+            "required": true,
+            "enabled": true,
+            "conditions": []
+          },
+          {
+            "criterion_id": "price",
+            "item_id": "phone",
+            "name": "含税单价",
+            "rule": {
+              "type": "money",
+              "operator": "lte",
+              "value": "6000",
+              "currency": "CNY",
+              "per_unit": "台",
+              "tax_basis": "included"
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "D1人工编写的合成评估蓝图；未在产品中保存或确认"
+            },
+            "required": true,
+            "enabled": true,
+            "conditions": []
+          },
+          {
+            "criterion_id": "condition",
+            "item_id": "phone",
+            "name": "商品状态",
+            "rule": {
+              "type": "enum",
+              "operator": "eq",
+              "values": [
+                "全新未激活"
+              ]
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "D1人工编写的合成评估蓝图；未在产品中保存或确认"
+            },
+            "required": true,
+            "enabled": true,
+            "conditions": []
+          },
+          {
+            "criterion_id": "delivery",
+            "item_id": "phone",
+            "name": "交付期限",
+            "rule": {
+              "type": "duration",
+              "operator": "lte",
+              "value": "14",
+              "calendar": "natural_days",
+              "start_event": "订单确认"
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "D1人工编写的合成评估蓝图；未在产品中保存或确认"
+            },
+            "required": true,
+            "enabled": true,
+            "conditions": []
+          },
+          {
+            "criterion_id": "warranty_doc",
+            "item_id": "phone",
+            "name": "质保承诺书",
+            "rule": {
+              "type": "presence",
+              "description": "本采购品目对应的质保承诺书",
+              "must_be_present": true
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "D1人工编写的合成评估蓝图；未在产品中保存或确认"
+            },
+            "required": true,
+            "enabled": true,
+            "conditions": []
+          }
+        ]
+      },
+      "planned_supplier_variants": [
+        "含满足及明确超出承诺交期的组合；实际供应商值在D2原件编写时固定"
+      ],
+      "planned_documents": [
+        "requirements.pdf",
+        "vendor-a-quote.xlsx",
+        "vendor-a-spec.pdf"
+      ],
+      "primary_cell_count": 6,
+      "companion_guards": [
+        "确认前不得正式审查",
+        "需求原文不能证明供应商满足"
+      ]
+    },
+    {
+      "pack_id": "dyn-d02",
+      "title": "手机跨文件相斥数值",
+      "category": "phone",
+      "source_ids": [],
+      "data_class": "ai_authored_seen_development",
+      "source_family_ids": ["self-authored-phone-and-accessories"],
+      "artifact_status": "blueprint_only",
+      "supplier_handles": [
+        "vendor-a",
+        "vendor-b"
+      ],
+      "checklist_definition": {
+        "items": [
+          {
+            "item_id": "phone",
+            "name": "苹果手机",
+            "specification": "演示SKU-P256"
+          }
+        ],
+        "criteria": [
+          {
+            "criterion_id": "capacity",
+            "item_id": "phone",
+            "name": "存储容量",
+            "rule": {
+              "type": "numeric",
+              "operator": "gte",
+              "value": "256",
+              "unit": "GB"
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "D1人工编写的合成评估蓝图；未在产品中保存或确认"
+            },
+            "required": true,
+            "enabled": true,
+            "conditions": []
+          },
+          {
+            "criterion_id": "quantity",
+            "item_id": "phone",
+            "name": "采购数量",
+            "rule": {
+              "type": "numeric",
+              "operator": "eq",
+              "value": "20",
+              "unit": "台"
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "D1人工编写的合成评估蓝图；未在产品中保存或确认"
+            },
+            "required": true,
+            "enabled": true,
+            "conditions": []
+          },
+          {
+            "criterion_id": "price",
+            "item_id": "phone",
+            "name": "含税单价",
+            "rule": {
+              "type": "money",
+              "operator": "lte",
+              "value": "6500",
+              "currency": "CNY",
+              "per_unit": "台",
+              "tax_basis": "included"
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "D1人工编写的合成评估蓝图；未在产品中保存或确认"
+            },
+            "required": true,
+            "enabled": true,
+            "conditions": []
+          },
+          {
+            "criterion_id": "delivery",
+            "item_id": "phone",
+            "name": "交付期限",
+            "rule": {
+              "type": "duration",
+              "operator": "lte",
+              "value": "14",
+              "calendar": "natural_days",
+              "start_event": "订单确认"
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "D1人工编写的合成评估蓝图；未在产品中保存或确认"
+            },
+            "required": true,
+            "enabled": true,
+            "conditions": []
+          }
+        ]
+      },
+      "planned_supplier_variants": [
+        "相同SKU报价与规格容量相斥；数量及价格另有清晰承诺",
+        "同口径相同数值重复不应制造冲突；交期超阈值"
+      ],
+      "planned_documents": [
+        "requirements.pdf",
+        "vendor-a-quote.xlsx",
+        "vendor-a-spec.pdf",
+        "vendor-b-quote.xlsx",
+        "vendor-b-spec.pdf"
+      ],
+      "primary_cell_count": 8,
+      "companion_guards": [
+        "冲突必须定位两处相斥承诺及买方要求",
+        "旧对话不能补缺失供应商证据"
+      ]
+    },
+    {
+      "pack_id": "dyn-d03",
+      "title": "手机不同SKU与未附材料",
+      "category": "phone",
+      "source_ids": [],
+      "data_class": "ai_authored_seen_development",
+      "source_family_ids": ["self-authored-phone-and-accessories"],
+      "artifact_status": "blueprint_only",
+      "supplier_handles": [
+        "vendor-a",
+        "vendor-b"
+      ],
+      "checklist_definition": {
+        "items": [
+          {
+            "item_id": "phone",
+            "name": "苹果手机",
+            "specification": "演示SKU-P512"
+          }
+        ],
+        "criteria": [
+          {
+            "criterion_id": "sku",
+            "item_id": "phone",
+            "name": "产品SKU",
+            "rule": {
+              "type": "enum",
+              "operator": "eq",
+              "values": [
+                "DEMO-P512"
+              ]
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "D1人工编写的合成评估蓝图；未在产品中保存或确认"
+            },
+            "required": true,
+            "enabled": true,
+            "conditions": []
+          },
+          {
+            "criterion_id": "capacity",
+            "item_id": "phone",
+            "name": "存储容量",
+            "rule": {
+              "type": "numeric",
+              "operator": "gte",
+              "value": "512",
+              "unit": "GB"
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "D1人工编写的合成评估蓝图；未在产品中保存或确认"
+            },
+            "required": true,
+            "enabled": true,
+            "conditions": []
+          },
+          {
+            "criterion_id": "price",
+            "item_id": "phone",
+            "name": "含税单价",
+            "rule": {
+              "type": "money",
+              "operator": "lte",
+              "value": "7000",
+              "currency": "CNY",
+              "per_unit": "台",
+              "tax_basis": "included"
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "D1人工编写的合成评估蓝图；未在产品中保存或确认"
+            },
+            "required": true,
+            "enabled": true,
+            "conditions": []
+          },
+          {
+            "criterion_id": "authorization",
+            "item_id": "phone",
+            "name": "供货授权材料",
+            "rule": {
+              "type": "presence",
+              "description": "对应演示供应商与采购品目的供货授权材料",
+              "must_be_present": true
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "D1人工编写的合成评估蓝图；未在产品中保存或确认"
+            },
+            "required": true,
+            "enabled": true,
+            "conditions": []
+          }
+        ]
+      },
+      "planned_supplier_variants": [
+        "文件含目标SKU及另一个SKU，目标报价可比较；仅承诺未来提供授权",
+        "目标SKU承诺容量不足；另SKU更高容量不得借用"
+      ],
+      "planned_documents": [
+        "requirements.pdf",
+        "vendor-a-quote.xlsx",
+        "vendor-a-spec.pdf",
+        "vendor-b-quote.xlsx",
+        "vendor-b-spec.pdf"
+      ],
+      "primary_cell_count": 8,
+      "companion_guards": [
+        "供应商混合SKU须明确范围后才可正式审查",
+        "材料存在性不推断授权真实性"
+      ]
+    },
+    {
+      "pack_id": "dyn-d04",
+      "title": "水果数量单价与品种",
+      "category": "fruit",
+      "source_ids": [
+        "baoshan-fruit-20260601"
+      ],
+      "data_class": "ai_authored_seen_development",
+      "source_family_ids": ["baoshan-fruit-20260601"],
+      "artifact_status": "blueprint_only",
+      "supplier_handles": [
+        "vendor-a",
+        "vendor-b"
+      ],
+      "checklist_definition": {
+        "items": [
+          {
+            "item_id": "fruit",
+            "name": "苹果",
+            "specification": "演示10千克标准箱"
+          }
+        ],
+        "criteria": [
+          {
+            "criterion_id": "quantity",
+            "item_id": "fruit",
+            "name": "采购数量",
+            "rule": {
+              "type": "numeric",
+              "operator": "eq",
+              "value": "10",
+              "unit": "箱"
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "D1人工编写的合成评估蓝图；未在产品中保存或确认"
+            },
+            "required": true,
+            "enabled": true,
+            "conditions": []
+          },
+          {
+            "criterion_id": "price",
+            "item_id": "fruit",
+            "name": "含税箱价",
+            "rule": {
+              "type": "money",
+              "operator": "lte",
+              "value": "80",
+              "currency": "CNY",
+              "per_unit": "箱",
+              "tax_basis": "included"
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "D1人工编写的合成评估蓝图；未在产品中保存或确认"
+            },
+            "required": true,
+            "enabled": true,
+            "conditions": []
+          },
+          {
+            "criterion_id": "variety",
+            "item_id": "fruit",
+            "name": "品种",
+            "rule": {
+              "type": "enum",
+              "operator": "eq",
+              "values": [
+                "红富士"
+              ]
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "D1人工编写的合成评估蓝图；未在产品中保存或确认"
+            },
+            "required": true,
+            "enabled": true,
+            "conditions": []
+          },
+          {
+            "criterion_id": "delivery",
+            "item_id": "fruit",
+            "name": "交付期限",
+            "rule": {
+              "type": "duration",
+              "operator": "lte",
+              "value": "3",
+              "calendar": "natural_days",
+              "start_event": "订单确认"
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "D1人工编写的合成评估蓝图；未在产品中保存或确认"
+            },
+            "required": true,
+            "enabled": true,
+            "conditions": []
+          }
+        ]
+      },
+      "planned_supplier_variants": [
+        "数量、箱价、品种及同起点自然日承诺清楚",
+        "某项不满足且另一项全量缺证据"
+      ],
+      "planned_documents": [
+        "requirements.pdf",
+        "vendor-a-quote.xlsx",
+        "vendor-a-spec.pdf",
+        "vendor-b-quote.xlsx",
+        "vendor-b-spec.pdf"
+      ],
+      "primary_cell_count": 8,
+      "companion_guards": [
+        "苹果水果与苹果手机不可合并",
+        "公开公告作为场景参考，阈值为合成编写"
+      ]
+    },
+    {
+      "pack_id": "dyn-d05",
+      "title": "水果包装净重与折扣率",
+      "category": "fruit",
+      "source_ids": [
+        "baoshan-fruit-20260601"
+      ],
+      "data_class": "ai_authored_seen_development",
+      "source_family_ids": ["baoshan-fruit-20260601"],
+      "artifact_status": "blueprint_only",
+      "supplier_handles": [
+        "vendor-a",
+        "vendor-b"
+      ],
+      "checklist_definition": {
+        "items": [
+          {
+            "item_id": "fruit",
+            "name": "苹果",
+            "specification": "演示标准箱"
+          }
+        ],
+        "criteria": [
+          {
+            "criterion_id": "net_weight",
+            "item_id": "fruit",
+            "name": "每箱净重",
+            "rule": {
+              "type": "numeric",
+              "operator": "gte",
+              "value": "10",
+              "unit": "kg"
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "D1人工编写的合成评估蓝图；未在产品中保存或确认"
+            },
+            "required": true,
+            "enabled": true,
+            "conditions": []
+          },
+          {
+            "criterion_id": "quantity",
+            "item_id": "fruit",
+            "name": "采购数量",
+            "rule": {
+              "type": "numeric",
+              "operator": "eq",
+              "value": "10",
+              "unit": "箱"
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "D1人工编写的合成评估蓝图；未在产品中保存或确认"
+            },
+            "required": true,
+            "enabled": true,
+            "conditions": []
+          },
+          {
+            "criterion_id": "discount",
+            "item_id": "fruit",
+            "name": "综合单价折扣率",
+            "rule": {
+              "type": "numeric",
+              "operator": "lte",
+              "value": "95",
+              "unit": "%"
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "D1人工编写的合成评估蓝图；未在产品中保存或确认"
+            },
+            "required": true,
+            "enabled": true,
+            "conditions": []
+          },
+          {
+            "criterion_id": "discount_basis",
+            "item_id": "fruit",
+            "name": "折扣基价口径",
+            "rule": {
+              "type": "manual",
+              "instruction": "核对市场基价来源、日期及折扣适用范围，不能在未提供基价时推算实际金额"
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "D1人工编写的合成评估蓝图；未在产品中保存或确认"
+            },
+            "required": true,
+            "enabled": true,
+            "conditions": []
+          }
+        ]
+      },
+      "planned_supplier_variants": [
+        "箱数及每箱净重明确，折扣率在阈值内，基价未明确",
+        "以袋报价且无箱袋换算依据；折扣率超阈值"
+      ],
+      "planned_documents": [
+        "requirements.pdf",
+        "vendor-a-quote.xlsx",
+        "vendor-a-spec.pdf",
+        "vendor-b-quote.xlsx",
+        "vendor-b-spec.pdf"
+      ],
+      "primary_cell_count": 8,
+      "companion_guards": [
+        "箱袋不得无依据转换",
+        "综合费用折扣不是含税元单价"
+      ]
+    },
+    {
+      "pack_id": "dyn-d06",
+      "title": "水果追溯、报告与小时交付",
+      "category": "fruit",
+      "source_ids": [
+        "baoshan-fruit-20260601"
+      ],
+      "data_class": "ai_authored_seen_development",
+      "source_family_ids": ["baoshan-fruit-20260601"],
+      "artifact_status": "blueprint_only",
+      "supplier_handles": [
+        "vendor-a",
+        "vendor-b"
+      ],
+      "checklist_definition": {
+        "items": [
+          {
+            "item_id": "fruit",
+            "name": "苹果",
+            "specification": "演示批次FR-01"
+          }
+        ],
+        "criteria": [
+          {
+            "criterion_id": "origin",
+            "item_id": "fruit",
+            "name": "产地",
+            "rule": {
+              "type": "enum",
+              "operator": "eq",
+              "values": [
+                "山东"
+              ]
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "D1人工编写的合成评估蓝图；未在产品中保存或确认"
+            },
+            "required": true,
+            "enabled": true,
+            "conditions": []
+          },
+          {
+            "criterion_id": "trace",
+            "item_id": "fruit",
+            "name": "批次产地证明",
+            "rule": {
+              "type": "presence",
+              "description": "演示批次FR-01对应的产地证明材料",
+              "must_be_present": true
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "D1人工编写的合成评估蓝图；未在产品中保存或确认"
+            },
+            "required": true,
+            "enabled": true,
+            "conditions": []
+          },
+          {
+            "criterion_id": "test",
+            "item_id": "fruit",
+            "name": "批次检测报告",
+            "rule": {
+              "type": "presence",
+              "description": "演示批次FR-01对应的检测报告材料",
+              "must_be_present": true
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "D1人工编写的合成评估蓝图；未在产品中保存或确认"
+            },
+            "required": true,
+            "enabled": true,
+            "conditions": []
+          },
+          {
+            "criterion_id": "freshness",
+            "item_id": "fruit",
+            "name": "新鲜度与小时配送",
+            "rule": {
+              "type": "manual",
+              "instruction": "原文要求新鲜完好并在下单后4小时内送达；核对实物验收及小时交付，当前规则不转成自然日"
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "D1人工编写的合成评估蓝图；未在产品中保存或确认"
+            },
+            "required": true,
+            "enabled": true,
+            "conditions": []
+          }
+        ]
+      },
+      "planned_supplier_variants": [
+        "附虚构示例材料，仅评价存在性；新鲜度需实物复核",
+        "仅承诺将提供报告，实际未附；其他批次材料不适用"
+      ],
+      "planned_documents": [
+        "requirements.pdf",
+        "vendor-a-quote.xlsx",
+        "vendor-a-spec.pdf",
+        "vendor-b-quote.xlsx",
+        "vendor-b-spec.pdf"
+      ],
+      "primary_cell_count": 8,
+      "companion_guards": [
+        "不得把有报告判为商品安全合格",
+        "人工项需明确非自动验收"
+      ]
+    },
+    {
+      "pack_id": "dyn-d07",
+      "title": "服装基础数量面料与交期",
+      "category": "clothing",
+      "source_ids": [
+        "yantai-clothing-20260512"
+      ],
+      "data_class": "ai_authored_seen_development",
+      "source_family_ids": ["yantai-clothing-20260512"],
+      "artifact_status": "blueprint_only",
+      "supplier_handles": [
+        "vendor-a",
+        "vendor-b"
+      ],
+      "checklist_definition": {
+        "items": [
+          {
+            "item_id": "clothing",
+            "name": "夹克外套",
+            "specification": "演示款JK-01"
+          }
+        ],
+        "criteria": [
+          {
+            "criterion_id": "quantity",
+            "item_id": "clothing",
+            "name": "采购数量",
+            "rule": {
+              "type": "numeric",
+              "operator": "eq",
+              "value": "50",
+              "unit": "件"
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "D1人工编写的合成评估蓝图；未在产品中保存或确认"
+            },
+            "required": true,
+            "enabled": true,
+            "conditions": []
+          },
+          {
+            "criterion_id": "price",
+            "item_id": "clothing",
+            "name": "含税综合单价",
+            "rule": {
+              "type": "money",
+              "operator": "lte",
+              "value": "260",
+              "currency": "CNY",
+              "per_unit": "件",
+              "tax_basis": "included"
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "D1人工编写的合成评估蓝图；未在产品中保存或确认"
+            },
+            "required": true,
+            "enabled": true,
+            "conditions": []
+          },
+          {
+            "criterion_id": "material",
+            "item_id": "clothing",
+            "name": "面料成分",
+            "rule": {
+              "type": "enum",
+              "operator": "eq",
+              "values": [
+                "100%聚酯纤维"
+              ]
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "D1人工编写的合成评估蓝图；未在产品中保存或确认"
+            },
+            "required": true,
+            "enabled": true,
+            "conditions": []
+          },
+          {
+            "criterion_id": "delivery",
+            "item_id": "clothing",
+            "name": "交付期限",
+            "rule": {
+              "type": "duration",
+              "operator": "lte",
+              "value": "20",
+              "calendar": "natural_days",
+              "start_event": "订单确认"
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "D1人工编写的合成评估蓝图；未在产品中保存或确认"
+            },
+            "required": true,
+            "enabled": true,
+            "conditions": []
+          }
+        ]
+      },
+      "planned_supplier_variants": [
+        "四项均有清晰同口径承诺",
+        "数量或面料不满足；承诺21个自然日对20日要求不满足"
+      ],
+      "planned_documents": [
+        "requirements.pdf",
+        "vendor-a-quote.xlsx",
+        "vendor-a-spec.pdf",
+        "vendor-b-quote.xlsx",
+        "vendor-b-spec.pdf"
+      ],
+      "primary_cell_count": 8,
+      "companion_guards": [
+        "明确订单数量是合成要求，不把公告预计数量改成实际订单",
+        "交期核验供应商承诺而非推测会提前交货"
+      ]
+    },
+    {
+      "pack_id": "dyn-d08",
+      "title": "服装尺码、含量与文件相斥",
+      "category": "clothing",
+      "source_ids": [
+        "yantai-clothing-20260512"
+      ],
+      "data_class": "ai_authored_seen_development",
+      "source_family_ids": ["yantai-clothing-20260512"],
+      "artifact_status": "blueprint_only",
+      "supplier_handles": [
+        "vendor-a",
+        "vendor-b"
+      ],
+      "checklist_definition": {
+        "items": [
+          {
+            "item_id": "clothing",
+            "name": "T恤",
+            "specification": "演示款TS-02"
+          }
+        ],
+        "criteria": [
+          {
+            "criterion_id": "cotton",
+            "item_id": "clothing",
+            "name": "棉含量",
+            "rule": {
+              "type": "numeric",
+              "operator": "gte",
+              "value": "80",
+              "unit": "%"
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "D1人工编写的合成评估蓝图；未在产品中保存或确认"
+            },
+            "required": true,
+            "enabled": true,
+            "conditions": []
+          },
+          {
+            "criterion_id": "size",
+            "item_id": "clothing",
+            "name": "尺码",
+            "rule": {
+              "type": "enum",
+              "operator": "eq",
+              "values": [
+                "L"
+              ]
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "D1人工编写的合成评估蓝图；未在产品中保存或确认"
+            },
+            "required": true,
+            "enabled": true,
+            "conditions": []
+          },
+          {
+            "criterion_id": "quantity",
+            "item_id": "clothing",
+            "name": "采购数量",
+            "rule": {
+              "type": "numeric",
+              "operator": "eq",
+              "value": "20",
+              "unit": "件"
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "D1人工编写的合成评估蓝图；未在产品中保存或确认"
+            },
+            "required": true,
+            "enabled": true,
+            "conditions": []
+          },
+          {
+            "criterion_id": "price",
+            "item_id": "clothing",
+            "name": "含税单价",
+            "rule": {
+              "type": "money",
+              "operator": "lte",
+              "value": "25",
+              "currency": "CNY",
+              "per_unit": "件",
+              "tax_basis": "included"
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "D1人工编写的合成评估蓝图；未在产品中保存或确认"
+            },
+            "required": true,
+            "enabled": true,
+            "conditions": []
+          },
+          {
+            "criterion_id": "delivery",
+            "item_id": "clothing",
+            "name": "交付期限",
+            "rule": {
+              "type": "duration",
+              "operator": "lte",
+              "value": "5",
+              "calendar": "working_days",
+              "start_event": "合同签订"
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "D1人工编写的合成评估蓝图；未在产品中保存或确认"
+            },
+            "required": true,
+            "enabled": true,
+            "conditions": []
+          }
+        ]
+      },
+      "planned_supplier_variants": [
+        "同款棉含量跨文件相斥；其余有同口径承诺",
+        "仅列S到XL可供范围，不能自动认定订单选L；日历口径不同"
+      ],
+      "planned_documents": [
+        "requirements.pdf",
+        "vendor-a-quote.xlsx",
+        "vendor-a-spec.pdf",
+        "vendor-b-quote.xlsx",
+        "vendor-b-spec.pdf"
+      ],
+      "primary_cell_count": 10,
+      "companion_guards": [
+        "规格可选范围不等于订单选定值",
+        "未给各尺码数量时不编造"
+      ]
+    },
+    {
+      "pack_id": "dyn-d09",
+      "title": "服装预计数量、样品及证明",
+      "category": "clothing",
+      "source_ids": [
+        "yantai-clothing-20260512"
+      ],
+      "data_class": "ai_authored_seen_development",
+      "source_family_ids": ["yantai-clothing-20260512"],
+      "artifact_status": "blueprint_only",
+      "supplier_handles": [
+        "vendor-a",
+        "vendor-b"
+      ],
+      "checklist_definition": {
+        "items": [
+          {
+            "item_id": "clothing",
+            "name": "夹克外套",
+            "specification": "演示款JK-03"
+          }
+        ],
+        "criteria": [
+          {
+            "criterion_id": "sample",
+            "item_id": "clothing",
+            "name": "样品验收",
+            "rule": {
+              "type": "manual",
+              "instruction": "采购要求提供样品并由买方现场验收；文件承诺不证明样品已通过验收"
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "D1人工编写的合成评估蓝图；未在产品中保存或确认"
+            },
+            "required": true,
+            "enabled": true,
+            "conditions": []
+          },
+          {
+            "criterion_id": "test",
+            "item_id": "clothing",
+            "name": "检验报告",
+            "rule": {
+              "type": "presence",
+              "description": "对应演示款JK-03的检验报告材料",
+              "must_be_present": true
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "D1人工编写的合成评估蓝图；未在产品中保存或确认"
+            },
+            "required": true,
+            "enabled": true,
+            "conditions": []
+          },
+          {
+            "criterion_id": "price",
+            "item_id": "clothing",
+            "name": "含税综合单价",
+            "rule": {
+              "type": "money",
+              "operator": "lte",
+              "value": "260",
+              "currency": "CNY",
+              "per_unit": "件",
+              "tax_basis": "included"
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "D1人工编写的合成评估蓝图；未在产品中保存或确认"
+            },
+            "required": true,
+            "enabled": true,
+            "conditions": []
+          },
+          {
+            "criterion_id": "quantity_basis",
+            "item_id": "clothing",
+            "name": "预计与结算数量",
+            "rule": {
+              "type": "manual",
+              "instruction": "预计110件、最终按实际发放数量结算；买方需确认实际订单数量，不自动固定为110件"
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "D1人工编写的合成评估蓝图；未在产品中保存或确认"
+            },
+            "required": true,
+            "enabled": true,
+            "conditions": []
+          },
+          {
+            "criterion_id": "returns",
+            "item_id": "clothing",
+            "name": "退换货承诺",
+            "rule": {
+              "type": "enum",
+              "operator": "eq",
+              "values": [
+                "允许退换货"
+              ]
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "D1人工编写的合成评估蓝图；未在产品中保存或确认"
+            },
+            "required": true,
+            "enabled": true,
+            "conditions": []
+          }
+        ]
+      },
+      "planned_supplier_variants": [
+        "模拟已附报告与清晰价款；样品和预计数量仍须人工处理",
+        "只有报告模板或报告承诺，未附适用文件；退换承诺明确不符合"
+      ],
+      "planned_documents": [
+        "requirements.pdf",
+        "vendor-a-quote.xlsx",
+        "vendor-a-spec.pdf",
+        "vendor-b-quote.xlsx",
+        "vendor-b-spec.pdf"
+      ],
+      "primary_cell_count": 10,
+      "companion_guards": [
+        "presence检验材料是否附上，不能判资质合法有效",
+        "不得把同一模板标题当检测报告"
+      ]
+    },
+    {
+      "pack_id": "dyn-d10",
+      "title": "水果服装混合表格范围",
+      "category": "mixed",
+      "source_ids": [
+        "baoshan-fruit-20260601",
+        "yantai-clothing-20260512"
+      ],
+      "data_class": "ai_authored_seen_development",
+      "source_family_ids": ["baoshan-fruit-20260601","yantai-clothing-20260512"],
+      "artifact_status": "blueprint_only",
+      "supplier_handles": [
+        "vendor-a",
+        "vendor-b"
+      ],
+      "checklist_definition": {
+        "items": [
+          {
+            "item_id": "fruit",
+            "name": "苹果",
+            "specification": "演示箱装"
+          },
+          {
+            "item_id": "clothing",
+            "name": "T恤",
+            "specification": "演示款TS-03"
+          }
+        ],
+        "criteria": [
+          {
+            "criterion_id": "fruit_quantity",
+            "item_id": "fruit",
+            "name": "采购数量",
+            "rule": {
+              "type": "numeric",
+              "operator": "eq",
+              "value": "10",
+              "unit": "箱"
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "D1人工编写的合成评估蓝图；未在产品中保存或确认"
+            },
+            "required": true,
+            "enabled": true,
+            "conditions": []
+          },
+          {
+            "criterion_id": "fruit_price",
+            "item_id": "fruit",
+            "name": "含税单价",
+            "rule": {
+              "type": "money",
+              "operator": "lte",
+              "value": "80",
+              "currency": "CNY",
+              "per_unit": "箱",
+              "tax_basis": "included"
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "D1人工编写的合成评估蓝图；未在产品中保存或确认"
+            },
+            "required": true,
+            "enabled": true,
+            "conditions": []
+          },
+          {
+            "criterion_id": "fruit_delivery",
+            "item_id": "fruit",
+            "name": "交付期限",
+            "rule": {
+              "type": "duration",
+              "operator": "lte",
+              "value": "3",
+              "calendar": "natural_days",
+              "start_event": "订单确认"
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "D1人工编写的合成评估蓝图；未在产品中保存或确认"
+            },
+            "required": true,
+            "enabled": true,
+            "conditions": []
+          },
+          {
+            "criterion_id": "clothing_quantity",
+            "item_id": "clothing",
+            "name": "采购数量",
+            "rule": {
+              "type": "numeric",
+              "operator": "eq",
+              "value": "20",
+              "unit": "件"
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "D1人工编写的合成评估蓝图；未在产品中保存或确认"
+            },
+            "required": true,
+            "enabled": true,
+            "conditions": []
+          },
+          {
+            "criterion_id": "clothing_price",
+            "item_id": "clothing",
+            "name": "含税单价",
+            "rule": {
+              "type": "money",
+              "operator": "lte",
+              "value": "25",
+              "currency": "CNY",
+              "per_unit": "件",
+              "tax_basis": "included"
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "D1人工编写的合成评估蓝图；未在产品中保存或确认"
+            },
+            "required": true,
+            "enabled": true,
+            "conditions": []
+          },
+          {
+            "criterion_id": "clothing_delivery",
+            "item_id": "clothing",
+            "name": "交付期限",
+            "rule": {
+              "type": "duration",
+              "operator": "lte",
+              "value": "14",
+              "calendar": "natural_days",
+              "start_event": "订单确认"
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "D1人工编写的合成评估蓝图；未在产品中保存或确认"
+            },
+            "required": true,
+            "enabled": true,
+            "conditions": []
+          }
+        ]
+      },
+      "planned_supplier_variants": [
+        "同一工作表两个不重叠品目范围，两品目数值故意差异明显",
+        "包含另品目看似达标数字但本品目不满足或缺失"
+      ],
+      "planned_documents": [
+        "requirements.pdf",
+        "vendor-a-quote.xlsx",
+        "vendor-a-spec.pdf",
+        "vendor-b-quote.xlsx",
+        "vendor-b-spec.pdf"
+      ],
+      "primary_cell_count": 12,
+      "companion_guards": [
+        "重叠范围拒绝",
+        "PDF同页混合品目不支持时明确要求拆分",
+        "检索必须保持品目与供应商过滤"
+      ]
+    },
+    {
+      "pack_id": "dyn-d11",
+      "title": "金额税率与条件承诺",
+      "category": "mixed",
+      "source_ids": [],
+      "data_class": "ai_authored_seen_development",
+      "source_family_ids": ["self-authored-phone-and-accessories"],
+      "artifact_status": "blueprint_only",
+      "supplier_handles": [
+        "vendor-a",
+        "vendor-b"
+      ],
+      "checklist_definition": {
+        "items": [
+          {
+            "item_id": "equipment",
+            "name": "手机配件",
+            "specification": "演示配件AC-01"
+          }
+        ],
+        "criteria": [
+          {
+            "criterion_id": "quantity",
+            "item_id": "equipment",
+            "name": "采购数量",
+            "rule": {
+              "type": "numeric",
+              "operator": "eq",
+              "value": "100",
+              "unit": "件"
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "D1人工编写的合成评估蓝图；未在产品中保存或确认"
+            },
+            "required": true,
+            "enabled": true,
+            "conditions": []
+          },
+          {
+            "criterion_id": "price",
+            "item_id": "equipment",
+            "name": "含税单价",
+            "rule": {
+              "type": "money",
+              "operator": "lte",
+              "value": "30",
+              "currency": "CNY",
+              "per_unit": "件",
+              "tax_basis": "included"
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "D1人工编写的合成评估蓝图；未在产品中保存或确认"
+            },
+            "required": true,
+            "enabled": true,
+            "conditions": []
+          },
+          {
+            "criterion_id": "currency",
+            "item_id": "equipment",
+            "name": "报价币种",
+            "rule": {
+              "type": "enum",
+              "operator": "eq",
+              "values": [
+                "CNY"
+              ]
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "D1人工编写的合成评估蓝图；未在产品中保存或确认"
+            },
+            "required": true,
+            "enabled": true,
+            "conditions": []
+          },
+          {
+            "criterion_id": "delivery",
+            "item_id": "equipment",
+            "name": "交付期限",
+            "rule": {
+              "type": "duration",
+              "operator": "lte",
+              "value": "7",
+              "calendar": "natural_days",
+              "start_event": "订单确认"
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "D1人工编写的合成评估蓝图；未在产品中保存或确认"
+            },
+            "required": true,
+            "enabled": true,
+            "conditions": []
+          },
+          {
+            "criterion_id": "conditions",
+            "item_id": "equipment",
+            "name": "附条件价格与交期",
+            "rule": {
+              "type": "manual",
+              "instruction": "核对最小起订量、另付运费和付款起点等条件是否被买方接受，不忽略前提直接判满足"
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "D1人工编写的合成评估蓝图；未在产品中保存或确认"
+            },
+            "required": true,
+            "enabled": true,
+            "conditions": []
+          }
+        ]
+      },
+      "planned_supplier_variants": [
+        "人民币含税价明确，但附条件承诺需要复核",
+        "有未含税价或外币低数值，不据此满足含税人民币上限"
+      ],
+      "planned_documents": [
+        "requirements.pdf",
+        "vendor-a-quote.xlsx",
+        "vendor-a-spec.pdf",
+        "vendor-b-quote.xlsx",
+        "vendor-b-spec.pdf"
+      ],
+      "primary_cell_count": 10,
+      "companion_guards": [
+        "未接受条件不能自动删掉",
+        "价格比较必须保留per_unit与税口径"
+      ]
+    },
+    {
+      "pack_id": "dyn-d12",
+      "title": "版本变更与人工事实继承",
+      "category": "phone",
+      "source_ids": [],
+      "data_class": "ai_authored_seen_development",
+      "source_family_ids": ["self-authored-phone-and-accessories"],
+      "artifact_status": "blueprint_only",
+      "supplier_handles": [
+        "vendor-a",
+        "vendor-b"
+      ],
+      "checklist_definition": {
+        "items": [
+          {
+            "item_id": "phone",
+            "name": "苹果手机",
+            "specification": "演示SKU-P128"
+          }
+        ],
+        "criteria": [
+          {
+            "criterion_id": "quantity",
+            "item_id": "phone",
+            "name": "采购数量",
+            "rule": {
+              "type": "numeric",
+              "operator": "eq",
+              "value": "10",
+              "unit": "台"
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "D1人工编写的合成评估蓝图；未在产品中保存或确认"
+            },
+            "required": true,
+            "enabled": true,
+            "conditions": []
+          },
+          {
+            "criterion_id": "capacity",
+            "item_id": "phone",
+            "name": "存储容量",
+            "rule": {
+              "type": "numeric",
+              "operator": "gte",
+              "value": "128",
+              "unit": "GB"
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "D1人工编写的合成评估蓝图；未在产品中保存或确认"
+            },
+            "required": true,
+            "enabled": true,
+            "conditions": []
+          },
+          {
+            "criterion_id": "price",
+            "item_id": "phone",
+            "name": "含税单价",
+            "rule": {
+              "type": "money",
+              "operator": "lte",
+              "value": "5500",
+              "currency": "CNY",
+              "per_unit": "台",
+              "tax_basis": "included"
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "D1人工编写的合成评估蓝图；未在产品中保存或确认"
+            },
+            "required": true,
+            "enabled": true,
+            "conditions": []
+          },
+          {
+            "criterion_id": "delivery",
+            "item_id": "phone",
+            "name": "交付期限",
+            "rule": {
+              "type": "duration",
+              "operator": "lte",
+              "value": "14",
+              "calendar": "natural_days",
+              "start_event": "订单确认"
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "D1人工编写的合成评估蓝图；未在产品中保存或确认"
+            },
+            "required": true,
+            "enabled": true,
+            "conditions": []
+          }
+        ]
+      },
+      "planned_supplier_variants": [
+        "新运行完整审查使用冻结版本；原文支持的10改10.0保留待复核",
+        "新运行有不满足承诺；同一原文多值人工修正仍保留冲突"
+      ],
+      "planned_documents": [
+        "requirements.pdf",
+        "vendor-a-quote.xlsx",
+        "vendor-a-spec.pdf",
+        "vendor-b-quote.xlsx",
+        "vendor-b-spec.pdf"
+      ],
+      "primary_cell_count": 8,
+      "companion_guards": [
+        "变更清单或绑定后旧报告只读",
+        "JSON及XLSX保留历史版本来源",
+        "partial、越权和未知请求另计，不增加主轨分母"
+      ]
+    }
+  ]
+}

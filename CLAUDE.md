@@ -55,3 +55,5 @@
 - 新行为补回归，答案先由业务契约确定。离线/实连/真实模型分别报告，skip不算通过。独立质量、容量、费用和灾备不能以合成开发集代替。
 
 业务下一步：[品目对应C1/C2/C3指定合成闭环](docs/document-item-binding-c-acceptance-2026-10-11.md)完成，后台源码6ff2a96、0017已应用。手机人工继承/非正式标记、水果服装四项正式审查、苹果范围混合检索、范围变更后的历史只读及JSON/Excel通过。最终后端1583通过/48跳过、网络0，前端221通过及类型/构建通过。接下来做动态多品类独立资料/预期答案，再检索对照与生产容量/恢复；独立封存仍0，不把本次合成开发场景称独立质量。见[路线图](docs/development-roadmap.md)。
+
+动态评估D1：[协议](docs/superpowers/specs/2026-10-11-dynamic-evaluation-design.md)与[三大步计划](docs/superpowers/plans/2026-10-11-dynamic-evaluation.md)已准备。`evals/dynamic/case_matrix.json`是12包/55指标定义/104判定位置的已见开发蓝图，尚无新原件/gold/模型成绩；不把旧固定八字段评分器用于动态清单。下一步D2原件/参考答案/动态离线评分，D3明示实连。每步本地提交、不自动推送。

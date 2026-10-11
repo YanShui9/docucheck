@@ -1,6 +1,6 @@
 # DocuCheck 文档导航
 
-本页是对外技术文档入口。最新整理日期：2026-10-10；各验证记录以其自身的日期、源码和数据范围为准。
+本页是对外技术文档入口。最新整理日期：2026-10-11；各验证记录以其自身的日期、源码和数据范围为准。
 
 ## 推荐阅读顺序
 
@@ -23,6 +23,7 @@
 | 混合检索与异步索引 | [检索组件](hybrid-retrieval-2026-10-03.md)、[持久化索引](durable-indexing-2026-10-03.md)、[真实浏览器 RAG](repair-browser-rag-live-2026-10-08.md) |
 | 最新资料与品目对应 | [C闭环验收](document-item-binding-c-acceptance-2026-10-11.md)、[A1 契约与 API](document-item-binding-a1-2026-10-10.md)、[A2 规则与运行](document-item-binding-a2-2026-10-10.md)、[A3 范围检索](document-item-binding-a3-2026-10-10.md)、[B 中文前端与验证](document-item-binding-b-2026-10-10.md)、[C 指标与原件补修](document-item-binding-c-metric-labels-2026-10-11.md)、[人工继承补修](document-item-binding-c-manual-carry-2026-10-11.md) |
 | 测试及开发集质量 | [M5-B 原始开发验证](m5-b-development-validation-2026-10-03.md)、[后续同版本联调](m5-current-version-integration-2026-10-03.md) |
+| 动态多品类评估准备 | [D1 交付与复核](dynamic-evaluation-d1-2026-10-11.md)、[设计与评分口径](superpowers/specs/2026-10-11-dynamic-evaluation-design.md)、[三大步计划](superpowers/plans/2026-10-11-dynamic-evaluation.md)、[12 包蓝图](../evals/dynamic/case_matrix.json)、[核实来源](../evals/dynamic/source_catalog.json)；原件/gold/实测尚未完成 |
 
 这些是分阶段技术记录，文中的“当前”“尚未接入”和“未配置远程”等描述仅适用于当时交付。跨阶段理解能力请先读首页和路线图的最新入口。
 

@@ -1,5 +1,7 @@
 # DocuCheck 开发评测与验收工具
 
+> **当前入口（2026-10-11）**：品目对应 C 的指定合成闭环已完成，见[当前评估边界](../docs/evaluation.md)与[C 报告](../docs/document-item-binding-c-acceptance-2026-10-11.md)。新动态评估 D1 已准备[协议](../docs/superpowers/specs/2026-10-11-dynamic-evaluation-design.md)、[三大步计划](../docs/superpowers/plans/2026-10-11-dynamic-evaluation.md)、[12包/104格蓝图](dynamic/case_matrix.json)和[核实来源](dynamic/source_catalog.json)；尚无新原件/逐格gold/模型成绩，独立封存0。下方2026-10-03的“最新”“当前”及第1–6项只适用于旧八字段阶段，不能作为今天的执行状态。`m5_metrics`/`candidate_corpus`保持历史用途，新动态评分将在`evals/dynamic/`实现。
+
 > **最新源码联调（2026-10-03）**：第 1 项完成。独立 MySQL/Redis 栈与重建的 worker 已匹配当前后端源码；22 项服务测试全部通过、无跳过。真实开发质量 12/12 包、104/104 格、89/89 必要证据，危险满足 0、引用错误 0/244；固定五文件性能 10/10 达标、最高 62.125 秒。修复 Case 列表升版显示，前端最终 19 项、类型检查及构建通过；真实浏览器矩阵/导出、Bob 隔离、上传/修正/历史已核对。本轮上报 293 次模型调用，实际金额未知；独立人工封存仍 0。见 [本轮报告](../docs/m5-current-version-integration-2026-10-03.md)。第 2–6 项仍待逐项执行；以下为历史记录。
 
 > **交付后复查最新（2026-10-03）**：确认并修复 7 项代码问题，新增 41 项回归；原 Conda 和依赖锁对应的 Windows 隔离环境均 **765 passed、22 skipped**，网络尝试 0，pip check/Ruff 通过。包括历史规则结果读取/追问、八字段内存事实修正、混合版本正式标记、归档声明和离线边界。当前六个业务文件已修改，M5-B 真实模型成绩仍绑定原源码；本轮真实模型调用 0。新归档恢复 228 文件逐字节一致，资料错误 0；独立人工封存仍 0，生产/远程 CI 等条件保留。见 [复查报告](../docs/m5-post-delivery-review-2026-10-03.md)。下方按日期保留历史结果。

@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "checked_on": "2026-10-11",
+  "purpose": "动态采购开发集场景参考，非配对原件或评分答案",
+  "raw_files_downloaded": 0,
+  "independent_sealed_packs": 0,
+  "sources": [
+    {
+      "source_id": "baoshan-fruit-20260601",
+      "url": "https://www.baoshan.gov.cn/info/3281/10365304.htm",
+      "title": "保山市青少年业余体校2026-2028年食堂水果采购及配送服务询价公告",
+      "published_on": "2026-06-01",
+      "verification": "primary_page_body_verified",
+      "document_role": "requirement_reference",
+      "attachment_contents_verified": false,
+      "paired_supplier_response_verified": false,
+      "use": ["折扣率与金额分开", "预计费用不等于固定订单数量", "来源追溯与证明材料", "小时交付及条件承诺的人工边界"],
+      "limitations": ["正文和附件入口已查，未下载附件", "不推断供应商承诺", "不复制联系人或签章", "公告中的标准仅作历史要求，不判断现行法律有效性"],
+      "raw_sha256": null,
+      "redistribution_permission": "not_checked_no_raw_redistribution"
+    },
+    {
+      "source_id": "yantai-clothing-20260512",
+      "url": "https://sofl.ytu.edu.cn/info/1032/4402.htm",
+      "title": "烟台大学外国语学院运动会服装采购询价公告",
+      "published_on": "2026-05-12",
+      "verification": "primary_page_body_verified",
+      "document_role": "requirement_reference",
+      "attachment_contents_verified": false,
+      "paired_supplier_response_verified": false,
+      "use": ["预计数量与实际结算数量分开", "综合单价口径", "面料及尺码需求", "样品与证明材料存在性"],
+      "limitations": ["附件标题不代表供应商已填写报价", "样品与证明文件不能替代商品实物验收", "未取得合同约定的数值交期", "标准名称仅作该公告历史要求"],
+      "raw_sha256": null,
+      "redistribution_permission": "not_checked_no_raw_redistribution"
+    },
+    {
+      "source_id": "docile-official",
+      "url": "https://github.com/rossumai/docile",
+      "title": "DocILE: Document Information Localization and Extraction Benchmark",
+      "published_on": null,
+      "verification": "primary_repository_readme_verified",
+      "document_role": "evaluation_method_reference",
+      "attachment_contents_verified": false,
+      "paired_supplier_response_verified": false,
+      "use": ["字段与行项目定位", "定位指标与任务成绩分开", "分层评估报告"],
+      "limitations": ["任务为KILE/LIR，不是采购满足性判断", "未取得下载token或数据", "代码MIT许可不替代数据使用条件核对"],
+      "raw_sha256": null,
+      "redistribution_permission": "no_dataset_downloaded"
+    },
+    {
+      "source_id": "procurement-benchmarks-community",
+      "url": "https://github.com/kundanshar-cell/procurement-benchmarks",
+      "title": "procurement-benchmarks",
+      "published_on": null,
+      "verification": "primary_repository_readme_verified",
+      "document_role": "question_taxonomy_reference",
+      "attachment_contents_verified": false,
+      "paired_supplier_response_verified": false,
+      "use": ["采购问题分类及结构化答案格式"],
+      "limitations": ["社区问答不能充当中文采购原件配对gold", "未审阅全量条目或数据许可", "未采用项目热度作为有效性证明"],
+      "raw_sha256": null,
+      "redistribution_permission": "not_checked_no_data_copied"
+    },
+    {
+      "source_id": "liaoning-clothing-search-lead",
+      "url": "https://www.lnjzxy.edu.cn/content/ZZY3RFSW09044NXAOB",
+      "title": "辽宁建筑职业学院体育教师服装采购（搜索线索）",
+      "published_on": null,
+      "verification": "search_lead_body_unavailable",
+      "document_role": "excluded_unverified_lead",
+      "attachment_contents_verified": false,
+      "paired_supplier_response_verified": false,
+      "use": [],
+      "limitations": ["直接打开正文失败，不用于蓝图阈值或gold", "不能把搜索摘要当已核实原件"],
+      "raw_sha256": null,
+      "redistribution_permission": "not_checked_no_raw_redistribution"
+    }
+  ]
+}
