@@ -93,7 +93,7 @@ python.exe -m alembic -c backend/alembic.ini upgrade head
 python.exe -m alembic -c backend/alembic.ini current
 ```
 
-当前源码迁移头为 `0018_upload_intents`，增加上传意图与原件引用索引。10 月 11 日指定演示记录已应用 `0017_item_bindings`；本轮没有检查或迁移该业务库，不能据源码宣称运行中的库已到 0018。新安装执行上述 `upgrade head` 会应用最新迁移；已有实例先匹配备份、排空旧 API/cleaner，在隔离库验证迁移和竞争，再按阶段应用新 API/cleaner。无意图的旧孤儿另行对账，不由本轮默认清理器自动删除。保留过期意图可回收断连上传的迟到文件；有待恢复意图时不得直接降级删除账本。新 v7/v8 规则及引用语境协议写入后，回退代码也必须能读取这些身份，不能仅 checkout 旧源码宣称已安全回退。生成器创建 alice/bob/reviewer 的演示账号，密码只在本机 `.env` 查看。Keycloak `start-dev`、本机 HTTP 和 H2 卷用于演示；正式企业部署需 HTTPS、生产配置、身份数据库和企业 SSO。已有 Keycloak realm 不会因重写导入文件自动更新，不能把重新生成文件当成重置现有账号。
+当前源码迁移头为 `0018_upload_intents`，增加上传意图与原件引用索引。10 月 11 日指定演示记录已应用 `0017_item_bindings`；本轮没有检查或迁移该业务库，不能据源码宣称运行中的库已到 0018。2026-10-13 已在临时 MySQL 8.4.11/RR 库验证 `0017 → 0018 → 0017 → head`、引用索引与13项竞争/恢复测试，临时容器已删除；这不替代业务实例应用。新安装执行上述 `upgrade head` 会应用最新迁移；已有实例先匹配备份、排空旧 API/cleaner，确认隔离验收适用于目标环境，再按阶段应用新 API/cleaner。无意图的旧孤儿另行对账，不由本轮默认清理器自动删除。保留过期意图可回收断连上传的迟到文件；有待恢复意图时不得直接降级删除账本。新 v7/v8 规则及引用语境协议写入后，回退代码也必须能读取这些身份，不能仅 checkout 旧源码宣称已安全回退。生成器创建 alice/bob/reviewer 的演示账号，密码只在本机 `.env` 查看。Keycloak `start-dev`、本机 HTTP 和 H2 卷用于演示；正式企业部署需 HTTPS、生产配置、身份数据库和企业 SSO。已有 Keycloak realm 不会因重写导入文件自动更新，不能把重新生成文件当成重置现有账号。
 
 已有本机 Keycloak 更换前端端口时，在根目录 `.env` 设置 `DOCUCHECK_WEB_PORT`，保持当前 Keycloak 运行，执行下列命令，再重启 Vite。端口只接受1–65535的字面十进制值，两端都忽略模式文件和 `.env.local` 对此键的覆盖，不展开 `${...}`；若用进程环境变量覆盖，须在同一个环境内执行同步和前端启动。它只同步既有 `docucheck-web` 的登录/退出回调和来源地址，并读取回验；不生成凭据、不重建 realm 或账号。默认仅绑定 `127.0.0.1`，不要用 `--host`/`--port` 覆盖绕开这份共用配置。
 
@@ -159,6 +159,8 @@ try { python.exe -m pytest backend/tests/test_run_repository_mysql.py -q }
 finally { Remove-Item Env:DOCUCHECK_RUN_MYSQL_TESTS -ErrorAction SilentlyContinue }
 ```
 
+上传恢复与取消的新隔离用例在 `backend/tests/test_upload_intents_mysql.py`。另需开启 `DOCUCHECK_RUN_B_MYSQL_TESTS=1`，并将 `DOCUCHECK_B_MYSQL_URL` 与 `DOCUCHECK_DATABASE_URL` 同时指向同一新建临时库：MySQL、loopback地址、库名匹配 `docucheck_b_[a-f0-9]{12}`，已应用迁移头；使用随机凭据与临时原件目录。设置 `PYTHON_DOTENV_DISABLED=1` 并清除无关运行配置，防止加载业务 `.env`。RR用例会断言测试连接的隔离级别为REPEATABLE-READ；断连用例只KILL本测试连接的ID。未显式开启时四项跳过，跳过不计实连通过。[本轮隔离验收范围](superpowers/plans/2026-10-13-project-consolidation.md)。
+
 停止本机 API/解析/Vite 用各自终端 Ctrl+C；停止容器用 `docker compose --profile agent --profile identity stop`。不要以 `down -v` 代替普通停止，它会删除数据卷。详细数据恢复见[备份与恢复](backup-and-recovery.md)。
 
 ## 6. 故障定位
@@ -172,3 +174,4 @@ finally { Remove-Item Env:DOCUCHECK_RUN_MYSQL_TESTS -ErrorAction SilentlyContinu
 | 401 / 403 | 登录状态、issuer/audience 与项目成员权限；不是猜一个资源 ID 就能读取。 |
 | `report_exists` | 为本次离线校验选一个新报告文件名。 |
 | 安装/模型 TLS 失败 | 核对可信 CA、代理与时间；保留证书验证。 |
+| 子进程启动报 OpenBLAS 内存分配失败 | 先查可用内存；本轮低内存环境下，仅给测试命令临时设置 `OPENBLAS_NUM_THREADS=1` 后上传恢复回归通过。记录该运行条件，不将初始化失败当业务断言通过。 |
