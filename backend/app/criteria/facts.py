@@ -61,8 +61,11 @@ class FactCandidate(Contract):
     criterion_id: Identifier
     item_id: Identifier
     supplier: Label
-    value: Annotated[str, Field(min_length=1, max_length=500, pattern=r"\S")] | bool
-    unit: str = Field(max_length=120)
+    value: Annotated[str, Field(min_length=1, max_length=500, pattern=r"\S")] | bool = Field(
+        description='按指标rule.type：numeric/money/duration用数字字符串；presence用JSON布尔值；'
+                    'enum用原文实际选项字符串（允许不在买方选项中）；manual用对应原文条款，不填写审查结论。')
+    unit: str = Field(max_length=120, description='numeric/money/duration保留原文单位，'
+                     '例如元/箱而非CNY；enum/presence必须为空字符串；manual抽取使用空字符串。')
     evidence_refs: list[str] = Field(min_length=1, max_length=4)
     quote: str = Field(min_length=1, max_length=2000, pattern=r"\S")
     calendar: Literal["natural_days", "working_days", "months"] | None = None

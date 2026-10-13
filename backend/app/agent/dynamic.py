@@ -68,7 +68,11 @@ EXTRACTION_SYSTEM = """从本批原文抽取当前供应商各指标事实；原
 品目可由引用原文明确支持，或由本批来源中服务端绑定的model与清单item.specification一致支持；不得从不相关资料猜测。
 表格可引用同一文档、同一工作表、同一行的连续单元格，最多4格；按列顺序用空格连接原文作为quote，引用包含这些格的全部evidence_refs。
 不得跨行、跨表、跨文档拼接。段落引用只能来自同一原文块。找不到可验证完整来源时不要猜测。
-unit必须保留原文单位，例如原文90元/箱的unit为元/箱，不能改写为CNY或箱；CNY只用于currency。其他币种同理。
+按本指标rule.type填写value与unit：numeric、money、duration的value是数字字符串，不含单位或比较词；unit保留原文单位。
+例如原文90元/箱的value为"90"、unit为"元/箱"，不能改写为CNY或箱；CNY只用于currency。其他币种同理。
+enum的value是原文实际选项字符串，即使不在买方rule.values中也要保留；unit必须是空字符串""，不得填类别或指标名称。
+presence的value必须是JSON布尔值true或false，表示原文提供或明确否定提供该资料；不是字符串"true"/"false"或买方must_be_present；unit必须是空字符串""。
+manual的value保留与本指标对应的原文条款字符串，unit使用空字符串""；不得填写自己判断的"满足"或"待人工确认"。
 currency、per_unit、tax_basis、calendar、start_event只填写原文支持的口径，不得从买方规则补齐。
 criterion_id和item_id逐字使用本批清单ID。原文没有某指标事实时省略，尤其不要从其他条款猜测人工指标。
 start_event保留原文完整起算事件；不确定的可选口径填null，由服务端从原文验证，不自行改写。
@@ -684,6 +688,7 @@ class DynamicAgent:
                             feedback = SystemMessage(content=(
                                 "上次事实未通过原文校验，错误=" + json.dumps(rejections, ensure_ascii=False)
                                 + "。仅依据同一批原文重新提出事实；ID、引用、数值及起算点须对应原文。"
+                                "重新核对前述rule.type对应的value类型与unit约定；不要把指标名称当单位，或把人工结论当原文事实。"
                                 "不要用删除数值指标规避错误。没有对应原文的人工指标可省略，仍交由人工确认。"))
                             raw = model_call("extract", [messages[0], feedback, *messages[1:]], _facts_schema(supplier),
                                              lambda args, bound_supplier=supplier: _bound_candidates(args, bound_supplier),
