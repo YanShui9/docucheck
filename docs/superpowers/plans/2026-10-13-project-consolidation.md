@@ -1,0 +1,125 @@
+# DocuCheck 收尾与面试准备计划
+
+> **For agentic workers:** 使用 `executing-plans` 按已授权阶段执行，并用 `verification-before-completion` 核对结果。当前只执行 A；后续阶段按本页的业务断言确定具体修复，不自动启动服务、调用模型或改变主要前端方案。
+
+**Goal:** 在明确资料范围内获得正确、可复现的核验结果和当前版本的效果证据，并让维护者能够独立解释、定位和修改核心流程。
+
+**Architecture:** 保留模块化单体、受控助手、LangGraph 动态审查、原文回读、确定性规则及 MySQL/Outbox/Celery 状态机制。先关闭已确认缺陷，再测量效果和整理结构；新业务功能冻结。
+
+**Tech Stack:** Python 3.12、FastAPI、Pydantic、SQLAlchemy/MySQL、Celery/Redis、LangChain/LangGraph、BM25/BGE-M3/Milvus、Vue/TypeScript。
+
+用户于 2026-10-13 要求记录审查后的计划并执行第一步。既有四步路线中的前端和指定运行闭环已完成；本计划收束其第 3、4 步，A–F 是本轮阶段，不重新认定历史交付未完成。当前状态统一由[路线图](../../development-roadmap.md)维护。
+
+## 范围与阶段出口
+
+| 阶段 | 工作 | 完成标准 | 粗估 |
+| --- | --- | --- | --- |
+| A：固定范围与基线 | 保存 WIP、源码和依赖身份；确定场景；统一文档与简历事实 | 基线可定位，WIP 不丢失，场景与未知项明确，入口无相互冲突的执行指令 | 0.5–1 天 |
+| B：关键正确性与可靠性 | 数值限定、引用完整性、鉴权阻塞、取消未知状态、上传对账 | 下列 F1–F5 反例及故障路径有明确安全行为、测试和受影响服务验收 | 3–5 天 |
+| C：当前效果证据 | 收束评测 WIP；20–30 问检索对照；核验与约 20 个 Agent 任务 | 固定分母、版本、原件/答案来源，区分开发/独立、首次/重试，保留失败 | 3–5 天 |
+| D：有限整理与掌握 | 拆最妨碍理解的职责、整理旧入口；学习三条流程 | 能独立画流程、解释故障、定位守卫并完成一次小修改 | 2–3 天，可穿插 |
+| E：稳定面试版本 | 固定演示数据/环境；成功、失败、恢复、历史与导出 | 目标机器可重复演示十分钟，有回放和明确回退点 | 2–3 天 |
+| F：受控试用 | 完整部署、身份/TLS、费用/并发/存储限制、观测与恢复 | 受限用户测试与故障/备份恢复演练通过，再决定扩大访问 | 单独估算 |
+
+A–E 按单人每天约五小时、含学习调试，约两到三周量级，不是交付保证。F 不属于当前授权的第一步；复杂语义或效果不稳定时缩小支持范围。
+
+允许：缺陷修复、反例测试、评测、必要的小范围整理、文档与演示收尾。暂缓：新品类和复杂规则、多 Agent、GraphRAG、网关自动路由、Redis 语义缓存、数据库全量异步迁移、替换向量库、Kubernetes/微服务。现有授权、来源、版本、预算和人工确认约束必须保留。
+
+## A：固定范围与基线
+
+**修改范围：** 本计划、`CLAUDE.md`、`README.md`、`docs/development-roadmap.md`、`docs/step-by-step-plan.md`、`docs/README.md`、`docs/evaluation.md`、`docs/interview-demo.md`、`docs/reproduction.md`、`docs/architecture-and-interview.md`。只改文档，不改业务、依赖或评测代码。
+
+- [x] 读取入口、实际代码、Git 状态及审查记录。
+- [x] 将 `988962afe829f7a84b54bcbd28b6197d2090ff76` 保存为本地标签 `audit-baseline-2026-10-13`。
+- [x] 逐份复制并核对 12 个既有 WIP 文件，保存跟踪文件 patch、SHA-256 清单、锁文件和演示原件身份。
+- [x] 确定主演示为苹果/T恤两品目 XLSX，扩展为手机采购；公共单苹果资料作为回放与简化入口。
+- [x] 更新文档中的新功能冻结、已完成和未验证状态，检查入口及相关链接。
+- [x] 核对 WIP、业务源码和锁未变，仅将本阶段文档提交到本地 Git。
+
+### 源码、运行与 WIP 身份
+
+| 对象 | 基线与边界 |
+| --- | --- |
+| 已提交源码 | `988962afe829f7a84b54bcbd28b6197d2090ff76`，分支 `phase-0-foundation`；这是修复前基线，不能称稳定面试发布版 |
+| 远端跟踪引用 | `0d411cf38e1622cab26de48ed57eda0624f45f30`；基线保存时本地领先 11 提交。本轮不 fetch、不 push，不把跟踪引用当实时远端状态 |
+| 历史运行身份 | 10 月 11 日验收记录的四后台源码 `6ff2a96`、迁移 `0017`；本轮未检查或更新服务 |
+| 本地快照 | `data/backups/consolidation-2026-10-13/manifest.json`、`case-matrix.patch`、`wip/`；不含业务数据库、账号、密钥或上传原件备份 |
+| 已跟踪代码身份 | 343 个 backend/frontend/scripts 文件，摘要 `e0a1380427964a47170ba3a20daf45b97465df2c79cd4bae6682c628be5077c5`；WIP 另列，具体锁摘要见 manifest |
+| 环境 | Conda `docucheck` / Python 3.12.14；后端四份 requirements 锁、前端 package-lock 固定；当前模型/服务配置未读取 |
+| 审查原始材料 | 本机 `data/verification/project-audit-2026-10-13.md`、`project-audit-2026-10-13-pytest.log` 及首轮超时 JSON；不随 Git 克隆取得 |
+
+已有 WIP 全部归入 C，状态为“未提交、待收束与复核”，不能当作已交付成绩：
+
+- `evals/dynamic/case_matrix.json` 的既有修改。
+- `evals/dynamic/contracts.py`、`corpus.py`、`metrics.py`、`retrieval.py`、`run.py`。
+- `evals/dynamic/development_examples.json`。
+- `backend/tests/test_dynamic_eval_contracts.py`、`test_dynamic_eval_corpus.py`、`test_dynamic_eval_metrics.py`、`test_dynamic_eval_retrieval.py`、`test_dynamic_eval_run.py`。
+
+不把这些文件混入 A 的文档提交，也不删除或重建。恢复前先比较 manifest 与当前文件，再从 `wip/` 逐份取回；有后续改动时先合并，不使用 `reset --hard`、`clean` 或全量覆盖。
+
+### 固定场景与讲述范围
+
+| 场景 | 资料、参考事实和目标 | 当前证据与下一道门禁 |
+| --- | --- | --- |
+| 主演示：苹果/T恤 | 10 月 11 日合成水果服装报价。苹果 10 箱、80 元/箱；T恤 50 件、30 元/件。要求分别为 10 箱/≤100 元、20 件/≤25 元；展示两项满足、两项不满足，苹果限定检索、原件和导出 | 指定历史闭环已过；B 修语义缺陷后，E 重新核对所有运行与导出。绑定使用原件实际范围，不靠自然语言猜品目 |
+| 扩展：手机 | 同轮合成手机报价。数量 10 台，18 自然日相对要求 14 自然日不满足；未知标准保留人工确认，演示受控修正、继承与历史 | 指定历史闭环已过，包含失败与显式重试；不是独立质量评测 |
+| 公共简化入口 | [公开单苹果报价](../../../examples/showcase/README.md)：25 箱、含税 90 元/箱，买方至少 20 箱、≤100 元/箱 | 对应 10 月 8 日历史截图；单品资料不能替代主场景的跨品目证明 |
+
+主演示原件在本机 `data/verification/item-binding-c-2026-10-10/合成水果服装报价.xlsx`，SHA-256 为 `f59ae7452c24bbeef961c1ac6755998e499b9e22436c5bfa4ae0c3234d27acc6`。手机原件同目录 `合成苹果手机报价.xlsx`，SHA-256 为 `909e745e416dc78ce5bb81b5381466b467ea2d07b5d14d8c5ba4cb9221d21a1d`。两份均为作者已见合成资料；本步只确定范围和身份，不将本地文件发布到仓库。参考依据见[C 验收](../../document-item-binding-c-acceptance-2026-10-11.md)。
+
+面试掌握三条流程：范围内问答→混合检索→回读；适用资料覆盖→候选→校验→规则→报告；Run/Outbox→Celery→attempt/fence→失败恢复。其他能力被问到再展开。
+
+简历事实口径：Redis/Celery 用于异步任务，当前没有业务/语义缓存；五类业务状态为满足、不满足、资料冲突、证据不足、待人工确认；动态审查使用 LangGraph，聊天使用手写受控循环，恢复靠应用数据库；旧 104/104 是固定字段已见开发验证。尚未取得简历原文件，因此 A 记录改写依据，不宣称已经修改本人简历。
+
+## B：修复清单与业务断言
+
+以下来自当前审查。纯内存、脚本 Provider、临时 SQLite/ASGI 复现不等于真实模型发生频率或生产压测。
+
+| 编号 | 位置与复现 | 修复验收 |
+| --- | --- | --- |
+| F1 | `criteria/validation.py:source_comparator`、`criteria/facts.py:validate_fact`。原文“数量不足10台”，合法候选值 10 台，在 v6 可被判为正式满足 | “不足/不到/不满/不提供”、否定、区间、约数和条件承诺不能被默认为精确等值；不能确定时人工确认。简单肯定值仍正常；保守拒判比例单列 |
+| F2 | `agent/assistant.py:checked_citation`、`assistant_evidence.py:supports`。原文“不含税80元/箱”，摘录“含税80元/箱”通过完整离线问答与复验 | 服务端保持完整句子/条款/单元格及限定语；持久化、历史、原文显示一致。定位正确与语义支持分开验收 |
+| F3 | `api/route_auth.py` 直接在 async 包装器执行同步认证及 SQL 权限检查；三次各 150ms 延迟的认证约串行 453ms | 同步 I/O 使用受控线程池/同步依赖或完整异步实现；慢认证/SQL 时无关请求和健康检查仍响应；权限拒绝保持 |
+| F4 | `db/run_repository.py:cancel`、`dynamic_repository.py:retain_cancelled_usage`。claim→cancel→worker 丢失后 cancelled/usage null/unknown false，stale 不再恢复 | 运行中外部结果未决时取消保守标 unknown；确定响应可补真实用量。迟到结果仍不得覆盖正式状态 |
+| F5 | `api/upload.py`、`api/main.py`、`db/case_cleanup.py`。最终文件先落盘，后登记数据库，进程退出可能留下无账本原件 | 上传意图或宽限期对账能够回收孤儿，不能误删正在提交/有引用的文件；通过隔离退出恢复验收。本次发现属静态崩溃窗口 |
+
+- [ ] 先为 F1/F2 固定业务预期和失败回归，再实施最小修复；补普通肯定与其他规则的兼容回归。
+- [ ] 验证 F3/F4 的慢请求、取消、未知用量和迟到写入反例。
+- [ ] 为 F5 明确持久化与在途保护，实施并做隔离故障验证。
+- [ ] 运行受影响定向、全量离线及必要真实服务检查，分别报告 passed/skipped；检查源码、模型与部署身份不混淆。
+
+相关既有测试：`backend/tests/test_dynamic_facts.py`、`test_item_binding_review.py`、`test_assistant_agent.py`、`test_oidc_auth.py`、`test_api_workspace_authorization.py`、`test_run_repository.py`、`test_document_upload.py`、`test_case_cleanup.py`。按实际契约增加反例，不以测试数量为目标。
+
+## C：效果证据
+
+- [ ] 先复核并收束现有 WIP，与[动态评估协议](../specs/2026-10-11-dynamic-evaluation-design.md)对齐。开发集/独立集来源和规则变化记理由；原 12 包/104 位置蓝图不冒充已有模型结果。
+- [ ] 固定 20–30 个检索问题及必要证据组。PDF/XLSX、口语/关键词、多品目、无答案和权限/降级分别计数；BM25、dense、hybrid 使用相同可比较语料和范围。报告 evidence-group Recall@5、MRR@5、跨范围命中和降级率；无答案项独立评价，不混入有答案 Recall 分母。
+- [ ] 现有检索 WIP 仅 6 问、PDF-only、独立原件回读适配；扩大或另列生产路径验证前保留这些限制，不能改标签声称已覆盖 XLSX/MinerU。
+- [ ] 正式核验覆盖六类规则及 F1/F2、冲突、缺证据；报告状态符合分子/分母、危险误判满足、未完成、人工确认比例和必要证据支持。
+- [ ] 约 20 个 Agent 任务含问答、正式审查、澄清、历史、错误路由、取消与重试；首次成功与显式重试成功分开。记录每阶段耗时、工具/模型调用、实际 token/未知用量和已知账单。
+- [ ] 参考答案在测量前固定；独立材料由独立准备/核对且不调提示词，未取得时如实保持独立集 0。失败原例保留，不宣称小样本总体泛化率。
+
+## D/E：掌握与稳定演示
+
+- [ ] 只拆妨碍理解/测试的长职责，先有行为基线；旧八字段执行分支保留明确历史用途，退役先定义兼容条件。
+- [ ] 用户独立画三条流程，解释 top-k 与全量覆盖的区别、重复投递与 fence、取消与外部请求、一个真实失败例。
+- [ ] 用户独立定位守卫并完成一个小改动与反例，能解释检索对照中的退化结果；这些能力目前未验收。
+- [ ] 固定模型/原件/代码/迁移与前端版本，验证成功、证据不足/冲突/人工确认、失败与显式恢复、历史与 JSON/XLSX。
+- [ ] 演练启停、会话过期、服务不可用、重复提交及匹配备份恢复，形成十分钟演示和失败时的历史回放。E 通过后再标记稳定面试版本。
+
+## F：受控试用独立门禁
+
+- [ ] 完整发布组合：OIDC 配置拒绝误入 local 模式、TLS/反向代理、静态前端/API/worker/解析/索引角色。
+- [ ] 用户/项目费用、跨 Case 并发/排队与总存储限制；失败、积压、磁盘和 unknown 指标可见。
+- [ ] 真实数据库/队列/向量/模型关键路径、依赖安全、容量和数据库/原件/身份的匹配备份恢复验收。
+- [ ] 受限用户反馈与故障演练通过后，决定是否扩大访问；当前不承诺无人复核的采购决策。
+
+## 本步验证与 Git 保存
+
+文档阶段运行 `python.exe -m scripts.dev_workflow check --profile docs --report data/verification/consolidation-a-docs-2026-10-13.json`，并将本次修改的非入口文档加入 `check_docs()` 范围检查。核对新计划的复选框、事实、相对链接、围栏和 `git diff --check`。
+
+逐份比较 manifest 中的 WIP 与当前内容，重算 backend/frontend/scripts 的已跟踪摘要和五份锁摘要；应全部与上述基线一致。用 `git diff --cached --name-only` 确认只暂存本阶段文档，再本地提交。文档变更不重跑业务测试，不将审查阶段的 1726 passed/48 skipped 当成本步新测结果。
+
+未验证项：当前运行服务版本、真实模型质量、独立资料、浏览器重演、容量/账单/灾备及维护者掌握程度。完整审查记录位于本机忽略目录；本计划保留执行所需的发现和验收条件。
+
+A 交付：2026-10-13。入口文档门禁通过，10 份相关文档的 152 个本地链接/围栏/UTF-8 检查通过；12 份 WIP、343 个已跟踪代码文件、五份依赖锁及基线标签核对一致。文档格式不等于语义审查，另经 diff 核对范围与历史事实。机器记录在本机 `data/verification/consolidation-a-docs-2026-10-13.json`、`consolidation-a-baseline-check-2026-10-13.json`，最终提交前复验用 `consolidation-a-final-check-2026-10-13.json` 保存。本阶段不修业务，下一阶段为 B 的 F1/F2。
