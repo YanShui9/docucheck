@@ -1,4 +1,6 @@
 """Bounded source windows are read back from original text and persist their offsets."""
+import re
+
 from pydantic import Field, model_validator
 
 from ..criteria.models import Contract
@@ -55,6 +57,23 @@ def supports(windows, evidence_id, quote):
     return any(w["evidence_id"] == evidence_id and quote in w["text"] for w in windows)
 
 
+def citation_context(text, start, end):
+    """Keep a complete cell/block, or complete sentences for a long block.
+
+    Commas and semicolons do not form clipping boundaries: they can introduce
+    qualifications. Boundaries come from the original, not the clipped read.
+    """
+    if len(text.encode("utf-8")) <= MAX_TEXT_BYTES:
+        return 0, text
+    boundaries = list(re.finditer(r"[。！？!?]+|\n\s*\n|\.(?=\s|$)", text))
+    left = max((m.end() for m in boundaries if m.end() <= start), default=0)
+    right = min((m.end() for m in boundaries if m.end() >= end), default=len(text))
+    context = text[left:right]
+    if len(context.encode("utf-8")) > MAX_TEXT_BYTES:
+        raise ValueError("citation_context_limit")
+    return left, context
+
+
 def verify_windows(repo, payload, *, item_bindings=None, definition=None):
     windows = payload.get("source_windows")
     if payload.get('citation_offsets_version') == 1 and windows is None:
@@ -93,3 +112,15 @@ def verify_windows(repo, payload, *, item_bindings=None, definition=None):
                     citation['start_char'] - w['start_char'] + len(citation['quote'])] == citation['quote']
                 for w in windows):
                 raise ValueError('assistant_source_changed')
+    if payload.get("citation_context_version") == 1:
+        if payload.get("citation_offsets_version") != 1:
+            raise ValueError("assistant_source_changed")
+        for citation in payload["citations"]:
+            text = repo.read([citation["evidence_id"]])[0].text
+            try:
+                start, context = citation_context(text, citation["start_char"],
+                    citation["start_char"] + len(citation["quote"]))
+            except ValueError as exc:
+                raise ValueError("assistant_source_changed") from exc
+            if start != citation["start_char"] or context != citation["quote"]:
+                raise ValueError("assistant_source_changed")

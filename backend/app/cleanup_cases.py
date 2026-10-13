@@ -11,6 +11,7 @@ from sqlalchemy import Engine, create_engine
 
 from .db.case_cleanup import CaseCleanup
 from .db.connection import ROOT, database_url
+from .db.upload_intents import UploadIntents
 
 
 def main(argv: list[str] | None = None, *, engine: Engine | None = None) -> int:
@@ -30,11 +31,13 @@ def main(argv: list[str] | None = None, *, engine: Engine | None = None) -> int:
         engine = create_engine(database_url(), pool_pre_ping=True,
                                hide_parameters=True)
     cleaner = CaseCleanup(engine, data_root)
+    uploads = UploadIntents(engine, data_root)
     try:
         while True:
             try:
                 result = cleaner.process_once(case_id=args.case_id,
                                               max_files=args.max_files)
+                recovery = uploads.reconcile(limit=args.max_files) if args.case_id is None else None
             except Exception:  # noqa: BLE001 - no paths or DB details in worker output
                 print(json.dumps({"error": "cleanup_worker_unavailable"}),
                       flush=True)
@@ -44,8 +47,11 @@ def main(argv: list[str] | None = None, *, engine: Engine | None = None) -> int:
                 continue
             if result is not None:
                 print(json.dumps(result), flush=True)
+            if recovery is not None and (recovery["checked"] or recovery["error_code"]):
+                print(json.dumps({"upload_recovery": recovery}), flush=True)
             if args.once:
-                return 1 if result is not None and result["error_code"] else 0
+                return 1 if ((result is not None and result["error_code"])
+                    or (recovery is not None and recovery["error_code"])) else 0
             time.sleep(args.poll_seconds)
     except KeyboardInterrupt:
         return 130

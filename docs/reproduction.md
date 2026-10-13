@@ -93,7 +93,7 @@ python.exe -m alembic -c backend/alembic.ini upgrade head
 python.exe -m alembic -c backend/alembic.ini current
 ```
 
-当前源码迁移头为 `0017_item_bindings`；截至本次文档整理，已有演示业务库仍为 `0016_assistant_runs`，最新迁移尚未应用。新安装执行上述 `upgrade head` 会应用最新迁移，已有实例需按阶段应用计划执行并先备份。生成器创建 alice/bob/reviewer 的演示账号，密码只在本机 `.env` 查看。Keycloak `start-dev`、本机 HTTP 和 H2 卷用于演示；正式企业部署需 HTTPS、生产配置、身份数据库和企业 SSO。已有 Keycloak realm 不会因重写导入文件自动更新，不能把重新生成文件当成重置现有账号。
+当前源码迁移头为 `0018_upload_intents`，增加上传意图与原件引用索引。10 月 11 日指定演示记录已应用 `0017_item_bindings`；本轮没有检查或迁移该业务库，不能据源码宣称运行中的库已到 0018。新安装执行上述 `upgrade head` 会应用最新迁移；已有实例先匹配备份、排空旧 API/cleaner，在隔离库验证迁移和竞争，再按阶段应用新 API/cleaner。无意图的旧孤儿另行对账，不由本轮默认清理器自动删除。保留过期意图可回收断连上传的迟到文件；有待恢复意图时不得直接降级删除账本。新 v7/v8 规则及引用语境协议写入后，回退代码也必须能读取这些身份，不能仅 checkout 旧源码宣称已安全回退。生成器创建 alice/bob/reviewer 的演示账号，密码只在本机 `.env` 查看。Keycloak `start-dev`、本机 HTTP 和 H2 卷用于演示；正式企业部署需 HTTPS、生产配置、身份数据库和企业 SSO。已有 Keycloak realm 不会因重写导入文件自动更新，不能把重新生成文件当成重置现有账号。
 
 已有本机 Keycloak 更换前端端口时，在根目录 `.env` 设置 `DOCUCHECK_WEB_PORT`，保持当前 Keycloak 运行，执行下列命令，再重启 Vite。端口只接受1–65535的字面十进制值，两端都忽略模式文件和 `.env.local` 对此键的覆盖，不展开 `${...}`；若用进程环境变量覆盖，须在同一个环境内执行同步和前端启动。它只同步既有 `docucheck-web` 的登录/退出回调和来源地址，并读取回验；不生成凭据、不重建 realm 或账号。默认仅绑定 `127.0.0.1`，不要用 `--host`/`--port` 覆盖绕开这份共用配置。
 

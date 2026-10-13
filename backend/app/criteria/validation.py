@@ -115,6 +115,73 @@ def source_comparator(text: str) -> str:
     return candidates[0] if len(candidates) == 1 else "unknown" if candidates else "eq"
 
 
+def strict_source_comparator(text: str, criterion: Criterion, item: ProcurementItem,
+                             unit: str, *, model=None, start_event=None,
+                             bound_aliases=False, allow_range=False) -> str:
+    """Accept finite affirmative measurements; unknown prose is never equality.
+
+    Check the full verified source span, including qualifications outside the
+    metric fragment. This deliberately sends unsupported phrasing to a human.
+    Historical rules keep using source_comparator without this grammar.
+    """
+    if not unit:
+        return "unknown"
+    normalized_text = re.sub(r"\s+", "", text).casefold()
+    # Labels are user-supplied text, not authority to reinterpret a known
+    # negation or capability claim as a committed value. The affirmative
+    # grammar below still rejects other, unrecognized wording.
+    if COMPLEX.search(normalized_text) or re.search(
+            r"不足|不到|不满|不提供|未达到|并非|可达|不能保证|不保证|未承诺|不承诺", normalized_text):
+        return "unknown"
+    suffix = r"(?![A-Za-z])" if unit[-1:].isascii() and unit[-1:].isalpha() else ""
+    measure_word = r"(?:个\s*)?" if criterion.rule.type == "duration" and unit in {"自然日", "工作日", "月"} else ""
+    quantity = NUMBER_PATTERN
+    if allow_range:
+        quantity += rf"(?:\s*(?:{re.escape(unit)})?\s*(?:至|到|[-~～])\s*{NUMBER_PATTERN})?"
+    flags = 0 if unit.casefold() in {"mb", "gb", "tb", "mib", "gib", "tib"} else re.IGNORECASE
+    measurements = list(re.finditer(rf"{quantity}\s*{measure_word}{re.escape(unit)}{suffix}", text, flags))
+    if len(measurements) != 1:
+        return "unknown"
+    measurement = measurements[0]
+    normalize = lambda value: re.sub(r"\s+", "", value).casefold()
+    labels = [item.name, criterion.name]
+    head = normalize(text[:measurement.start()])
+    metric_start = head.find(normalize(criterion.name))
+    if model and metric_start >= 0 and normalize(model) in head[:metric_start]:
+        labels.extend((model, f"型号{model}"))
+    label = criterion.name.removeprefix(item.name).strip()
+    if bound_aliases and label in {"数量", "采购数量"} and criterion.rule.type == "numeric":
+        labels.extend(("数量", "采购数量"))
+    if bound_aliases and label in {"单价", "含税单价", "采购单价", "单价上限", "含税单价上限", "采购单价上限"} and criterion.rule.type == "money":
+        labels.extend(("单价", "含税单价", "采购单价"))
+    tokens = [re.escape(normalize(value)) for value in labels if value]
+    tokens.extend((r"[:：=()（）,，;；。]", "为", "是", "等于", "提供", "供货", "交付", "交货",
+                   "承诺", "合同约定", "至少", "不低于", "不少于", "不小于", "至多", "不超过",
+                   "不高于", "不大于", "最多", "大于", "超过", "高于", "多于", "小于", "低于", "少于",
+                   r">=|<=|≥|≤|>|<", "atleast", "atmost"))
+    tails = [r"[()（）,，;；。]", "供货", "交付", "交货", "提供", "完成", "完毕", "以内"]
+    if criterion.rule.type == "money":
+        basis = ["人民币", "cny", "rmb", "usd", "eur", "￥", "¥", "含税", "不含税", "未含税", "税前", "税后"]
+        tokens.extend(basis)
+        tails.extend(basis)
+    if criterion.rule.type == "duration":
+        tokens.extend(re.escape(normalize(value)) for value in (*DURATION_START_EVENTS, start_event) if value)
+        tokens.extend(("之日起", "之后", "以后", "后", "起", "自"))
+        tails.extend(("内", "前"))
+    before, after = normalize(text[:measurement.start()]), normalize(text[measurement.end():])
+    # Longest first, with a possessive repetition, prevents overlapping labels
+    # in untrusted text from causing exponential regular-expression backtracking.
+    prefix_pattern = r"(?:" + "|".join(sorted(set(tokens), key=len, reverse=True)) + r")*+"
+    suffix_pattern = r"(?:" + "|".join(sorted(set(tails), key=len, reverse=True)) + r")*+"
+    if not re.fullmatch(prefix_pattern, before) or not re.fullmatch(suffix_pattern, after):
+        return "unknown"
+    comparison_text = normalize(text).replace("atleast", "at least").replace("atmost", "at most")
+    comparator = source_comparator(comparison_text)
+    if criterion.rule.type == "duration" and re.match(r"(?:以内|内|前)", after):
+        comparator = "lte" if comparator in {"eq", "lte"} else "unknown"
+    return comparator
+
+
 def number_pairs(text: str, unit: str, *, legacy_duration=True) -> list[Decimal]:
     if not unit:
         return []
@@ -223,7 +290,8 @@ def validate_definition(definition: ChecklistDefinition | dict, repo: EvidenceRe
             raise ValueError("requirement_quote_incomplete")
 
 
-def rule_supported(criterion: Criterion, item: ProcurementItem, *, legacy_duration=False, normalize_start=False) -> bool:
+def rule_supported(criterion: Criterion, item: ProcurementItem, *, legacy_duration=False,
+                   normalize_start=False, strict_numeric=False) -> bool:
     """Prove a finite document rule; unresolved prose remains a candidate."""
     if criterion.requires_manual_review:
         return False
@@ -266,12 +334,15 @@ def rule_supported(criterion: Criterion, item: ProcurementItem, *, legacy_durati
                       "USD": ("美元", "USD"), "EUR": ("欧元", "EUR")}[rule.currency]
         possible = [f"{currency}/{rule.per_unit}" for currency in currencies]
         unit = next((entry for entry in possible if mentions(text, entry)), "")
-        if not unit or money_basis(text, unit) != (rule.currency, rule.per_unit, rule.tax_basis):
+        basis_text = re.sub(r"\s+", "", original) if strict_numeric else text
+        if not unit or money_basis(basis_text, unit) != (rule.currency, rule.per_unit, rule.tax_basis):
             return False
     if rule.operator == "between":
         pattern = rf"({NUMBER_PATTERN})\s*(?:{re.escape(unit)})?\s*(?:至|到|[-~～])\s*({NUMBER_PATTERN})\s*{re.escape(unit)}"
-        return any(Decimal(m[1]) == Decimal(rule.lower) and Decimal(m[2]) == Decimal(rule.upper)
+        return (not strict_numeric or strict_source_comparator(original, criterion, item, unit, allow_range=True) == "eq") and any(Decimal(m[1]) == Decimal(rule.lower) and Decimal(m[2]) == Decimal(rule.upper)
                    for m in re.finditer(pattern, text, re.IGNORECASE))
     pairs = number_pairs(text, unit, legacy_duration=legacy_duration or rule.type != "duration")
+    comparator = (strict_source_comparator(original, criterion, item, unit, start_event=rule.start_event if rule.type == "duration" else None)
+                  if strict_numeric else source_comparator(text))
     return (len(pairs) == 1 and pairs[0] == Decimal(rule.value)
-            and source_comparator(text) == rule.operator)
+            and comparator == rule.operator)

@@ -18,6 +18,13 @@ class UploadError(ValueError):
 
 
 @dataclass(frozen=True)
+class PreparedUpload:
+    document_id: str
+    original_name: str
+    storage_key: str
+
+
+@dataclass(frozen=True)
 class StoredUpload:
     document_id: str
     original_name: str
@@ -32,7 +39,8 @@ class UploadStorage:
     def __init__(self, root: Path):
         self.root = root.resolve()
 
-    def save(self, file: UploadFile) -> StoredUpload:
+    @staticmethod
+    def prepare(file: UploadFile) -> PreparedUpload:
         name = file.filename or ""
         if (not name or len(name) > 255 or name != name.strip()
                 or any(char in name for char in "/\\:\x00")
@@ -44,6 +52,12 @@ class UploadStorage:
 
         document_id = uuid4().hex
         storage_key = f"uploads/{document_id[:2]}/{document_id}{suffix}"
+        return PreparedUpload(document_id, name, storage_key)
+
+    def save(self, file: UploadFile, *, prepared: PreparedUpload | None = None) -> StoredUpload:
+        prepared = prepared or self.prepare(file)
+        document_id, name, storage_key = prepared.document_id, prepared.original_name, prepared.storage_key
+        suffix = Path(name).suffix.lower()
         final_path = self.root / storage_key
         staging = self.root / "uploads" / ".staging"
         staging.mkdir(parents=True, exist_ok=True)

@@ -601,10 +601,13 @@ class RunRepository:
             ).values(status=RunStatus.CANCELLED.value, updated_at=now))
             if changed.rowcount != 1:
                 raise RepositoryError("stale_attempt")
+            attempt_values = {"status": RunStatus.CANCELLED.value, "finished_at": now}
+            if row["status"] == RunStatus.RUNNING.value:
+                attempt_values["outcome_unknown"] = True
             connection.execute(update(run_attempts).where(
                 run_attempts.c.id == row["active_attempt_id"],
                 run_attempts.c.run_id == run_id,
-            ).values(status=RunStatus.CANCELLED.value, finished_at=now))
+            ).values(**attempt_values))
             self._append_event(connection, run_id, row["active_attempt_id"],
                                "cancelled", RunStatus.CANCELLED, now)
             return _state(self._read_run(connection, run_id))

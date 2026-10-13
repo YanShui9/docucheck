@@ -119,7 +119,7 @@ def test_review_enumerates_all_suppliers_for_arbitrary_chinese_metrics(item, met
     assert {c["supplier"] for c in result["payload"]["checks"]} == {"甲供应商", "乙供应商"}
     assert {c["business_status"] for c in result["payload"]["checks"]} == {"满足", "不满足"}
     assert result["payload"]["source_digest"] == digest([asdict(b) for b in repo.blocks])
-    assert result["payload"]["rule_version"] == "dynamic-rules-v3"
+    assert result["payload"]["rule_version"] == "dynamic-rules-v7"
     assert result["payload"]["version"] == 1
 
 
@@ -601,7 +601,8 @@ def test_full_review_keeps_revalidated_manual_alternatives_and_reviews_all_batch
     source = next(b for b in repo.blocks if b.supplier == "甲供应商" and b.role == "quote")
     alternative = validate_fact({"criterion_id": "metric-1", "item_id": "item-1", "supplier": "甲供应商",
                                  "value": "8", "unit": "箱", "quote": source.text,
-                                 "evidence_refs": [source.evidence_id]}, rules, repo, "甲供应商")
+                                 "evidence_refs": [source.evidence_id]}, rules, repo, "甲供应商",
+                                rule_version=previous["rule_version"])
     previous["facts"].append(alternative)
     previous["needs_review"] = True
     previous["checks"] = evaluate_checklist(rules, previous["facts"], previous["coverage"], snapshot_id=repo.snapshot_id,

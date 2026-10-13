@@ -108,6 +108,7 @@ def execute_assistant(engine, claim, provider, *, heartbeat_interval_seconds=10.
                 "base_digest": binding["base_digest"], "checklist_revision": binding["checklist_revision"],
                 "checklist_version_id": binding["checklist_version_id"], "payload_digest": digest(payload),
                 "citation_offsets_version": payload["citation_offsets_version"],
+                "citation_context_version": payload["citation_context_version"],
                 "focus": None, "pending_clarification": None}
             if binding["item_binding_digest"] is not None:
                 checkpoint.update(item_binding_version_id=binding["item_binding_version_id"], item_binding_digest=binding["item_binding_digest"])

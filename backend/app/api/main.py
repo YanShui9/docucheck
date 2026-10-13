@@ -40,6 +40,7 @@ from ..db.item_binding_repository import ItemBindingError
 from ..db.memory_repository import MemoryError, MemoryRepository
 from ..db.models import cases, conversations
 from ..db.run_repository import RepositoryError, RunRepository, SubmitRun
+from ..db.upload_intents import UploadIntents
 from ..db.workspace import WorkspaceAccessError, WorkspaceRepository
 from ..vector_store.target import configured_target
 from .auth import AuthenticationError, Principal, authenticator_from_env
@@ -110,7 +111,7 @@ def _domain_status(code: str) -> int:
     if code in {"snapshot_not_ready", "revision_conflict", "snapshot_changed",
                 "index_snapshot_changed", "stale_index_claim",
                 "idempotency_conflict", "stale_attempt", "invalid_transition",
-                "supplier_conflict", "conversation_busy", "dynamic_scope"}:
+                "supplier_conflict", "conversation_busy", "dynamic_scope", "upload_expired"}:
         return 409
     if code in {"case_busy", "source_run_not_current", "facts_unavailable",
                 "memory_scope", "run_changed", "snapshot_capacity",
@@ -157,6 +158,7 @@ def create_app(engine: Engine | None = None, authenticator=None) -> FastAPI:
     deletion = CaseDeletion(engine)
     indexes = IndexRepository(engine)
     storage = UploadStorage(Path(os.getenv("DOCUCHECK_DATA_DIR", str(ROOT / "data"))))
+    uploads = UploadIntents(engine, storage.root)
     ingestion = DocumentIngestion(engine, storage.root)
     workspace = WorkspaceRepository(engine)
     authenticator = authenticator or authenticator_from_env()
@@ -170,6 +172,7 @@ def create_app(engine: Engine | None = None, authenticator=None) -> FastAPI:
                 engine.dispose()
 
     app = FastAPI(title="DocuCheck API", version="0.1.0", lifespan=lifespan)
+    app.state.upload_intents = uploads
     app.state.workspace = workspace
     app.state.authenticator = authenticator
     app.add_middleware(UploadBodyLimitMiddleware)
@@ -368,25 +371,31 @@ def create_app(engine: Engine | None = None, authenticator=None) -> FastAPI:
                         idempotency_key: str = Header(
                             alias="Idempotency-Key", min_length=1, max_length=255,
                         )):
-        saved = storage.save(file)
-        try:
-            receipt = documents.upload(UploadCommand(
-                case_id=case_id, expected_revision=expected_revision,
-                role=role, supplier_handle=supplier_handle,
-                supplier_name=supplier_name,
-                model_name=model_name,
-                idempotency_key=idempotency_key,
-                document_id=saved.document_id,
-                original_name=saved.original_name,
-                storage_key=saved.storage_key,
-                source_sha256=saved.source_sha256,
-                media_type=saved.media_type, pdf_pages=saved.pdf_pages,
-            ))
-        except Exception:
-            storage.discard(saved)
-            raise
-        if receipt["document_id"] != saved.document_id:
-            storage.discard(saved)
+        prepared = storage.prepare(file)
+        intent = uploads.create(prepared.document_id, prepared.storage_key)
+        with uploads.transaction(intent) as connection:
+            saved = None
+            try:
+                saved = storage.save(file, prepared=prepared)
+                uploads.require_owner(connection, intent)
+                receipt = documents.upload(UploadCommand(
+                    case_id=case_id, expected_revision=expected_revision,
+                    role=role, supplier_handle=supplier_handle,
+                    supplier_name=supplier_name, model_name=model_name,
+                    idempotency_key=idempotency_key,
+                    document_id=saved.document_id, original_name=saved.original_name,
+                    storage_key=saved.storage_key, source_sha256=saved.source_sha256,
+                    media_type=saved.media_type, pdf_pages=saved.pdf_pages,
+                ), transaction=connection)
+                if receipt["document_id"] != saved.document_id:
+                    storage.discard(saved)
+                uploads.complete(connection, intent)
+            except Exception:
+                if saved is not None:
+                    storage.discard(saved)
+                raise
+        # Commit errors can have an unknown outcome. Never delete the file
+        # outside its transaction; the durable intent/ref decides recovery.
         return receipt
 
     @router.get("/cases/{case_id}/documents", response_model=DocumentsOut)

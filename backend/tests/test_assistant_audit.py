@@ -71,18 +71,19 @@ def test_repeated_quote_is_located_in_the_window_actually_read():
     from backend.app.agent.assistant import checked_citation
 
     needle = 'DELIVERY 17 WORKDAYS'
-    repo = long_repository(text='old example: ' + needle + '\n' + 'background ' * 150
-        + '\nlatest commitment: ' + needle)
+    repo = long_repository(text='old example: ' + needle + '\n\n' + 'background ' * 150
+        + '\n\nlatest commitment: ' + needle)
     ref = repo.blocks[0].evidence_id
     provider = StageProvider(('search_evidence', {'query': 'latest commitment', 'limit': 1}),
         ('answer_evidence', {'citations': [{'evidence_id': ref, 'quote': needle}]}))
     result = AssistantAgent(repo, provider, retriever=Retriever(repo)).ask('最新承诺是多少')
     assert result['status'] == 'completed', result['error']
     payload = result['payload']
-    assert payload['citations'][0]['start_char'] == repo.blocks[0].text.rindex(needle)
+    assert payload['citations'][0]['start_char'] == repo.blocks[0].text.index('latest commitment: ')
+    assert payload['citations'][0]['quote'] == 'latest commitment: ' + needle
     assert payload['citation_offsets_version'] == 1
     verify_windows(repo, payload)
-    assert checked_citation(repo, ref, needle, windows=payload['source_windows']) == payload['citations'][0]
+    assert checked_citation(repo, ref, needle, windows=payload['source_windows'], preserve_context=True) == payload['citations'][0]
     payload['citations'][0]['start_char'] = repo.blocks[0].text.index(needle)
     with pytest.raises(ValueError, match='assistant_source_changed'):
         verify_windows(repo, payload)

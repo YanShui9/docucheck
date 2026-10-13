@@ -21,7 +21,8 @@ from backend.tests.test_dynamic_agent import call
 V4 = "dynamic-rules-v4"
 
 
-def sample(*, extra=False, partial=False, classification="category", title="苹果手机", specification=None):
+def sample(*, extra=False, partial=False, classification="category", title="苹果手机", specification=None,
+           quantity="数量10台"):
     definition = ChecklistDefinition.model_validate({
         "items": [{"item_id": "phone", "name": "苹果手机", "specification": "采购10台，具体型号等待确认"}],
         "criteria": [
@@ -38,7 +39,7 @@ def sample(*, extra=False, partial=False, classification="category", title="苹�
     })
     if specification is not None:
         definition = definition.model_copy(update={"items": [definition.items[0].model_copy(update={"specification": specification})]})
-    texts = [title, "数量10台", "交期订单确认后18个自然日内交付"]
+    texts = [title, quantity, "交期订单确认后18个自然日内交付"]
     if extra:
         texts.append("尚未确认所属品目的数量200台")
     blocks = tuple(EvidenceBlock(str(n), "quote", text, sheet="报价", cell=f"B{n+3}")

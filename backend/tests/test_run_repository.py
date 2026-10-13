@@ -169,11 +169,56 @@ def test_cancel_blocks_late_answer(repository):
     running = repository.claim(submitted.run_id, submitted.attempt_id)
     cancelled = repository.cancel(submitted.run_id)
     assert cancelled.status == RunStatus.CANCELLED
+    assert cancelled.fence == running.fence
+    with repository.engine.connect() as connection:
+        attempt = connection.execute(select(run_attempts).where(
+            run_attempts.c.id == submitted.attempt_id)).mappings().one()
+        cancelled_at = connection.scalar(select(agent_runs.c.updated_at))
+    assert attempt["outcome_unknown"] is True
+    assert repository.recover_stale(now=cancelled_at + timedelta(minutes=3)) == 0
     with pytest.raises(RepositoryError, match="stale_attempt"):
         repository.finish(submitted.run_id, submitted.attempt_id, running.fence,
                           "snapshot-a", RunStatus.COMPLETED, "late")
     with repository.engine.connect() as connection:
         assert connection.scalar(select(agent_runs.c.answer_text)) is None
+        assert connection.scalar(select(run_attempts.c.outcome_unknown)) is True
+
+
+def test_cancel_queued_attempt_keeps_known_outcome(repository):
+    submitted = _submit(repository)
+    cancelled = repository.cancel(submitted.run_id)
+    assert cancelled.status == RunStatus.CANCELLED and cancelled.fence == 0
+    with repository.engine.connect() as connection:
+        assert connection.scalar(select(run_attempts.c.outcome_unknown)) is False
+
+
+@pytest.mark.parametrize("outcome_unknown", [False, True])
+def test_cancel_waiting_attempt_preserves_outcome(repository, outcome_unknown):
+    submitted = _submit(repository)
+    running = repository.claim(submitted.run_id, submitted.attempt_id)
+    repository.finish(submitted.run_id, submitted.attempt_id, running.fence,
+                      running.snapshot_id, RunStatus.WAITING_USER,
+                      outcome_unknown=outcome_unknown)
+    repository.cancel(submitted.run_id)
+    with repository.engine.connect() as connection:
+        assert connection.scalar(select(run_attempts.c.outcome_unknown)) is outcome_unknown
+
+
+@pytest.mark.parametrize("worker_lost", [False, True])
+def test_cancel_interrupted_attempt_preserves_outcome(repository, worker_lost):
+    submitted = _submit(repository)
+    running = repository.claim(submitted.run_id, submitted.attempt_id)
+    if worker_lost:
+        with repository.engine.connect() as connection:
+            claimed_at = connection.scalar(select(agent_runs.c.updated_at))
+        assert repository.recover_stale(now=claimed_at + timedelta(minutes=3)) == 1
+    else:
+        repository.interrupt(submitted.run_id, submitted.attempt_id, running.fence)
+    interrupted = repository.get(submitted.run_id)
+    cancelled = repository.cancel(submitted.run_id)
+    assert cancelled.fence == interrupted.fence
+    with repository.engine.connect() as connection:
+        assert connection.scalar(select(run_attempts.c.outcome_unknown)) is worker_lost
 
 
 def test_retry_and_resume_replace_attempt_and_reject_old_result(repository):

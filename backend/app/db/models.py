@@ -22,8 +22,12 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects import mysql
 
+from .upload_intent_schema_v1 import define_upload_intents
+
 metadata = MetaData()
 precise_datetime = DateTime().with_variant(mysql.DATETIME(fsp=6), "mysql")
+
+upload_intents = define_upload_intents(metadata)
 
 projects = Table(
     "projects", metadata,
@@ -145,6 +149,8 @@ evidence_blocks = Table(
     UniqueConstraint("document_version_id", "ordinal", name="uq_evidence_document_ordinal"),
     mysql_engine="InnoDB",
 )
+
+Index("ix_documents_storage_key", document_versions.c.storage_key)
 
 conversations = Table(
     "conversations", metadata,

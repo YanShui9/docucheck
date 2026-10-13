@@ -1,6 +1,6 @@
 # DocuCheck 收尾与面试准备计划
 
-> **For agentic workers:** 使用 `executing-plans` 按已授权阶段执行，并用 `verification-before-completion` 核对结果。当前只执行 A；后续阶段按本页的业务断言确定具体修复，不自动启动服务、调用模型或改变主要前端方案。
+> **For agentic workers:** 使用 `executing-plans` 或 `subagent-driven-development` 按已授权阶段执行，并用 `verification-before-completion` 核对结果。A 已交付，用户继续后已授权 B；当前实施 B，不自动启动既有服务、调用模型或改变主要前端方案。
 
 **Goal:** 在明确资料范围内获得正确、可复现的核验结果和当前版本的效果证据，并让维护者能够独立解释、定位和修改核心流程。
 
@@ -87,12 +87,37 @@ A–E 按单人每天约五小时、含学习调试，约两到三周量级，�
 | F4 | `db/run_repository.py:cancel`、`dynamic_repository.py:retain_cancelled_usage`。claim→cancel→worker 丢失后 cancelled/usage null/unknown false，stale 不再恢复 | 运行中外部结果未决时取消保守标 unknown；确定响应可补真实用量。迟到结果仍不得覆盖正式状态 |
 | F5 | `api/upload.py`、`api/main.py`、`db/case_cleanup.py`。最终文件先落盘，后登记数据库，进程退出可能留下无账本原件 | 上传意图或宽限期对账能够回收孤儿，不能误删正在提交/有引用的文件；通过隔离退出恢复验收。本次发现属静态崩溃窗口 |
 
-- [ ] 先为 F1/F2 固定业务预期和失败回归，再实施最小修复；补普通肯定与其他规则的兼容回归。
-- [ ] 验证 F3/F4 的慢请求、取消、未知用量和迟到写入反例。
-- [ ] 为 F5 明确持久化与在途保护，实施并做隔离故障验证。
-- [ ] 运行受影响定向、全量离线及必要真实服务检查，分别报告 passed/skipped；检查源码、模型与部署身份不混淆。
+- [x] 先为 F1/F2 固定业务预期和失败回归，再实施最小修复；补普通肯定与其他规则的兼容回归。
+- [x] 验证 F3/F4 的慢请求、取消、未知用量和迟到写入反例（脚本 Provider/ASGI/SQLite）。
+- [x] 为 F5 明确持久化与在途保护，实施并做隔离子进程硬退出及 SQLite 竞争验证。
+- [x] 运行受影响定向及全量离线，分别报告 passed/skipped；源码、模型与部署身份分开。
+- [ ] 运行必要真实服务检查并应用到受影响服务；剩余条件见下表。
 
 相关既有测试：`backend/tests/test_dynamic_facts.py`、`test_item_binding_review.py`、`test_assistant_agent.py`、`test_oidc_auth.py`、`test_api_workspace_authorization.py`、`test_run_repository.py`、`test_document_upload.py`、`test_case_cleanup.py`。按实际契约增加反例，不以测试数量为目标。
+
+### B 实施边界（2026-10-13）
+
+用户在 A 交付及多品类澄清后要求继续，B 已授权。修复沿用多品类配置，不增加商品白名单。
+
+- F1 新运行使用无绑定 `dynamic-rules-v7`、有绑定 `dynamic-rules-v8`。有限肯定语法与比较、税基共用规范化口径；未识别限定或完整来源中其他未解释的语义转人工确认。v1–v6 保持历史事实哈希和原有判定，旧报告不自动重算；旧结论仍可能含已发现缺陷，需要显式重新审查取得新结论。
+- F2 新问答记录 `citation_context_version=1` 并冻结在执行记忆。短原文保留完整块/单元格，长块保留完整句子或段落；单换行、逗号、分号不能裁掉限定。完整语境未读取或超过窗口预算时拒绝摘录。定位和完整局部语境不等于对所有跨段语义关系的自动证明。历史无标记回答保持原协议。
+- F3 保留现有同步认证与权限仓库，整段同步 I/O 进入有界线程池；并发回归证明事件循环没有被慢 I/O 阻塞，不冒充线程池满载隔离或生产容量。
+- F4 运行中取消保守标 `outcome_unknown`，当前聊天/动态路径收到确定内部响应后可补真实用量，迟到正式结果仍拒绝。旧八字段路径没有取消后补账，继续保守保留 unknown。
+- F5 采用落盘前提交的持久上传意图，以同一意图事务保护写文件与文档提交，对账锁同一意图并检查所有历史原件引用。过期意图保留为 abandoned 并有界复扫，防止断连的暂停 uploader 迟到写文件再退出造成失账。候选发现也用 SKIP LOCKED；0018 增加 storage_key 引用索引。默认不扫无意图的旧版孤儿；旧 API 排空后的历史目录对账及 MySQL 真并发作为后续部署门禁，不用文件年龄单独决定安全删除。
+
+### B 验收与剩余门禁
+
+定向离线证据保存在本机 `data/verification/`，不随 Git 分发：F1/F2 最初 15 failed/6 passed，复核反例新增 6 个、税基 4 个、标签 3 个失败后逐项修复；数值/要求/对应 207 passed，问答/持久化/动态 93 passed。F3/F4 初始 7 failed/55 passed，其中两个新增测试错误地为未知 token 期待数字，依据既有 Budget 契约修正为 None；修复后鉴权/运行/助手/动态连同上传定向共 77 passed。F5 真子进程在 staging/final 退出的初始 2 failed/1 passed，修复后上传恢复/迁移 14 passed。以上覆盖有重叠，不相加当测试总数；所有离线运行网络尝试为 0。
+
+两阶段独立复核已完成：F1/F2 的 39 个 v1–v6 事实及 fact_id 与修复前逐份一致；复核找到并关闭比较/税基规范化、限定区间、换行语境、标签吞否定和正则回溯缺口。F3/F4 独立 16 项定向通过；F5 的候选公平性、409 冲突和引用索引问题已修并复核。编译与 SQLite 迁移验证不替代真实 MySQL 行锁证明。
+
+- [x] 全量当前工作区后端离线门禁：1793 passed / 48 skipped，网络尝试 0；502.532 秒（pytest 内部 498.51 秒）。依赖完整性、Ruff 通过。记录为 `data/verification/consolidation-b-offline-2026-10-13.json` 与 `consolidation-b-pytest-full.log`。含保留的评测 WIP 测试；克隆已提交源码时测试分母会不同，不把这些数量当准确率。
+- [ ] 真实 MySQL：0018 迁移/索引、活跃与断连上传、SKIP LOCKED 公平性、RR 引用当前读、取消与迟到提交竞争。
+- [ ] 现有服务：匹配备份、排空旧 API/cleaner、应用新源码与0018，回读运行身份并重演核验/问答/原件/历史导出。当前没有应用到业务库或服务。
+
+2026-10-13 两次检查时 Docker 引擎未运行（LinuxEngine named pipe 不存在）。已向用户询问测试环境；未启动既有服务、读取 `.env`、调用真实模型或更新依赖。B 源码实现、定向和全量离线已完成，B 整体出口需以上服务门禁通过，再进入 C 的当前效果证据。六份变更文档的 69 个本地链接、UTF-8/围栏及入口检查通过；原 12 份 WIP、五份依赖锁 SHA-256 与 A 基线一致。本阶段只暂存本轮修复和文档，WIP 不加入提交，服务不作已部署声明。
+
+每项先复现失败，再修复、验证和复核。临时目录/SQLite/脚本 Provider/子进程硬退出不计作真实服务或模型成绩；此处只记录设计，完成状态以实际运行结果更新。
 
 ## C：效果证据
 

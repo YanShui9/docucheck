@@ -43,12 +43,15 @@ from .validation import (
     rule_supported,
     source_comparator,
     source_span,
+    strict_source_comparator,
 )
 
-RULE_VERSION = "dynamic-rules-v3"
-BINDING_RULE_VERSION = "dynamic-rules-v6"
-BINDING_RULE_VERSIONS = {"dynamic-rules-v4", "dynamic-rules-v5", BINDING_RULE_VERSION}
-SUPPORTED_RULE_VERSIONS = {"dynamic-rules-v1", "dynamic-rules-v2", RULE_VERSION, *BINDING_RULE_VERSIONS}
+RULE_VERSION = "dynamic-rules-v7"
+BINDING_RULE_VERSION = "dynamic-rules-v8"
+BINDING_RULE_VERSIONS = {"dynamic-rules-v4", "dynamic-rules-v5", "dynamic-rules-v6", BINDING_RULE_VERSION}
+SUPPORTED_RULE_VERSIONS = {"dynamic-rules-v1", "dynamic-rules-v2", "dynamic-rules-v3", RULE_VERSION, *BINDING_RULE_VERSIONS}
+STRICT_NUMERIC_VERSIONS = {RULE_VERSION, BINDING_RULE_VERSION}
+NORMALIZED_START_VERSIONS = {"dynamic-rules-v5", "dynamic-rules-v6", *STRICT_NUMERIC_VERSIONS}
 _VALUE_NUMBER = re.compile(r"^-?\d{1,12}(?:\.\d{1,6})?$")
 _UNCERTAIN = re.compile(r"最大|最高|最多支持|支持扩展|参考|宣传|另一型号|其他型号|"
                         r"不属于本次|次日|翌日|next day", re.IGNORECASE)
@@ -137,7 +140,7 @@ def validate_fact(candidate: dict | FactCandidate, definition: ChecklistDefiniti
     if rule_version not in SUPPORTED_RULE_VERSIONS:
         raise ValueError("rule_version")
     legacy_duration = rule_version == "dynamic-rules-v1"
-    normalize_start = rule_version in {"dynamic-rules-v5", "dynamic-rules-v6"}
+    normalize_start = rule_version in NORMALIZED_START_VERSIONS
     candidate = (candidate if isinstance(candidate, FactCandidate)
                  else FactCandidate.model_validate(candidate))
     definition = _definition(definition)
@@ -160,7 +163,7 @@ def validate_fact(candidate: dict | FactCandidate, definition: ChecklistDefiniti
             raise ValueError("item_binding_source_changed")
     clause = _fact_clause(text, criterion, item, model=model,
                          multi_item=entry is None and len(definition.items) > 1,
-                         bound_aliases=entry is not None and rule_version == "dynamic-rules-v6")
+                         bound_aliases=entry is not None and rule_version in {"dynamic-rules-v6", BINDING_RULE_VERSION})
     rule = criterion.rule
     ambiguous = bool(COMPLEX.search(text) or _UNCERTAIN.search(text))
     comparator = source_comparator(clause)
@@ -177,7 +180,10 @@ def validate_fact(candidate: dict | FactCandidate, definition: ChecklistDefiniti
             raise ValueError("fact_value")
         ambiguous = ambiguous or len(values) != 1 or len(number_pairs(text, candidate.unit, legacy_duration=legacy_pairs)) != 1
         if rule.type == "money":
-            observed["currency"], observed["per_unit"], observed["tax_basis"] = money_basis(clause, candidate.unit)
+            basis_text, basis_unit = clause, candidate.unit
+            if rule_version in STRICT_NUMERIC_VERSIONS:
+                basis_text, basis_unit = re.sub(r"\s+", "", text), re.sub(r"\s+", "", basis_unit)
+            observed["currency"], observed["per_unit"], observed["tax_basis"] = money_basis(basis_text, basis_unit)
         if rule.type == "duration":
             observed["calendar"] = duration_calendar(clause, candidate.unit, legacy_duration=legacy_duration)
             ambiguous = (ambiguous or observed["calendar"] is None
@@ -189,6 +195,10 @@ def validate_fact(candidate: dict | FactCandidate, definition: ChecklistDefiniti
                 observed["start_event"] = possible[0]
             elif possible:
                 ambiguous = True
+        if rule_version in STRICT_NUMERIC_VERSIONS:
+            comparator = strict_source_comparator(text, criterion, item, candidate.unit, model=model,
+                start_event=observed["start_event"], bound_aliases=entry is not None)
+            ambiguous = ambiguous or comparator == "unknown"
     elif rule.type == "presence":
         if not isinstance(candidate.value, bool) or candidate.value != _presence_value(clause, rule.description):
             raise ValueError("fact_value")
@@ -286,9 +296,10 @@ def _passes(rule, actual):
 
 def _evaluate(criterion, item, offered, *, rule_version):
     legacy_duration = rule_version == "dynamic-rules-v1"
-    normalize_start = rule_version in {"dynamic-rules-v5", "dynamic-rules-v6"}
+    normalize_start = rule_version in NORMALIZED_START_VERSIONS
     rule = criterion.rule
-    if criterion.requires_manual_review or not rule_supported(criterion, item, legacy_duration=legacy_duration, normalize_start=normalize_start):
+    if criterion.requires_manual_review or not rule_supported(criterion, item, legacy_duration=legacy_duration,
+            normalize_start=normalize_start, strict_numeric=rule_version in STRICT_NUMERIC_VERSIONS):
         return "待人工确认", "requirement_manual"
     if not offered:
         return "证据不足", "supplier_fact_missing"

@@ -2,6 +2,7 @@
 
 import json
 import re
+from contextlib import nullcontext
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from hashlib import sha256
@@ -111,14 +112,15 @@ class DocumentRepository:
             raise DocumentError("idempotency_conflict")
         return self._receipt(connection, record["resource_id"])
 
-    def upload(self, command: UploadCommand) -> dict:
+    def upload(self, command: UploadCommand, *, transaction=None) -> dict:
         _validate(command)
         scope = f"case:{command.case_id}:upload"
         if len(scope) > 128:
             raise DocumentError("invalid_request")
         request_hash = _hash(command)
+        owns_transaction = transaction is None
         try:
-            with self.engine.begin() as connection:
+            with (self.engine.begin() if owns_transaction else nullcontext(transaction)) as connection:
                 case = connection.execute(select(
                     cases.c.revision, cases.c.deletion_requested_at,
                 ).where(
@@ -228,6 +230,10 @@ class DocumentRepository:
                 ))
                 return self._receipt(connection, command.document_id)
         except IntegrityError:
+            if not owns_transaction:
+                # The caller owns this transaction and its filesystem fence.
+                # Do not escape it to replay on an unrelated connection.
+                raise
             with self.engine.connect() as connection:
                 replay = self._replay(connection, scope, command.idempotency_key,
                                       request_hash)

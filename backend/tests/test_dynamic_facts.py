@@ -209,7 +209,7 @@ def test_generic_numeric_rules_use_decimal_and_finite_unit_conversion(rule, text
     checks = evaluate(repo, definition, [checked(repo, definition, candidate(repo, value, unit))])
     assert checks[0]["business_status"] == status
     assert checks[0]["field_key"] == checks[0]["criterion_id"] == "weight"
-    assert checks[0]["rule_version"] == "dynamic-rules-v3"
+    assert checks[0]["rule_version"] == "dynamic-rules-v7"
 
 
 def test_complete_review_enumerates_all_enabled_criteria_and_suppliers():

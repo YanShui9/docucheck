@@ -38,6 +38,8 @@ def test_cancel_during_model_call_retains_known_usage_without_reply(ingestion_ca
         def decide(self, messages, schemas, **options):
             response = super().decide(messages, schemas, **options)
             RunRepository(engine).cancel(receipt["run_id"])
+            with engine.connect() as connection:
+                assert connection.scalar(select(run_attempts.c.outcome_unknown)) is True
             return response
 
     report = execute_run(engine, receipt["run_id"], receipt["attempt_id"], Cancel(("chat", {"answer": "不应提交的答复"})), heartbeat_interval_seconds=60)
@@ -45,6 +47,34 @@ def test_cancel_during_model_call_retains_known_usage_without_reply(ingestion_ca
     with engine.connect() as connection:
         attempt = connection.execute(select(run_attempts)).mappings().one()
         assert attempt["usage_json"]["actual_input"] == 100
+        assert attempt["outcome_unknown"] is False
+        assert connection.scalar(select(agent_runs.c.answer_text)) is None
+        assert connection.scalar(select(assistant_runs.c.payload_json)) is None
+        assert connection.execute(select(task_memory)).first() is None
+
+
+def test_cancel_during_unknown_provider_error_preserves_uncertainty(ingestion_case):
+    from backend.app.providers.base import ProviderError
+
+    receipt = submit_empty(ingestion_case)
+    _, engine, _, _ = ingestion_case
+
+    class CancelUnknown(Decisions):
+        def decide(self, messages, schemas, **options):
+            RunRepository(engine).cancel(receipt["run_id"])
+            with engine.connect() as connection:
+                assert connection.scalar(select(run_attempts.c.outcome_unknown)) is True
+            raise ProviderError("timeout", outcome_unknown=True)
+
+    report = execute_run(engine, receipt["run_id"], receipt["attempt_id"],
+                         CancelUnknown(), heartbeat_interval_seconds=60)
+    assert report.status == "cancelled" and report.model_calls == 1
+    with engine.connect() as connection:
+        attempt = connection.execute(select(run_attempts)).mappings().one()
+        assert attempt["outcome_unknown"] is True
+        assert attempt["usage_json"]["model_calls"] == 1
+        assert attempt["usage_json"]["actual_input"] is None
+        assert attempt["usage_json"]["unknown_usage_calls"] == 1
         assert connection.scalar(select(agent_runs.c.answer_text)) is None
         assert connection.scalar(select(assistant_runs.c.payload_json)) is None
         assert connection.execute(select(task_memory)).first() is None

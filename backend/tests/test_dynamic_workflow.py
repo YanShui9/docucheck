@@ -593,11 +593,16 @@ def test_concurrent_cancel_keeps_known_usage_without_publishing(dynamic_case):
         def extract(self, *args, **kwargs):
             reply = super().extract(*args, **kwargs)
             assert client.post(f"/api/v1/agent-runs/{run_id}/cancel").status_code == 200
+            with engine.connect() as connection:
+                assert connection.scalar(select(run_attempts.c.outcome_unknown).where(
+                    run_attempts.c.run_id == run_id)) is True
             return reply
 
     report = run(dynamic_case, run_id, CancellingProvider())
     assert report.status == "cancelled"
     with engine.connect() as connection:
+        assert connection.scalar(select(run_attempts.c.outcome_unknown).where(
+            run_attempts.c.run_id == run_id)) is False
         usage = connection.scalar(
             select(run_attempts.c.usage_json).where(run_attempts.c.run_id == run_id)
         )
@@ -610,6 +615,37 @@ def test_concurrent_cancel_keeps_known_usage_without_publishing(dynamic_case):
             is None
         )
     assert usage["model_calls"] == 2 and usage["actual_input"] == 200
+
+
+def test_cancel_unknown_provider_error_keeps_uncertainty_without_publishing(dynamic_case):
+    from backend.app.db.models import agent_runs, run_attempts
+    from backend.app.providers.base import ProviderError
+
+    confirm(dynamic_case)
+    client, engine, _, _, _ = dynamic_case
+    run_id = message(dynamic_case, key="cancel-unknown")
+
+    class CancelUnknown(ScriptProvider):
+        def extract(self, *args, **kwargs):
+            assert client.post(f"/api/v1/agent-runs/{run_id}/cancel").status_code == 200
+            with engine.connect() as connection:
+                assert connection.scalar(select(run_attempts.c.outcome_unknown).where(
+                    run_attempts.c.run_id == run_id)) is True
+            raise ProviderError("timeout", outcome_unknown=True)
+
+    report = run(dynamic_case, run_id, CancelUnknown())
+    assert report.status == "cancelled" and report.model_calls == 2
+    with engine.connect() as connection:
+        attempt = connection.execute(select(run_attempts).where(
+            run_attempts.c.run_id == run_id)).mappings().one()
+        assert attempt["outcome_unknown"] is True
+        assert attempt["usage_json"]["model_calls"] == 2
+        assert attempt["usage_json"]["actual_input"] is None
+        assert attempt["usage_json"]["unknown_usage_calls"] == 1
+        assert connection.scalar(select(agent_runs.c.answer_text).where(
+            agent_runs.c.id == run_id)) is None
+        assert connection.scalar(select(dynamic_runs.c.payload_json).where(
+            dynamic_runs.c.run_id == run_id)) is None
 
 
 def test_cancel_after_first_terminal_check_still_retains_usage(

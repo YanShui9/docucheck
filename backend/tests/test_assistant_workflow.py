@@ -314,7 +314,9 @@ def test_long_source_tail_survives_persistence_and_rejects_offset_tampering(dyna
     result = client.get(url)
     assert result.status_code == 200, result.text
     assert result.json()['result']['source_windows'][0]['start_char'] > 0
-    assert result.json()['result']['citations'][0]['start_char'] == block.text.rindex('交付期限为签约后17个工作日')
+    context = ('最新承诺：' if '最新承诺：' in block.text else '') + '交付期限为签约后17个工作日'
+    assert result.json()['result']['citations'][0]['start_char'] == block.text.rindex(context)
+    assert result.json()['result']['citations'][0]['quote'] == context
     with engine.begin() as connection:
         payload = deepcopy(connection.scalar(select(assistant_runs.c.payload_json).where(assistant_runs.c.run_id == receipt['run_id'])))
         payload['citations'][0]['start_char'] = 0
@@ -347,9 +349,11 @@ def test_legacy_prefix_evidence_payload_remains_readable(dynamic_case):
         payload = deepcopy(connection.scalar(select(assistant_runs.c.payload_json).where(assistant_runs.c.run_id == receipt['run_id'])))
         payload.pop('source_windows')
         payload.pop('citation_offsets_version')
+        payload.pop('citation_context_version')
         connection.execute(update(assistant_runs).where(assistant_runs.c.run_id == receipt['run_id']).values(payload_json=payload, payload_digest=digest(payload)))
         checkpoint = deepcopy(connection.scalar(select(agent_runs.c.memory_json).where(agent_runs.c.id == receipt['run_id'])))
         checkpoint.pop('citation_offsets_version')
+        checkpoint.pop('citation_context_version')
         connection.execute(update(agent_runs).where(agent_runs.c.id == receipt['run_id']).values(memory_json=checkpoint))
     assert client.get(f"/api/v1/agent-runs/{receipt['run_id']}/assistant-result").status_code == 200
 
@@ -377,6 +381,39 @@ def test_new_citation_protocol_cannot_be_downgraded_by_removing_payload_marker(d
         payload.pop('citation_offsets_version')
         payload['citations'][0]['start_char'] = block.text.index(quote)
         connection.execute(update(assistant_runs).where(assistant_runs.c.run_id == receipt['run_id']).values(payload_json=payload, payload_digest=digest(payload)))
+    assert client.get(url).status_code == 409
+
+
+@pytest.mark.parametrize('dynamic_case', ['空调单价不含税80元/台'], indirect=True)
+@pytest.mark.parametrize('tamper', ['shorten', 'remove_marker'])
+def test_complete_context_survives_persistence_and_cannot_be_weakened(dynamic_case, tamper):
+    from backend.app.agent.assistant import render_evidence
+    from backend.app.db.agent_snapshot import load_agent_snapshot
+    from backend.app.db.models import agent_runs, assistant_runs
+    from backend.app.evidence.repository import digest
+
+    client, engine, case, snapshot, _ = dynamic_case
+    repo = load_agent_snapshot(engine, case, snapshot)
+    block = next(b for b in repo.blocks if b.supplier == 'vendor-a')
+    receipt = send(dynamic_case, '甲供应商价格含税吗')
+    report = run(dynamic_case, receipt, Decisions(
+        ('search_evidence', {'query': '空调单价', 'supplier': 'vendor-a', 'limit': 1}),
+        ('answer_evidence', {'citations': [{'evidence_id': block.evidence_id, 'quote': '含税80元/台'}]})))
+    assert report.status == 'completed', report
+    url = f"/api/v1/agent-runs/{receipt['run_id']}/assistant-result"
+    response = client.get(url)
+    assert response.status_code == 200
+    payload = deepcopy(response.json()['result'])
+    assert payload['citations'][0]['quote'] == block.text and payload['citation_context_version'] == 1
+    if tamper == 'shorten':
+        payload['citations'][0].update(quote='含税80元/台', start_char=block.text.index('含税80'))
+        payload['answer'] = render_evidence(payload['citations'], payload['retrieval'])
+    else:
+        payload.pop('citation_context_version')
+    with engine.begin() as connection:
+        connection.execute(update(assistant_runs).where(assistant_runs.c.run_id == receipt['run_id']).values(
+            payload_json=payload, payload_digest=digest(payload)))
+        connection.execute(update(agent_runs).where(agent_runs.c.id == receipt['run_id']).values(answer_text=payload['answer']))
     assert client.get(url).status_code == 409
 
 
