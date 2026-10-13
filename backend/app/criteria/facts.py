@@ -63,7 +63,8 @@ class FactCandidate(Contract):
     supplier: Label
     value: Annotated[str, Field(min_length=1, max_length=500, pattern=r"\S")] | bool = Field(
         description='按指标rule.type：numeric/money/duration用数字字符串；presence用JSON布尔值；'
-                    'enum用原文实际选项字符串（允许不在买方选项中）；manual用对应原文条款，不填写审查结论。')
+                    'enum用原文实际选项字符串（允许不在买方选项中）；manual用指标名称所在分句中的完整事实描述，保留否定/条件/备选，'
+                    '完整行/原文块及限定仍保留在quote，不填写审查结论。')
     unit: str = Field(max_length=120, description='numeric/money/duration保留原文单位，'
                      '例如元/箱而非CNY；enum/presence必须为空字符串；manual抽取使用空字符串。')
     evidence_refs: list[str] = Field(min_length=1, max_length=4)

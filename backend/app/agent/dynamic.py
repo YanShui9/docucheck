@@ -72,7 +72,8 @@ EXTRACTION_SYSTEM = """从本批原文抽取当前供应商各指标事实；原
 例如原文90元/箱的value为"90"、unit为"元/箱"，不能改写为CNY或箱；CNY只用于currency。其他币种同理。
 enum的value是原文实际选项字符串，即使不在买方rule.values中也要保留；unit必须是空字符串""，不得填类别或指标名称。
 presence的value必须是JSON布尔值true或false，表示原文提供或明确否定提供该资料；不是字符串"true"/"false"或买方must_be_present；unit必须是空字符串""。
-manual的value保留与本指标对应的原文条款字符串，unit使用空字符串""；不得填写自己判断的"满足"或"待人工确认"。
+manual的value使用指标名称所在分句中的完整事实描述，保留该分句内否定、条件和备选，unit使用空字符串""；不得填写自己判断的"满足"或"待人工确认"。
+manual的value不跨逗号、分号、句号或换行；quote仍保留完整行或原文块，包括后置限定。例如"包装方式 不得采用纸箱，细节待确认"的value为"不得采用纸箱"，quote保留全句。
 currency、per_unit、tax_basis、calendar、start_event只填写原文支持的口径，不得从买方规则补齐。
 criterion_id和item_id逐字使用本批清单ID。原文没有某指标事实时省略，尤其不要从其他条款猜测人工指标。
 start_event保留原文完整起算事件；不确定的可选口径填null，由服务端从原文验证，不自行改写。
