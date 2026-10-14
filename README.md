@@ -11,6 +11,8 @@ DocuCheck 是一个以中文聊天为入口的个人开发项目。用户可以�
 
 项目处于评测收尾阶段，已冻结新增业务功能。指定修复闭环已通过，10月14日多品类开发测量也已完成；正式核验的处理完成与严格证据评分尚未达到质量出口，继续优先修复失败链路。尚未提供公网在线试用。[当前计划](docs/superpowers/plans/2026-10-13-project-consolidation.md)列出证据和剩余条件。
 
+评测后已补候选级语义修复反馈：当前源码定向205项、全量1835 passed/52 skipped/网络0，依赖/Ruff及复审通过。该修复尚未部署或真实模型复测，原质量成绩保持不变；范围与剩余问题见[评测说明](docs/evaluation.md)。
+
 **快速浏览：** [架构与设计取舍](docs/architecture-and-interview.md) · [十分钟演示](docs/interview-demo.md) · [测试与评估证据](docs/evaluation.md) · [安装与运行](docs/reproduction.md) · [全部文档](docs/README.md)
 
 ## 解决什么问题
