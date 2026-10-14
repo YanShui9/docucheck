@@ -1,6 +1,6 @@
 # DocuCheck 收尾与面试准备计划
 
-> **For agentic workers:** 使用 `executing-plans` 或 `subagent-driven-development` 按已授权阶段执行，并用 `verification-before-completion` 核对结果。A 已交付，用户继续后已授权 B；当前实施 B，不自动启动既有服务、调用模型或改变主要前端方案。
+> **For agentic workers:** 使用 `executing-plans` 或 `subagent-driven-development` 按已授权阶段执行，并用 `verification-before-completion` 核对结果。A/B 指定门禁已交付，继续 C；服务与真实模型沿用本轮已授权范围并先说明操作，主要前端方案改变仍先讨论，不按内部小项反复暂停。
 
 **Goal:** 在明确资料范围内获得正确、可复现的核验结果和当前版本的效果证据，并让维护者能够独立解释、定位和修改核心流程。
 
@@ -44,7 +44,7 @@ A–E 按单人每天约五小时、含学习调试，约两到三周量级，�
 | --- | --- |
 | 已提交源码 | `988962afe829f7a84b54bcbd28b6197d2090ff76`，分支 `phase-0-foundation`；这是修复前基线，不能称稳定面试发布版 |
 | 远端跟踪引用 | `0d411cf38e1622cab26de48ed57eda0624f45f30`；基线保存时本地领先 11 提交。本轮不 fetch、不 push，不把跟踪引用当实时远端状态 |
-| 历史运行身份 | 10 月 11 日验收记录的四后台源码 `6ff2a96`、迁移 `0017`；本轮未检查或更新服务 |
+| A 采集时历史运行身份 | 10 月 11 日验收记录的四后台源码 `6ff2a96`、迁移 `0017`；A没有检查或更新服务，B后的当前身份见服务验收 |
 | 本地快照 | `data/backups/consolidation-2026-10-13/manifest.json`、`case-matrix.patch`、`wip/`；不含业务数据库、账号、密钥或上传原件备份 |
 | 已跟踪代码身份 | 343 个 backend/frontend/scripts 文件，摘要 `e0a1380427964a47170ba3a20daf45b97465df2c79cd4bae6682c628be5077c5`；WIP 另列，具体锁摘要见 manifest |
 | 环境 | Conda `docucheck` / Python 3.12.14；后端四份 requirements 锁、前端 package-lock 固定；当前模型/服务配置未读取 |
@@ -73,7 +73,7 @@ A–E 按单人每天约五小时、含学习调试，约两到三周量级，�
 
 面试掌握三条流程：范围内问答→混合检索→回读；适用资料覆盖→候选→校验→规则→报告；Run/Outbox→Celery→attempt/fence→失败恢复。其他能力被问到再展开。
 
-简历事实口径：Redis/Celery 用于异步任务，当前没有业务/语义缓存；五类业务状态为满足、不满足、资料冲突、证据不足、待人工确认；动态审查使用 LangGraph，聊天使用手写受控循环，恢复靠应用数据库；旧 104/104 是固定字段已见开发验证。尚未取得简历原文件，因此 A 记录改写依据，不宣称已经修改本人简历。
+简历事实口径：Redis/Celery 用于异步任务，未实现 Redis 业务/语义响应缓存；动态审查已有受版本、输入摘要及来源守卫约束的已验证抽取批次缓存。五类业务状态为满足、不满足、资料冲突、证据不足、待人工确认；动态审查使用 LangGraph，聊天使用手写受控循环，恢复靠应用数据库；旧 104/104 是固定字段已见开发验证。尚未取得简历原文件，因此 A 记录改写依据，不宣称已经修改本人简历。
 
 ## B：修复清单与业务断言
 
@@ -91,7 +91,7 @@ A–E 按单人每天约五小时、含学习调试，约两到三周量级，�
 - [x] 验证 F3/F4 的慢请求、取消、未知用量和迟到写入反例（脚本 Provider/ASGI/SQLite）。
 - [x] 为 F5 明确持久化与在途保护，实施并做隔离子进程硬退出及 SQLite 竞争验证。
 - [x] 运行受影响定向及全量离线，分别报告 passed/skipped；源码、模型与部署身份分开。
-- [ ] 运行必要真实服务检查并应用到受影响服务；剩余条件见下表。
+- [x] 运行必要真实服务检查并应用到受影响服务；指定门禁见下表及服务验收。
 
 相关既有测试：`backend/tests/test_dynamic_facts.py`、`test_item_binding_review.py`、`test_assistant_agent.py`、`test_oidc_auth.py`、`test_api_workspace_authorization.py`、`test_run_repository.py`、`test_document_upload.py`、`test_case_cleanup.py`。按实际契约增加反例，不以测试数量为目标。
 
@@ -114,11 +114,11 @@ A–E 按单人每天约五小时、含学习调试，约两到三周量级，�
 - [x] 修复提交 `aeac267` 的工作区全量后端离线门禁：1793 passed / 48 skipped，网络尝试 0；502.532 秒（pytest 内部 498.51 秒）。依赖完整性、Ruff 通过。记录为 `data/verification/consolidation-b-offline-2026-10-13.json` 与 `consolidation-b-pytest-full.log`。含保留的评测 WIP 测试，早于新增四项 opt-in MySQL 用例；克隆已提交源码时测试分母会不同，不把这些数量当准确率。
 - [x] 真实隔离 MySQL：8.4.11/REPEATABLE-READ；`0017 → 0018 → 0017 → head` 与上传意图表/原件引用索引通过；13 passed/0 skipped，覆盖0018上传恢复、活跃上传SKIP LOCKED公平性、断连失锁及迟到文件回收、旧RR快照后的跨Case引用当前读、运行中取消未知终态及迟到提交拒绝，并复跑既有运行/硬退出恢复/上传/助手/工作区集成。新增用例见 `backend/tests/test_upload_intents_mysql.py`，双URL隔离守卫覆盖全部四项，RR与取消终态均显式断言；独立只读复核及补强后复跑通过。
 - [x] 本轮新增用例与已有上传恢复/迁移离线回归：14 passed/4 skipped，网络尝试0；四项跳过仅因MySQL opt-in未开启，已另行实连验证。Docker业务容器运行时首轮三个子进程因OpenBLAS初始化内存分配失败，未到业务断言；本次命令临时设 `OPENBLAS_NUM_THREADS=1` 后同组通过，业务源码与测试未为此修改。失败与复跑报告分别保留为 `consolidation-b-upload-offline-final.json`、`consolidation-b-upload-offline-thread1.json`，不覆盖失败证据；未重跑全量或前端。
-- [ ] 现有服务：匹配备份、排空旧 API/cleaner、应用新源码与0018，回读运行身份并重演核验/问答/原件/历史导出。当前没有应用到业务库或服务。
+- [x] 现有服务：匹配备份、排空入口和后台，应用0018及修复源码；最终四角色41eb967的129份文件核对，六类规则11项已见合成核验、paper范围hybrid/回读、原件与新旧JSON/Excel通过。保留两轮未完成及显式重试；见[服务验收](../../repair-consolidation-b-services-2026-10-13.md)。
 
-2026-10-13 用户启动Docker后，使用独立临时容器、随机loopback端口/数据库/凭据，无业务卷；测试环境禁用dotenv并清洗运行配置，脚本Provider不调用真实模型。原有业务容器已运行，本轮未操作它们或业务库。临时测试容器及其匿名卷已删除。最终脱敏报告为本机 `data/verification/consolidation-b-live-mysql-2026-10-13.json`，迁移与测试日志分别为 `consolidation-b-live-migrations.log`、`consolidation-b-live-mysql_tests.log`；报告不随Git分发。本轮只增加隔离用例与状态文档，业务修复源码未再变化。
+2026-10-13 用户启动Docker后，隔离 MySQL 验收阶段使用独立临时容器、随机loopback端口/数据库/凭据，无业务卷；测试环境禁用dotenv并清洗运行配置，脚本Provider不调用真实模型。原有业务容器已运行，该隔离阶段未操作它们或业务库。临时测试容器及其匿名卷已删除。最终脱敏报告为本机 `data/verification/consolidation-b-live-mysql-2026-10-13.json`，迁移与测试日志分别为 `consolidation-b-live-migrations.log`、`consolidation-b-live-mysql_tests.log`；报告不随Git分发。隔离阶段只增加用例与状态文档，业务修复源码未再变化；后续业务服务应用及两处提示补修见服务验收。
 
-B 源码、定向、全量离线及隔离MySQL已完成，B 整体出口需现有服务门禁通过，再进入 C 的当前效果证据。原 12 份 WIP、五份依赖锁保留并按 A 备份核对；本阶段只暂存本轮测试和文档，WIP不加入提交，服务不作已部署声明。
+B 的指定整体出口已通过，进入 C 的当前效果证据。服务验收中的两处提示补修分别为4eb46dd及41eb967，未改变规则/原文守卫：前者工作区全量1793 passed/52 skipped/网络0，后续人工提示细化205项定向通过及2项临时契约探针通过，分母不相加。累计17次真实模型调用，54396输入/6750输出token，未知用量0，实际账单未核对。原12份WIP、五份锁及配置哈希保留，521份原件不变；98份无引用旧文件只审计备份。本轮不推送，也不标为稳定面试版或生产发布。
 
 每项先复现失败，再修复、验证和复核。临时目录/SQLite/脚本 Provider/子进程硬退出不计作真实服务或模型成绩；此处只记录设计，完成状态以实际运行结果更新。
 
@@ -147,12 +147,12 @@ B 源码、定向、全量离线及隔离MySQL已完成，B 整体出口需现�
 - [ ] 真实数据库/队列/向量/模型关键路径、依赖安全、容量和数据库/原件/身份的匹配备份恢复验收。
 - [ ] 受限用户反馈与故障演练通过后，决定是否扩大访问；当前不承诺无人复核的采购决策。
 
-## 本步验证与 Git 保存
+## A 阶段验证与 Git 保存（历史）
 
 文档阶段运行 `python.exe -m scripts.dev_workflow check --profile docs --report data/verification/consolidation-a-docs-2026-10-13.json`，并将本次修改的非入口文档加入 `check_docs()` 范围检查。核对新计划的复选框、事实、相对链接、围栏和 `git diff --check`。
 
 逐份比较 manifest 中的 WIP 与当前内容，重算 backend/frontend/scripts 的已跟踪摘要和五份锁摘要；应全部与上述基线一致。用 `git diff --cached --name-only` 确认只暂存本阶段文档，再本地提交。文档变更不重跑业务测试，不将审查阶段的 1726 passed/48 skipped 当成本步新测结果。
 
-未验证项：当前运行服务版本、真实模型质量、独立资料、浏览器重演、容量/账单/灾备及维护者掌握程度。完整审查记录位于本机忽略目录；本计划保留执行所需的发现和验收条件。
+截至 A 交付时尚未验证：运行服务版本、真实模型质量、独立资料、浏览器重演、容量/账单/灾备及维护者掌握程度。后续服务和指定已见样例的验证进度见 B；独立质量、容量/账单/灾备及掌握程度仍待后续阶段验收。完整审查记录位于本机忽略目录；本计划保留执行所需的发现和验收条件。
 
-A 交付：2026-10-13。入口文档门禁通过，10 份相关文档的 152 个本地链接/围栏/UTF-8 检查通过；12 份 WIP、343 个已跟踪代码文件、五份依赖锁及基线标签核对一致。文档格式不等于语义审查，另经 diff 核对范围与历史事实。机器记录在本机 `data/verification/consolidation-a-docs-2026-10-13.json`、`consolidation-a-baseline-check-2026-10-13.json`，最终提交前复验用 `consolidation-a-final-check-2026-10-13.json` 保存。本阶段不修业务，下一阶段为 B 的 F1/F2。
+A 交付：2026-10-13。入口文档门禁通过，10 份相关文档的 152 个本地链接/围栏/UTF-8 检查通过；12 份 WIP、343 个已跟踪代码文件、五份依赖锁及基线标签核对一致。文档格式不等于语义审查，另经 diff 核对范围与历史事实。机器记录在本机 `data/verification/consolidation-a-docs-2026-10-13.json`、`consolidation-a-baseline-check-2026-10-13.json`，最终提交前复验用 `consolidation-a-final-check-2026-10-13.json` 保存。A 阶段未修业务，当时下一阶段为 B 的 F1/F2；当前 A/B 已完成，继续 C。
