@@ -50,6 +50,30 @@ def test_existing_destination_is_rejected_without_changing_files(tmp_path, font_
     assert sentinel.read_text(encoding="utf-8") == "original"
 
 
+@pytest.mark.parametrize("pack_id", ["dyn-d01", "dyn-d10"])
+def test_supplier_xlsx_inventory_has_one_owner_including_shared_headers(tmp_path, font_path, pack_id):
+    from evals.dynamic.contracts import Anchor, contains
+    from evals.dynamic.metrics import read_originals
+
+    module = corpus_module()
+    root = tmp_path / "corpus"
+    module.build_corpus(root, font_path=font_path, pack_ids=[pack_id])
+    manifest, _, originals = module.load_pack(root, pack_id)
+    texts, errors = read_originals(manifest, originals)
+    assert not errors
+    for document in manifest.documents:
+        if document.role == "requirement" or not document.filename.endswith(".xlsx"):
+            continue
+        bindings = [b for b in manifest.bindings if b.document == document.filename]
+        for (filename, page, sheet, cell), text in texts.items():
+            if filename != document.filename:
+                continue
+            owners = [b.item_id for b in bindings if contains(b.scope, Anchor(
+                document=filename, role=document.role, supplier_handle=document.supplier_handle,
+                item_id=b.item_id, text=text, page=page, sheet=sheet, cell=cell))]
+            assert len(owners) == 1, (filename, cell, text, owners)
+
+
 def test_tampered_original_or_extra_input_is_rejected(tmp_path, font_path):
     module = corpus_module()
     root = tmp_path / "corpus"

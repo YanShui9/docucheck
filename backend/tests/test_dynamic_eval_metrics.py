@@ -51,6 +51,73 @@ def test_all_dynamic_cells_and_all_evidence_groups_are_measured():
     assert result["formal_independent_acceptance"] is False
 
 
+def separated_baseline_observation():
+    manifest, _, observation, _ = example()
+    definition = deepcopy(manifest["checklist_definition"])
+    buyer_ids = {source["evidence_id"] for source in observation["sources"] if source["role"] == "requirement"}
+    for criterion in definition["criteria"]:
+        source = next(s for s in observation["sources"] if s["evidence_id"] == criterion["criterion_id"] + "-buyer")
+        criterion["source"]["context"] = {"evidence_refs": [source["evidence_id"]], "quote": source["text"]}
+    for surface in ("api_cells", "visible_cells", "export_cells", "xlsx_export_cells"):
+        for cell in observation[surface]:
+            cell["evidence_refs"] = [ref for ref in cell["evidence_refs"] if ref not in buyer_ids]
+    observation["checklist_version_id"] = "a" * 32
+    observation.update(case_id="c" * 32, snapshot_id="d" * 32)
+    observation["confirmed_checklist"] = {"version_id": "a" * 32, "case_id": "c" * 32,
+                                         "snapshot_id": "d" * 32, "definition": definition}
+    return observation
+
+
+def test_confirmed_buyer_context_is_separate_from_supplier_check_citations():
+    observation = separated_baseline_observation()
+    result = score(observation)
+    assert result["status_accuracy"] == {"numerator": 3, "denominator": 3}
+    assert result["necessary_evidence"] == {"numerator": 2, "denominator": 2}
+    assert result["task_success"] is True
+    # Never pretend the export itself includes buyer context citations.
+    assert result["citation_errors"] == {"numerator": 0, "denominator": 3}
+
+
+@pytest.mark.parametrize("mutation", ["version", "case", "snapshot", "missing_context", "missing_confirmation", "mixed_refs_wrong_quote", "rule", "wrong_role", "wrong_item", "wrong_location", "invented_quote", "unrelated_ref"])
+def test_confirmed_buyer_context_must_match_frozen_rule_and_verified_source(mutation):
+    observation = separated_baseline_observation()
+    confirmed = observation["confirmed_checklist"]
+    context = confirmed["definition"]["criteria"][0]["source"]["context"]
+    source = next(s for s in observation["sources"] if s["evidence_id"] == "quantity-buyer")
+    if mutation == "version":
+        confirmed["version_id"] = "b" * 32
+    elif mutation == "case":
+        confirmed["case_id"] = "e" * 32
+    elif mutation == "snapshot":
+        confirmed["snapshot_id"] = "e" * 32
+    elif mutation == "missing_context":
+        confirmed["definition"]["criteria"][0]["source"]["context"] = None
+    elif mutation == "missing_confirmation":
+        observation["confirmed_checklist"] = None
+        # Partial new metadata is not a legacy observation; even a ref added
+        # to check citations cannot recover a missing frozen confirmation.
+        for surface in ("api_cells", "visible_cells", "export_cells", "xlsx_export_cells"):
+            observation[surface][0]["evidence_refs"].append("quantity-buyer")
+    elif mutation == "mixed_refs_wrong_quote":
+        context.update(evidence_refs=["quantity-buyer", "capacity-buyer"], quote="capacity 256")
+    elif mutation == "rule":
+        confirmed["definition"]["criteria"][0]["rule"]["value"] = "999"
+    elif mutation == "wrong_role":
+        context["evidence_refs"] = ["quantity-quote"]
+    elif mutation == "wrong_item":
+        source["item_id"] = "fruit"
+    elif mutation == "wrong_location":
+        source["cell"] = "A3"
+    elif mutation == "invented_quote":
+        context["quote"] = "quantity 999"
+    else:
+        context["evidence_refs"] = ["capacity-buyer"]
+    result = score(observation)
+    assert result["task_success"] is False
+    assert "buyer" in result["cells"][0]["missing_evidence_groups"]
+    assert result["status_accuracy"] == {"numerator": 3, "denominator": 3}
+
+
 @pytest.mark.parametrize("mutation", ["missing", "partial", "failed", "not_started"])
 def test_unfinished_cells_keep_the_frozen_denominator(mutation):
     observation = example()[2]

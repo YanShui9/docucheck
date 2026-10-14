@@ -1,0 +1,67 @@
+{
+  "data_class": "ai_authored_seen_development",
+  "independent_sealed_packs": 0,
+  "order_reason": "Before any followup send, reserve thorough retry first; 86 known calls leave 42, after standard scenarios 32 could no longer be reserved. Expectations unchanged.",
+  "protocol_id": "dynamic-agent-followups-dev-v1",
+  "score_notice": "Eight different scenarios, separate from the 104 formal states; failed or unknown tasks remain in denominator.",
+  "shared_provider_call_limit": 128,
+  "task_denominator": 8,
+  "tasks": [
+    {
+      "content": null,
+      "expected": "retry original first-round partial Run with unchanged source configuration; same Run ID, new attempt ID; prior attempt retained; partial remains a semantic failure",
+      "kind": "retry",
+      "pack_id": "dyn-d06",
+      "task_id": "explicit-retry-partial"
+    },
+    {
+      "content": "请只回读vendor-a报价表中phone品目的存储容量原文，指出报价表单元格。只回答报价表写的容量，不做完整审查。",
+      "expected": "completed evidence, vendor-a quote XLSX, 256 GB; no formal checks",
+      "kind": "evidence",
+      "pack_id": "dyn-d02",
+      "task_id": "qa-phone-quote"
+    },
+    {
+      "content": "请在已确认fruit品目范围内检索并回读vendor-a承诺的苹果采购数量，引用原文与位置。不要借用clothing的数量，不开始完整审查。",
+      "expected": "completed evidence, vendor-a fruit source, 10 boxes, no clothing source",
+      "kind": "evidence",
+      "pack_id": "dyn-d10",
+      "task_id": "qa-mixed-fruit"
+    },
+    {
+      "content": "请复述我在本对话上一轮提出的问题。只复述我的提问，不重复历史助手答案，也不提供供应商结论。",
+      "expected": "completed chat recalls previous user question about vendor-a apple quantity, no citations or formal checks",
+      "kind": "chat",
+      "pack_id": "dyn-d10",
+      "task_id": "history-user-question"
+    },
+    {
+      "content": "我要问供应商C的苹果产地，但当前资料里没有供应商C。请先让我澄清供应商身份，不要借用vendor-a或vendor-b的资料，也不要开始审查。",
+      "expected": "completed or waiting_user, no supplier citation or formal conclusion; partial is safe failure, not task success",
+      "kind": "clarification",
+      "pack_id": "dyn-d06",
+      "task_id": "clarify-unknown-supplier"
+    },
+    {
+      "content": "把phone品目的采购数量要求从20台改成30台，仅提出候选，其他要求保持原样。不要保存或确认，不要开始完整审查。",
+      "expected": "completed changes candidate updates only quantity target to 30; stored confirmed checklist unchanged",
+      "kind": "changes",
+      "pack_id": "dyn-d02",
+      "task_id": "route-change-candidate"
+    },
+    {
+      "content": "请在fruit范围内回读vendor-a的批次检测报告声明，给出原文和位置，不做完整审查。",
+      "expected": "same key and payload returns same run/attempt/message; changed payload returns 409; one provider execution",
+      "kind": "duplicate",
+      "pack_id": "dyn-d06",
+      "task_id": "duplicate-submit"
+    },
+    {
+      "content": "请先检索vendor-a的苹果批次检测报告，再回读材料，给出原文位置。",
+      "expected": "immediately request cancellation; cancelled terminal and no late result; queued and running cancellation reported separately; unknown stops all subsequent sends",
+      "kind": "cancel",
+      "pack_id": "dyn-d06",
+      "task_id": "cancel-after-submit"
+    }
+  ]
+}

@@ -195,7 +195,10 @@ def _build_pack(blueprint: dict, examples: dict) -> tuple[Manifest, Gold, dict[s
             sku = item["specification"].removeprefix("型号 ")
             bindings.extend([
                 {"document": quote_filename, "item_id": item_id, "sku": sku,
-                 "scope": {"sheet": SHEET, "cell_range": f"A{start}:B{end}"},
+                 # The source inventory includes the synthetic notice and
+                 # supplier header. Assign them once, with the first item;
+                 # later item ranges remain disjoint and keep their anchors.
+                 "scope": {"sheet": SHEET, "cell_range": f"A{1 if page == 1 else start}:B{end}"},
                  "anchor": quote_anchor, "sku_anchor": quote_anchor},
                 {"document": spec_filename, "item_id": item_id, "sku": sku,
                  "scope": {"page_start": page, "page_end": page},

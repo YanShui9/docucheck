@@ -117,6 +117,48 @@ def _state_correct(cell: ObservedCell | None, expected, *, visible: bool = False
             and cell.needs_review == expected.expected_needs_review)
 
 
+def _baseline_sources(observed, manifest, sources, texts, key):
+    """Buyer provenance belongs to the frozen checklist, not supplier facts."""
+    confirmed = observed.confirmed_checklist
+    if (confirmed is None or confirmed.version_id != observed.checklist_version_id
+            or confirmed.case_id != observed.case_id or confirmed.snapshot_id != observed.snapshot_id):
+        return []
+    expected = manifest.checklist_definition.model_dump(mode="json")
+    actual = confirmed.definition.model_dump(mode="json")
+    expected_by_id = {row["criterion_id"]: row for row in expected["criteria"]}
+    actual_by_id = {row["criterion_id"]: row for row in actual["criteria"]}
+    if set(expected_by_id) != set(actual_by_id):
+        return []
+    # Only the runtime source context can differ, because its IDs come from
+    # the actual parsed snapshot. Do not accept a changed rule or item.
+    normalized = {**actual, "criteria": []}
+    for row in expected["criteria"]:
+        current = actual_by_id[row["criterion_id"]]
+        normalized["criteria"].append({**current, "source": {
+            **current["source"], "context": row["source"]["context"]}})
+    if normalized != expected:
+        return []
+    criterion = actual_by_id.get(key[3])
+    if criterion is None or criterion["item_id"] != key[2]:
+        return []
+    context = criterion["source"]["context"]
+    if not context:
+        return []
+    refs = context["evidence_refs"]
+    # This evaluation protocol resolves each buyer anchor to one real block.
+    # Do not join unrelated PDF blocks or use a broad source pool as a quote.
+    if len(refs) != 1:
+        return []
+    found = [sources.get(ref) for ref in refs]
+    if any(source is None or source.role != "requirement" or source.supplier_handle is not None
+           or not _valid_source(source, key, manifest, texts) for source in found):
+        return []
+    # The quoted baseline must be supported by a real original block; a pool
+    # containing a matching block is not itself a confirmed source citation.
+    return ([source.model_copy(update={"text": context["quote"]}) for source in found]
+            if any(_text(context["quote"]) in _text(source.text) for source in found) else [])
+
+
 def score_pack(manifest: Manifest, gold: Gold, observation: Observation | dict,
                originals: Mapping[str, bytes]) -> dict:
     """Keep the manifest's denominator through missing, partial and failed observations."""
@@ -204,8 +246,13 @@ def score_pack(manifest: Manifest, gold: Gold, observation: Observation | dict,
                 invalid_refs.append(ref)
             else:
                 valid_refs.append(source)
+        has_baseline_channel = any((observed.confirmed_checklist, observed.case_id,
+                                    observed.snapshot_id, observed.checklist_version_id))
+        baseline_refs = (_baseline_sources(observed, manifest, sources, texts, key)
+                         if has_baseline_channel else valid_refs)
         missing_groups = [group.group_id for group in expected.evidence_groups
-                          if not any(_matches(anchor, source) for anchor in group.alternatives for source in valid_refs)]
+                          if not any(_matches(anchor, source) for anchor in group.alternatives
+                                     for source in (baseline_refs if group.purpose == "buyer_baseline" else valid_refs))]
         # Gold itself must point into the frozen original; altered labels cannot validate an invented citation.
         bad_gold_groups = [group.group_id for group in expected.evidence_groups
                            if not any(_text(anchor.text) in _text(texts.get(_location(anchor), ""))

@@ -329,10 +329,21 @@ class CoverageRecord(CoverageScope):
     source: str | None = Field(default=None, max_length=1000)
 
 
+class ObservedChecklist(Contract):
+    version_id: Identifier
+    case_id: Identifier
+    snapshot_id: Identifier
+    definition: ChecklistDefinition
+
+
 class Observation(Contract):
     pack_id: Identifier
+    case_id: Identifier | None = None
+    snapshot_id: Identifier | None = None
     run_status: Literal["completed", "partial", "failed", "pending", "not_started", "waiting_user",
                         "interrupted", "cancelled", "outcome_unknown", "running", "queued"]
+    checklist_version_id: Identifier | None = None
+    confirmed_checklist: ObservedChecklist | None = None
     api_cells: list[ObservedCell] = Field(default_factory=list, max_length=10000)
     visible_cells: list[ObservedCell] = Field(default_factory=list, max_length=10000)
     export_cells: list[ObservedCell] = Field(default_factory=list, max_length=10000)

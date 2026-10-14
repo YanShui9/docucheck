@@ -252,6 +252,10 @@ def _visible_cells(manifest: dict, answer: str | None) -> tuple[list[dict], list
                 identities.setdefault(label, []).append((supplier, criterion["item_id"], criterion["criterion_id"]))
     result, errors = [], []
     for line in (answer or "").splitlines():
+        # The deterministic renderer puts excerpts after this section marker.
+        # Source headers and untrusted quotes must not become result rows.
+        if line.strip() == "核验来源：":
+            break
         if " · " not in line or "：" not in line:
             continue
         label, status = line.split("：", 1)
@@ -508,6 +512,12 @@ def run_pack(client, pack_dir: Path, *, manifest, project_id: str, deadline_seco
         expected_definition = ChecklistDefinition.model_validate(definition).model_dump(mode="json")
         if ChecklistDefinition.model_validate(version["definition"]).model_dump(mode="json") != expected_definition:
             raise EvaluationError("checklist_confirmation_mismatch")
+        observation["checklist_version_id"] = attempt["checklist_version_id"]
+        observation["case_id"] = attempt["case_id"]
+        observation["snapshot_id"] = attempt["snapshot_id"]
+        observation["confirmed_checklist"] = {"version_id": attempt["checklist_version_id"],
+                                              "case_id": confirmed["case_id"], "snapshot_id": confirmed["snapshot_id"],
+                                              "definition": version["definition"]}
         acknowledge_receipt()
         attempt["stage"] = "bindings"
         entries = []

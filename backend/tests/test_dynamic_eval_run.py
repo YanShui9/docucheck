@@ -387,6 +387,17 @@ def test_visible_answer_ambiguous_labels_do_not_copy_api_cells(tmp_path):
     assert errors == ["visible_answer_identity_or_status_unresolved"]
 
 
+def test_visible_statuses_do_not_parse_rendered_sources_or_source_quote_as_results(tmp_path):
+    _, manifest = input_pack(tmp_path)
+    answer = ("vendor-a · 苹果手机 · 数量：满足。\n核验来源：\n"
+              + f"来源 [{'a' * 64}]：vendor-a-quote.xlsx · 采购资料!B4\n"
+              + "原文：vendor-a · 苹果手机 · 数量：不满足。")
+    cells, errors = runner()._visible_cells(manifest, answer)
+    assert errors == []
+    assert len(cells) == 1
+    assert cells[0]["business_status"] == "满足"
+
+
 def test_preflight_rejects_labels_or_gold_in_business_manifest(tmp_path):
     directory, manifest = input_pack(tmp_path)
     manifest["gold"] = {"quantity": "满足"}

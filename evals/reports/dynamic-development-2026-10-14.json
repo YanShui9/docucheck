@@ -1,0 +1,902 @@
+{
+  "additional_agent_scenarios": {
+    "cancel_notice": "Queued cancellation; started_at null, no claimed/model events, no late result; Provider calls proven zero, no usage receipt",
+    "failing_scenario": "history-user-question / history_scope",
+    "first_observer_false_negatives_preserved": [
+      "qa-mixed-fruit missing citation item_id DTO field",
+      "duplicate-submit nested error.code DTO"
+    ],
+    "no_combined_success_rate_with_formal_tasks": true,
+    "production_evidence_qas": {
+      "binding_configuration": "original first-round bindings; not a new hybrid success claim",
+      "lexical_degradations": 3,
+      "reason": "vector_item_scope_unrepresentable",
+      "tasks": 3
+    },
+    "protocol": "dynamic-agent-followups-dev-v1",
+    "retry_notice": "Explicit retry preserved old attempt and reused valid batches but semantic result remained partial; counted only for retry/transport behavior",
+    "success": {
+      "denominator": 8,
+      "numerator": 7
+    },
+    "tasks": [
+      {
+        "model_requests_added": 0,
+        "run_status": "partial",
+        "success": true,
+        "task_id": "explicit-retry-partial"
+      },
+      {
+        "model_requests_added": 0,
+        "run_status": "completed",
+        "success": true,
+        "task_id": "qa-phone-quote"
+      },
+      {
+        "model_requests_added": 0,
+        "run_status": "completed",
+        "success": true,
+        "task_id": "qa-mixed-fruit"
+      },
+      {
+        "model_requests_added": 0,
+        "run_status": "partial",
+        "success": false,
+        "task_id": "history-user-question"
+      },
+      {
+        "model_requests_added": 0,
+        "run_status": "completed",
+        "success": true,
+        "task_id": "clarify-unknown-supplier"
+      },
+      {
+        "model_requests_added": 0,
+        "run_status": "completed",
+        "success": true,
+        "task_id": "route-change-candidate"
+      },
+      {
+        "model_requests_added": 0,
+        "run_status": "completed",
+        "success": true,
+        "task_id": "duplicate-submit"
+      },
+      {
+        "model_requests_added": 0,
+        "run_status": "cancelled",
+        "success": true,
+        "task_id": "cancel-after-submit"
+      }
+    ]
+  },
+  "client_date": "2026-10-14",
+  "configured_model_id": "deepseek-flash",
+  "data_class": "ai_authored_seen_development",
+  "evaluation_tool_base_commit": "cf98240",
+  "evaluation_tool_normalized_utf8_sha256": {
+    "evals\\dynamic\\contracts.py": "8ad40be9adad0c8fa757c67edfc28bd8095400078b86418c45f25de7201407d3",
+    "evals\\dynamic\\corpus.py": "bdce59257c7f24a5bf05ad136b4159c913f972622c2d99367e65b99eb1a5f4ab",
+    "evals\\dynamic\\metrics.py": "9f13370bbcb77f4a716ffbd39b20979e3bf53b80348f69e2c1c8c7d1cef9165e",
+    "evals\\dynamic\\retrieval.py": "a19b4381afc35d13e4480810e67d94204e229bed97933cfe51b54ca3452bb23e",
+    "evals\\dynamic\\run.py": "a48ea2abcf9a4c12f2faa678bc45a7cd971bf2b64b719fb9a8b44140f40895b9"
+  },
+  "formal": {
+    "all_gold_states_and_evidence_groups_unchanged": true,
+    "all_originals_identical_after_scope_fix": true,
+    "configuration_v2_final_including_explicit_auth_recovery": {
+      "aggregate": {
+        "absence_coverage": {
+          "denominator": 5,
+          "numerator": 1
+        },
+        "agent_tasks": {
+          "denominator": 12,
+          "numerator": 3
+        },
+        "anchor_group_recall": {
+          "denominator": 209,
+          "numerator": 195
+        },
+        "by_category": {
+          "clothing": {
+            "anchor_group_recall": {
+              "denominator": 57,
+              "numerator": 50
+            },
+            "grounded_correct_cells": {
+              "denominator": 21,
+              "numerator": 7
+            },
+            "status_accuracy": {
+              "denominator": 28,
+              "numerator": 9
+            }
+          },
+          "fruit": {
+            "anchor_group_recall": {
+              "denominator": 48,
+              "numerator": 46
+            },
+            "grounded_correct_cells": {
+              "denominator": 16,
+              "numerator": 11
+            },
+            "status_accuracy": {
+              "denominator": 24,
+              "numerator": 15
+            }
+          },
+          "mixed": {
+            "anchor_group_recall": {
+              "denominator": 43,
+              "numerator": 39
+            },
+            "grounded_correct_cells": {
+              "denominator": 17,
+              "numerator": 0
+            },
+            "status_accuracy": {
+              "denominator": 22,
+              "numerator": 0
+            }
+          },
+          "phone": {
+            "anchor_group_recall": {
+              "denominator": 61,
+              "numerator": 60
+            },
+            "grounded_correct_cells": {
+              "denominator": 28,
+              "numerator": 21
+            },
+            "status_accuracy": {
+              "denominator": 30,
+              "numerator": 22
+            }
+          }
+        },
+        "by_rule": {
+          "duration": {
+            "anchor_group_recall": {
+              "denominator": 32,
+              "numerator": 30
+            },
+            "grounded_correct_cells": {
+              "denominator": 13,
+              "numerator": 7
+            },
+            "status_accuracy": {
+              "denominator": 17,
+              "numerator": 9
+            }
+          },
+          "enum": {
+            "anchor_group_recall": {
+              "denominator": 30,
+              "numerator": 29
+            },
+            "grounded_correct_cells": {
+              "denominator": 14,
+              "numerator": 2
+            },
+            "status_accuracy": {
+              "denominator": 15,
+              "numerator": 3
+            }
+          },
+          "manual": {
+            "anchor_group_recall": {
+              "denominator": 20,
+              "numerator": 18
+            },
+            "grounded_correct_cells": {
+              "denominator": 0,
+              "numerator": 0
+            },
+            "status_accuracy": {
+              "denominator": 10,
+              "numerator": 2
+            }
+          },
+          "money": {
+            "anchor_group_recall": {
+              "denominator": 42,
+              "numerator": 39
+            },
+            "grounded_correct_cells": {
+              "denominator": 20,
+              "numerator": 9
+            },
+            "status_accuracy": {
+              "denominator": 21,
+              "numerator": 9
+            }
+          },
+          "numeric": {
+            "anchor_group_recall": {
+              "denominator": 66,
+              "numerator": 64
+            },
+            "grounded_correct_cells": {
+              "denominator": 31,
+              "numerator": 21
+            },
+            "status_accuracy": {
+              "denominator": 32,
+              "numerator": 22
+            }
+          },
+          "presence": {
+            "anchor_group_recall": {
+              "denominator": 19,
+              "numerator": 15
+            },
+            "grounded_correct_cells": {
+              "denominator": 4,
+              "numerator": 0
+            },
+            "status_accuracy": {
+              "denominator": 9,
+              "numerator": 1
+            }
+          }
+        },
+        "citation_error_rate": 0.0,
+        "citation_errors": {
+          "denominator": 179,
+          "numerator": 0
+        },
+        "dangerous_meets": 0,
+        "data_class": "ai_authored_seen_development",
+        "formal_independent_acceptance": false,
+        "grounded_correct_cells": {
+          "denominator": 82,
+          "numerator": 39
+        },
+        "necessary_evidence": {
+          "denominator": 82,
+          "numerator": 39
+        },
+        "pack_count": 12,
+        "status_accuracy": {
+          "denominator": 104,
+          "numerator": 46
+        }
+      },
+      "api_cell_processing_counts": {
+        "complete": 75,
+        "partial": 29
+      },
+      "completed_runs": {
+        "denominator": 12,
+        "numerator": 6
+      },
+      "notice": "46/104 is the fixed denominator with completed-Run requirement, not a standalone semantic accuracy rate. 48 positions belong to completed Runs; all incomplete Runs remain in the 104 denominator. Not a first-pass success rate.",
+      "per_pack": [
+        {
+          "citation_errors": {
+            "denominator": 9,
+            "numerator": 0
+          },
+          "dangerous_meets": 0,
+          "errors": [],
+          "grounded_correct_cells": {
+            "denominator": 6,
+            "numerator": 5
+          },
+          "pack_id": "dyn-d01",
+          "run_status": "completed",
+          "state_disagreements_in_completed_runs": [],
+          "status_agreement": {
+            "denominator": 6,
+            "numerator": 6
+          },
+          "strict_task_success": false
+        },
+        {
+          "citation_errors": {
+            "denominator": 24,
+            "numerator": 0
+          },
+          "dangerous_meets": 0,
+          "errors": [],
+          "grounded_correct_cells": {
+            "denominator": 8,
+            "numerator": 8
+          },
+          "pack_id": "dyn-d02",
+          "run_status": "completed",
+          "state_disagreements_in_completed_runs": [],
+          "status_agreement": {
+            "denominator": 8,
+            "numerator": 8
+          },
+          "strict_task_success": true
+        },
+        {
+          "citation_errors": {
+            "denominator": 7,
+            "numerator": 0
+          },
+          "dangerous_meets": 0,
+          "errors": [
+            "coverage_incomplete"
+          ],
+          "grounded_correct_cells": {
+            "denominator": 6,
+            "numerator": 0
+          },
+          "pack_id": "dyn-d03",
+          "run_status": "partial",
+          "state_disagreements_in_completed_runs": [],
+          "status_agreement": {
+            "denominator": 8,
+            "numerator": 0
+          },
+          "strict_task_success": false
+        },
+        {
+          "citation_errors": {
+            "denominator": 14,
+            "numerator": 0
+          },
+          "dangerous_meets": 0,
+          "errors": [],
+          "grounded_correct_cells": {
+            "denominator": 7,
+            "numerator": 6
+          },
+          "pack_id": "dyn-d04",
+          "run_status": "completed",
+          "state_disagreements_in_completed_runs": [
+            {
+              "criterion_id": "variety",
+              "expected": "满足",
+              "item_id": "fruit",
+              "observed": "待人工确认",
+              "supplier_handle": "vendor-a"
+            }
+          ],
+          "status_agreement": {
+            "denominator": 8,
+            "numerator": 7
+          },
+          "strict_task_success": false
+        },
+        {
+          "citation_errors": {
+            "denominator": 20,
+            "numerator": 0
+          },
+          "dangerous_meets": 0,
+          "errors": [],
+          "grounded_correct_cells": {
+            "denominator": 5,
+            "numerator": 5
+          },
+          "pack_id": "dyn-d05",
+          "run_status": "completed",
+          "state_disagreements_in_completed_runs": [],
+          "status_agreement": {
+            "denominator": 8,
+            "numerator": 8
+          },
+          "strict_task_success": true
+        },
+        {
+          "citation_errors": {
+            "denominator": 16,
+            "numerator": 0
+          },
+          "dangerous_meets": 0,
+          "errors": [
+            "coverage_incomplete"
+          ],
+          "grounded_correct_cells": {
+            "denominator": 4,
+            "numerator": 0
+          },
+          "pack_id": "dyn-d06",
+          "run_status": "partial",
+          "state_disagreements_in_completed_runs": [],
+          "status_agreement": {
+            "denominator": 8,
+            "numerator": 0
+          },
+          "strict_task_success": false
+        },
+        {
+          "citation_errors": {
+            "denominator": 4,
+            "numerator": 0
+          },
+          "dangerous_meets": 0,
+          "errors": [
+            "coverage_incomplete"
+          ],
+          "grounded_correct_cells": {
+            "denominator": 8,
+            "numerator": 0
+          },
+          "pack_id": "dyn-d07",
+          "run_status": "partial",
+          "state_disagreements_in_completed_runs": [],
+          "status_agreement": {
+            "denominator": 8,
+            "numerator": 0
+          },
+          "strict_task_success": false
+        },
+        {
+          "citation_errors": {
+            "denominator": 25,
+            "numerator": 0
+          },
+          "dangerous_meets": 0,
+          "errors": [],
+          "grounded_correct_cells": {
+            "denominator": 8,
+            "numerator": 7
+          },
+          "pack_id": "dyn-d08",
+          "run_status": "completed",
+          "state_disagreements_in_completed_runs": [
+            {
+              "criterion_id": "size",
+              "expected": "满足",
+              "item_id": "clothing",
+              "observed": "待人工确认",
+              "supplier_handle": "vendor-a"
+            }
+          ],
+          "status_agreement": {
+            "denominator": 10,
+            "numerator": 9
+          },
+          "strict_task_success": false
+        },
+        {
+          "citation_errors": {
+            "denominator": 10,
+            "numerator": 0
+          },
+          "dangerous_meets": 0,
+          "errors": [
+            "coverage_incomplete"
+          ],
+          "grounded_correct_cells": {
+            "denominator": 5,
+            "numerator": 0
+          },
+          "pack_id": "dyn-d09",
+          "run_status": "partial",
+          "state_disagreements_in_completed_runs": [],
+          "status_agreement": {
+            "denominator": 10,
+            "numerator": 0
+          },
+          "strict_task_success": false
+        },
+        {
+          "citation_errors": {
+            "denominator": 20,
+            "numerator": 0
+          },
+          "dangerous_meets": 0,
+          "errors": [
+            "coverage_incomplete"
+          ],
+          "grounded_correct_cells": {
+            "denominator": 11,
+            "numerator": 0
+          },
+          "pack_id": "dyn-d10",
+          "run_status": "partial",
+          "state_disagreements_in_completed_runs": [],
+          "status_agreement": {
+            "denominator": 12,
+            "numerator": 0
+          },
+          "strict_task_success": false
+        },
+        {
+          "citation_errors": {
+            "denominator": 14,
+            "numerator": 0
+          },
+          "dangerous_meets": 0,
+          "errors": [
+            "coverage_incomplete"
+          ],
+          "grounded_correct_cells": {
+            "denominator": 6,
+            "numerator": 0
+          },
+          "pack_id": "dyn-d11",
+          "run_status": "partial",
+          "state_disagreements_in_completed_runs": [],
+          "status_agreement": {
+            "denominator": 10,
+            "numerator": 0
+          },
+          "strict_task_success": false
+        },
+        {
+          "citation_errors": {
+            "denominator": 16,
+            "numerator": 0
+          },
+          "dangerous_meets": 0,
+          "errors": [],
+          "grounded_correct_cells": {
+            "denominator": 8,
+            "numerator": 8
+          },
+          "pack_id": "dyn-d12",
+          "run_status": "completed",
+          "state_disagreements_in_completed_runs": [],
+          "status_agreement": {
+            "denominator": 8,
+            "numerator": 8
+          },
+          "strict_task_success": true
+        }
+      ],
+      "positions_in_completed_runs": 48
+    },
+    "first_attempts": {
+      "aggregate": {
+        "absence_coverage": {
+          "denominator": 5,
+          "numerator": 0
+        },
+        "agent_tasks": {
+          "denominator": 12,
+          "numerator": 0
+        },
+        "anchor_group_recall": {
+          "denominator": 209,
+          "numerator": 181
+        },
+        "by_category": {
+          "clothing": {
+            "anchor_group_recall": {
+              "denominator": 57,
+              "numerator": 54
+            },
+            "grounded_correct_cells": {
+              "denominator": 21,
+              "numerator": 0
+            },
+            "status_accuracy": {
+              "denominator": 28,
+              "numerator": 0
+            }
+          },
+          "fruit": {
+            "anchor_group_recall": {
+              "denominator": 48,
+              "numerator": 42
+            },
+            "grounded_correct_cells": {
+              "denominator": 16,
+              "numerator": 0
+            },
+            "status_accuracy": {
+              "denominator": 24,
+              "numerator": 0
+            }
+          },
+          "mixed": {
+            "anchor_group_recall": {
+              "denominator": 43,
+              "numerator": 41
+            },
+            "grounded_correct_cells": {
+              "denominator": 17,
+              "numerator": 0
+            },
+            "status_accuracy": {
+              "denominator": 22,
+              "numerator": 0
+            }
+          },
+          "phone": {
+            "anchor_group_recall": {
+              "denominator": 61,
+              "numerator": 44
+            },
+            "grounded_correct_cells": {
+              "denominator": 28,
+              "numerator": 0
+            },
+            "status_accuracy": {
+              "denominator": 30,
+              "numerator": 0
+            }
+          }
+        },
+        "by_rule": {
+          "duration": {
+            "anchor_group_recall": {
+              "denominator": 32,
+              "numerator": 29
+            },
+            "grounded_correct_cells": {
+              "denominator": 13,
+              "numerator": 0
+            },
+            "status_accuracy": {
+              "denominator": 17,
+              "numerator": 0
+            }
+          },
+          "enum": {
+            "anchor_group_recall": {
+              "denominator": 30,
+              "numerator": 28
+            },
+            "grounded_correct_cells": {
+              "denominator": 14,
+              "numerator": 0
+            },
+            "status_accuracy": {
+              "denominator": 15,
+              "numerator": 0
+            }
+          },
+          "manual": {
+            "anchor_group_recall": {
+              "denominator": 20,
+              "numerator": 17
+            },
+            "grounded_correct_cells": {
+              "denominator": 0,
+              "numerator": 0
+            },
+            "status_accuracy": {
+              "denominator": 10,
+              "numerator": 0
+            }
+          },
+          "money": {
+            "anchor_group_recall": {
+              "denominator": 42,
+              "numerator": 38
+            },
+            "grounded_correct_cells": {
+              "denominator": 20,
+              "numerator": 0
+            },
+            "status_accuracy": {
+              "denominator": 21,
+              "numerator": 0
+            }
+          },
+          "numeric": {
+            "anchor_group_recall": {
+              "denominator": 66,
+              "numerator": 56
+            },
+            "grounded_correct_cells": {
+              "denominator": 31,
+              "numerator": 0
+            },
+            "status_accuracy": {
+              "denominator": 32,
+              "numerator": 0
+            }
+          },
+          "presence": {
+            "anchor_group_recall": {
+              "denominator": 19,
+              "numerator": 13
+            },
+            "grounded_correct_cells": {
+              "denominator": 4,
+              "numerator": 0
+            },
+            "status_accuracy": {
+              "denominator": 9,
+              "numerator": 0
+            }
+          }
+        },
+        "citation_error_rate": 0.0,
+        "citation_errors": {
+          "denominator": 163,
+          "numerator": 0
+        },
+        "dangerous_meets": 0,
+        "data_class": "ai_authored_seen_development",
+        "formal_independent_acceptance": false,
+        "grounded_correct_cells": {
+          "denominator": 82,
+          "numerator": 0
+        },
+        "necessary_evidence": {
+          "denominator": 82,
+          "numerator": 0
+        },
+        "pack_count": 12,
+        "status_accuracy": {
+          "denominator": 104,
+          "numerator": 0
+        }
+      },
+      "completed_runs": 0,
+      "coverage_incomplete": 11,
+      "parse_timeout": 1
+    },
+    "observer_reconciliation": {
+      "buyer_context_source": "same-version actual confirmation receipt",
+      "missing_material_body_never_added_from_source_pool": true,
+      "model_requests_added": 0,
+      "old_attempts_and_scores_preserved": true,
+      "protocol": "dynamic-frozen-baseline-and-visible-v3",
+      "raw_reconciliation_report_sha256": "5a781d6f97bf4e71637a817db3236ee3f0362c421ea71db5b1cb4d86630f119a",
+      "supplier_citations_unchanged": true
+    },
+    "originals": 58,
+    "packs": 12,
+    "primary_cells": 104,
+    "updated_first_xlsx_scopes": 23
+  },
+  "independent_sealed_packs": 0,
+  "limits": [
+    "No independent sealed evaluation or overall production accuracy claim",
+    "Raw responses, runtime database, credentials and local scripts remain outside public repository",
+    "API tests used authorized local development PKCE HTTP adapter after browser transport failure; stable browser replay not accepted",
+    "Not a production capacity, billing, disaster recovery or public launch acceptance"
+  ],
+  "migration": "0018_upload_intents",
+  "next_work": [
+    "Improve source-span/value/unit extraction without relaxing evidence/coverage guards",
+    "Require material-body provenance and check enum scalar extraction for variety/size",
+    "Repair history_scope recovery; separately evaluate production chunk scope degradation and RRF metadata dominance",
+    "Rerun fixed development protocol, then acquire independent held-out materials before quality claims or stable release"
+  ],
+  "preservation": {
+    "dependency_locks_unchanged": 5,
+    "env_unchanged": true,
+    "four_roles_source_files_each_verified": 129,
+    "old_waiting_user_full_rows_unchanged": 2,
+    "original_files_unchanged": 521,
+    "production_app_and_frontend_source_unchanged": true
+  },
+  "production_source_commit": "41eb967dc093b67ec5c60cc1077a5eb6579360b9",
+  "retrieval": {
+    "all_owned_collections_dropped": true,
+    "answerable": 20,
+    "embedding_post_attempts": 85,
+    "embedding_revision": "ollama-bge-m3-7907646426070047a77226ac3e684fbbe8410524f7b4a74d02837e43f2146bab-normalized-v1",
+    "methods": {
+      "bm25": {
+        "answerable_query_denominator": 20,
+        "cross_item_hits": 0,
+        "cross_supplier_hits": 0,
+        "degraded_queries": 0,
+        "failed_queries": 0,
+        "latency_max_ms": 1006.1810999995942,
+        "latency_median_ms": 2.379150000251684,
+        "latency_scope": "shared-channel-reused-no-index-build",
+        "mrr_at_5": 0.41,
+        "no_answer_metric_notice": "nonempty retrieval is not a supported answer or measured hallucination",
+        "no_answer_nonempty_hit_queries": 4,
+        "no_answer_query_denominator": 4,
+        "query_denominator": 24,
+        "recall_at_5": 0.85,
+        "strict_success_queries": 17
+      },
+      "dense": {
+        "answerable_query_denominator": 20,
+        "cross_item_hits": 0,
+        "cross_supplier_hits": 0,
+        "degraded_queries": 0,
+        "failed_queries": 0,
+        "latency_max_ms": 414.7605999996813,
+        "latency_median_ms": 311.5555500003211,
+        "latency_scope": "shared-channel-reused-no-index-build",
+        "mrr_at_5": 0.6891666666666667,
+        "no_answer_metric_notice": "nonempty retrieval is not a supported answer or measured hallucination",
+        "no_answer_nonempty_hit_queries": 4,
+        "no_answer_query_denominator": 4,
+        "query_denominator": 24,
+        "recall_at_5": 0.925,
+        "strict_success_queries": 18
+      },
+      "hybrid": {
+        "answerable_query_denominator": 20,
+        "cross_item_hits": 0,
+        "cross_supplier_hits": 0,
+        "degraded_queries": 0,
+        "failed_queries": 0,
+        "latency_max_ms": 1420.9725999990042,
+        "latency_median_ms": 313.83960000039224,
+        "latency_scope": "shared-channel-reused-no-index-build",
+        "mrr_at_5": 0.5041666666666667,
+        "no_answer_metric_notice": "nonempty retrieval is not a supported answer or measured hallucination",
+        "no_answer_nonempty_hit_queries": 4,
+        "no_answer_query_denominator": 4,
+        "query_denominator": 24,
+        "recall_at_5": 0.825,
+        "strict_success_queries": 16
+      }
+    },
+    "no_answer": 4,
+    "notice": "All four no-answer queries returned nonempty hits in all methods; this is not an answer/refusal/hallucination metric. Hybrid did not outperform either single channel in this seen sample. Latencies reuse channels and exclude index building.",
+    "protocol": "dynamic-retrieval-dev-v2",
+    "queries": 24,
+    "raw_report_sha256": "1619d57e71093dc10a3419072a0edfd0cbed4670ad6fb25f69a3c97c319b8c42",
+    "scope": "same supplier/item-bound PDF readback corpus; XLSX excluded from ranking; not MinerU ingestion acceptance",
+    "temporary_owned_collections": 11
+  },
+  "schema_version": 1,
+  "stage": "C measurement delivered; quality acceptance not passed",
+  "upstream_model_identity_independently_verified": false,
+  "usage": {
+    "actual_bill": null,
+    "actual_input_tokens": 318073,
+    "actual_output_tokens": 40169,
+    "authentication_uncertainty_and_queued_cancel_reserved_ledgers_preserved": true,
+    "authorized_provider_call_limit": 128,
+    "automatic_retries": false,
+    "embedding_calls_counted_separately": true,
+    "held_calls_after_reconciliation": 0,
+    "known_provider_calls": 97,
+    "model_sends_stopped": true,
+    "remaining_calls": 31,
+    "unknown_provider_calls": 0,
+    "recorded_embedding_post_attempts_retrieval_only": 85,
+    "all_runtime_embedding_requests": null,
+    "total_external_requests": null
+  },
+  "verification": {
+    "frontend_rerun": false,
+    "full": [
+      {
+        "exit_code": 0,
+        "name": "dependencies",
+        "seconds": 0.953
+      },
+      {
+        "exit_code": 0,
+        "name": "ruff",
+        "seconds": 0.172
+      },
+      {
+        "exit_code": 0,
+        "failed": 0,
+        "name": "pytest",
+        "network_attempts": 0,
+        "passed": 1829,
+        "seconds": 746.61,
+        "skipped": 52
+      }
+    ],
+    "full_report_sha256": "29258f8529b759795596fdb4cbaa9639ff8e77fe8b312ed37ca2f0ebdfce5c48",
+    "interrupted_full_before_final_fixes_preserved": true,
+    "targeted": [
+      {
+        "exit_code": 0,
+        "name": "dependencies",
+        "seconds": 0.703
+      },
+      {
+        "exit_code": 0,
+        "name": "ruff",
+        "seconds": 0.172
+      },
+      {
+        "exit_code": 0,
+        "failed": 0,
+        "name": "pytest",
+        "network_attempts": 0,
+        "passed": 179,
+        "seconds": 53.235,
+        "skipped": 0
+      }
+    ]
+  }
+}
