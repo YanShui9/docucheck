@@ -62,10 +62,11 @@ def query_and_chunks(repo):
     return query, selected
 
 
-def test_fixed_six_queries_use_only_selected_supplier_and_item():
-    assert len(module().QUERY_DEFINITIONS) == 6
-    assert {row[1] for row in module().QUERY_DEFINITIONS} == {"dyn-d01", "dyn-d04", "dyn-d10"}
-    assert len({row[0] for row in module().QUERY_DEFINITIONS}) == 6
+def test_fixed_24_queries_use_only_selected_supplier_and_item():
+    assert len(module().QUERY_DEFINITIONS) == 24
+    assert len({row[1] for row in module().QUERY_DEFINITIONS}) == 11
+    assert len({row[0] for row in module().QUERY_DEFINITIONS}) == 24
+    assert len(module().NO_ANSWER_IDS) == 4
 
 
 def test_rrf_uses_rank_not_incompatible_dense_raw_score():
@@ -132,6 +133,35 @@ def test_empty_queries_cannot_be_reported_as_perfect():
     assert report["methods"]["dense"]["recall_at_5"] is None
 
 
+def test_no_answer_questions_do_not_expand_positive_recall_or_count_as_perfect(repo):
+    query, chunks = query_and_chunks(repo)
+    positive = module().compare_query(repo, chunks, query, Embedding(), Store(chunks))
+    negative = replace(query, query_id="missing-material", groups=(), answerable=False)
+    missing = module().compare_query(repo, chunks, negative, Embedding(), Store(chunks))
+    measured = module().aggregate_results([positive, missing])
+    assert measured["queries"] == 2
+    for method in module().METHODS:
+        channel = measured["methods"][method]
+        assert channel["query_denominator"] == 2
+        assert channel["answerable_query_denominator"] == 1
+        assert channel["no_answer_query_denominator"] == 1
+        assert channel["recall_at_5"] == positive["methods"][method]["recall_at_5"]
+        assert missing["methods"][method]["recall_at_5"] is None
+        assert missing["methods"][method]["mrr_at_5"] is None
+        assert missing["methods"][method]["all_required_groups_at_5"] is None
+    assert measured["methods"]["dense"]["no_answer_nonempty_hit_queries"] == 1
+    assert missing["complete_coverage"] is False
+
+
+def test_only_no_answer_questions_cannot_report_a_perfect_recall(repo):
+    query, chunks = query_and_chunks(repo)
+    query = replace(query, groups=(), answerable=False)
+    result = module().compare_query(repo, chunks, query, Embedding(), Store(chunks))
+    measured = module().aggregate_results([result])
+    assert all(row["recall_at_5"] is None and row["mrr_at_5"] is None
+               and row["answerable_query_denominator"] == 0 for row in measured["methods"].values())
+
+
 def test_index_failure_preserves_bm25_and_explicit_hybrid_fallback(repo):
     query, chunks = query_and_chunks(repo)
     embedding = Embedding()
@@ -150,11 +180,11 @@ def protocol_root(tmp_path_factory):
         pytest.skip("Chinese test font unavailable")
     from evals.dynamic.corpus import build_corpus
     root = tmp_path_factory.mktemp("retrieval-protocol") / "corpus"
-    build_corpus(root, font_path=FONT, pack_ids=["dyn-d01", "dyn-d04", "dyn-d10"])
+    build_corpus(root, font_path=FONT)
     return root
 
 
-def test_preview_freezes_six_queries_without_environment_config_or_network(protocol_root, tmp_path, monkeypatch):
+def test_preview_freezes_24_queries_without_environment_config_or_network(protocol_root, tmp_path, monkeypatch):
     from backend.app.vector_store.config import MilvusConfig
     from backend.app.vector_store.embedding import OllamaConfig
     fail = lambda *args, **kwargs: pytest.fail("preview loaded external configuration")
@@ -165,7 +195,10 @@ def test_preview_freezes_six_queries_without_environment_config_or_network(proto
     assert module().main(["--root", str(protocol_root), "--output", str(output)]) == 0
     preview = json.loads(output.read_text(encoding="utf-8"))
     assert preview["external_requests"] == 0
-    assert preview["protocol"]["query_denominator"] == 6
+    assert preview["protocol"]["query_denominator"] == 24
+    assert preview["protocol"]["answerable_query_denominator"] == 20
+    assert preview["protocol"]["no_answer_query_denominator"] == 4
+    assert all(bool(row["groups"]) == row["answerable"] for row in preview["protocol"]["queries"])
     assert "expected_business" not in output.read_text(encoding="utf-8")
     assert preview["protocol"]["parser_adapter"].endswith("not-MinerU-acceptance")
 
@@ -192,8 +225,8 @@ def test_unresolved_embedding_keeps_fixed_denominator_and_real_bm25(protocol_roo
     embedding.revision = None
     output = module().run_comparison(protocol_root, protocol, embedding, None,
                                      startup_error="embedding_service_unavailable")
-    assert len(output["results"]) == 6
-    assert output["aggregate"]["methods"]["dense"]["failed_queries"] == 6
+    assert len(output["results"]) == 24
+    assert output["aggregate"]["methods"]["dense"]["failed_queries"] == 24
     assert output["aggregate"]["methods"]["bm25"]["failed_queries"] == 0
     assert output["embedding_revision"] is None
     assert not embedding.calls
@@ -247,7 +280,7 @@ def test_send_protocol_double_keeps_common_pdf_scope_and_cleans_only_owned_colle
         stores.append(store)
         return store
     result = module().run_comparison(protocol_root, plan, embedding, factory)
-    assert len(result["results"]) == 6
+    assert len(result["results"]) == 24
     assert all(s.dropped and s.closed for s in stores)
     assert not result["failures"]
     assert all(not h["document"].endswith(".xlsx") for r in result["results"]
@@ -266,7 +299,7 @@ def test_existing_collection_collision_is_never_dropped(protocol_root):
         return store
     result = module().run_comparison(protocol_root, plan, BatchEmbedding(), factory)
     assert all(not s.dropped and s.closed for s in stores)
-    assert result["aggregate"]["methods"]["dense"]["failed_queries"] == 6
+    assert result["aggregate"]["methods"]["dense"]["failed_queries"] == 24
     assert result["aggregate"]["methods"]["bm25"]["failed_queries"] == 0
 
 
@@ -291,13 +324,13 @@ def test_later_pack_tampering_preserves_completed_queries_and_frozen_denominator
         return store
 
     result = module().run_comparison(root, plan, BatchEmbedding(), factory)
-    assert len(result["results"]) == plan["query_denominator"] == 6
+    assert len(result["results"]) == plan["query_denominator"] == 24
     first = [row for row in result["results"] if row["pack_id"] == "dyn-d01"]
     failed = [row for row in result["results"] if row["pack_id"] == "dyn-d04"]
-    assert len(first) == len(failed) == 2
+    assert len(first) == 4 and len(failed) == 3
     assert all(row["methods"]["dense"]["error_code"] is None for row in first)
     assert all(row["methods"]["dense"]["error_code"] == "comparison_pack_failed" for row in failed)
-    assert result["aggregate"]["methods"]["dense"]["failed_queries"] == 2
+    assert result["aggregate"]["methods"]["dense"]["failed_queries"] == 3
     assert all(store.dropped and store.closed for store in stores)
 
 
@@ -355,12 +388,12 @@ def test_exit_in_later_query_preserves_prior_query_and_unfinished_ids(protocol_r
                         "--send", "--plan-file", str(preview)])
     saved = json.loads(output.read_bytes())
     assert saved["mode"] == "sending"
-    assert saved["planned_queries"] == 6
+    assert saved["planned_queries"] == 24
     assert saved["completed_queries"] == 1
     assert saved["results"][0]["query_id"] == "phone-capacity"
     assert saved["current_query_id"] == "phone-delivery"
     assert saved["current_query_id"] in saved["unfinished_query_ids"]
-    assert len(saved["unfinished_query_ids"]) == 5
+    assert len(saved["unfinished_query_ids"]) == 23
     assert saved["outcome_unknown"] is True
     assert saved["needs_reconciliation"] is True
     assert "aggregate" not in saved, "partial results must not look like a smaller completed benchmark"

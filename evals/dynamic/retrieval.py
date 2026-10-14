@@ -37,7 +37,7 @@ from .contracts import Anchor, contains
 from .metrics import read_originals
 from .run import AttemptJournal, _write_new
 
-PROTOCOL = "dynamic-retrieval-dev-v1"
+PROTOCOL = "dynamic-retrieval-dev-v2"
 METHODS = ("bm25", "dense", "hybrid")
 TOP_K = 5
 CANDIDATE_K = 20
@@ -51,7 +51,30 @@ QUERY_DEFINITIONS = (
     ("fruit-price", "dyn-d04", "vendor-a", "fruit", "price", "供应商A一箱苹果含税要多少钱？"),
     ("mixed-fruit-price", "dyn-d10", "vendor-b", "fruit", "fruit_price", "供应商B的苹果每箱含税多少钱？"),
     ("mixed-shirt-delivery", "dyn-d10", "vendor-a", "clothing", "clothing_delivery", "供应商A的T恤订单确认后多久能送到？"),
+    ("phone-condition", "dyn-d01", "vendor-a", "phone", "condition", "供应商A的手机是未激活的新机吗？"),
+    ("phone-warranty-material", "dyn-d01", "vendor-a", "phone", "warranty_doc", "供应商A的手机质保承诺书声明和材料正文在哪里？"),
+    ("phone-spec-capacity", "dyn-d02", "vendor-a", "phone", "capacity", "仅看供应商A的手机规格文档，存储容量写的是多少？"),
+    ("phone-selected-sku", "dyn-d03", "vendor-a", "phone", "capacity", "供应商A采购范围内的DEMO-P512手机存储有多大？不要借用其他型号。"),
+    ("fruit-net-weight", "dyn-d05", "vendor-a", "fruit", "net_weight", "供应商A每箱去掉包装实际装了多重的水果？"),
+    ("fruit-bag-quantity", "dyn-d05", "vendor-b", "fruit", "quantity", "供应商B承诺提供多少，原文用的是箱还是袋？"),
+    ("fruit-discount", "dyn-d05", "vendor-a", "fruit", "discount", "供应商A的水果综合单价折扣比例是多少？"),
+    ("fruit-test-material", "dyn-d06", "vendor-a", "fruit", "test", "供应商A这个批次的检测报告声明和材料正文在哪里？"),
+    ("clothing-material", "dyn-d07", "vendor-a", "clothing", "material", "供应商A的夹克用什么面料做的？"),
+    ("clothing-spec-cotton", "dyn-d08", "vendor-a", "clothing", "cotton", "供应商A的T恤规格文档写了多少棉含量？只找规格里的声明。"),
+    ("clothing-size-options", "dyn-d08", "vendor-b", "clothing", "size", "供应商B的T恤尺码有哪些选择？"),
+    ("clothing-sample", "dyn-d09", "vendor-a", "clothing", "sample", "供应商A对夹克样品提供和现场验收怎么承诺的？"),
+    ("clothing-quantity-basis", "dyn-d09", "vendor-a", "clothing", "quantity_basis", "供应商A写的110件是确定订单数量还是预计结算数量？"),
+    ("accessory-tax-context", "dyn-d11", "vendor-b", "equipment", "price", "供应商B的配件单价有没有包含税费？请找到完整限定。"),
+    ("missing-phone-authorization", "dyn-d03", "vendor-b", "phone", "authorization", "供应商B采购范围内手机的供货授权材料在哪里？"),
+    ("missing-fruit-delivery", "dyn-d04", "vendor-b", "fruit", "delivery", "供应商B承诺苹果订单确认后多久交付？"),
+    ("missing-fruit-origin-material", "dyn-d06", "vendor-b", "fruit", "trace", "供应商B这个批次的产地证明材料原文在哪里？"),
+    ("missing-mixed-fruit-delivery", "dyn-d10", "vendor-b", "fruit", "fruit_delivery", "在混合采购中，供应商B苹果品目的交期承诺是什么？"),
 )
+NO_ANSWER_IDS = frozenset({"missing-phone-authorization", "missing-fruit-delivery",
+                          "missing-fruit-origin-material", "missing-mixed-fruit-delivery"})
+# Questions explicitly restricted to a specification document measure that
+# claim only, not a complete cross-file conflict decision.
+SELECTED_GROUP_IDS = {"phone-spec-capacity": {"claim-2"}, "clothing-spec-cotton": {"claim-2"}}
 
 
 class CheckpointError(RuntimeError):
@@ -68,13 +91,14 @@ class QuerySpec:
     question: str
     groups: tuple[tuple[Anchor, ...], ...]
     allowed_evidence_refs: tuple[str, ...] | None = None
+    answerable: bool = True
 
     def payload(self):
         return {"query_id": self.query_id, "pack_id": self.pack_id,
                 "supplier": self.supplier, "item_id": self.item_id,
                 "criterion_id": self.criterion_id, "question": self.question,
                 "groups": [[anchor.model_dump(mode="json") for anchor in group] for group in self.groups],
-                "allowed_evidence_refs": list(self.allowed_evidence_refs or ())}
+                "allowed_evidence_refs": list(self.allowed_evidence_refs or ()), "answerable": self.answerable}
 
 
 def _text(value):
@@ -156,12 +180,18 @@ def prepare_protocol(root: Path):
             cells = [cell for cell in gold.cells if cell.key() == (pack_id, supplier, item_id, criterion_id)]
             if len(cells) != 1:
                 raise ValueError("retrieval_query_gold_identity")
-            groups = tuple(tuple(anchor for anchor in group.alternatives if anchor.page is not None)
-                           for group in cells[0].evidence_groups if group.purpose == "supplier_claim")
-            if not groups or any(not group for group in groups):
+            answerable = query_id not in NO_ANSWER_IDS
+            if not answerable and cells[0].expected_business != "证据不足":
+                raise ValueError("retrieval_no_answer_gold_mismatch")
+            selected_groups = SELECTED_GROUP_IDS.get(query_id)
+            groups = (tuple(tuple(anchor for anchor in group.alternatives if anchor.page is not None)
+                            for group in cells[0].evidence_groups if group.purpose == "supplier_claim"
+                            and (selected_groups is None or group.group_id in selected_groups))
+                      if answerable else ())
+            if answerable and (not groups or any(not group for group in groups)):
                 raise ValueError("retrieval_query_not_pdf_representable")
             refs = _allowed_pdf_refs(manifest, repo, supplier, item_id)
-            query = QuerySpec(query_id, pack_id, supplier, item_id, criterion_id, question, groups, refs)
+            query = QuerySpec(query_id, pack_id, supplier, item_id, criterion_id, question, groups, refs, answerable)
             # Verify gold text and page against the readback before any send.
             for group in groups:
                 if not any(_anchor_matches(a, b, b.text) for a in group for b in repo.blocks):
@@ -170,11 +200,13 @@ def prepare_protocol(root: Path):
     plan = {"schema_version": 1, "protocol_id": PROTOCOL,
             "data_class": "ai_authored_seen_development", "independent_sealed_packs": 0,
             "query_denominator": len(QUERY_DEFINITIONS), "top_k": TOP_K,
+            "answerable_query_denominator": len(QUERY_DEFINITIONS) - len(NO_ANSWER_IDS),
+            "no_answer_query_denominator": len(NO_ANSWER_IDS),
             "candidate_k": CANDIDATE_K, "rrf_k": RRF_K,
             "scope": "supplier-and-item-bound-pdf-only-common-corpus",
             "parser_adapter": "evaluation-original-readback-v1-not-MinerU-acceptance",
             "packs": packs, "queries": queries,
-            "notice": "XLSX原文保留在读取快照，但本对照限定PDF；不把top-k或readback当全量覆盖。"}
+            "notice": "本对照限定PDF；无答案不混入有答案Recall分母，非空检索结果不等于已回答/幻觉；top-k/readback不代表全量覆盖。"}
     return plan | {"protocol_sha256": digest(plan)}
 
 
@@ -210,6 +242,11 @@ def _anchor_matches(anchor, block, span_text):
 def score_hits(repo, chunks, query):
     """Group recall at 5, conventional first-relevant reciprocal rank at 5."""
     groups = query.groups
+    if not query.answerable:
+        if groups:
+            raise ValueError("retrieval_no_answer_has_gold_groups")
+        return {"matched_groups": 0, "gold_groups": 0, "recall_at_5": None, "mrr_at_5": None,
+                "all_required_groups_at_5": None}
     if not groups or any(not group for group in groups):
         raise ValueError("retrieval_gold_groups")
     satisfied, first_rank = set(), None
@@ -293,6 +330,7 @@ def compare_query(repo, chunks, query, embedding, store, *, clock=time.perf_coun
                                                if query.allowed_evidence_refs is not None else None)}
     return {"query_id": query.query_id, "pack_id": query.pack_id,
             "supplier": query.supplier, "item_id": query.item_id, "question": query.question,
+            "answerable": query.answerable,
             "complete_coverage": False, "methods": methods}
 
 
@@ -301,11 +339,16 @@ def aggregate_results(results):
     metrics = {}
     for method in METHODS:
         rows = [row["methods"][method] for row in results]
+        positive = [row["methods"][method] for row in results if row.get("answerable", True)]
+        negative = [row["methods"][method] for row in results if not row.get("answerable", True)]
         latencies = sorted(row["latency_ms"] for row in rows)
         metrics[method] = {"query_denominator": count,
-                           "recall_at_5": sum(row["recall_at_5"] for row in rows) / count if count else None,
-                           "mrr_at_5": sum(row["mrr_at_5"] for row in rows) / count if count else None,
-                           "strict_success_queries": sum(row["all_required_groups_at_5"] for row in rows),
+                           "answerable_query_denominator": len(positive), "no_answer_query_denominator": len(negative),
+                           "recall_at_5": sum(row["recall_at_5"] for row in positive) / len(positive) if positive else None,
+                           "mrr_at_5": sum(row["mrr_at_5"] for row in positive) / len(positive) if positive else None,
+                           "strict_success_queries": sum(bool(row["all_required_groups_at_5"]) for row in positive),
+                           "no_answer_nonempty_hit_queries": sum(bool(row["hits"]) for row in negative),
+                           "no_answer_metric_notice": "nonempty retrieval is not a supported answer or measured hallucination",
                            "failed_queries": sum(bool(row["error_code"]) for row in rows),
                            "degraded_queries": sum(bool(row["degraded_reason"]) for row in rows),
                            "cross_supplier_hits": sum(row["cross_supplier_hits"] for row in rows),
@@ -321,7 +364,7 @@ def _queries(plan, pack_id):
     return [QuerySpec(row["query_id"], row["pack_id"], row["supplier"], row["item_id"],
                       row["criterion_id"], row["question"],
                       tuple(tuple(Anchor.model_validate(anchor) for anchor in group) for group in row["groups"]),
-                      tuple(row["allowed_evidence_refs"]))
+                      tuple(row["allowed_evidence_refs"]), row["answerable"])
             for row in plan["queries"] if row["pack_id"] == pack_id]
 
 
@@ -410,13 +453,15 @@ def run_comparison(root, plan, embedding, store_factory, *, startup_error=None, 
                 methods = {}
                 for method in METHODS:
                     methods[method] = {"hits": [], "matched_groups": 0, "gold_groups": len(query.groups),
-                                       "recall_at_5": 0.0, "mrr_at_5": 0.0,
-                                       "all_required_groups_at_5": False, "candidate_chunks": 0,
+                                       "recall_at_5": 0.0 if query.answerable else None,
+                                       "mrr_at_5": 0.0 if query.answerable else None,
+                                       "all_required_groups_at_5": False if query.answerable else None, "candidate_chunks": 0,
                                        "latency_ms": 0.0, "error_code": "comparison_pack_failed",
                                        "degraded_reason": None, "retrieval_mode": method,
                                        "cross_supplier_hits": 0, "cross_item_hits": 0}
                 results.append({"query_id": query.query_id, "pack_id": pack_id,
                                 "supplier": query.supplier, "item_id": query.item_id,
+                                "answerable": query.answerable,
                                 "question": query.question, "complete_coverage": False, "methods": methods})
         finally:
             cleanup = "not_created"
@@ -448,7 +493,7 @@ def run_comparison(root, plan, embedding, store_factory, *, startup_error=None, 
             "external_requests": None,
             "actual_cost": None, "complete_coverage": False,
             "runner_sha256": sha256(Path(__file__).read_bytes()).hexdigest(),
-            "notice": "6个作者已见开发问题，PDF readback检索对照；不是独立RAG质量或生产PDF解析验收。"}
+            "notice": "24个作者已见开发问题，20有答案/4无答案，PDF readback检索对照；不是独立RAG质量或生产PDF解析验收。"}
 
 
 def _send(root, plan, env_file, *, checkpoint=None):
