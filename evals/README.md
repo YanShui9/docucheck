@@ -1,6 +1,23 @@
 # DocuCheck 开发评测与验收工具
 
-> **当前入口（2026-10-11）**：品目对应 C 的指定合成闭环已完成，见[当前评估边界](../docs/evaluation.md)与[C 报告](../docs/document-item-binding-c-acceptance-2026-10-11.md)。新动态评估 D1 已准备[协议](../docs/superpowers/specs/2026-10-11-dynamic-evaluation-design.md)、[三大步计划](../docs/superpowers/plans/2026-10-11-dynamic-evaluation.md)、[12包/104格蓝图](dynamic/case_matrix.json)和[核实来源](dynamic/source_catalog.json)；尚无新原件/逐格gold/模型成绩，独立封存0。下方2026-10-03的“最新”“当前”及第1–6项只适用于旧八字段阶段，不能作为今天的执行状态。`m5_metrics`/`candidate_corpus`保持历史用途，新动态评分将在`evals/dynamic/`实现。
+> **当前入口（2026-10-14）**：收束计划 A/B 已完成，见[当前评估边界](../docs/evaluation.md)、[B 服务验收](../docs/repair-consolidation-b-services-2026-10-13.md)与[收束计划 C](../docs/superpowers/plans/2026-10-13-project-consolidation.md)。动态评测工具已从原 WIP 开始复核：可生成12包/58份合成PDF/XLSX/104位置，四个材料存在性答案补充正文必要证据，原件和业务状态不变；这是作者已见开发集，独立封存0，尚无该整轮模型成绩。检索暂为6问/PDF-only/readback，正式审查暂为12任务，未达收束计划的20–30检索问题和约20种Agent任务要求。下方2026-10-03的“最新”“当前”及第1–6项均为旧八字段历史。`m5_metrics`/`candidate_corpus`保持历史用途，动态工具位于`evals/dynamic/`。
+
+## 当前动态评测工具
+
+生成与预览默认离线，不读 `.env` 或令牌，不发送模型、Embedding、Milvus或业务HTTP。原件在 `inputs/`，清单与品目对应在 `config/`，答案在 `gold/`；答案不作为业务输入。输出路径必须未存在，不能覆盖此前原件、预览或评测记录。
+
+```powershell
+python.exe -m evals.dynamic.corpus --root data/dynamic-development-new --font C:/Windows/Fonts/simhei.ttf
+python.exe -m evals.dynamic.corpus --root data/dynamic-development-new --validate-only
+python.exe -m evals.dynamic.run --root data/dynamic-development-new --output data/dynamic-formal-preview-new
+python.exe -m evals.dynamic.retrieval --root data/dynamic-development-new --output data/dynamic-retrieval-preview-new.json
+```
+
+真实运行仍须显式 `--send`。正式审查保存发送前及回执后的 `.inflight.json`，最终任务报告独占新文件；检索报告逐问原子更新发送进度，保留固定问题身份及未完成列表。进程硬退出、无效成功回执、未知结果或客户端到期仍在运行，都不能自动重发；先核对保存的资源ID/幂等键和服务端状态。写入失败阻止后续发送。该日志保护进程退出后的核对，不宣称断电、磁盘损坏或生产灾备已经验收。
+
+预览中的12包正式审查上限为384次Agent模型调用、1152000输入/144000输出token；这是模式预算上限，不是实际用量。正式测量前还须固定运行服务与模型身份、说明发送范围和预算、补足收束计划覆盖；首轮、失败和显式重试分开报告。费用未知时保持未知，工具测试和原件哈希验证不产生产品准确率。
+
+2026-10-14用户将本轮实际发送的Agent供应商模型调用总上限设为128，包含正式核验与后续Agent场景。新任务开始前预留其模式的最大调用额度；已知用量后结算，余额不足或结果未知时保存记录并停止发送。384仍是原12包预览的理论合计，实际运行不能据此突破用户128上限。本地Embedding请求、索引构建和元数据访问另列，不与Agent供应商调用或费用混算。
 
 > **最新源码联调（2026-10-03）**：第 1 项完成。独立 MySQL/Redis 栈与重建的 worker 已匹配当前后端源码；22 项服务测试全部通过、无跳过。真实开发质量 12/12 包、104/104 格、89/89 必要证据，危险满足 0、引用错误 0/244；固定五文件性能 10/10 达标、最高 62.125 秒。修复 Case 列表升版显示，前端最终 19 项、类型检查及构建通过；真实浏览器矩阵/导出、Bob 隔离、上传/修正/历史已核对。本轮上报 293 次模型调用，实际金额未知；独立人工封存仍 0。见 [本轮报告](../docs/m5-current-version-integration-2026-10-03.md)。第 2–6 项仍待逐项执行；以下为历史记录。
 

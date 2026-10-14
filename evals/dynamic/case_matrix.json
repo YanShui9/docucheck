@@ -46,7 +46,9 @@
       "category": "phone",
       "source_ids": [],
       "data_class": "ai_authored_seen_development",
-      "source_family_ids": ["self-authored-phone-and-accessories"],
+      "source_family_ids": [
+        "self-authored-phone-and-accessories"
+      ],
       "artifact_status": "blueprint_only",
       "supplier_handles": [
         "vendor-a"
@@ -56,7 +58,7 @@
           {
             "item_id": "phone",
             "name": "苹果手机",
-            "specification": "演示SKU-P256"
+            "specification": "型号 DEMO-P256"
           }
         ],
         "criteria": [
@@ -193,7 +195,9 @@
       "category": "phone",
       "source_ids": [],
       "data_class": "ai_authored_seen_development",
-      "source_family_ids": ["self-authored-phone-and-accessories"],
+      "source_family_ids": [
+        "self-authored-phone-and-accessories"
+      ],
       "artifact_status": "blueprint_only",
       "supplier_handles": [
         "vendor-a",
@@ -204,7 +208,7 @@
           {
             "item_id": "phone",
             "name": "苹果手机",
-            "specification": "演示SKU-P256"
+            "specification": "型号 DEMO-P256"
           }
         ],
         "criteria": [
@@ -308,7 +312,9 @@
       "category": "phone",
       "source_ids": [],
       "data_class": "ai_authored_seen_development",
-      "source_family_ids": ["self-authored-phone-and-accessories"],
+      "source_family_ids": [
+        "self-authored-phone-and-accessories"
+      ],
       "artifact_status": "blueprint_only",
       "supplier_handles": [
         "vendor-a",
@@ -319,7 +325,7 @@
           {
             "item_id": "phone",
             "name": "苹果手机",
-            "specification": "演示SKU-P512"
+            "specification": "型号 DEMO-P512"
           }
         ],
         "criteria": [
@@ -424,7 +430,9 @@
         "baoshan-fruit-20260601"
       ],
       "data_class": "ai_authored_seen_development",
-      "source_family_ids": ["baoshan-fruit-20260601"],
+      "source_family_ids": [
+        "baoshan-fruit-20260601"
+      ],
       "artifact_status": "blueprint_only",
       "supplier_handles": [
         "vendor-a",
@@ -435,7 +443,7 @@
           {
             "item_id": "fruit",
             "name": "苹果",
-            "specification": "演示10千克标准箱"
+            "specification": "型号 FR-04"
           }
         ],
         "criteria": [
@@ -542,7 +550,9 @@
         "baoshan-fruit-20260601"
       ],
       "data_class": "ai_authored_seen_development",
-      "source_family_ids": ["baoshan-fruit-20260601"],
+      "source_family_ids": [
+        "baoshan-fruit-20260601"
+      ],
       "artifact_status": "blueprint_only",
       "supplier_handles": [
         "vendor-a",
@@ -553,7 +563,7 @@
           {
             "item_id": "fruit",
             "name": "苹果",
-            "specification": "演示标准箱"
+            "specification": "型号 FR-05"
           }
         ],
         "criteria": [
@@ -654,7 +664,9 @@
         "baoshan-fruit-20260601"
       ],
       "data_class": "ai_authored_seen_development",
-      "source_family_ids": ["baoshan-fruit-20260601"],
+      "source_family_ids": [
+        "baoshan-fruit-20260601"
+      ],
       "artifact_status": "blueprint_only",
       "supplier_handles": [
         "vendor-a",
@@ -665,7 +677,7 @@
           {
             "item_id": "fruit",
             "name": "苹果",
-            "specification": "演示批次FR-01"
+            "specification": "型号 FR-01"
           }
         ],
         "criteria": [
@@ -765,7 +777,9 @@
         "yantai-clothing-20260512"
       ],
       "data_class": "ai_authored_seen_development",
-      "source_family_ids": ["yantai-clothing-20260512"],
+      "source_family_ids": [
+        "yantai-clothing-20260512"
+      ],
       "artifact_status": "blueprint_only",
       "supplier_handles": [
         "vendor-a",
@@ -776,7 +790,7 @@
           {
             "item_id": "clothing",
             "name": "夹克外套",
-            "specification": "演示款JK-01"
+            "specification": "型号 JK-01"
           }
         ],
         "criteria": [
@@ -883,7 +897,9 @@
         "yantai-clothing-20260512"
       ],
       "data_class": "ai_authored_seen_development",
-      "source_family_ids": ["yantai-clothing-20260512"],
+      "source_family_ids": [
+        "yantai-clothing-20260512"
+      ],
       "artifact_status": "blueprint_only",
       "supplier_handles": [
         "vendor-a",
@@ -894,7 +910,7 @@
           {
             "item_id": "clothing",
             "name": "T恤",
-            "specification": "演示款TS-02"
+            "specification": "型号 TS-02"
           }
         ],
         "criteria": [
@@ -1019,7 +1035,9 @@
         "yantai-clothing-20260512"
       ],
       "data_class": "ai_authored_seen_development",
-      "source_family_ids": ["yantai-clothing-20260512"],
+      "source_family_ids": [
+        "yantai-clothing-20260512"
+      ],
       "artifact_status": "blueprint_only",
       "supplier_handles": [
         "vendor-a",
@@ -1030,7 +1048,7 @@
           {
             "item_id": "clothing",
             "name": "夹克外套",
-            "specification": "演示款JK-03"
+            "specification": "型号 JK-03"
           }
         ],
         "criteria": [
@@ -1150,7 +1168,10 @@
         "yantai-clothing-20260512"
       ],
       "data_class": "ai_authored_seen_development",
-      "source_family_ids": ["baoshan-fruit-20260601","yantai-clothing-20260512"],
+      "source_family_ids": [
+        "baoshan-fruit-20260601",
+        "yantai-clothing-20260512"
+      ],
       "artifact_status": "blueprint_only",
       "supplier_handles": [
         "vendor-a",
@@ -1161,12 +1182,12 @@
           {
             "item_id": "fruit",
             "name": "苹果",
-            "specification": "演示箱装"
+            "specification": "型号 FR-10"
           },
           {
             "item_id": "clothing",
             "name": "T恤",
-            "specification": "演示款TS-03"
+            "specification": "型号 TS-03"
           }
         ],
         "criteria": [
@@ -1310,7 +1331,9 @@
       "category": "mixed",
       "source_ids": [],
       "data_class": "ai_authored_seen_development",
-      "source_family_ids": ["self-authored-phone-and-accessories"],
+      "source_family_ids": [
+        "self-authored-phone-and-accessories"
+      ],
       "artifact_status": "blueprint_only",
       "supplier_handles": [
         "vendor-a",
@@ -1321,7 +1344,7 @@
           {
             "item_id": "equipment",
             "name": "手机配件",
-            "specification": "演示配件AC-01"
+            "specification": "型号 AC-01"
           }
         ],
         "criteria": [
@@ -1442,7 +1465,9 @@
       "category": "phone",
       "source_ids": [],
       "data_class": "ai_authored_seen_development",
-      "source_family_ids": ["self-authored-phone-and-accessories"],
+      "source_family_ids": [
+        "self-authored-phone-and-accessories"
+      ],
       "artifact_status": "blueprint_only",
       "supplier_handles": [
         "vendor-a",
@@ -1453,7 +1478,7 @@
           {
             "item_id": "phone",
             "name": "苹果手机",
-            "specification": "演示SKU-P128"
+            "specification": "型号 DEMO-P128"
           }
         ],
         "criteria": [
@@ -1552,5 +1577,10 @@
         "partial、越权和未知请求另计，不增加主轨分母"
       ]
     }
-  ]
+  ],
+  "pre_run_clarifications": {
+    "date": "2026-10-11",
+    "reason": "在首次产品运行前把展示用规格描述改为明确的合成型号，用品目范围和型号测试匹配；原始蓝图已由 acf0db1 保留。未运行产品后修改标签。",
+    "synthetic_notice": "虚构声明放于每份原件标题；材料存在测试附合成材料正文，不表示真实授权或证书真实性。"
+  }
 }
