@@ -15,7 +15,7 @@ concurrency:
 jobs:
   backend:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 25
     env:
       DOCUCHECK_CJK_FONT: /usr/share/fonts/truetype/wqy/wqy-zenhei.ttc
       LANGSMITH_TRACING: "false"

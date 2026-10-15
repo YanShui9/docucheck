@@ -200,7 +200,7 @@ def run_check(profile: str, tests: list[str], backend_report: Path | None = None
             raise ValueError("fresh_backend_report_required")
         coverage = ["backend/tests", "ruff:backend,evals,scripts", "pip:check"]
         commands = [[sys.executable, "-m", "scripts.verify_offline", "--report", str(backend_report)]]
-        cwd, timeout = ROOT, 660
+        cwd, timeout = ROOT, 3660
     else:
         npm = shutil.which("npm.cmd" if os.name == "nt" else "npm")
         if not npm:

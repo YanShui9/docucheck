@@ -15,6 +15,5 @@ data/
 .local-trust/
 .mimosa/*
 **/.mimosa/*
-!/.mimosa/security-policy.json
 .v2c/
 .video_agent/

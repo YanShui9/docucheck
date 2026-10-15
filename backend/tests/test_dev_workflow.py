@@ -120,9 +120,9 @@ def test_real_subprocess_failure_is_captured():
 
 def test_full_profile_reuses_original_gate_and_disallows_test_selection(monkeypatch, tmp_path):
     tool = module()
-    captured = []
-    def fake_execute(command, *a, **k):
-        captured.extend(command)
+    captured = {}
+    def fake_execute(command, cwd, timeout):
+        captured.update(command=command, cwd=cwd, timeout=timeout)
         Path(command[-1]).write_text(json.dumps({"passed": True, "checks": [
             {"name": "dependencies", "exit_code": 0}, {"name": "ruff", "exit_code": 0},
             {"name": "pytest", "exit_code": 0, "passed": 1, "network_attempts": 0}]}),
@@ -131,7 +131,10 @@ def test_full_profile_reuses_original_gate_and_disallows_test_selection(monkeypa
                 "output": "1 passed\noffline_network_attempts=0\n"}
     monkeypatch.setattr(tool, "execute", fake_execute)
     assert tool.run_check("full", [], tmp_path / "full.json")["passed"]
-    assert "scripts.verify_offline" in captured
+    assert "scripts.verify_offline" in captured["command"]
+    assert captured["cwd"] == tool.ROOT
+    # Three bounded 1200-second checks plus time for the runner's report handling.
+    assert captured["timeout"] == 3660
     with pytest.raises(ValueError, match="tests_only_for_targeted"):
         tool.run_check("full", ["backend/tests/test_dev_workflow.py"])
 

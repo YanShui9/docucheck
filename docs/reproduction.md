@@ -1,6 +1,6 @@
 # 安装、离线验证与本地启动
 
-适用日期：2026-10-13。Windows + Miniconda 是开发入口；Linux Celery worker 由 Docker 运行。各命令在仓库根目录执行，前端命令除外。项目是开发中的中文采购助手，具备身份、权限、异步任务和证据版本；当前没有公网演示站。
+适用日期：2026-10-15。Windows + Miniconda 是开发入口；Linux Celery worker 由 Docker 运行。各命令在仓库根目录执行，前端命令除外。项目是开发中的中文采购助手，具备身份、权限、异步任务和证据版本；当前没有公网演示站。
 
 先按第 1 节运行无需模型和 Docker 的离线验证。完整网页需要配置额外服务，启用 worker 后会产生实际模型调用。品目对应前端与指定合成应用闭环已通过[10 月 11 日验收](document-item-binding-c-acceptance-2026-10-11.md)；当前语义与可靠性缺陷按[收尾计划](superpowers/plans/2026-10-13-project-consolidation.md)修复。安装、健康检查和历史回放均不等于稳定版本验收，现场须核对实际源码与迁移。
 
@@ -34,6 +34,8 @@ python.exe -m scripts.verify_offline --report data/verification/backend-first.js
 Linux CI 安装 `fonts-wqy-zenhei`，字体路径为 `/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc`。缺字体直接失败，不能用跳过资料测试冒充完成。不同字体生成的 PDF 哈希可能不同；复现历史资料请恢复原归档，不重新生成后冒充同一份原件。
 
 脚本执行依赖检查、Ruff、全部后端离线测试；清除全部 `DOCUCHECK_*` 运行配置（只保留显式测试字体），包括评测令牌、OIDC口令、真实存储/解析路径，以及模型/数据库/跟踪设置，并在 pytest 收集前拦截 TCP/DNS。MockTransport 与进程内 ASGI 测试保留。Windows 标准库 socketpair 的内部通信是严格限定的例外，普通 localhost 请求仍被拒绝。拦截器是测试防误调用机制，**不是对恶意代码的安全沙箱**；Linux 演练额外使用 Docker `--network none`。已存在的报告不覆盖，下一轮使用新文件名。
+
+完整后端验证可能需要十几分钟，最近一次 Windows 全量测试约 846 秒。离线入口每个子命令上限为 1200 秒；统一开发入口的 full 外层上限为 3660 秒，GitHub 后端 job 为 25 分钟。这些是防止进程无限挂起的时限，不是业务性能指标。超时仍记失败，不通过跳过测试来规避。
 
 前端使用 Node 24.14.1、npm 11.11.0 及 `package-lock.json`：
 

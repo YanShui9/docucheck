@@ -62,7 +62,7 @@ def main(argv: list[str] | None = None) -> int:
         try:
             result = subprocess.run(command, cwd=ROOT, env=env, stdout=subprocess.PIPE,
                                     stderr=subprocess.STDOUT, text=True, encoding="utf-8",
-                                    errors="replace", timeout=600, check=False)
+                                    errors="replace", timeout=1200, check=False)
             output, code = result.stdout, result.returncode
         except subprocess.TimeoutExpired:
             output, code = "offline_check_timeout", 1

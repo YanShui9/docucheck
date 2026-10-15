@@ -1,6 +1,7 @@
 """Offline gates must prevent actual I/O and reject hidden attempted calls."""
 
 import importlib
+import json
 import os
 import socket
 import subprocess
@@ -153,6 +154,63 @@ def test_offline_success_explicitly_reports_zero_network_attempts(tmp_path):
 def runner_module():
     assert importlib.util.find_spec("scripts.verify_offline"), "offline runner is not implemented"
     return importlib.import_module("scripts.verify_offline")
+
+
+def test_offline_runner_completes_pytest_longer_than_ten_minutes(tmp_path, monkeypatch):
+    module = runner_module()
+    font = tmp_path / "fixture.ttf"
+    font.write_bytes(b"font-fixture")
+    monkeypatch.setenv("DOCUCHECK_CJK_FONT", str(font))
+    timeouts = []
+
+    def fake_run(command, **kwargs):
+        timeouts.append(kwargs["timeout"])
+        if "pytest" in command:
+            # Match the measured full-suite duration without waiting or running tests.
+            if 845.781 > kwargs["timeout"]:
+                raise subprocess.TimeoutExpired(command, kwargs["timeout"])
+            output = "1 passed, 1 skipped\noffline_network_attempts=0\n"
+        else:
+            output = "check passed\n"
+        return subprocess.CompletedProcess(command, 0, output)
+
+    monkeypatch.setattr(module.subprocess, "run", fake_run)
+    report = tmp_path / "result.json"
+    assert module.main(["--report", str(report)]) == 0
+    result = json.loads(report.read_text(encoding="utf-8"))
+    assert result["passed"] is True
+    assert timeouts == [1200, 1200, 1200]
+    assert result["checks"][-1]["network_attempts"] == 0
+    assert result["checks"][-1]["skipped"] == 1
+
+
+@pytest.mark.parametrize("timed_out_check", ["dependencies", "ruff", "pytest"])
+def test_offline_runner_timeout_fails_closed_and_stops_later_checks(
+    tmp_path, monkeypatch, timed_out_check,
+):
+    module = runner_module()
+    font = tmp_path / "fixture.ttf"
+    font.write_bytes(b"font-fixture")
+    monkeypatch.setenv("DOCUCHECK_CJK_FONT", str(font))
+    executed = []
+
+    def fake_run(command, **kwargs):
+        name = "dependencies" if "pip" in command else command[2]
+        executed.append(name)
+        assert kwargs["timeout"] == 1200
+        if name == timed_out_check:
+            raise subprocess.TimeoutExpired(command, kwargs["timeout"])
+        return subprocess.CompletedProcess(command, 0, "check passed\n")
+
+    monkeypatch.setattr(module.subprocess, "run", fake_run)
+    report = tmp_path / "result.json"
+    assert module.main(["--report", str(report)]) == 1
+    result = json.loads(report.read_text(encoding="utf-8"))
+    assert result["passed"] is False
+    assert executed == ["dependencies", "ruff", "pytest"][:len(executed)]
+    assert executed[-1] == timed_out_check
+    assert result["checks"][-1]["exit_code"] == 1
+    assert result["checks"][-1]["output"] == "offline_check_timeout"
 
 
 def test_child_environment_cannot_inherit_live_opt_ins_or_credentials():
