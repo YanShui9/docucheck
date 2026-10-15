@@ -167,7 +167,8 @@ def test_frozen_scope_ready_manifest_and_permission_recheck_after_embedding(bind
             assert len(conn.execute(select(index_manifests)).all()) == 1
 
 
-def test_uploaded_phone_review_history_export_and_empty_scope_isolation(ingestion_case):
+@pytest.mark.parametrize("historical_v8", [False, True])
+def test_uploaded_phone_review_history_export_and_empty_scope_isolation(ingestion_case, monkeypatch, historical_v8):
     from copy import deepcopy
     from io import BytesIO
 
@@ -206,8 +207,22 @@ def test_uploaded_phone_review_history_export_and_empty_scope_isolation(ingestio
     conversation = client.post(f"/api/v1/cases/{case_id}/conversations").json()["id"]
     runs = RunRepository(engine)
     submitted = runs.submit(SubmitRun(case_id, conversation, snapshot, 1, "审查", "thorough", "review"))
-    result = execute_run(engine, submitted.run_id, submitted.attempt_id, Provider(), heartbeat_interval_seconds=60)
+    with monkeypatch.context() as patch:
+        if historical_v8:
+            patch.setattr("backend.app.agent.dynamic.BINDING_RULE_VERSION", "dynamic-rules-v8")
+        result = execute_run(engine, submitted.run_id, submitted.attempt_id, Provider(), heartbeat_interval_seconds=60)
     assert result.status == "completed", result
+    if historical_v8:
+        old_payload = DynamicRepository(engine).verified(submitted.run_id)[1]
+        assert old_payload["rule_version"] == "dynamic-rules-v8"
+        current = runs.submit(SubmitRun(case_id, conversation, snapshot, 1, "再次审查", "thorough", "v9-review"))
+        upgraded = execute_run(engine, current.run_id, current.attempt_id, Provider(), heartbeat_interval_seconds=60)
+        assert upgraded.status == "completed", upgraded
+        new_payload = DynamicRepository(engine).verified(current.run_id)[1]
+        assert new_payload["rule_version"] == "dynamic-rules-v9"
+        assert not {e["input_digest"] for e in old_payload["batch_manifest"]}.intersection(
+            e["input_digest"] for e in new_payload["batch_manifest"])
+        assert DynamicRepository(engine).verified(submitted.run_id)[1] == old_payload
     checks = DynamicRepository(engine).checks(submitted.run_id)
     assert len(checks["checks"]) == 11
     assert [c["business_status"] for c in checks["checks"][:2]] == ["满足", "不满足"]

@@ -6,6 +6,7 @@ from typing import Annotated, Literal
 
 from pydantic import Field, model_validator
 
+from ..evidence.models import ScopedEvidence
 from ..evidence.repository import EvidenceRepository, digest
 from .item_bindings import (
     ReviewBindings,
@@ -47,10 +48,10 @@ from .validation import (
 )
 
 RULE_VERSION = "dynamic-rules-v7"
-BINDING_RULE_VERSION = "dynamic-rules-v8"
-BINDING_RULE_VERSIONS = {"dynamic-rules-v4", "dynamic-rules-v5", "dynamic-rules-v6", BINDING_RULE_VERSION}
+BINDING_RULE_VERSION = "dynamic-rules-v9"
+BINDING_RULE_VERSIONS = {"dynamic-rules-v4", "dynamic-rules-v5", "dynamic-rules-v6", "dynamic-rules-v8", BINDING_RULE_VERSION}
 SUPPORTED_RULE_VERSIONS = {"dynamic-rules-v1", "dynamic-rules-v2", "dynamic-rules-v3", RULE_VERSION, *BINDING_RULE_VERSIONS}
-STRICT_NUMERIC_VERSIONS = {RULE_VERSION, BINDING_RULE_VERSION}
+STRICT_NUMERIC_VERSIONS = {RULE_VERSION, "dynamic-rules-v8", BINDING_RULE_VERSION}
 NORMALIZED_START_VERSIONS = {"dynamic-rules-v5", "dynamic-rules-v6", *STRICT_NUMERIC_VERSIONS}
 _VALUE_NUMBER = re.compile(r"^-?\d{1,12}(?:\.\d{1,6})?$")
 _UNCERTAIN = re.compile(r"最大|最高|最多支持|支持扩展|参考|宣传|另一型号|其他型号|"
@@ -138,6 +139,23 @@ def _presence_value(text: str, description: str) -> bool:
     return not negated(text, description)
 
 
+def _bound_enum_clause(blocks: list[ScopedEvidence], criterion: Criterion, clause: str) -> str:
+    """Ignore only repeated pure prefix headers in an already verified cell span."""
+    name = compact(criterion.name)
+    if (len(blocks) < 2 or any(compact(block.text) != name for block in blocks[:-1])
+            or re.search(r"未|不|非|无|缺|没|禁|拒|否|除|免|避|淘汰", name)
+            or any(mentions(name, value) for value in criterion.rule.values)):
+        return clause
+    value_text = blocks[-1].text
+    if not compact(value_text).startswith(name):
+        return clause
+    value_clause = metric_clause(value_text, criterion.name)
+    # Keep the entire value cell; a metric fragment cannot hide qualifications.
+    if value_clause is None or compact(value_clause) != compact(value_text):
+        return clause
+    return value_clause
+
+
 def validate_fact(candidate: dict | FactCandidate, definition: ChecklistDefinition | dict,
                   repo: EvidenceRepository, supplier: str, *, rule_version=RULE_VERSION,
                   item_bindings: dict | ReviewBindings | None = None) -> dict:
@@ -167,7 +185,8 @@ def validate_fact(candidate: dict | FactCandidate, definition: ChecklistDefiniti
             raise ValueError("item_binding_source_changed")
     clause = _fact_clause(text, criterion, item, model=model,
                          multi_item=entry is None and len(definition.items) > 1,
-                         bound_aliases=entry is not None and rule_version in {"dynamic-rules-v6", BINDING_RULE_VERSION})
+                         bound_aliases=entry is not None and rule_version in {
+                             "dynamic-rules-v6", "dynamic-rules-v8", "dynamic-rules-v9"})
     rule = criterion.rule
     ambiguous = bool(COMPLEX.search(text) or _UNCERTAIN.search(text))
     comparator = source_comparator(clause)
@@ -216,7 +235,9 @@ def validate_fact(candidate: dict | FactCandidate, definition: ChecklistDefiniti
             raise ValueError("fact_unit")
         if rule.type == "enum":
             ambiguous = ambiguous or len([value for value in rule.values if mentions(text, value)]) > 1
-            ambiguous = ambiguous or enum_choices(clause, criterion.name) != [candidate.value]
+            enum_clause = (_bound_enum_clause(blocks, criterion, clause)
+                           if entry is not None and rule_version == "dynamic-rules-v9" else clause)
+            ambiguous = ambiguous or enum_choices(enum_clause, criterion.name) != [candidate.value]
     for name, observed_value in observed.items():
         proposed = getattr(candidate, name)
         if normalize_start and name == "start_event":
