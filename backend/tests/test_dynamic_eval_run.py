@@ -774,11 +774,10 @@ def test_unknown_project_creation_preserves_unstarted_tasks(tmp_path, monkeypatc
 
 
 def test_prepare_freezes_12_packs_104_positions_without_credentials(tmp_path, monkeypatch):
-    from pathlib import Path
-
+    from backend.tests.test_candidate_corpus import FONT
     from evals.dynamic.corpus import build_corpus
 
-    font = Path("C:/Windows/Fonts/msyh.ttc")
+    font = FONT
     if not font.is_file():
         pytest.skip("Chinese font required to generate local originals")
     root = tmp_path / "corpus"
