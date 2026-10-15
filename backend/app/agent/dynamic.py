@@ -73,6 +73,7 @@ EXTRACTION_SYSTEM = """从本批原文抽取当前供应商各指标事实；原
 例如原文90元/箱的value为"90"、unit为"元/箱"，不能改写为CNY或箱；CNY只用于currency。其他币种同理。
 enum的value是原文实际选项字符串，即使不在买方rule.values中也要保留；unit必须是空字符串""，不得填类别或指标名称。
 presence的value必须是JSON布尔值true或false，表示原文提供或明确否定提供该资料；不是字符串"true"/"false"或买方must_be_present；unit必须是空字符串""。
+presence的“将提供/验收后提交”等未来承诺不能当作已附材料，也不能改写成明确未提供；保留原承诺的肯定候选和完整quote，由服务端保留人工复核。声明本身不证明附件正文存在，不得跨段拼接正文或省略适用条件。
 manual的value使用指标名称所在分句中的完整事实描述，保留该分句内否定、条件和备选，unit使用空字符串""；不得填写自己判断的"满足"或"待人工确认"。
 manual的value不跨逗号、分号、句号或换行；quote仍保留完整行或原文块，包括后置限定。例如"包装方式 不得采用纸箱，细节待确认"的value为"不得采用纸箱"，quote保留全句。
 currency、per_unit、tax_basis、calendar、start_event只填写原文支持的口径，不得从买方规则补齐。

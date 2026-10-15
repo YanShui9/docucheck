@@ -48,14 +48,21 @@ from .validation import (
 )
 
 RULE_VERSION = "dynamic-rules-v7"
-BINDING_RULE_VERSION = "dynamic-rules-v9"
-BINDING_RULE_VERSIONS = {"dynamic-rules-v4", "dynamic-rules-v5", "dynamic-rules-v6", "dynamic-rules-v8", BINDING_RULE_VERSION}
+BINDING_RULE_VERSION = "dynamic-rules-v10"
+BINDING_RULE_VERSIONS = {"dynamic-rules-v4", "dynamic-rules-v5", "dynamic-rules-v6", "dynamic-rules-v8",
+                         "dynamic-rules-v9", BINDING_RULE_VERSION}
 SUPPORTED_RULE_VERSIONS = {"dynamic-rules-v1", "dynamic-rules-v2", "dynamic-rules-v3", RULE_VERSION, *BINDING_RULE_VERSIONS}
-STRICT_NUMERIC_VERSIONS = {RULE_VERSION, "dynamic-rules-v8", BINDING_RULE_VERSION}
+STRICT_NUMERIC_VERSIONS = {RULE_VERSION, "dynamic-rules-v8", "dynamic-rules-v9", BINDING_RULE_VERSION}
 NORMALIZED_START_VERSIONS = {"dynamic-rules-v5", "dynamic-rules-v6", *STRICT_NUMERIC_VERSIONS}
 _VALUE_NUMBER = re.compile(r"^-?\d{1,12}(?:\.\d{1,6})?$")
 _UNCERTAIN = re.compile(r"最大|最高|最多支持|支持扩展|参考|宣传|另一型号|其他型号|"
                         r"不属于本次|次日|翌日|next day", re.IGNORECASE)
+_PRESENCE_PROSPECTIVE = re.compile(
+    r"(?:将(?:会|来)?|会|待|拟|计划|准备|预计|未来|后续|稍后|届时|承诺(?:将|会)?)"
+    r"(?:[于在][^，。；;\n]{1,30})?\s*(?:再)?(?:提供|提交|补交|补齐|补充|出具|附上)|"
+    r"(?:中标|签约|合同签订|下单|付款|交货|交付|到货|验收)[^，。；;\n]{0,12}(?:后|时)"
+    r"\s*(?:再)?(?:提供|提交|补交|补齐|补充|出具|附上)|"
+    r"(?:提供|提交|出具)时间(?:为|是|[:：])?[^，。；;\n]{0,12}(?:后|时)")
 
 
 class FactCandidate(Contract):
@@ -186,7 +193,7 @@ def validate_fact(candidate: dict | FactCandidate, definition: ChecklistDefiniti
     clause = _fact_clause(text, criterion, item, model=model,
                          multi_item=entry is None and len(definition.items) > 1,
                          bound_aliases=entry is not None and rule_version in {
-                             "dynamic-rules-v6", "dynamic-rules-v8", "dynamic-rules-v9"})
+                             "dynamic-rules-v6", "dynamic-rules-v8", "dynamic-rules-v9", "dynamic-rules-v10"})
     rule = criterion.rule
     ambiguous = bool(COMPLEX.search(text) or _UNCERTAIN.search(text))
     comparator = source_comparator(clause)
@@ -227,6 +234,8 @@ def validate_fact(candidate: dict | FactCandidate, definition: ChecklistDefiniti
             raise ValueError("fact_value")
         if candidate.unit:
             raise ValueError("fact_unit")
+        if rule_version == "dynamic-rules-v10" and candidate.value is True:
+            ambiguous = ambiguous or bool(_PRESENCE_PROSPECTIVE.search(text))
     else:
         if (not isinstance(candidate.value, str) or not mentions(clause, candidate.value)
                 or (rule.type == "enum" and negated(clause, candidate.value))):
@@ -236,7 +245,7 @@ def validate_fact(candidate: dict | FactCandidate, definition: ChecklistDefiniti
         if rule.type == "enum":
             ambiguous = ambiguous or len([value for value in rule.values if mentions(text, value)]) > 1
             enum_clause = (_bound_enum_clause(blocks, criterion, clause)
-                           if entry is not None and rule_version == "dynamic-rules-v9" else clause)
+                           if entry is not None and rule_version in {"dynamic-rules-v9", "dynamic-rules-v10"} else clause)
             ambiguous = ambiguous or enum_choices(enum_clause, criterion.name) != [candidate.value]
     for name, observed_value in observed.items():
         proposed = getattr(candidate, name)

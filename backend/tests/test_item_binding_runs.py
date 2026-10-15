@@ -167,8 +167,8 @@ def test_frozen_scope_ready_manifest_and_permission_recheck_after_embedding(bind
             assert len(conn.execute(select(index_manifests)).all()) == 1
 
 
-@pytest.mark.parametrize("historical_v8", [False, True])
-def test_uploaded_phone_review_history_export_and_empty_scope_isolation(ingestion_case, monkeypatch, historical_v8):
+@pytest.mark.parametrize("historical_version", [None, "dynamic-rules-v8", "dynamic-rules-v9"])
+def test_uploaded_phone_review_history_export_and_empty_scope_isolation(ingestion_case, monkeypatch, historical_version):
     from copy import deepcopy
     from io import BytesIO
 
@@ -208,18 +208,18 @@ def test_uploaded_phone_review_history_export_and_empty_scope_isolation(ingestio
     runs = RunRepository(engine)
     submitted = runs.submit(SubmitRun(case_id, conversation, snapshot, 1, "审查", "thorough", "review"))
     with monkeypatch.context() as patch:
-        if historical_v8:
-            patch.setattr("backend.app.agent.dynamic.BINDING_RULE_VERSION", "dynamic-rules-v8")
+        if historical_version:
+            patch.setattr("backend.app.agent.dynamic.BINDING_RULE_VERSION", historical_version)
         result = execute_run(engine, submitted.run_id, submitted.attempt_id, Provider(), heartbeat_interval_seconds=60)
     assert result.status == "completed", result
-    if historical_v8:
+    if historical_version:
         old_payload = DynamicRepository(engine).verified(submitted.run_id)[1]
-        assert old_payload["rule_version"] == "dynamic-rules-v8"
-        current = runs.submit(SubmitRun(case_id, conversation, snapshot, 1, "再次审查", "thorough", "v9-review"))
+        assert old_payload["rule_version"] == historical_version
+        current = runs.submit(SubmitRun(case_id, conversation, snapshot, 1, "再次审查", "thorough", "upgraded-review"))
         upgraded = execute_run(engine, current.run_id, current.attempt_id, Provider(), heartbeat_interval_seconds=60)
         assert upgraded.status == "completed", upgraded
         new_payload = DynamicRepository(engine).verified(current.run_id)[1]
-        assert new_payload["rule_version"] == "dynamic-rules-v9"
+        assert new_payload["rule_version"] == "dynamic-rules-v10"
         assert not {e["input_digest"] for e in old_payload["batch_manifest"]}.intersection(
             e["input_digest"] for e in new_payload["batch_manifest"])
         assert DynamicRepository(engine).verified(submitted.run_id)[1] == old_payload
