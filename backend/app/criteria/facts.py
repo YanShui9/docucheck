@@ -21,6 +21,7 @@ from .models import (
     ChecklistDefinition,
     Contract,
     Criterion,
+    EvidenceContext,
     Identifier,
     Label,
     ProcurementItem,
@@ -48,11 +49,11 @@ from .validation import (
 )
 
 RULE_VERSION = "dynamic-rules-v7"
-BINDING_RULE_VERSION = "dynamic-rules-v10"
+BINDING_RULE_VERSION = "dynamic-rules-v11"
 BINDING_RULE_VERSIONS = {"dynamic-rules-v4", "dynamic-rules-v5", "dynamic-rules-v6", "dynamic-rules-v8",
-                         "dynamic-rules-v9", BINDING_RULE_VERSION}
+                         "dynamic-rules-v9", "dynamic-rules-v10", BINDING_RULE_VERSION}
 SUPPORTED_RULE_VERSIONS = {"dynamic-rules-v1", "dynamic-rules-v2", "dynamic-rules-v3", RULE_VERSION, *BINDING_RULE_VERSIONS}
-STRICT_NUMERIC_VERSIONS = {RULE_VERSION, "dynamic-rules-v8", "dynamic-rules-v9", BINDING_RULE_VERSION}
+STRICT_NUMERIC_VERSIONS = {RULE_VERSION, "dynamic-rules-v8", "dynamic-rules-v9", "dynamic-rules-v10", BINDING_RULE_VERSION}
 NORMALIZED_START_VERSIONS = {"dynamic-rules-v5", "dynamic-rules-v6", *STRICT_NUMERIC_VERSIONS}
 _VALUE_NUMBER = re.compile(r"^-?\d{1,12}(?:\.\d{1,6})?$")
 _UNCERTAIN = re.compile(r"最大|最高|最多支持|支持扩展|参考|宣传|另一型号|其他型号|"
@@ -91,6 +92,31 @@ class FactCandidate(Contract):
         if self.unit != self.unit.strip():
             raise ValueError("invalid_fact_unit")
         return self
+
+
+class MaterialFactCandidate(FactCandidate):
+    """Optional material provenance; each context remains an independent span."""
+
+    material_sources: list[EvidenceContext] = Field(min_length=1, max_length=4)
+
+
+def fact_candidate_data(fact: dict) -> dict:
+    """Strip server metadata while preserving an explicitly supplied source list."""
+    return {key: fact[key] for key in MaterialFactCandidate.model_fields if key in fact}
+
+
+def fact_source_groups(value: dict | FactCandidate) -> list[tuple[str, ...]]:
+    """Return each source group's identity, without turning groups into a quote."""
+    data = value.model_dump(mode="json") if isinstance(value, FactCandidate) else value
+    return [tuple(sorted(group["evidence_refs"]))
+            for group in [data, *data.get("material_sources", [])]]
+
+
+def fact_source_refs(value: dict | FactCandidate) -> list[str]:
+    """All cited original blocks, in main/source-group order without duplicates."""
+    data = value.model_dump(mode="json") if isinstance(value, FactCandidate) else value
+    return list(dict.fromkeys(ref for group in [data, *data.get("material_sources", [])]
+                              for ref in group["evidence_refs"]))
 
 
 def _definition(definition):
@@ -170,10 +196,16 @@ def validate_fact(candidate: dict | FactCandidate, definition: ChecklistDefiniti
         raise ValueError("rule_version")
     legacy_duration = rule_version == "dynamic-rules-v1"
     normalize_start = rule_version in NORMALIZED_START_VERSIONS
-    candidate = (candidate if isinstance(candidate, FactCandidate)
-                 else FactCandidate.model_validate(candidate))
+    candidate_type = (MaterialFactCandidate if isinstance(candidate, MaterialFactCandidate)
+                      or isinstance(candidate, dict) and "material_sources" in candidate else FactCandidate)
+    candidate = (candidate if isinstance(candidate, candidate_type)
+                 else candidate_type.model_validate(candidate))
     definition = _definition(definition)
     criterion, item = _criterion(definition, candidate.criterion_id, candidate.item_id)
+    material = isinstance(candidate, MaterialFactCandidate)
+    if material and (rule_version != "dynamic-rules-v11" or criterion.rule.type != "presence"
+                     or candidate.value is not True):
+        raise ValueError("material_sources_rule")
     repo.assert_supplier(supplier)
     if candidate.supplier != supplier:
         raise ValueError("supplier_scope")
@@ -193,7 +225,8 @@ def validate_fact(candidate: dict | FactCandidate, definition: ChecklistDefiniti
     clause = _fact_clause(text, criterion, item, model=model,
                          multi_item=entry is None and len(definition.items) > 1,
                          bound_aliases=entry is not None and rule_version in {
-                             "dynamic-rules-v6", "dynamic-rules-v8", "dynamic-rules-v9", "dynamic-rules-v10"})
+                             "dynamic-rules-v6", "dynamic-rules-v8", "dynamic-rules-v9", "dynamic-rules-v10",
+                             "dynamic-rules-v11"})
     rule = criterion.rule
     ambiguous = bool(COMPLEX.search(text) or _UNCERTAIN.search(text))
     comparator = source_comparator(clause)
@@ -234,7 +267,7 @@ def validate_fact(candidate: dict | FactCandidate, definition: ChecklistDefiniti
             raise ValueError("fact_value")
         if candidate.unit:
             raise ValueError("fact_unit")
-        if rule_version == "dynamic-rules-v10" and candidate.value is True:
+        if rule_version in {"dynamic-rules-v10", "dynamic-rules-v11"} and candidate.value is True:
             ambiguous = ambiguous or bool(_PRESENCE_PROSPECTIVE.search(text))
     else:
         if (not isinstance(candidate.value, str) or not mentions(clause, candidate.value)
@@ -245,7 +278,8 @@ def validate_fact(candidate: dict | FactCandidate, definition: ChecklistDefiniti
         if rule.type == "enum":
             ambiguous = ambiguous or len([value for value in rule.values if mentions(text, value)]) > 1
             enum_clause = (_bound_enum_clause(blocks, criterion, clause)
-                           if entry is not None and rule_version in {"dynamic-rules-v9", "dynamic-rules-v10"} else clause)
+                           if entry is not None and rule_version in {
+                               "dynamic-rules-v9", "dynamic-rules-v10", "dynamic-rules-v11"} else clause)
             ambiguous = ambiguous or enum_choices(enum_clause, criterion.name) != [candidate.value]
     for name, observed_value in observed.items():
         proposed = getattr(candidate, name)
@@ -280,13 +314,53 @@ def validate_fact(candidate: dict | FactCandidate, definition: ChecklistDefiniti
                      comparator=comparator, ambiguous=ambiguous, applicable=applicable)
     if bound is not None:
         canonical.update(bound.identity(), item_binding_entry_digest=digest(entry.payload()))
+    if material:
+        sources, entry_digests = [], []
+        seen = set(candidate.evidence_refs)
+        for source in candidate.material_sources:
+            if seen.intersection(source.evidence_refs):
+                raise ValueError("material_sources_overlap")
+            seen.update(source.evidence_refs)
+            source_blocks, source_text = source_span(repo, source.evidence_refs, source.quote)
+            if any(b.role not in {"quote", "spec"} or b.supplier != supplier for b in source_blocks):
+                raise ValueError("supplier_scope")
+            source_entry = bound.bindings.assert_fact_scope(item.item_id, source.evidence_refs, supplier)
+            if any(b.document_id != source_entry.document_id or b.source_hash != source_entry.source_sha256
+                   or b.parser_version != source_entry.parser_version for b in source_blocks):
+                raise ValueError("item_binding_source_changed")
+            if not mentions(source_text, criterion.name):
+                raise ValueError("material_source_criterion")
+            required = explicit_skus(item.specification, allow_bare=True)
+            actual = explicit_skus(source_text)
+            if ((source_entry.supplier_sku or "").casefold() != (entry.supplier_sku or "").casefold()
+                    or actual and (source_entry.supplier_sku
+                                   and actual != {source_entry.supplier_sku.casefold()}
+                                   or required and not actual <= required)):
+                raise ValueError("material_source_item")
+            source_model = source_blocks[0].model
+            source_applicable = (item_supported(source_text, item, model=source_model)
+                                 if source_entry.identifier_class == "unknown" else True)
+            if (source_entry.identifier_class == "unknown" and item.specification and source_model
+                    and not mentions(item.specification, source_model)):
+                source_applicable = False
+            if (identity_negated(source_text, item.name)
+                    or re.search(r"另一型号|其他型号|不属于本次", source_text)
+                    or unsupported_sku_declaration(source_text)):
+                source_applicable = False
+            canonical["ambiguous"] = canonical["ambiguous"] or not source_applicable or bool(
+                COMPLEX.search(source_text) or _UNCERTAIN.search(source_text)
+                or _PRESENCE_PROSPECTIVE.search(source_text)
+                or negated(source_text, criterion.name) or negated(source_text, rule.description))
+            sources.append({"evidence_refs": [b.evidence_id for b in source_blocks], "quote": compact(source.quote)})
+            entry_digests.append(digest(source_entry.payload()))
+        canonical.update(material_sources=sources, material_binding_entry_digests=entry_digests)
     return canonical | {"fact_id": digest([repo.snapshot_id, canonical])}
 
 
 def revalidate_fact(fact: dict, definition: ChecklistDefinition | dict,
                     repo: EvidenceRepository, supplier: str, *, rule_version=RULE_VERSION,
                     item_bindings: dict | ReviewBindings | None = None) -> dict:
-    candidate = {key: fact[key] for key in FactCandidate.model_fields if key in fact}
+    candidate = fact_candidate_data(fact)
     verified = validate_fact(candidate, definition, repo, supplier, rule_version=rule_version,
                              item_bindings=item_bindings)
     if verified != fact:
@@ -433,7 +507,7 @@ def evaluate_checklist(definition: ChecklistDefinition | dict, facts: list[dict]
             offered = [fact for fact in facts if fact["supplier"] == supplier
                        and fact["criterion_id"] == criterion.criterion_id]
             offered = sorted({fact["fact_id"]: fact for fact in offered}.values(), key=lambda fact: fact["fact_id"])
-            refs = list(dict.fromkeys(ref for fact in offered for ref in fact["evidence_refs"]))
+            refs = list(dict.fromkeys(ref for fact in offered for ref in fact_source_refs(fact)))
             status, reason = (_evaluate(criterion, items[criterion.item_id], offered, rule_version=rule_version)
                               if criterion_complete else (None, "coverage_incomplete"))
             if bound_identity and not criterion_complete and criterion.requires_manual_review:
@@ -449,6 +523,10 @@ def evaluate_checklist(definition: ChecklistDefinition | dict, facts: list[dict]
                       "rule_version": rule_version, "is_formal": criterion_complete}
             if bound_identity:
                 result.update(bound_identity)
+            material_groups = [{"fact_id": fact["fact_id"], "evidence_refs": source["evidence_refs"]}
+                               for fact in offered for source in fact.get("material_sources", [])]
+            if material_groups:
+                result["material_source_groups"] = material_groups
             identity = digest([definition.model_dump(mode="json"), offered, result])
             results.append({"check_result_id": identity, **result})
     return results

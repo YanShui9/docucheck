@@ -244,6 +244,25 @@ def render_xlsx(payload: dict) -> bytes:
         for column, value in enumerate(values, start=1):
             _text(checks, row, column, value)
 
+    material_groups = [
+        (check, group)
+        for check in result["checks"]
+        for group in check.get("material_source_groups", [])
+    ]
+    if material_groups:
+        material = workbook.create_sheet("材料引用分组")
+        for column, label in enumerate(("核验结果 ID", "指标 ID", "品目 ID", "事实 ID", "材料来源 ID"), 1):
+            _text(material, 1, column, label)
+        for row, (check, group) in enumerate(material_groups, 2):
+            values = (check["check_result_id"], check["criterion_id"], check["item_id"],
+                      group["fact_id"], "\n".join(group["evidence_refs"]))
+            for column, value in enumerate(values, 1):
+                _text(material, row, column, value)
+        material.freeze_panes = "A2"
+        material.auto_filter.ref = material.dimensions
+        for column in ("A", "B", "C", "D", "E"):
+            material.column_dimensions[column].width = 31
+
     source_headers = (
         "来源 ID",
         "文档 ID",

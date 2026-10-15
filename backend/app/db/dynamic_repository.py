@@ -251,7 +251,7 @@ class DynamicRepository:
         from ..criteria.facts import (
             BINDING_RULE_VERSION,
             RULE_VERSION,
-            FactCandidate,
+            fact_candidate_data,
             validate_fact,
         )
 
@@ -266,12 +266,12 @@ class DynamicRepository:
             try:
                 # Rebuild derived fields in the current rules before comparing
                 # inheritance; historical grammar may produce different IDs.
-                normalized = [validate_fact({k: f[k] for k in FactCandidate.model_fields}, definition,
+                normalized = [validate_fact(fact_candidate_data(f), definition,
                     repo, f["supplier"], rule_version=rule_version, item_bindings=old["item_bindings"])
                     for f in payload["facts"]]
             except ValueError:
                 _error("dynamic_source_changed")
-            facts = {digest({k: f[k] for k in FactCandidate.model_fields}) for f in normalized}
+            facts = {digest(fact_candidate_data(f)) for f in normalized}
             if latest is None:
                 latest, inherited = payload, facts
             elif not facts <= inherited:
@@ -467,8 +467,8 @@ class DynamicRepository:
         """Historical results use their original immutable definition; never promote stale ones."""
         from ..criteria.facts import (
             SUPPORTED_RULE_VERSIONS,
-            FactCandidate,
             evaluate_checklist,
+            fact_candidate_data,
             validate_fact,
         )
         from ..criteria.validation import validate_definition
@@ -559,10 +559,8 @@ class DynamicRepository:
         validate_definition(definition, repo)
         facts = []
         for encoded in payload.get("facts", []):
-            candidate = FactCandidate.model_validate(
-                {k: v for k, v in encoded.items() if k in FactCandidate.model_fields}
-            )
-            actual = validate_fact(candidate, definition, repo, candidate.supplier, rule_version=payload.get("rule_version"), item_bindings=context)
+            candidate = fact_candidate_data(encoded)
+            actual = validate_fact(candidate, definition, repo, candidate["supplier"], rule_version=payload.get("rule_version"), item_bindings=context)
             if actual != encoded:
                 _error("dynamic_source_changed")
             facts.append(actual)
@@ -592,12 +590,24 @@ class DynamicRepository:
 
     def _validate_manifest(self, row, payload, definition, repo, *, context=None):
         from ..agent.dynamic import review_plan
-        from ..criteria.facts import validate_fact
+        from ..criteria.facts import fact_source_refs, validate_fact
 
         plans, source_complete = review_plan(repo, definition, rule_version=payload.get("rule_version"), item_bindings=context)
         expected = [
             entry for supplier in sorted(plans) for _, _, entry in plans[supplier]
         ]
+        # Manual alternatives may be carried without a completed current cache,
+        # but independent material spans must still fit one extraction batch.
+        # Checking reported facts as well as cache rows prevents appending a
+        # cross-batch material variant beside an unchanged cached base fact.
+        for fact in payload.get("facts", []):
+            if "material_sources" in fact and not any(
+                fact["criterion_id"] in entry["criterion_ids"]
+                and fact["item_id"] == entry.get("item_id")
+                and set(fact_source_refs(fact)) <= {block["evidence_id"] for block in batch}
+                for batch, _, entry in plans.get(fact["supplier"], [])
+            ):
+                _error("batch_source_changed")
         if payload.get("batch_manifest") != expected:
             # A stopped decision before extraction has no findings or claimed coverage.
             if (
@@ -642,7 +652,7 @@ class DynamicRepository:
                 allowed = {b["evidence_id"] for b in batch}
                 for candidate in cached["output_json"]["facts"]:
                     if (
-                        not set(candidate["evidence_refs"]) <= allowed
+                        not set(fact_source_refs(candidate)) <= allowed
                         or candidate["criterion_id"] not in entry["criterion_ids"]
                     ):
                         _error("batch_source_changed")
@@ -810,7 +820,12 @@ class DynamicRepository:
 
     def correction(self, run_id, body, *, actor, key):
         """Append source-supported alternatives; never overwrite originals or auto resolve."""
-        from ..criteria.facts import FactCandidate, evaluate_checklist, validate_fact
+        from ..criteria.facts import (
+            FactCandidate,
+            MaterialFactCandidate,
+            evaluate_checklist,
+            validate_fact,
+        )
         from .assistant_repository import AssistantRepository
         from .checklist_repository import _scope
         from .memory_repository import save_checkpoint
@@ -829,10 +844,15 @@ class DynamicRepository:
             or assistant_payload["dynamic_payload_digest"] != row["payload_digest"]
         ):
             _error("assistant_source_changed")
-        candidate = FactCandidate.model_validate(body["candidate"])
         old = next(
             (f for f in payload["facts"] if f["fact_id"] == body["fact_id"]), None
         )
+        candidate_data = deepcopy(body["candidate"])
+        # Existing clients only edit the value. Preserve the frozen independent
+        # body groups before selecting the strict candidate contract; hash the
+        # original request above so legacy idempotency keys keep their identity.
+        if old is not None and "material_sources" in old and "material_sources" not in candidate_data:
+            candidate_data["material_sources"] = deepcopy(old["material_sources"])
         with self.engine.begin() as connection:
             _scope(
                 connection,
@@ -901,6 +921,13 @@ class DynamicRepository:
                 _error("case_busy")
             if old is None:
                 _error("fact_not_found")
+            if candidate_data.get("material_sources") != old.get("material_sources"):
+                _error("unsupported_correction")
+            try:
+                candidate_type = MaterialFactCandidate if "material_sources" in candidate_data else FactCandidate
+                candidate = candidate_type.model_validate(candidate_data)
+            except ValueError:
+                _error("unsupported_correction")
             if any(
                 getattr(candidate, k) != old[k]
                 for k in (
