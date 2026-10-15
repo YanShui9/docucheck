@@ -49,11 +49,12 @@ from .validation import (
 )
 
 RULE_VERSION = "dynamic-rules-v7"
-BINDING_RULE_VERSION = "dynamic-rules-v11"
+BINDING_RULE_VERSION = "dynamic-rules-v12"
 BINDING_RULE_VERSIONS = {"dynamic-rules-v4", "dynamic-rules-v5", "dynamic-rules-v6", "dynamic-rules-v8",
-                         "dynamic-rules-v9", "dynamic-rules-v10", BINDING_RULE_VERSION}
+                         "dynamic-rules-v9", "dynamic-rules-v10", "dynamic-rules-v11", BINDING_RULE_VERSION}
 SUPPORTED_RULE_VERSIONS = {"dynamic-rules-v1", "dynamic-rules-v2", "dynamic-rules-v3", RULE_VERSION, *BINDING_RULE_VERSIONS}
-STRICT_NUMERIC_VERSIONS = {RULE_VERSION, "dynamic-rules-v8", "dynamic-rules-v9", "dynamic-rules-v10", BINDING_RULE_VERSION}
+STRICT_NUMERIC_VERSIONS = {RULE_VERSION, "dynamic-rules-v8", "dynamic-rules-v9", "dynamic-rules-v10",
+                           "dynamic-rules-v11", BINDING_RULE_VERSION}
 NORMALIZED_START_VERSIONS = {"dynamic-rules-v5", "dynamic-rules-v6", *STRICT_NUMERIC_VERSIONS}
 _VALUE_NUMBER = re.compile(r"^-?\d{1,12}(?:\.\d{1,6})?$")
 _UNCERTAIN = re.compile(r"最大|最高|最多支持|支持扩展|参考|宣传|另一型号|其他型号|"
@@ -203,7 +204,7 @@ def validate_fact(candidate: dict | FactCandidate, definition: ChecklistDefiniti
     definition = _definition(definition)
     criterion, item = _criterion(definition, candidate.criterion_id, candidate.item_id)
     material = isinstance(candidate, MaterialFactCandidate)
-    if material and (rule_version != "dynamic-rules-v11" or criterion.rule.type != "presence"
+    if material and (rule_version not in {"dynamic-rules-v11", "dynamic-rules-v12"} or criterion.rule.type != "presence"
                      or candidate.value is not True):
         raise ValueError("material_sources_rule")
     repo.assert_supplier(supplier)
@@ -226,7 +227,7 @@ def validate_fact(candidate: dict | FactCandidate, definition: ChecklistDefiniti
                          multi_item=entry is None and len(definition.items) > 1,
                          bound_aliases=entry is not None and rule_version in {
                              "dynamic-rules-v6", "dynamic-rules-v8", "dynamic-rules-v9", "dynamic-rules-v10",
-                             "dynamic-rules-v11"})
+                             "dynamic-rules-v11", "dynamic-rules-v12"})
     rule = criterion.rule
     ambiguous = bool(COMPLEX.search(text) or _UNCERTAIN.search(text))
     comparator = source_comparator(clause)
@@ -267,7 +268,7 @@ def validate_fact(candidate: dict | FactCandidate, definition: ChecklistDefiniti
             raise ValueError("fact_value")
         if candidate.unit:
             raise ValueError("fact_unit")
-        if rule_version in {"dynamic-rules-v10", "dynamic-rules-v11"} and candidate.value is True:
+        if rule_version in {"dynamic-rules-v10", "dynamic-rules-v11", "dynamic-rules-v12"} and candidate.value is True:
             ambiguous = ambiguous or bool(_PRESENCE_PROSPECTIVE.search(text))
     else:
         if (not isinstance(candidate.value, str) or not mentions(clause, candidate.value)
@@ -279,7 +280,8 @@ def validate_fact(candidate: dict | FactCandidate, definition: ChecklistDefiniti
             ambiguous = ambiguous or len([value for value in rule.values if mentions(text, value)]) > 1
             enum_clause = (_bound_enum_clause(blocks, criterion, clause)
                            if entry is not None and rule_version in {
-                               "dynamic-rules-v9", "dynamic-rules-v10", "dynamic-rules-v11"} else clause)
+                               "dynamic-rules-v9", "dynamic-rules-v10", "dynamic-rules-v11",
+                               "dynamic-rules-v12"} else clause)
             ambiguous = ambiguous or enum_choices(enum_clause, criterion.name) != [candidate.value]
     for name, observed_value in observed.items():
         proposed = getattr(candidate, name)
@@ -452,6 +454,9 @@ def _evaluate(criterion, item, offered, *, rule_version):
         if rule.type == "enum":
             passes = actual[0] in rule.values
         elif rule.type == "presence":
+            # Source groups prove provenance, not independently verified material content.
+            if rule_version == "dynamic-rules-v12" and actual[0] is True:
+                return "待人工确认", "material_body_unverified"
             passes = actual[0] == rule.must_be_present
         elif rule.type == "duration" and comparators == {"lt"} and rule.operator == "lt":
             passes = actual[0] <= Decimal(rule.value)

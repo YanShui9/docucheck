@@ -264,6 +264,8 @@ def render_review(checks: list[dict], *, complete: bool, needs_review: bool = Fa
             label.append(item_name)
         label.append(check.get("criterion_name", check.get("criterion_id", "指标")))
         lines.append(f"{' · '.join(label)}：{status}。")
+        if check.get("reason_code") == "material_body_unverified":
+            lines[-1] += "材料正文尚未确认，不能仅凭声明判为已提供。"
     if repo is not None:
         refs = [*(source_refs or []), *(ref for check in checks for ref in
                                      [*check.get("evidence_refs", []), *check.get("reason_evidence_refs", [])])]
@@ -566,7 +568,7 @@ class DynamicAgent:
             return answer
 
         def checked_candidates(raw, batch, supplier, criterion_ids, *, diagnostics=None):
-            model = DynamicMaterialFactCandidates if self.rule_version == "dynamic-rules-v11" else DynamicFactCandidates
+            model = DynamicMaterialFactCandidates if self.rule_version in {"dynamic-rules-v11", "dynamic-rules-v12"} else DynamicFactCandidates
             candidates = model.model_validate(raw).facts
             allowed = {b["evidence_id"] for b in batch}
             validated, rejections = [], Counter()
@@ -718,13 +720,17 @@ class DynamicAgent:
                         extraction_system = EXTRACTION_SYSTEM
                         if self.item_bindings is not None:
                             extraction_system += "\n服务端已确认item_attribution所述品目对应。anchor只作归属依据，不是事实范围，不得引用或拼入数值quote。事实只能引用evidence中的原文格；型号冲突或不明仍须保留。"
-                        material_sources = self.rule_version == "dynamic-rules-v11"
+                        material_sources = self.rule_version in {"dynamic-rules-v11", "dynamic-rules-v12"}
                         if material_sources:
                             extraction_system += (
                                 "\n本版presence的肯定事实可带material_sources独立正文引用组；主quote仍必须精确支持完整rule.description。"
                                 "每个独立组均按原有同段或同排连续格合同保留完整quote和evidence_refs，不跨段拼接；"
                                 "不同组可属于同品目已授权的不同文档，但所有引用都必须在当前批evidence内，禁止跨批读取或猜测。"
                                 "合法定位不证明材料语义完整或真实；不得仅凭body标签、正文缺失、未来承诺或检索无命中确认已附。")
+                        if self.rule_version == "dynamic-rules-v12":
+                            extraction_system += (
+                                "\n本版presence肯定的true候选仍须如实提取并保留完整来源，不得改写为false或删除候选；"
+                                "未独立验证正文语义前不得自动判满足，由服务端保留待人工确认。")
                         messages = [SystemMessage(content=extraction_system),
                                     HumanMessage(content=json.dumps(data, ensure_ascii=False))]
                         # JSON fact candidates include long IDs, source refs and

@@ -50,6 +50,7 @@ const reasonNames: Record<string, string> = {
   supplier_fact_missing: '缺少适用的供应商证据',
   coverage_incomplete: '资料处理尚未完成',
   semantics_unclear: '单位、限定语或计价口径待确认',
+  material_body_unverified: '材料正文尚未确认，不能仅凭声明判为已提供',
   requirement_manual: '复杂条件需人工复核',
   item_model_unclear: '品目/规格对应关系待确认',
   duration_basis_mismatch: '期限口径与要求不一致',

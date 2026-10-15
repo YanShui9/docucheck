@@ -39,6 +39,7 @@ const reasonNames: Record<string, string> = {
   requirement_missing: '缺少可用的采购需求',
   coverage_incomplete: '资料处理尚未完成',
   semantics_unclear: '单位、限定语或计价口径待确认',
+  material_body_unverified: '材料正文尚未确认，不能仅凭声明判为已提供',
   requirement_unclear: '采购需求口径待确认',
   extraction_failed: '字段抽取失败',
   supplier_capacity_not_exact: '供应商未提供确定容量',

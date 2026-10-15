@@ -167,7 +167,7 @@ def test_frozen_scope_ready_manifest_and_permission_recheck_after_embedding(bind
             assert len(conn.execute(select(index_manifests)).all()) == 1
 
 
-@pytest.mark.parametrize("historical_version", [None, "dynamic-rules-v8", "dynamic-rules-v9", "dynamic-rules-v10"])
+@pytest.mark.parametrize("historical_version", [None, "dynamic-rules-v8", "dynamic-rules-v9", "dynamic-rules-v10", "dynamic-rules-v11"])
 def test_uploaded_phone_review_history_export_and_empty_scope_isolation(ingestion_case, monkeypatch, historical_version):
     from copy import deepcopy
     from io import BytesIO
@@ -219,7 +219,7 @@ def test_uploaded_phone_review_history_export_and_empty_scope_isolation(ingestio
         upgraded = execute_run(engine, current.run_id, current.attempt_id, Provider(), heartbeat_interval_seconds=60)
         assert upgraded.status == "completed", upgraded
         new_payload = DynamicRepository(engine).verified(current.run_id)[1]
-        assert new_payload["rule_version"] == "dynamic-rules-v11"
+        assert new_payload["rule_version"] == "dynamic-rules-v12"
         assert not {e["input_digest"] for e in old_payload["batch_manifest"]}.intersection(
             e["input_digest"] for e in new_payload["batch_manifest"])
         assert DynamicRepository(engine).verified(submitted.run_id)[1] == old_payload
