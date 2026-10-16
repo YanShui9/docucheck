@@ -255,6 +255,25 @@ def test_provider_unknown_outcome_is_not_replayed_and_usage_survives():
     assert any(e.get("outcome_unknown") is True for e in result["events"])
 
 
+def test_known_usage_budget_stop_closes_model_event_without_replay():
+    from backend.app.agent.policy import Budget
+
+    class OverBudget(ScriptProvider):
+        def decide(self, *args, **kwargs):
+            reply = super().decide(*args, **kwargs)
+            reply.usage_metadata = {"input_tokens": 100, "output_tokens": 601, "total_tokens": 701}
+            return reply
+
+    provider = OverBudget()
+    result = agent(repository(), provider, definition(), budget=Budget(max_output=600)).ask("审查")
+    assert result["status"] == "partial" and result["error"] == "token_budget"
+    assert len(provider.calls) == 1
+    assert result["usage"]["actual_output"] == 601 and result["usage"]["unknown_usage_calls"] == 0
+    models = [event for event in result["events"] if event["kind"] == "model"]
+    assert len(models) == 1 and models[0]["status"] == "failed"
+    assert models[0]["error"] == "token_budget" and models[0]["outcome_unknown"] is False
+
+
 def test_batch_cache_resumes_without_extracting_and_rejects_forged_cached_values():
     repo, rules, saved = repository(), definition(), {}
     def load(batch_id, input_digest):

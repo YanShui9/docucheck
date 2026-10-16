@@ -21,7 +21,12 @@ from .assistant_checklist_context import (
     edit_view,
     model_definition,
 )
-from .assistant_context import assemble_assistant_context, compact_schema
+from .assistant_context import (
+    EDIT_OUTPUT_CAP,
+    ROUTING_OUTPUT_CAP,
+    assemble_assistant_context,
+    compact_schema,
+)
 from .assistant_evidence import (
     ReadSourceArgs,
     SourceWindow,
@@ -200,7 +205,7 @@ class AssistantAgent:
         if digest([asdict(b) for b in self.repo.blocks]) != self.source_digest:
             raise RunStopped("source_access_changed")
 
-    def _messages(self, question, *, schemas=None, view=None, tail=()):
+    def _messages(self, question, *, schemas=None, view=None, tail=(), output_cap=ROUTING_OUTPUT_CAP):
         schemas = self.schemas if schemas is None else schemas
         model_base = model_definition(self.definition) if view is None else view
         guidance = SYSTEM + "\n固定基准清单=" + json.dumps(model_base, ensure_ascii=False, separators=(",", ":"))
@@ -212,12 +217,13 @@ class AssistantAgent:
                          "不要自行给出具体截止日期或日期计算示例。具体交期判断须读取证据并使用正式审查。")
         extra = self.recalled_history if self.recalled_history != tail else []
         messages, audit = assemble_assistant_context(guidance, question, self.history,
-            self.memory_layers, schemas, self.budget, tail=[*extra, *tail], history_available=self.history_reader is not None)
+            self.memory_layers, schemas, self.budget, tail=[*extra, *tail], history_available=self.history_reader is not None,
+            output_cap=output_cap)
         if audit["mandatory_overflow"] and view is None:
-            return self._messages(question, schemas=schemas, view=catalog(self.definition, ReadChecklistArgs()), tail=tail)
+            return self._messages(question, schemas=schemas, view=catalog(self.definition, ReadChecklistArgs()), tail=tail, output_cap=output_cap)
         if audit["mandatory_overflow"] and view is not None and view.get("view") == "catalog" and view["limit"] > 1:
             query = ReadChecklistArgs(scope=view["scope"], query=view["query"], offset=view["offset"], limit=max(1, view["limit"] // 2))
-            return self._messages(question, schemas=schemas, view=catalog(self.definition, query), tail=tail)
+            return self._messages(question, schemas=schemas, view=catalog(self.definition, query), tail=tail, output_cap=output_cap)
         self.context.update(audit)
         return messages
 
@@ -271,8 +277,8 @@ class AssistantAgent:
                 self.budget.decision()
                 phase = "edit" if prepared is not None else "evidence" if searched else "routing"
                 size = input_bound(messages, active_schemas)
-                output_cap = 4096 if prepared is not None else 1536
-                limit = min(self.budget.max_prompt, self.budget.context_window - min(output_cap, self.budget.max_output - self.budget.output_reserved))
+                output_cap = EDIT_OUTPUT_CAP if prepared is not None else ROUTING_OUTPUT_CAP
+                limit = self.budget.prompt_limit(output_cap)
                 self.context.update(input_bound=size, prompt_limit=limit, mandatory_overflow=size > limit)
                 self.context["max_attempt_bound"] = max(size, self.context.get("max_attempt_bound", 0))
                 options, size = self.budget.reserve(messages, active_schemas, output_cap=output_cap)
@@ -349,7 +355,7 @@ class AssistantAgent:
                     observation = edit_view(self.definition, prepared)
                     prepared_items = {item["item_id"] for item in observation["items"]}
                     active_schemas = self.edit_schemas
-                    messages = self._messages(question, schemas=active_schemas, view=observation, tail=[reply,
+                    messages = self._messages(question, schemas=active_schemas, view=observation, output_cap=EDIT_OUTPUT_CAP, tail=[reply,
                         ToolMessage(content='{"prepared":true}', tool_call_id=tool["id"])])
                     if self.context["mandatory_overflow"]:
                         raise RunStopped("checklist_edit_scope_budget")

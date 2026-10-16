@@ -77,13 +77,17 @@ class Budget:
         size = input_bound(messages, schemas)
         if output < 128 or self.input_reserved + size > self.max_input:
             raise RunStopped("token_budget")
-        if size > min(self.max_prompt, self.context_window - output):
+        if size > self.prompt_limit(output_cap):
             raise RunStopped("context_budget")
         self.input_reserved += size
         self.output_reserved += output
         self.model_calls += 1
         return ({"timeout": min(30.0, self.seconds - (time.monotonic() - self.started)),
                  "max_output_tokens": output}, size)
+
+    def prompt_limit(self, output_cap: int) -> int:
+        """Use the same remaining output allowance when fitting and reserving."""
+        return min(self.max_prompt, self.context_window - min(output_cap, self.max_output - self.output_reserved))
 
     def record(self, reply: AIMessage, reserved_input: int, reserved_output: int) -> None:
         usage = reply.usage_metadata

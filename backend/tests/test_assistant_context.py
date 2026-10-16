@@ -61,6 +61,22 @@ def test_history_tool_contracts_allow_distinct_messages_and_single_message_conti
             assert model.model_validate(args).model_dump() == {"start_char": 0, **args}
 
 
+def test_edit_phase_drops_optional_history_for_its_actual_output_reservation():
+    patch = {"operations": [{"op": "remove", "criterion_id": "criterion-0", "reason": "用户删除"}]}
+    repo, base = EvidenceRepository.empty("case", "snap"), phone_requirements()
+    baseline = AssistantAgent(repo, Decisions(("propose_changes", patch)), definition=base)
+    completed = baseline.ask("删除第一项")
+    assert completed["status"] == "completed", completed
+    window = completed["context"]["input_bound"] + 4096 + 100
+    provider = Decisions(("propose_changes", patch))
+    result = AssistantAgent(repo, provider, definition=base, budget=Budget(context_window=window),
+        history=[(HumanMessage(content="x" * 300), AIMessage(content="y" * 300))]).ask("删除第一项")
+    assert result["status"] == "completed", result
+    assert len(provider.messages) == 2
+    assert result["context"]["history_turns_selected"] == 0
+    assert result["context"]["input_bound"] <= result["context"]["prompt_limit"]
+
+
 def phone_requirements():
     # New synthetic fixture based on the reported seven generic, unspecified headings.
     entries = [

@@ -541,6 +541,10 @@ class DynamicAgent:
                         args = reply.tool_calls[0]["args"]
                         return parser(args) if parser else args
                     return reply
+                except RunStopped as exc:
+                    progress.update(status="failed", error=exc.code, outcome_unknown=not response_received,
+                                    usage=reply.usage_metadata if response_received else None)
+                    raise
                 except (ValidationError, ValueError) as exc:
                     # Schema repair is limited to one additional call. Domain
                     # validation is done outside this block and is never guessed.

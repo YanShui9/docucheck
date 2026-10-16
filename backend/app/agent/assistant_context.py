@@ -12,6 +12,9 @@ from .context import (
 )
 from .policy import input_bound
 
+ROUTING_OUTPUT_CAP = 1536
+EDIT_OUTPUT_CAP = 4096
+
 
 def compact_schema(schema):
     """Remove display titles only; keep every validation and discrimination keyword."""
@@ -33,17 +36,18 @@ def compact_schema(schema):
     return result
 
 
-def assemble_assistant_context(guidance, question, history, layers, schemas, budget, *, tail=(), history_available=False):
+def assemble_assistant_context(guidance, question, history, layers, schemas, budget, *,
+                               tail=(), history_available=False, output_cap=ROUTING_OUTPUT_CAP):
     payload, already_omitted = _memory_payload(layers)
     total_entries = len(payload["summary"]["entries"]) + already_omitted
     recent = readable_history(history[-8:], enabled=history_available)
-    limit = min(budget.max_prompt, budget.context_window - 1536)
+    limit = budget.prompt_limit(output_cap)
     while True:
         notice = MEMORY_NOTICE if history_available else MEMORY_NOTICE.replace("需要完整旧内容时按 message_id 调用 read_conversation_history；", "")
         system = guidance + notice + "\nMEMORY_DATA=" + json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
         messages = [SystemMessage(content=system), *(m for turn in recent for m in turn), HumanMessage(content=question), *tail]
-        fitted, dropped = fit_decision_history(messages, schemas, max_prompt=budget.max_prompt,
-                                               context_window=budget.context_window, output_cap=1536)
+        fitted, dropped = fit_decision_history(messages, schemas, max_prompt=limit,
+                                               context_window=budget.context_window, output_cap=0)
         size = input_bound(fitted, schemas)
         if size <= limit:
             break
