@@ -356,6 +356,9 @@ def test_second_clarification_keeps_first_user_reply(uploaded_case):
     reply_two = client.post(f"/api/v1/agent-runs/{submitted['run_id']}/resume",
                             headers={"Idempotency-Key": "reply-two"},
                             json={"content": "型号 X", "expected_revision": 1}).json()
+    with engine.connect() as connection:
+        reply_one_id = connection.scalar(select(run_attempts.c.resume_message_id).where(
+            run_attempts.c.id == reply_one["attempt_id"]))
 
     class Inspect:
         model_id = "scripted-inspect"
@@ -363,7 +366,9 @@ def test_second_clarification_keeps_first_user_reply(uploaded_case):
 
         def decide(self, messages, tools, **kwargs):
             contents = [str(item.content) for item in messages]
-            assert any(item == "供应商 A" for item in contents)
+            historical = [json.loads(item.removeprefix("HISTORY_DATA=")) for item in contents
+                          if item.startswith("HISTORY_DATA=")]
+            assert {"message_id": reply_one_id, "question": "供应商 A"} in historical
             assert any("请确认供应商。" in item for item in contents)
             assert any("请确认型号。" in item for item in contents)
             assert contents[-1] == "型号 X"
