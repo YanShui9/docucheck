@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "client_date": "2026-10-16",
+  "kind": "targeted_live_development_acceptance",
+  "source_commit": "2e862acd52084e6cd5ec4dd2fc4fdbd0bf2f7e41",
+  "data_class": "author_seen_synthetic_development",
+  "independent_sealed_packs": 0,
+  "authentication": "OIDC authorization-code PKCE with owned local development account",
+  "runtime": {
+    "background_roles": 4,
+    "python_files_verified_per_role": 129,
+    "migration": "0018_upload_intents",
+    "local_only": true
+  },
+  "formal": {
+    "pack_id": "dyn-d02",
+    "documents": 5,
+    "mode": "thorough",
+    "run_status": "completed",
+    "positions": 8,
+    "state_agreement": {
+      "denominator": 8,
+      "numerator": 8
+    },
+    "grounded_correct_positions": {
+      "denominator": 8,
+      "numerator": 8
+    },
+    "necessary_evidence_groups": {
+      "denominator": 17,
+      "numerator": 17
+    },
+    "citation_errors": {
+      "denominator": 24,
+      "numerator": 0
+    },
+    "dangerous_meets": 0,
+    "api_json_xlsx_visible_consistent": true,
+    "strict_task_passed": true,
+    "model_calls": 3
+  },
+  "history": {
+    "mode": "standard",
+    "run_status": "completed",
+    "passed": true,
+    "history_tool_reads": 1,
+    "read_previous_question_message": true,
+    "procurement_citations": 0,
+    "model_calls": 2
+  },
+  "usage": {
+    "new_model_calls": 5,
+    "actual_input_tokens": 21740,
+    "actual_output_tokens": 2399,
+    "unknown_usage_calls": 0,
+    "actual_bill": null
+  },
+  "budget": {
+    "total_limit": 160,
+    "known_cumulative_calls": 102,
+    "remaining_calls": 58,
+    "held_calls": 0,
+    "automatic_retries": false
+  },
+  "frozen_inputs": {
+    "manifest_sha256": "0f97974504ecd4351ebfdc064e63e6c3cd451b74a73cd3c774aa8c96e6a31989",
+    "gold_sha256": "c94f73a3556db29ba10fe14a2265d8ec44033052500b451d46db202f6288e7ff"
+  },
+  "limitations": [
+    "single_seen_phone_pack_and_one_history_task",
+    "not_full_12_pack_remeasurement",
+    "not_independent_accuracy",
+    "does_not_validate_material_body_recognition",
+    "not_ten_minute_demo_or_production_acceptance",
+    "restore_not_exercised",
+    "local_embedding_requests_not_fully_counted"
+  ]
+}
