@@ -95,15 +95,31 @@ class Retriever:
 
     def _chunks(self, blocks: list[ScopedEvidence]) -> list[RetrievalChunk]:
         groups: dict[tuple, list[ScopedEvidence]] = defaultdict(list)
+        rows: dict[tuple, list[ScopedEvidence]] = defaultdict(list)
+        first_rows: dict[tuple, int] = {}
         for block in blocks:
-            key = ((block.document_id, block.sheet, re.search(r"\d+$", block.cell).group())
-                   if block.sheet is not None and block.cell else (block.evidence_id,))
+            if block.sheet is not None and block.cell:
+                row = re.search(r"\d+$", block.cell).group()
+                sheet = (block.document_id, block.sheet)
+                rows[(*sheet, int(row))].append(block)
+                first_rows[sheet] = min(first_rows.get(sheet, int(row)), int(row))
+                key = (*sheet, row)
+            else:
+                key = (block.evidence_id,)
             groups[key].append(block)
         chunks = []
         for group in groups.values():
             # XLSX first-row context is copied verbatim with original cell refs.
-            context = self._neighbors(group[0], blocks) if group[0].sheet is not None else []
-            context = [b for b in context if b not in group]
+            first = group[0]
+            if first.sheet is not None and first.cell:
+                sheet, row = (first.document_id, first.sheet), int(re.search(r"\d+$", first.cell).group())
+                members = {b.evidence_id for b in group}
+                context = [b for b in rows[(*sheet, row)] if b.evidence_id not in members]
+                if row != first_rows[sheet]:
+                    context.extend(rows[(*sheet, first_rows[sheet])])
+            else:
+                context = self._neighbors(first, blocks) if first.sheet is not None else []
+                context = [b for b in context if b not in group]
             prefix, prefix_refs, prefix_spans, context_cut = "", [], [], False
             for block in context:
                 available = MAX_NEIGHBOR_BYTES - len(prefix.encode("utf-8")) - (1 if prefix else 0)

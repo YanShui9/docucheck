@@ -8,6 +8,46 @@ from backend.app.evidence.retrieval import Retriever
 PACK = Path(__file__).resolve().parents[2] / "examples/dev-pack-001"
 
 
+def sheet_repository(rows):
+    from backend.app.evidence.models import Document
+    from backend.app.evidence.repository import EvidenceRepository
+    from backend.app.parsing import EvidenceBlock, ParseResult
+
+    blocks = tuple(EvidenceBlock(f"{sheet}-{col}{row}", "table.xlsx", f"{sheet}{col}{row}",
+                                sheet=sheet, cell=f"{col}{row}")
+                   for sheet in ("报价", "附件") for row in range(1, rows + 1) for col in ("A", "B"))
+    parsed = ParseResult("table.xlsx", "test", "complete", blocks,
+                         total_sheets=2, processed_sheets=("报价", "附件"))
+    return EvidenceRepository("case", 1, [Document("table.xlsx", "hash", "quote", "vendor-a", None, parsed)])
+
+
+@pytest.mark.parametrize("rows", [10, 30])
+def test_xlsx_chunking_scans_authorized_blocks_a_constant_number_of_times(rows):
+    class Counted(list):
+        scans = 0
+
+        def __iter__(self):
+            self.scans += 1
+            return super().__iter__()
+
+    repo = sheet_repository(rows)
+    authorized = Counted(repo.blocks)
+    chunks = Retriever(repo)._chunks(authorized)
+    assert len(chunks) == rows * 2
+    assert authorized.scans <= 3
+
+
+def test_xlsx_chunk_headers_preserve_source_order_offsets_and_authorized_subset():
+    repo = sheet_repository(2)
+    # Only B1 and row 2 of one sheet are authorized. A1/other-sheet text must not leak.
+    blocks = [b for b in repo.blocks if b.sheet == "报价" and b.cell != "A1"]
+    chunks = Retriever(repo)._chunks(blocks)
+    assert [chunk.text for chunk in chunks] == ["报价B1", "报价B1\n报价A2\n报价B2"]
+    assert list(chunks[1].evidence_refs) == [b.evidence_id for b in blocks]
+    assert [(s.evidence_id, s.start, s.end) for s in chunks[1].spans] == [
+        (b.evidence_id, 0, len(b.text)) for b in blocks]
+
+
 def test_alias_retrieval_recalls_requirement_and_both_conflicting_sources():
     repo = load_case(PACK)
     retriever = Retriever(repo)
