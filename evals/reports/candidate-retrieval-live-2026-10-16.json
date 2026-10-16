@@ -1,0 +1,103 @@
+{
+  "application_source_commit": "2e862acd52084e6cd5ec4dd2fc4fdbd0bf2f7e41",
+  "budget": {
+    "automatic_retries": false,
+    "held_calls": 0,
+    "known_cumulative_calls": 104,
+    "prior_known_calls": 102,
+    "remaining_calls": 56,
+    "total_limit": 160
+  },
+  "client_date": "2026-10-16",
+  "data_class": "author_seen_synthetic_development",
+  "fixture": {
+    "answer_number_starts_at_utf8_byte_zero_based": 1014,
+    "construction": {
+      "A1": "供应商报价说明",
+      "A2_prefix": "归档说明。",
+      "A2_prefix_repeat": 65,
+      "A2_suffix": "本次采购的工业标签纸数量为1379卷。",
+      "sheet": "报价"
+    },
+    "filename": "tail-quotation.xlsx",
+    "index_chunk_count": 2,
+    "one_full_source_span_for_target": true,
+    "source_sha256": "a061028f89b64cb5fcd78c9fdf6dd706c08d72f44ac0ccc41c3badf94fd5d32f",
+    "target_cell_utf8_bytes": 1024
+  },
+  "independent_cases": 0,
+  "kind": "production_xlsx_tail_window_live_regression",
+  "limitations": [
+    "one_seen_XLSX_cell_only",
+    "no_PDF_parser_tail_acceptance",
+    "no_item_binding_isolation_acceptance",
+    "no_vector_unavailable_live_fault_injection",
+    "not_overall_retrieval_accuracy_or_hybrid_comparison",
+    "not_independent_quality_or_ten_minute_browser_demo",
+    "no_production_release_or_restore_exercise"
+  ],
+  "preparation": {
+    "application_changes": false,
+    "corrected_before_model_submission": true,
+    "original_and_expected_answer_unchanged": true,
+    "reason": "test setup used invalid role then invalid supplier handle",
+    "rejected_request_status": 422,
+    "rejected_uploads": 2
+  },
+  "runtime": {
+    "authentication": "owned local OIDC authorization-code PKCE",
+    "background_roles": 4,
+    "local_only": true,
+    "migration": "0018_upload_intents",
+    "python_files_verified_per_role": 129
+  },
+  "schema_version": 1,
+  "task": {
+    "checks": {
+      "all_citations_point_to_target_cell": true,
+      "answer_contains_expected": true,
+      "completed_evidence": true,
+      "hybrid_not_degraded": true,
+      "known_usage": true,
+      "prefix_and_tail_saved": true,
+      "source_readback": true,
+      "tail_citation": true,
+      "two_call_search_then_answer": true
+    },
+    "citation": {
+      "location": "报价!A2",
+      "quote": "本次采购的工业标签纸数量为1379卷。",
+      "role": "quote",
+      "start_char": 325,
+      "supplier": "tail-supplier"
+    },
+    "kind": "evidence",
+    "mode": "standard",
+    "passed": true,
+    "question": "请检索供应商 tail-supplier 的报价资料：本次采购的工业标签纸数量是多少？请给出原文依据，不做完整审查。",
+    "retrieval": {
+      "complete_coverage": false,
+      "degraded_reason": null,
+      "retrieval_mode": "hybrid"
+    },
+    "status": "completed",
+    "target_cell_windows": [
+      {
+        "start_char": 0,
+        "utf8_bytes": 798
+      },
+      {
+        "start_char": 266,
+        "utf8_bytes": 226
+      }
+    ]
+  },
+  "usage": {
+    "actual_bill": null,
+    "actual_input_tokens": 4090,
+    "actual_output_tokens": 151,
+    "local_embedding_requests_counted": false,
+    "new_model_calls": 2,
+    "unknown_usage_calls": 0
+  }
+}
