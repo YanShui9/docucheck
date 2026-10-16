@@ -4,7 +4,12 @@ import json
 
 from langchain_core.messages import HumanMessage, SystemMessage
 
-from .context import MEMORY_NOTICE, _memory_payload, fit_decision_history
+from .context import (
+    MEMORY_NOTICE,
+    _memory_payload,
+    fit_decision_history,
+    readable_history,
+)
 from .policy import input_bound
 
 
@@ -31,7 +36,7 @@ def compact_schema(schema):
 def assemble_assistant_context(guidance, question, history, layers, schemas, budget, *, tail=(), history_available=False):
     payload, already_omitted = _memory_payload(layers)
     total_entries = len(payload["summary"]["entries"]) + already_omitted
-    recent = history[-8:]
+    recent = readable_history(history[-8:], enabled=history_available)
     limit = min(budget.max_prompt, budget.context_window - 1536)
     while True:
         notice = MEMORY_NOTICE if history_available else MEMORY_NOTICE.replace("需要完整旧内容时按 message_id 调用 read_conversation_history；", "")

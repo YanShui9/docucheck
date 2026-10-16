@@ -12,7 +12,7 @@ from collections import Counter
 from collections.abc import Callable
 from copy import deepcopy
 from dataclasses import asdict
-from typing import Literal, TypedDict
+from typing import TypedDict
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 from langgraph.graph import END, START, StateGraph
@@ -43,8 +43,14 @@ from ..evidence.repository import digest
 from ..extraction.fields import _batches
 from ..providers.base import ProviderError
 from ..providers.chat_model import validate_response
-from .context import MEMORY_NOTICE, _memory_payload, fit_decision_history
+from .context import (
+    MEMORY_NOTICE,
+    _memory_payload,
+    fit_decision_history,
+    readable_history,
+)
 from .policy import MODE_LIMITS, Budget, RunStopped, input_bound
+from .tools import HistoryRead
 
 MAX_RESPONSE_BYTES = 64_000
 MAX_SOURCE_SECTION_CHARS = 16_000
@@ -130,10 +136,8 @@ class SourceArgs(EmptyArgs):
     evidence_refs: list[str] = Field(min_length=1, max_length=8)
 
 
-class HistoryArgs(EmptyArgs):
-    message_ids: list[str] = Field(min_length=1, max_length=4)
-    part: Literal["question", "answer"]
-    start_char: int = Field(default=0, ge=0, le=1_000_000)
+class HistoryArgs(HistoryRead):
+    """Use the same public history contract as the compatibility workflow."""
 
 
 class DynamicState(TypedDict):
@@ -474,7 +478,7 @@ class DynamicAgent:
                 payload["preferences"] = {}
             else:
                 break
-        recent = self.history[-8:]
+        recent = readable_history(self.history[-8:], enabled=self.history_reader is not None)
         messages = [messages[0], *(m for turn in recent for m in turn), messages[-1]]
         return fit_decision_history(messages, self.schemas, max_prompt=budget.max_prompt,
                                     context_window=budget.context_window, output_cap=512)[0]

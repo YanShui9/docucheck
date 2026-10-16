@@ -262,7 +262,13 @@ def test_clarification_reply_survives_retry_completion_and_historical_read_is_au
         def decide(self, inputs, tools, **kwargs):
             if not self.inspected:
                 self.inspected = True
-                assert any(m.content == reply_text for m in inputs)
+                # The complete original reply and its readback handle travel
+                # together; message.id alone is not sent to the provider.
+                import json
+
+                historical = [json.loads(m.content.removeprefix("HISTORY_DATA=")) for m in inputs
+                              if m.type == "human" and m.content.startswith("HISTORY_DATA=")]
+                assert {"message_id": reply_id, "question": reply_text} in historical
                 return _call(
                     "read_conversation_history",
                     {"message_ids": [reply_id], "part": "question"},

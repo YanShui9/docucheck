@@ -388,7 +388,7 @@ class AgentSession:
                 self.schemas, budget.context_window, self.focus,
                 self.pending_clarification, memory_layers=self.memory_layers,
                 context_audit=self.context_audit, max_prompt=budget.max_prompt,
-                output_cap=512), "status": "running", "answer": "", "error": None,
+                output_cap=512, history_available=self.tools.history_reader is not None), "status": "running", "answer": "", "error": None,
                 "repairs": 0, "tool_repairs": 0, "next_node": "decide"},
                 {"recursion_limit": 2 * self.max_decisions + 4,
                                                         "callbacks": []})

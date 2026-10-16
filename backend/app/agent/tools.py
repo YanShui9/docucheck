@@ -3,7 +3,7 @@ from collections.abc import Callable
 from dataclasses import asdict
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from ..evidence.repository import EvidenceRepository
 from ..evidence.retrieval import Retriever
@@ -37,9 +37,19 @@ class Supplier(Empty):
 
 
 class HistoryRead(Empty):
-    message_ids: list[str] = Field(min_length=1, max_length=4)
+    model_config = ConfigDict(extra="forbid", strict=True, json_schema_extra={"allOf": [{
+        "if": {"required": ["start_char"], "properties": {"start_char": {"minimum": 1}}},
+        "then": {"properties": {"message_ids": {"maxItems": 1}}},
+    }]})
+    message_ids: list[str] = Field(min_length=1, max_length=4, json_schema_extra={"uniqueItems": True})
     part: Literal["question", "answer"]
-    start_char: int = Field(default=0, ge=0)
+    start_char: int = Field(default=0, ge=0, le=1_000_000)
+
+    @model_validator(mode="after")
+    def valid_page(self):
+        if len(set(self.message_ids)) != len(self.message_ids) or (self.start_char and len(self.message_ids) != 1):
+            raise ValueError("history_scope")
+        return self
 
 
 class Extract(Supplier):

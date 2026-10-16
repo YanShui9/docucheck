@@ -16,6 +16,51 @@ from backend.app.evidence.repository import EvidenceRepository
 from backend.tests.test_assistant_agent import Decisions
 
 
+def test_history_handles_survive_provider_serialization_without_mutating_history():
+    from langchain_openai.chat_models.base import _convert_message_to_dict
+
+    history = [(HumanMessage(content="之前要求黑色", id="past-question"), AIMessage(content="已记录"))]
+    provider = Decisions(("chat", {"answer": "你之前要求黑色。"}))
+    assistant = AssistantAgent(EvidenceRepository.empty("case", "snap"), provider,
+                               history=history, history_reader=lambda *a, **kw: [])
+    assert assistant.ask("之前什么颜色")["status"] == "completed"
+    wire = [_convert_message_to_dict(message) for message in provider.messages[0]]
+    assert any("past-question" in message.get("content", "") and "之前要求黑色" in message["content"] for message in wire)
+    assert history[0][0].content == "之前要求黑色"
+    # Removing the whole turn must also remove its handle.
+    assistant.budget.max_prompt = input_bound(assistant._messages("继续"), assistant.schemas) - 1
+    trimmed = assistant._messages("继续")
+    assert "past-question" not in json.dumps([_convert_message_to_dict(message) for message in trimmed], ensure_ascii=False)
+    assert assistant.context["history_turns_omitted"] == 1
+
+
+@pytest.mark.parametrize("args", [
+    {"message_ids": ["old", "old"], "part": "question"},
+    {"message_ids": ["old", "older"], "part": "answer", "start_char": 1},
+])
+def test_history_tool_contracts_reject_invalid_pagination_before_reading(args):
+    from pydantic import ValidationError
+
+    from backend.app.agent.dynamic import HistoryArgs
+    from backend.app.agent.tools import HistoryRead
+
+    for model in (HistoryArgs, HistoryRead):
+        assert not Draft202012Validator(model.model_json_schema()).is_valid(args)
+        with pytest.raises(ValidationError):
+            model.model_validate(args)
+
+
+def test_history_tool_contracts_allow_distinct_messages_and_single_message_continuation():
+    from backend.app.agent.dynamic import HistoryArgs
+    from backend.app.agent.tools import HistoryRead
+
+    for args in ({"message_ids": ["old", "older"], "part": "question"},
+                 {"message_ids": ["old"], "part": "answer", "start_char": 30}):
+        for model in (HistoryArgs, HistoryRead):
+            Draft202012Validator(model.model_json_schema()).validate(args)
+            assert model.model_validate(args).model_dump() == {"start_char": 0, **args}
+
+
 def phone_requirements():
     # New synthetic fixture based on the reported seven generic, unspecified headings.
     entries = [
