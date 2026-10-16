@@ -81,7 +81,7 @@ class HybridRetriever(Retriever):
         hits = Retriever.search(self, query, supplier, limit, item_id=item_id)
         self.repository.read(list(dict.fromkeys(ref for h in hits for ref in h["evidence_refs"])))
         self.revalidate()
-        self.last_diagnostics = self._item_diagnostics(item_id, reason)
+        self.last_diagnostics["degraded_reason"] = reason
         return [h | {"retrieval_mode": "bm25", "degraded_reason": reason, "channels": ["bm25"]} for h in hits]
 
     def search(self, query: str, supplier: str | None = None, limit: int = 12,
@@ -167,7 +167,7 @@ class HybridRetriever(Retriever):
                 if str(exc) not in {"embedding_service_unavailable", "embedding_model_not_installed"}:
                     raise
                 reason = str(exc)
-        if item_id is not None and reason:
+        if reason:
             return self._scope_fallback(query, supplier, limit, item_id, reason)
         self.revalidate()  # Recheck after network waits, before any source disclosure.
         ranks = {}

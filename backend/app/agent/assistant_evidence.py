@@ -27,22 +27,39 @@ class ReadSourceArgs(Contract):
 
 def hit_windows(retriever, hits, *, item_id=None):
     targets = []
+    ends = {}
     for hit in hits:
         spans = hit.get("source_spans")
         if spans:
             for span in spans:
-                if span["evidence_id"] not in hit["evidence_refs"] or type(span["start"]) is not int or span["start"] < 0:
+                if (span["evidence_id"] not in hit["evidence_refs"] or type(span["start"]) is not int or span["start"] < 0
+                        or type(span["end"]) is not int or span["end"] <= span["start"]):
                     raise ValueError("retrieval_source_span")
-                targets.append((span["evidence_id"], span["start"]))
+                key = (span["evidence_id"], span["start"])
+                targets.append(key)
+                ends[key] = max(ends.get(key, 0), span["end"])
         else:
             targets.extend((ref, 0) for ref in hit["evidence_refs"])
     targets = list(dict.fromkeys(targets))[:12]
     if not targets:
         return []
+    scope = {"item_id": item_id} if item_id is not None else {}
     if all(start == 0 for _, start in targets):
-        return retriever.read_source([ref for ref, _ in targets], **({"item_id": item_id} if item_id is not None else {}))
-    return [row for ref, start in targets for row in retriever.read_source(
-        [ref], start_char=start, **({"item_id": item_id} if item_id is not None else {}))]
+        rows = retriever.read_source([ref for ref, _ in targets], **scope)
+    else:
+        rows = [row for ref, start in targets for row in retriever.read_source([ref], start_char=start, **scope)]
+    seen = set(targets)
+    # Index chunks can exceed one source window. Follow only their declared
+    # spans, within the existing 12-window observation bound; never scan a file.
+    for row in rows:
+        end = ends.get((row["evidence_id"], row["start_char"]), 0)
+        next_char = row["next_char"]
+        key = (row["evidence_id"], next_char)
+        if next_char is not None and next_char < end and key not in seen and len(rows) < 12:
+            seen.add(key)
+            ends[key] = end
+            rows.extend(retriever.read_source([row["evidence_id"]], start_char=next_char, **scope))
+    return rows
 
 
 def observed(row):

@@ -333,6 +333,34 @@ def test_long_source_tail_survives_persistence_and_rejects_offset_tampering(dyna
     assert client.get(url).status_code == 409
 
 
+@pytest.mark.parametrize('dynamic_case', ['背景说明。' * 65 + '采购数量777台。'], indirect=True)
+def test_hybrid_tail_windows_are_persisted_and_revalidated(dynamic_case):
+    from backend.app.db.agent_snapshot import load_agent_snapshot
+    from backend.tests.test_hybrid_retrieval import setup
+
+    client, engine, case, snapshot, _ = dynamic_case
+    repo = load_agent_snapshot(engine, case, snapshot)
+    block = next(b for b in repo.blocks if b.supplier == 'vendor-a')
+    receipt = send(dynamic_case, '甲供应商采购数量')
+
+    def factory(engine, protected_repo, claim):
+        retriever, _, _ = setup(protected_repo)
+        retriever.close = lambda: None
+        return retriever
+
+    provider = Decisions(('search_evidence', {'query': '777', 'supplier': 'vendor-a', 'limit': 1}),
+        ('answer_evidence', {'citations': [{'evidence_id': block.evidence_id, 'quote': '采购数量777台。'}]}))
+    report = execute_run(engine, receipt['run_id'], receipt['attempt_id'], provider,
+                         heartbeat_interval_seconds=60, retriever_factory=factory)
+    assert report.status == 'completed', report
+    response = client.get(f"/api/v1/agent-runs/{receipt['run_id']}/assistant-result")
+    assert response.status_code == 200, response.text
+    payload = response.json()['result']
+    assert len(payload['source_windows']) == 2
+    assert payload['citations'][0]['start_char'] == block.text.index('采购数量777台。')
+    assert payload['retrieval']['retrieval_mode'] == 'hybrid'
+
+
 def test_legacy_prefix_evidence_payload_remains_readable(dynamic_case):
     from backend.app.db.agent_snapshot import load_agent_snapshot
     from backend.app.db.models import agent_runs, assistant_runs

@@ -59,6 +59,38 @@ def setup(repo=None):
     return HybridRetriever(repo, "project", model, store, receipt=receipt), model, store
 
 
+@pytest.mark.parametrize("degraded", [None, "unavailable", "unready"])
+@pytest.mark.parametrize("table", [False, True])
+def test_tail_hit_reaches_first_source_observation_and_fallback_matches_lexical(degraded, table):
+    from backend.app.agent.assistant_evidence import hit_windows
+    from backend.app.evidence.models import Document
+    from backend.app.evidence.retrieval import Retriever
+    from backend.app.parsing import EvidenceBlock, ParseResult
+
+    original = "开头说明。" * 65 + "采购数量777台。"
+    location = {"sheet": "报价", "cell": "A1"} if table else {"page_idx": 0}
+    parsed = ParseResult("tail.pdf", "test", "complete",
+        (EvidenceBlock("raw", "tail.pdf", original, **location),), total_pages=1, processed_pages=(0,))
+    repo = EvidenceRepository("case", 1, [Document("tail.pdf", "hash", "spec", "vendor-a", None, parsed)])
+    retriever, _, store = setup(repo)
+    if degraded == "unavailable":
+        store.fail = True
+    elif degraded == "unready":
+        retriever.receipt = None
+    hits = retriever.search("777", supplier="vendor-a", limit=1)
+    windows = hit_windows(retriever, hits)
+    assert any("777" in row["text"] for row in windows)
+    for row in windows:
+        assert original[row["start_char"]:row["start_char"] + len(row["text"])] == row["text"]
+        assert len(row["text"].encode()) <= 800
+    if degraded:
+        lexical = Retriever(repo).search("777", supplier="vendor-a", limit=1)
+        assert [(h["text"], h["source_spans"]) for h in hits] == [(h["text"], h["source_spans"]) for h in lexical]
+        assert hits[0]["degraded_reason"] == ("vector_service_unavailable" if degraded == "unavailable" else "vector_index_not_ready")
+    else:
+        assert len(windows) == 2
+
+
 def test_semantic_only_hit_reads_original_source_and_is_used_by_agent_tool():
     retriever, model, store = setup()
     hits = retriever.search("什么时候能送到", supplier="vendor-a", limit=1)
