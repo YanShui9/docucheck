@@ -1,0 +1,103 @@
+{
+  "acceptance": {
+    "api_browser_JSON_XLSX_content_consistent": true,
+    "browser_native_download_to_disk": false,
+    "browser_upload_parse": true,
+    "candidate_saved_then_explicitly_confirmed": true,
+    "explicit_xlsx_ranges_confirmed": true,
+    "formal_checks": 4,
+    "formal_states": {
+      "不满足": 2,
+      "满足": 2
+    },
+    "historical_phone_replay": {
+      "all_nonformal": true,
+      "historical_label_visible": true,
+      "manual_checks": 9,
+      "new_model_calls": 0
+    },
+    "qa_hybrid_without_degradation": true,
+    "qa_item_id": "apple",
+    "qa_windows_within_confirmed_scope": true,
+    "reload_and_run_history_replay": true,
+    "report_reread_after_rejection": true,
+    "source_panel_opens_target_cell": true,
+    "ten_minute_continuous_timed_rehearsal": false,
+    "unsupported_correction_rejected_and_data_unchanged": true
+  },
+  "application_source_commit": "2e862acd52084e6cd5ec4dd2fc4fdbd0bf2f7e41",
+  "authentication": "owned local OIDC browser authorization-code PKCE",
+  "background_roles": 4,
+  "budget": {
+    "automatic_retries": false,
+    "held_calls": 0,
+    "known_cumulative_calls": 113,
+    "prior_known_calls": 104,
+    "remaining_calls": 47,
+    "total_limit": 160
+  },
+  "client_date": "2026-10-16",
+  "data_class": "author_seen_synthetic_development",
+  "download_diagnosis": {
+    "browser_generated_export_blobs_verified": true,
+    "export_files_saved_by_reading_generated_browser_blobs": true,
+    "independent_plaintext_blob_control_also_failed": true,
+    "native_download_cancelled": true,
+    "project_download_defect_proven": false
+  },
+  "fixture": {
+    "byte_identical_to_existing_fixture": true,
+    "criteria": 4,
+    "items": 2,
+    "path": "examples/showcase/synthetic-mixed-quote.xlsx",
+    "sha256": "f59ae7452c24bbeef961c1ac6755998e499b9e22436c5bfa4ae0c3234d27acc6"
+  },
+  "frontend_source_unchanged": true,
+  "independent_cases": 0,
+  "kind": "bounded_browser_workflow_acceptance",
+  "limitations": [
+    "not_clean_machine_acceptance",
+    "not_continuous_ten_minute_timing",
+    "native_download_requires_normal_browser_confirmation",
+    "historical_manual_states_not_new_v12_body_recognition",
+    "no_new_provider_failure_or_retry_exercise",
+    "not_full_12_pack_remeasurement_or_independent_accuracy",
+    "no_backup_restore_or_production_acceptance",
+    "maintainer_explanation_and_independent_operation_not_accepted"
+  ],
+  "local_only": true,
+  "migration": "0018_upload_intents",
+  "new_browser_tasks": [
+    {
+      "kind": "changes",
+      "mode": "standard",
+      "model_calls": 3,
+      "purpose": "candidate_generation",
+      "status": "completed"
+    },
+    {
+      "kind": "evidence",
+      "mode": "standard",
+      "model_calls": 2,
+      "purpose": "source_qa",
+      "status": "completed"
+    },
+    {
+      "kind": "review",
+      "mode": "standard",
+      "model_calls": 4,
+      "purpose": "formal_review",
+      "status": "completed"
+    }
+  ],
+  "python_files_verified_per_role": 129,
+  "schema_version": 1,
+  "usage": {
+    "actual_bill": null,
+    "actual_input_tokens": 26001,
+    "actual_output_tokens": 1578,
+    "local_embedding_requests_counted": false,
+    "new_model_calls": 9,
+    "unknown_usage_calls": 0
+  }
+}
