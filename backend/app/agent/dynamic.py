@@ -38,7 +38,12 @@ from ..criteria.item_bindings import (
     review_bindings,
 )
 from ..criteria.models import ChecklistDefinition, Criterion
-from ..criteria.validation import rule_supported, validate_definition
+from ..criteria.validation import (
+    compact,
+    rule_supported,
+    source_span,
+    validate_definition,
+)
 from ..evidence.repository import digest
 from ..extraction.fields import _batches
 from ..providers.base import ProviderError
@@ -49,6 +54,7 @@ from .context import (
     fit_decision_history,
     readable_history,
 )
+from .diagnostics import DYNAMIC_REJECTION_CODES as REJECTION_CODES
 from .policy import MODE_LIMITS, Budget, RunStopped, input_bound
 from .tools import HistoryRead
 
@@ -90,14 +96,6 @@ currency、per_unit、tax_basis、calendar、start_event只填写原文支持的
 criterion_id和item_id逐字使用本批清单ID。原文没有某指标事实时省略，尤其不要从其他条款猜测人工指标。
 start_event保留原文完整起算事件；不确定的可选口径填null，由服务端从原文验证，不自行改写。
 """
-REJECTION_CODES = frozenset({
-    "candidate_scope", "candidate_criterion", "unknown_criterion", "unknown_item",
-    "supplier_scope", "evidence_scope", "evidence_relationship", "evidence_quote",
-    "fact_criterion", "fact_item", "fact_value", "fact_unit", "fact_currency",
-    "fact_per_unit", "fact_tax_basis", "fact_calendar", "fact_start_event",
-})
-
-
 def _candidate_repair_feedback(diagnostics: list[dict]) -> str:
     """Keep complete untrusted diagnostics within a small UTF-8 prompt budget."""
     payload = {"kind": "rejected_fact_candidates", "candidates": [],
@@ -116,6 +114,31 @@ def _fact_source_relationships(fact: dict) -> set[tuple[str, tuple[str, ...], tu
     """Keep each material group attached to the claim that originally cited it."""
     primary, *materials = fact_source_groups(fact)
     return {(fact["criterion_id"], primary, group) for group in [(), *materials]}
+
+
+def _anchor_repair_fact(candidate: dict, definition, repo, supplier, context, rule_version) -> dict:
+    """Prove only pure bound identity refs can be removed before offering repair.
+
+    This is an eligibility/source-preservation check, never a persisted fact.
+    The model must return a new candidate and pass normal validation afterward.
+    """
+    if context is None or candidate.get("material_sources"):
+        raise ValueError("evidence_relationship")
+    entry = context.bindings.assert_fact_scope(candidate["item_id"], candidate["evidence_refs"], supplier)
+    item = next(item for item in definition.items if item.item_id == candidate["item_id"])
+    blocks = repo.read(candidate["evidence_refs"])
+    if compact(candidate["quote"]) != compact(" ".join(b.text for b in blocks)):
+        raise ValueError("evidence_quote")
+    pure_anchors = {b.evidence_id for b in blocks if b.evidence_id in entry.anchor_refs
+                    and pure_identity_block(b.text, item.name, entry.supplier_sku)}
+    remaining = [b for b in blocks if b.evidence_id not in pure_anchors]
+    if not pure_anchors or not remaining:
+        raise ValueError("evidence_relationship")
+    refs = [b.evidence_id for b in remaining]
+    ordered, text = source_span(repo, refs, remaining[0].text)
+    projected = candidate | {"evidence_refs": [b.evidence_id for b in ordered], "quote": text}
+    validate_fact(projected, definition, repo, supplier, rule_version=rule_version, item_bindings=context)
+    return projected
 
 
 class DynamicFactCandidates(BaseModel):
@@ -754,10 +777,26 @@ class DynamicAgent:
                                                                    diagnostics=diagnostics)
                         repairable = {"fact_criterion", "fact_value", "fact_unit", "fact_currency",
                                       "fact_per_unit", "fact_tax_basis", "fact_calendar", "fact_start_event"}
-                        if rejections and set(rejections) <= repairable:
+                        repair_sources = None
+                        if rejections:
                             progress["initial_rejection_codes"] = dict(rejections)
+                        if rejections and set(rejections) <= repairable | {"evidence_relationship"}:
+                            repair_sources = deepcopy(raw)
+                            try:
+                                for diagnostic in diagnostics:
+                                    if diagnostic["error_code"] == "evidence_relationship":
+                                        index = diagnostic["candidate_index"] - 1
+                                        self._check(budget)
+                                        projected = _anchor_repair_fact(raw["facts"][index], self.definition,
+                                            self.repo, supplier, self.item_bindings, self.rule_version)
+                                        self._check(budget)
+                                        repair_sources["facts"][index] = projected
+                                        diagnostic["repair_evidence_refs"] = projected["evidence_refs"]
+                            except ValueError:
+                                repair_sources = None
+                        if repair_sources is not None:
                             by_id = {c.criterion_id: c for c in self.definition.criteria}
-                            required_sources = {relationship for f in raw["facts"]
+                            required_sources = {relationship for f in repair_sources["facts"]
                                                 if f["criterion_id"] in by_id and by_id[f["criterion_id"]].rule.type != "manual"
                                                 for relationship in _fact_source_relationships(f)}
                             first_validated = validated
@@ -768,6 +807,7 @@ class DynamicAgent:
                                 "省略条数由omitted_count明确标记，仍须重新核对完整原文批次。"
                                 "重新核对前述rule.type对应的value类型与unit约定；不要把指标名称当单位，或把人工结论当原文事实。"
                                 "不要用删除数值指标规避错误。"
+                                "若旧候选带repair_evidence_refs，只可移除混入的纯品目锚点，保留指定事实来源，按原文重新填写quote。"
                                 + ("不得删除material_sources独立来源组规避错误。" if material_sources else "")
                                 + "没有对应原文的人工指标可省略，仍交由人工确认。"))
                             candidate_data = HumanMessage(content=_candidate_repair_feedback(diagnostics))
@@ -806,7 +846,9 @@ class DynamicAgent:
                         facts[fact["fact_id"]] = fact
                     event("tool", tool="review_checklist", status="completed" if not rejected else "rejected",
                           batch_id=batch_id, supplier=supplier, ordinal=ordinal, complete=not rejected,
-                          error="candidate_invalid" if rejected else None)
+                          error="candidate_invalid" if rejected else None, rejected_count=rejected,
+                          initial_rejection_codes=progress.get("initial_rejection_codes", {}),
+                          rejection_codes=dict(rejections))
                     if self.cache_save and not cached and not rejected:
                         self._check(budget)
                         self.cache_save(batch_id, input_digest, raw)

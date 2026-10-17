@@ -14,11 +14,20 @@ SAFE_COVERAGE_TYPES = frozenset({
     "candidate_invalid_scope", "candidate_invalid_uncovered",
     "unverified_source", "unverified_value", "memory_coverage_incomplete",
 })
+DYNAMIC_REJECTION_CODES = frozenset({
+    "candidate_scope", "candidate_criterion", "unknown_criterion", "unknown_item",
+    "supplier_scope", "evidence_scope", "evidence_relationship", "evidence_quote",
+    "fact_criterion", "fact_item", "fact_value", "fact_unit", "fact_currency",
+    "fact_per_unit", "fact_tax_basis", "fact_calendar", "fact_start_event",
+    "candidate_invalid", "item_binding_scope", "item_binding_source_changed",
+    "material_sources_rule", "material_sources_overlap", "material_source_criterion", "material_source_item",
+})
+_TOOLS = frozenset(DEFINITIONS) | {"get_checklist", "propose_checklist", "review_checklist", "read_sources", "batch_cache"}
 _ERRORS = ProviderError._CODES | frozenset({
     "invalid_tool_result", "evidence_scope", "supplier_scope", "fact_set_scope",
     "unknown_tool", "answer_invalid", "decision_budget", "input_budget",
     "output_budget", "model_budget", "tool_budget", "deadline", "cancelled",
-    "memory_context_changed", "history_scope",
+    "memory_context_changed", "history_scope", "candidate_invalid", "cache_invalid",
 })
 _DETAILS = SAFE_VALIDATION_DETAILS | ProviderError._DETAILS | {
     "schema_validation", "other_validation",
@@ -63,10 +72,18 @@ def safe_trace_events(events) -> list[dict]:
                     summary[key] = event[key]
             if isinstance(event.get("policy_override"), str) and event["policy_override"] in DEFINITIONS:
                 summary["policy_override"] = event["policy_override"]
-            if type(event.get("structured_repair")) is bool:
-                summary["structured_repair"] = event["structured_repair"]
+            for key in ("structured_repair", "semantic_repair"):
+                if type(event.get(key)) is bool:
+                    summary[key] = event[key]
         elif kind == "tool":
-            summary["tool"] = event.get("tool") if isinstance(event.get("tool"), str) and event["tool"] in DEFINITIONS else "other"
+            summary["tool"] = event.get("tool") if isinstance(event.get("tool"), str) and event["tool"] in _TOOLS else "other"
+            for key in ("ordinal", "rejected_count"):
+                if _integer(event.get(key)):
+                    summary[key] = event[key]
+            for key in ("initial_rejection_codes", "rejection_codes"):
+                if isinstance(event.get(key), dict):
+                    summary[key] = {code: event[key][code] for code in sorted(DYNAMIC_REJECTION_CODES)
+                                    if code in event[key] and _integer(event[key][code])}
         else:
             summary["action"] = "submit_answer" if event.get("action") == "submit_answer" else "other"
             summary["reason"] = ("full_review_evaluated" if event.get("reason") == "full_review_evaluated"
