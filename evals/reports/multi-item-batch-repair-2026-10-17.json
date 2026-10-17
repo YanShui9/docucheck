@@ -1,0 +1,144 @@
+{
+  "schema_version": 1,
+  "kind": "bounded_multi_item_batch_repair_acceptance",
+  "client_date": "2026-10-17",
+  "source_commit": "129cbbe115ab278ad22cfa50daaa63dc846bd732",
+  "worker_source_files": 129,
+  "deployment_scope": "worker_only_api_and_other_roles_unchanged",
+  "migration": "0018_upload_intents",
+  "data_class": "author_seen_synthetic_development",
+  "independent_cases": 0,
+  "prior_failure": {
+    "run_id": "7ebbee647b8b498f8f10f7b8879cf6f4",
+    "apple_rejection_codes": {
+      "evidence_relationship": 2
+    },
+    "raw_candidates_available": false,
+    "reproducer": "reconstructed_pure_confirmed_anchor_contamination_not_provider_replay"
+  },
+  "repair_contract": {
+    "semantic_repair_attempts_unchanged": true,
+    "only_pure_confirmed_identity_anchors_removable": true,
+    "remaining_sources_and_original_values_must_validate": true,
+    "repair_must_preserve_fact_sources": true,
+    "cross_business_row_and_out_of_scope_repairs_allowed": false,
+    "unknown_outcome_replay_allowed": false,
+    "safe_trace_contains_candidate_values_or_source_text": false
+  },
+  "offline": {
+    "targeted_passed": 56,
+    "new_regression_cases": 9,
+    "full_passed": 2083,
+    "full_skipped": 52,
+    "network_attempts": 0,
+    "dependencies_passed": true,
+    "ruff_passed": true
+  },
+  "live": {
+    "run_id": "156b6be044424cc5825de286e14e7db0",
+    "status": "completed",
+    "mode": "standard",
+    "model_id": "deepseek-flash",
+    "entry": "owned_OIDC_HTTP_to_Outbox_Celery_MySQL",
+    "fresh_run": true,
+    "processed_batches": 2,
+    "total_batches": 2,
+    "uncached_batches": 2,
+    "formal_checks": 4,
+    "no_retry_endpoint_called": true,
+    "human_fact_corrections": 0,
+    "semantic_repair_exercised": false,
+    "checks": [
+      {
+        "item_id": "apple",
+        "name": "苹果采购数量",
+        "business_status": "满足",
+        "processing_status": "complete",
+        "is_formal": true,
+        "source_cells": [
+          "A3",
+          "B3"
+        ]
+      },
+      {
+        "item_id": "apple",
+        "name": "苹果含税单价",
+        "business_status": "满足",
+        "processing_status": "complete",
+        "is_formal": true,
+        "source_cells": [
+          "A4",
+          "B4"
+        ]
+      },
+      {
+        "item_id": "tshirt",
+        "name": "T恤采购数量",
+        "business_status": "不满足",
+        "processing_status": "complete",
+        "is_formal": true,
+        "source_cells": [
+          "A8",
+          "B8"
+        ]
+      },
+      {
+        "item_id": "tshirt",
+        "name": "T恤含税单价",
+        "business_status": "不满足",
+        "processing_status": "complete",
+        "is_formal": true,
+        "source_cells": [
+          "A9",
+          "B9"
+        ]
+      }
+    ],
+    "json_xlsx_consistent": true,
+    "source_cells_revalidated": true
+  },
+  "usage": {
+    "new_model_calls": 4,
+    "actual_input_tokens": 13696,
+    "actual_output_tokens": 752,
+    "actual_bill": null
+  },
+  "budget": {
+    "limit": 160,
+    "prior_known_calls": 121,
+    "known_calls": 125,
+    "remaining_calls": 35,
+    "reserved_for_task": 16,
+    "held_calls": 0,
+    "unknown_usage_calls": 0,
+    "automatic_retries": false
+  },
+  "downloads": {
+    "json": {
+      "bytes": 11080,
+      "sha256": "4340e4dd524c25107a74d59739db04cdd61e67d2f4f445e440aca3d374e5aa56"
+    },
+    "xlsx": {
+      "bytes": 11147,
+      "sha256": "09c9e4316267f15793fc52702bc44e6f2bf1971e8611bad7a55db46581c60d3b"
+    }
+  },
+  "orchestration": {
+    "first_worker_image_reference_failed_before_switch": true,
+    "receipt_filename_collision_reconciled_read_only": true,
+    "model_request_resent": false
+  },
+  "acceptance": {
+    "two_complete_batches_four_formal_checks_without_human_retry": true,
+    "stable_interview_demo": false
+  },
+  "limitations": [
+    "original_failed_provider_payload_not_available",
+    "real_model_first_pass_succeeded_without_semantic_repair",
+    "semantic_repair_branch_verified_with_deterministic_offline_provider_only",
+    "single_author_seen_synthetic_task",
+    "not_full_browser_timed_rehearsal",
+    "startup_health_gate_still_pending",
+    "not_independent_quality_or_production_acceptance"
+  ]
+}
