@@ -1,0 +1,138 @@
+{
+  "acceptance": {
+    "browser_native_download_to_disk": true,
+    "candidate_saved_then_explicitly_confirmed": true,
+    "continuous_ten_minute_rehearsal": false,
+    "explicit_xlsx_ranges_confirmed": true,
+    "fresh_single_shot_full_review": false,
+    "reload_and_three_run_history_replay": true,
+    "source_panel_and_original_download": true,
+    "stable_interview_demo": false
+  },
+  "application_source_commit": "2e862acd52084e6cd5ec4dd2fc4fdbd0bf2f7e41",
+  "budget": {
+    "automatic_retries": false,
+    "held_calls": 0,
+    "known_cumulative_calls": 121,
+    "prior_known_calls": 113,
+    "remaining_calls": 39,
+    "total_limit": 160,
+    "unknown_usage_calls": 0
+  },
+  "client_date": "2026-10-17",
+  "data_class": "author_seen_synthetic_development",
+  "downloads": {
+    "preflight_completed_run": {
+      "json": {
+        "bytes": 11122,
+        "sha256": "ffb75dd1f436d1ccbd652c215a4d5e83a9d0695f8949fe329a9a2abfc5517fe5"
+      },
+      "original": {
+        "bytes": 5192,
+        "sha256": "f59ae7452c24bbeef961c1ac6755998e499b9e22436c5bfa4ae0c3234d27acc6"
+      },
+      "passed": true,
+      "xlsx": {
+        "bytes": 11157,
+        "sha256": "a33ce3e0d13981a36e19f2e335f5a52dac88d665079a134ad4666fe95b4b936f"
+      }
+    },
+    "rehearsal_partial_run": {
+      "json": {
+        "bytes": 9440,
+        "sha256": "3e5e858bce43d2dd4ec8044dd957d5d244b43b83c64ead432399981d1a095fae"
+      },
+      "json_xlsx_consistent": true,
+      "original": {
+        "bytes": 5192,
+        "sha256": "f59ae7452c24bbeef961c1ac6755998e499b9e22436c5bfa4ae0c3234d27acc6"
+      },
+      "xlsx": {
+        "bytes": 10578,
+        "sha256": "7c362df949bfbca83d16d17877944cb8b7192cf9bd3591bc9cb57e1b29e053ad"
+      }
+    }
+  },
+  "fixture": {
+    "criteria": 4,
+    "items": 2,
+    "path": "examples/showcase/synthetic-mixed-quote.xlsx",
+    "sha256": "f59ae7452c24bbeef961c1ac6755998e499b9e22436c5bfa4ae0c3234d27acc6"
+  },
+  "independent_cases": 0,
+  "kind": "bounded_single_rehearsal_acceptance",
+  "limitations": [
+    "rehearsal_interrupted_by_host_process_and_docker_shutdowns",
+    "timing_is_a_failed_operational_run_not_a_human_speed_measurement",
+    "qa_degraded_to_bm25_before_failed_vector_index_was_retried",
+    "full_review_processed_only_one_of_two_item_batches",
+    "specific_first_batch_candidate_validation_code_is_redacted_in_public_trace",
+    "not_clean_machine_or_backup_restore_acceptance",
+    "not_independent_quality_or_production_acceptance",
+    "maintainer_explanation_and_independent_operation_not_accepted"
+  ],
+  "rehearsal": {
+    "finish_utc": "2026-10-17T00:11:52.117016+00:00",
+    "monotonic_checkpoint_before_restart_seconds": 6229.968999999997,
+    "monotonic_finish_invalid_due_to_host_restart": true,
+    "start_utc": "2026-10-16T12:22:02.617545+00:00",
+    "time_limit_seconds": 600,
+    "wall_clock_elapsed_seconds": 42589.499471
+  },
+  "runtime_findings": {
+    "background_roles_after_recovery": 4,
+    "docker_desktop_stopped_during_rehearsal": true,
+    "host_api_frontend_and_ollama_stopped_during_rehearsal": true,
+    "index_after_explicit_retry": {
+      "expected_count": 9,
+      "ingested_count": 9,
+      "status": "ready"
+    },
+    "initial_index_failure": "index_service_unavailable",
+    "migration": "0018_upload_intents",
+    "source_changed": false
+  },
+  "schema_version": 1,
+  "source_commit": "f42e7736b4764d1f576fcc482679b8459b9db9c4",
+  "tasks": [
+    {
+      "kind": "changes",
+      "model_calls": 2,
+      "purpose": "candidate_generation",
+      "run_id": "992d49a3e74f4814b00d368afe4811d1",
+      "status": "completed"
+    },
+    {
+      "degraded_reason": "vector_index_not_ready",
+      "kind": "evidence",
+      "model_calls": 2,
+      "purpose": "source_qa",
+      "retrieval_mode": "bm25",
+      "run_id": "cf28ea8000b14162afb5d9fe03759d87",
+      "status": "completed"
+    },
+    {
+      "actual_checks": {
+        "apple_price": "processing_partial",
+        "apple_quantity": "processing_partial",
+        "tshirt_price": "不满足_nonformal",
+        "tshirt_quantity": "不满足_nonformal"
+      },
+      "error_code": "coverage_incomplete",
+      "formal_checks": 0,
+      "kind": "review",
+      "model_calls": 4,
+      "processed_batches": 1,
+      "purpose": "full_review",
+      "run_id": "7ebbee647b8b498f8f10f7b8879cf6f4",
+      "status": "partial",
+      "total_batches": 2
+    }
+  ],
+  "usage": {
+    "actual_bill": null,
+    "actual_input_tokens": 24052,
+    "actual_output_tokens": 1713,
+    "new_model_calls": 8
+  }
+}
