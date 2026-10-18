@@ -1,0 +1,161 @@
+{
+  "schema_version": 1,
+  "kind": "single_continuous_browser_rehearsal",
+  "client_date": "2026-10-17",
+  "source_commit": "b906870a1682df51f0fd649123479a20840d6916",
+  "worker_source_commit": "129cbbe115ab278ad22cfa50daaa63dc846bd732",
+  "api_and_other_container_source_commit": "2e862acd52084e6cd5ec4dd2fc4fdbd0bf2f7e41",
+  "migration": "0018_upload_intents",
+  "model_id": "deepseek-flash",
+  "data_class": "author_seen_synthetic_development",
+  "independent_cases": 0,
+  "user_decision": {
+    "startup_health_gate_development": "skipped_by_explicit_user_instruction",
+    "next_scope": "one_continuous_browser_rehearsal"
+  },
+  "fixture": {
+    "path": "examples/showcase/synthetic-mixed-quote.xlsx",
+    "sha256": "f59ae7452c24bbeef961c1ac6755998e499b9e22436c5bfa4ae0c3234d27acc6",
+    "items": 2,
+    "criteria": 4
+  },
+  "timing": {
+    "start_utc": "2026-10-17T00:48:57.551294+00:00",
+    "finish_utc": "2026-10-17T00:55:30.263283+00:00",
+    "elapsed_seconds": 392.719,
+    "limit_seconds": 600,
+    "passed": true,
+    "timer_resets": 0,
+    "automation_round_trips_and_recovery_included": true,
+    "setup_before_timer": "logged_in_browser_and_workspace_selected_fixture_prepared",
+    "evidence_analysis_after_timer_excluded": true
+  },
+  "tasks": [
+    {
+      "purpose": "candidate_generation",
+      "run_id": "105f7691d9af42518834ea20210b755d",
+      "status": "completed",
+      "kind": "changes",
+      "model_calls": 3
+    },
+    {
+      "purpose": "source_qa",
+      "run_id": "c8f7096064f6472785e0c457d464556e",
+      "status": "completed",
+      "kind": "evidence",
+      "model_calls": 2
+    },
+    {
+      "purpose": "full_review",
+      "run_id": "ba15629768544275b65bf3635750a155",
+      "status": "completed",
+      "kind": "review",
+      "model_calls": 4
+    }
+  ],
+  "acceptance": {
+    "fresh_browser_task_and_upload": true,
+    "candidate_save_and_explicit_confirmation": true,
+    "two_explicit_xlsx_ranges_confirmed": true,
+    "hybrid_qa_without_degradation": true,
+    "source_panel_original_readback_and_native_download": true,
+    "full_review_two_uncached_batches_four_formal_checks": true,
+    "unsupported_9999_quantity_rejected_without_changes": true,
+    "native_json_xlsx_download_and_content_consistency": true,
+    "reload_and_three_individual_history_replays": true,
+    "single_browser_flow_within_ten_minutes": true,
+    "whole_E_stage": false,
+    "production_release": false
+  },
+  "retrieval": {
+    "mode": "hybrid",
+    "degraded_reason": null,
+    "item_id": "apple",
+    "complete_coverage": false,
+    "source_cells": [
+      "B3",
+      "B4"
+    ],
+    "source_quotes": [
+      "10 箱",
+      "80 元/箱"
+    ]
+  },
+  "review": {
+    "complete_batches": 2,
+    "total_batches": 2,
+    "cached_batches": 0,
+    "formal_checks": 4,
+    "checks": [
+      {
+        "item_id": "apple",
+        "name": "苹果采购数量",
+        "business_status": "满足",
+        "is_formal": true
+      },
+      {
+        "item_id": "apple",
+        "name": "苹果含税单价上限",
+        "business_status": "满足",
+        "is_formal": true
+      },
+      {
+        "item_id": "tshirt",
+        "name": "T恤采购数量",
+        "business_status": "不满足",
+        "is_formal": true
+      },
+      {
+        "item_id": "tshirt",
+        "name": "T恤含税单价上限",
+        "business_status": "不满足",
+        "is_formal": true
+      }
+    ],
+    "semantic_repair_exercised": false
+  },
+  "runtime_findings": {
+    "parser_initially_not_running": true,
+    "parser_explicitly_started_during_timed_rehearsal": true,
+    "parser_recovery_checkpoint_seconds": 70.484,
+    "model_retry_or_resend": false,
+    "application_source_changed": false
+  },
+  "native_downloads": {
+    "json": {
+      "bytes": 11092,
+      "sha256": "0b3f14eb03526850cbdd48628a5f3bf6142398ad24486a136665bf20efbfe20a"
+    },
+    "original": {
+      "bytes": 5192,
+      "sha256": "f59ae7452c24bbeef961c1ac6755998e499b9e22436c5bfa4ae0c3234d27acc6"
+    },
+    "xlsx": {
+      "bytes": 11143,
+      "sha256": "82d811c66746871a854d700cf16f867a8494f65292efcfb9a5c81c2fcb5695fd"
+    }
+  },
+  "usage": {
+    "new_model_calls": 9,
+    "actual_input_tokens": 25974,
+    "actual_output_tokens": 1531,
+    "actual_bill": null
+  },
+  "budget": {
+    "limit": 160,
+    "prior_known_calls": 125,
+    "known_calls": 134,
+    "remaining_calls": 26,
+    "held_calls": 0,
+    "unknown_usage_calls": 0,
+    "automatic_retries": false
+  },
+  "limitations": [
+    "single_author_seen_synthetic_fixture_not_independent_accuracy",
+    "parser_was_started_during_rehearsal_not_a_verified_startup_gate",
+    "automation_duration_not_human_speed_or_latency_benchmark",
+    "semantic_repair_not_triggered_in_this_live_run",
+    "maintainer_independent_operation_and_architecture_explanation_not_accepted",
+    "not_clean_machine_backup_restore_load_or_production_acceptance"
+  ]
+}
