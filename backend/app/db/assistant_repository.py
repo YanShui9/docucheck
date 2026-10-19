@@ -203,6 +203,7 @@ class AssistantRepository:
             checked_citation,
             render_evidence,
         )
+        from ..agent.assistant_answers import answer_digest, render_answer
         from ..agent.assistant_evidence import verify_windows
         from .agent_snapshot import load_agent_snapshot
 
@@ -234,6 +235,9 @@ class AssistantRepository:
             context_version = (row['memory_json'] or {}).get('citation_context_version')
             if context_version != payload.get('citation_context_version'):
                 _error("assistant_source_changed")
+            direct_answer = payload.get("evidence_answer")
+            if (row["memory_json"] or {}).get("evidence_answer_digest") != answer_digest(payload):
+                _error("assistant_source_changed")
             reply = connection.scalar(select(run_attempts.c.resume_message_id).where(run_attempts.c.run_id == run_id, run_attempts.c.resume_message_id.is_not(None)).order_by(run_attempts.c.attempt_no.desc()).limit(1))
             instruction = connection.scalar(select(messages.c.content).where(messages.c.id == (reply or row["message_id"])))
             if instruction != payload["instruction"]:
@@ -258,7 +262,9 @@ class AssistantRepository:
             windows = payload.get('source_windows') if payload.get('citation_offsets_version') == 1 else None
             citations = [checked_citation(repo, c["evidence_id"], c["quote"], windows=windows,
                 preserve_context=context_version == 1) for c in payload["citations"]]
-            if citations != payload["citations"] or render_evidence(citations, payload["retrieval"]) != payload["answer"]:
+            rendered = (render_answer(direct_answer, citations, payload["retrieval"]) if direct_answer is not None
+                        else render_evidence(citations, payload["retrieval"]))
+            if citations != payload["citations"] or rendered != payload["answer"]:
                 _error("assistant_source_changed")
         elif kind in {"review", "proposal"}:
             dynamic_row, dynamic_payload, _ = DynamicRepository(self.engine).verified(run_id)
@@ -273,6 +279,8 @@ class AssistantRepository:
         if kind in {"chat", "evidence"} and (payload["candidate"] is not None or payload["changes"] or payload["patch"] is not None):
             _error("assistant_source_changed")
         if kind != "evidence" and payload["citations"]:
+            _error("assistant_source_changed")
+        if kind != "evidence" and direct_answer is not None:
             _error("assistant_source_changed")
         # Recheck after potentially expensive source validation, including deletion.
         with self.engine.connect() as connection:

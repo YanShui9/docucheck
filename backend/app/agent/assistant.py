@@ -1,4 +1,4 @@
-"""Bounded conversational routing; source answers contain only verified excerpts."""
+"""Bounded conversational routing; document answers retain verified citations."""
 
 import json
 from dataclasses import asdict
@@ -14,6 +14,7 @@ from ..criteria.validation import validate_definition
 from ..evidence.repository import digest
 from ..providers.base import ProviderError
 from ..providers.chat_model import validate_response
+from .assistant_answers import EvidenceAnswer, prepare_answer, render_answer
 from .assistant_checklist_context import (
     PrepareChangesArgs,
     ReadChecklistArgs,
@@ -43,7 +44,10 @@ from .policy import MODE_LIMITS, Budget, RunStopped, input_bound
 
 SYSTEM = """你是采购任务助手，通过服务端受控工具选择本轮意图，每次只调用一个工具。
 chat 用于普通交流和一般说明，不发布本任务的采购事实、供应商承诺或审查结论。
-资料问题先 search_evidence，再 answer_evidence 选择直接回答问题的原文摘录。
+资料问题先 search_evidence，读过工具结果后用 answer_evidence 同时提交 answer 和 citations。
+answer先用一至三句直接回答问题，通常不超过200字；只总结引用支持的信息，不粘贴摘录清单或内部证据ID。
+保留价格、单位、币种、含税口径、否定与适用条件；原文未说明的不猜测。不同供应商或相互冲突的报价分别说明。
+买方要求不当作供应商报价，资料问答不输出正式满足/不满足结论。没有直接依据时citations=[]并说明未找到。
 检索近邻只提供线索；没有直接原句时 answer_evidence citations=[]。top-k不能证明完整覆盖。
 买方 requirement 是买方要求，不能解释为供应商承诺。role与supplier必须逐条保持。
 买方要求增删改先prepare_changes准备目标，再propose_changes提交有限patch。仅明确删除项才可remove。
@@ -84,6 +88,7 @@ class CitationArgs(Contract):
 
 
 class EvidenceArgs(Contract):
+    answer: str = Field(min_length=1, max_length=1200, pattern=r"\S")
     citations: list[CitationArgs] = Field(max_length=8)
 
 
@@ -103,6 +108,7 @@ class AssistantPayload(Contract):
     source_windows: list[SourceWindow] | None = Field(default=None, max_length=MAX_SOURCE_READS)
     citation_offsets_version: Literal[1] | None = None
     citation_context_version: Literal[1] | None = None
+    evidence_answer: EvidenceAnswer | None = None
 
 
 def checked_citation(repo, evidence_id, quote, *, windows=None, preserve_context=False):
@@ -174,7 +180,7 @@ class AssistantAgent:
         self.schemas = [compact_schema(_schema(name, model, description)) for name, model, description in [
             ("chat", ChatArgs, "普通聊天；不发布本任务采购事实或结论"),
             ("search_evidence", SearchArgs, "检索当前快照并回读原文，近邻不代表答案或完整覆盖"),
-            ("answer_evidence", EvidenceArgs, "只选择实际读取且直接回答问题的原文；无答案则citations为空"),
+            ("answer_evidence", EvidenceArgs, "根据已读原文提交简短直接答案answer与支撑引用citations；无依据则citations为空"),
             ("prepare_changes", PrepareChangesArgs, "准备买方要求变更；最多4个待修改或删除的指标ID与4个品目ID。新增指标无需选择已有指标"),
             ("read_context", ReadChecklistArgs, "scope=items/criteria按ID或名称分页读品目/指标（含空品目）；scope=current_time按需读北京时间"),
             ("review_checklist", EmptyArgs, "按确认版本正式审查全部指标与供应商"),
@@ -407,13 +413,15 @@ class AssistantAgent:
                 if name == "answer_evidence":
                     if not searched:
                         raise ValueError("evidence_not_read")
-                    citations = EvidenceArgs.model_validate(args).citations
+                    evidence = EvidenceArgs.model_validate(args)
+                    citations = evidence.citations
                     if any(not supports(windows.values(), c.evidence_id, c.quote) for c in citations):
                         raise ValueError("evidence_not_read")
                     checked = [checked_citation(self.repo, c.evidence_id, c.quote,
                         windows=windows.values(), preserve_context=True) for c in citations]
-                    payload.update(kind="evidence", citations=checked,
-                                   answer=render_evidence(checked, payload["retrieval"]))
+                    answer = prepare_answer(evidence.answer, checked).model_dump(mode="json")
+                    payload.update(kind="evidence", citations=checked, evidence_answer=answer,
+                                   answer=render_answer(answer, checked, payload["retrieval"]))
                     break
                 if name == "propose_changes":
                     patch = ChecklistPatch.model_validate(args)
@@ -453,6 +461,7 @@ class AssistantAgent:
                       else f"本次助手处理未完成：{error}。")
             if error == "checklist_edit_scope_budget":
                 answer = "本次选中的指标内容超出单次修改预算，原清单已保留。请减少本次修改的目标数量，或在清单编辑面板中编辑复杂指标；尚未生成新候选。"
+            payload.pop("evidence_answer", None)
             payload.update(answer=answer, citations=[], candidate=None, changes=[], patch=None)
             if events and events[-1].get("status") == "started":
                 events[-1].update(status="failed", error=error, outcome_unknown=getattr(exc, "outcome_unknown", False))

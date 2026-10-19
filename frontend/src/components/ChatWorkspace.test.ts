@@ -24,6 +24,26 @@ function reads(path: string) {
 }
 afterEach(() => { wrappers.splice(0).forEach(w => w.unmount()); apiRequest.mockReset(); vi.useRealTimers() })
 
+test('document answer displays concise text with source links and keeps internal IDs out of the transcript', async () => {
+  const evidenceId = '02621ddc0f5c6f7376cc6faf1afbccfc81feaef53a902d48902a21d7add39ec1'
+  const answer = '供应商的苹果报价为25元/箱，不含税。'
+  apiRequest.mockImplementation((path: string) => {
+    if (path.includes('/conversations?')) return Promise.resolve({ conversations: [{ id: 'conv-a', created_at: '' }], next_offset: null })
+    if (path.includes('/messages?')) return Promise.resolve({ messages: [{ id: 'message-a', role: 'user', content: '苹果报价多少？', run_id: 'run-a' }], next_offset: null })
+    if (path === '/agent-runs/run-a') return Promise.resolve({ id: 'run-a', conversation_id: 'conv-a', status: 'completed', workflow: 'assistant', revision: 0 })
+    if (path.endsWith('/assistant-result')) return Promise.resolve({ run_id: 'run-a', case_id: 'case-a', snapshot_id: 'snap-1', is_current: true,
+      result: { kind: 'evidence', answer, citations: [{ evidence_id: evidenceId, file_name: '供应商C-苹果报价.xlsx', location: '报价!B8', quote: '25' }], candidate: null } })
+    return reads(path)
+  })
+  const wrapper = setup(); await flushPromises()
+  expect(wrapper.text()).toContain(answer)
+  expect(wrapper.text()).not.toContain(evidenceId)
+  const source = wrapper.get('.chat-citations button')
+  expect(source.text()).toBe('供应商C-苹果报价.xlsx · 报价!B8 ↗')
+  await source.trigger('click')
+  expect(wrapper.emitted('openEvidence')).toEqual([[{ caseId: 'case-a', snapshotId: 'snap-1', evidenceId }]])
+})
+
 test('external busy state disables input while keeping write permission and draft', async () => {
   apiRequest.mockImplementation(reads)
   const wrapper = setup(); await flushPromises()

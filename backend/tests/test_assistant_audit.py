@@ -59,7 +59,7 @@ def test_retrieved_tail_is_read_at_its_actual_offset_and_can_be_cited():
             if self.calls == 1:
                 return call('search_evidence', {'query':'交付期限', 'limit':1})
             assert needle in messages[-1].content
-            return call('answer_evidence', {'citations':[{'evidence_id':block.evidence_id,'quote':needle}]})
+            return call('answer_evidence', {"answer": needle, 'citations':[{'evidence_id':block.evidence_id,'quote':needle}]})
 
     result = AssistantAgent(repo, Provider(), retriever=Retriever(repo)).ask('供应商承诺多久交付')
     assert result['status'] == 'completed', result['error']
@@ -75,7 +75,7 @@ def test_repeated_quote_is_located_in_the_window_actually_read():
         + '\n\nlatest commitment: ' + needle)
     ref = repo.blocks[0].evidence_id
     provider = StageProvider(('search_evidence', {'query': 'latest commitment', 'limit': 1}),
-        ('answer_evidence', {'citations': [{'evidence_id': ref, 'quote': needle}]}))
+        ('answer_evidence', {"answer": needle, 'citations': [{'evidence_id': ref, 'quote': needle}]}))
     result = AssistantAgent(repo, provider, retriever=Retriever(repo)).ask('最新承诺是多少')
     assert result['status'] == 'completed', result['error']
     payload = result['payload']
@@ -92,7 +92,7 @@ def test_repeated_quote_is_located_in_the_window_actually_read():
 def test_repeated_retrieval_is_bounded_and_large_result_exposes_followup_handles():
     repo = long_repository(count=12)
     provider = StageProvider(*[('search_evidence', {'query':'quantity','limit':12})] * 3,
-        ('answer_evidence', {'citations':[]}))
+        ('answer_evidence', {"answer": '本次未找到直接依据。', 'citations':[]}))
     result = AssistantAgent(repo, provider, retriever=Retriever(repo)).ask('查采购数量')
     assert result['status'] == 'completed', result['error']
     assert all(input_bound(m,s) <= 16000 for m,s in provider.requests)
@@ -146,7 +146,7 @@ def test_hybrid_source_can_page_past_first_window_and_retains_both_reads():
                 assert needle not in source['text'] and source['next_char'] > 0
                 return call('read_source', {'evidence_ids': [ref], 'start_char': source['next_char']})
             assert needle in source['text']
-            return call('answer_evidence', {'citations': [{'evidence_id': ref, 'quote': needle}]})
+            return call('answer_evidence', {"answer": needle, 'citations': [{'evidence_id': ref, 'quote': needle}]})
 
     result = AssistantAgent(repo, Provider(), retriever=retriever).ask('交付期限是什么')
     assert result['status'] == 'completed', result['error']

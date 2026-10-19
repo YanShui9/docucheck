@@ -20,7 +20,7 @@ def test_current_answer_retains_complete_source_context(text, excerpt):
     ref = repo.blocks[0].evidence_id
     result = AssistantAgent(repo, StageProvider(
         ("search_evidence", {"query": text, "limit": 1}),
-        ("answer_evidence", {"citations": [{"evidence_id": ref, "quote": excerpt}]})),
+        ("answer_evidence", {"answer": text, "citations": [{"evidence_id": ref, "quote": excerpt}]})),
         retriever=Retriever(repo)).ask("供应商怎样承诺？")
     assert result["status"] == "completed", result["error"]
     payload = result["payload"]

@@ -116,7 +116,7 @@ def test_assistant_scoped_search_and_followup_read_keep_same_item_boundary():
     ref = retriever.repository.blocks[1].evidence_id
     provider = Decisions(("search_evidence", {"query": "数量", "item_id": "rice"}),
                          ("read_source", {"evidence_ids": [ref], "item_id": "rice"}),
-                         ("answer_evidence", {"citations": [{"evidence_id": ref, "quote": "数量10台"}]}))
+                         ("answer_evidence", {"answer": '数量10台', "citations": [{"evidence_id": ref, "quote": "数量10台"}]}))
     result = agent(retriever.repository, provider, retriever=retriever).ask("苹果手机数量是多少？")
     assert result["status"] == "completed", result.get("error")
     assert result["payload"]["retrieval"]["item_id"] == "rice"
@@ -131,7 +131,7 @@ def test_assistant_cannot_widen_scoped_search_through_an_unscoped_followup():
     foreign = retriever.repository.blocks[-1].evidence_id
     provider = Decisions(("search_evidence", {"query": "数量", "item_id": "rice"}),
                          ("search_evidence", {"query": "数量20件"}),
-                         ("answer_evidence", {"citations": [{"evidence_id": foreign, "quote": "数量20件"}]}))
+                         ("answer_evidence", {"answer": '数量20件', "citations": [{"evidence_id": foreign, "quote": "数量20件"}]}))
     result = agent(retriever.repository, provider, retriever=retriever).ask("苹果手机数量是多少？")
     assert result["status"] != "completed"
     assert not result["payload"]["citations"]

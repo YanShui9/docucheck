@@ -130,16 +130,17 @@ def test_buyer_file_proposal_capability_is_only_available_with_buyer_document(so
     assert {"prepare_changes", "read_context", "review_checklist"} <= tools
 
 
-def test_evidence_answer_only_renders_verified_original_and_location():
+def test_evidence_answer_keeps_verified_original_and_location_in_citations():
     repo = repository()
     block = next(b for b in repo.blocks if b.role == "quote" and b.supplier == "甲供应商")
     provider = Decisions(("search_evidence", {"query": "苹果数量", "supplier": "甲供应商"}),
-                         ("answer_evidence", {"citations": [{"evidence_id": block.evidence_id, "quote": block.text}]}))
+                         ("answer_evidence", {"answer": block.text, "citations": [{"evidence_id": block.evidence_id, "quote": block.text}]}))
     result = agent(repo, provider, retriever=Retriever(repo)).ask("甲供应商苹果数量多少")
     assert result["status"] == "completed"
     assert result["payload"]["kind"] == "evidence"
-    assert block.text in result["answer"] and "资料!A1" in result["answer"]
-    assert "未进行完整审查" in result["answer"]
+    assert result["answer"] == block.text
+    assert result["payload"]["citations"][0]["location"] == "资料!A1"
+    assert block.evidence_id not in result["answer"]
     assert result["payload"]["citations"][0]["supplier"] == "甲供应商"
 
 
@@ -148,7 +149,7 @@ def test_citation_cannot_fabricate_quote_or_read_unretrieved_evidence(wrong):
     repo = repository()
     block = repo.blocks[0]
     provider = Decisions(("search_evidence", {"query": "苹果数量"}),
-                         ("answer_evidence", {"citations": [{"evidence_id": block.evidence_id, "quote": wrong}]}))
+                         ("answer_evidence", {"answer": wrong, "citations": [{"evidence_id": block.evidence_id, "quote": wrong}]}))
     result = agent(repo, provider, retriever=Retriever(repo)).ask("数量")
     assert result["status"] == "partial"
     assert wrong not in result["answer"]
@@ -158,7 +159,7 @@ def test_citation_cannot_fabricate_quote_or_read_unretrieved_evidence(wrong):
 def test_empty_direct_evidence_marks_this_search_not_found():
     repo = repository()
     result = agent(repo, Decisions(("search_evidence", {"query": "担保机构"}),
-                                  ("answer_evidence", {"citations": []})), retriever=Retriever(repo)).ask("担保机构")
+                                  ("answer_evidence", {"answer": '本次未找到直接依据。', "citations": []})), retriever=Retriever(repo)).ask("担保机构")
     assert "本次检索未找到" in result["answer"]
     assert "证据不足" not in result["answer"]
 
@@ -218,7 +219,7 @@ def test_accumulated_source_reads_stop_before_payload_capacity_and_keep_usage():
 
     retriever = SuccessiveSources(repo)
     provider = Decisions(*[("search_evidence", {"query": "原文", "limit": 12})] * 10,
-                         ("answer_evidence", {"citations": []}))
+                         ("answer_evidence", {"answer": '本次未找到直接依据。', "citations": []}))
     shared = Budget(max_decisions=12, max_calls=32, max_tools=24, max_input=200000,
                     max_output=12000, max_prompt=100000, context_window=100000)
     result = agent(repo, provider, mode="thorough", retriever=retriever, budget=shared).ask("查询资料")

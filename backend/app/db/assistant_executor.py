@@ -3,6 +3,7 @@
 from sqlalchemy import select
 
 from ..agent.assistant import AssistantAgent
+from ..agent.assistant_answers import answer_digest
 from ..agent.dynamic import DynamicAgent
 from ..criteria.models import ChecklistDefinition
 from ..evidence.repository import digest
@@ -110,6 +111,8 @@ def execute_assistant(engine, claim, provider, *, heartbeat_interval_seconds=10.
                 "citation_offsets_version": payload["citation_offsets_version"],
                 "citation_context_version": payload["citation_context_version"],
                 "focus": None, "pending_clarification": None}
+            if payload.get("evidence_answer") is not None:
+                checkpoint["evidence_answer_digest"] = answer_digest(payload)
             if binding["item_binding_digest"] is not None:
                 checkpoint.update(item_binding_version_id=binding["item_binding_version_id"], item_binding_digest=binding["item_binding_digest"])
             if result["status"] == "cancelled":
