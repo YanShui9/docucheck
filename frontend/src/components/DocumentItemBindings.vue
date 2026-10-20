@@ -28,6 +28,8 @@ const paging = ref(false)
 const saving = ref(false)
 const error = ref('')
 const notice = ref('')
+const saveAcknowledged = ref(false)
+const feedbackContainer = ref<HTMLElement | null>(null)
 const accessRejected = ref(false)
 const conflicted = ref(false)
 const uncertain = ref(false)
@@ -52,6 +54,15 @@ const historicalEntries = computed(() => view.value?.historical_version?.payload
 const dirty = computed(() => JSON.stringify(working.value) !== saved.value)
 const formChanged = computed(() => editingIndex.value !== null || JSON.stringify(draft.value) !== pristineDraft.value)
 const canSave = computed(() => !locked.value && dirty.value && confirmed.value && !!reason.value.trim() && !formChanged.value)
+const feedback = computed(() => {
+  if (saving.value) return { tone: 'pending', title: saveAcknowledged.value ? '已保存，正在刷新对应状态…' : '正在保存资料关联…',
+    message: '请稍候，处理完成后将在此处显示结果。' }
+  if (error.value) return { tone: saveAcknowledged.value || uncertain.value ? 'warning' : 'error',
+    title: saveAcknowledged.value ? '资料关联已保存，后续读取未完成' : uncertain.value ? '保存结果待核对' : '关联操作未完成', message: error.value }
+  if (notice.value) return { tone: conflicted.value ? 'warning' : 'success',
+    title: conflicted.value ? '资料关联已保存，请重新核对' : '资料关联已确认', message: notice.value }
+  return null
+})
 const rangePreview = computed(() => {
   try { const selector = draftSelector(draft.value); return evidence.value.filter(block => evidenceInSelector(block, selector)).slice(0, 50) }
   catch { return [] }
@@ -85,6 +96,7 @@ function location(block: EvidenceRecord): string {
 }
 function itemName(id: string): string { return items.value.find(item => item.item_id === id)?.name ?? id }
 function resetDraft() { draft.value = newBindingDraft(); editingIndex.value = null; pristineDraft.value = JSON.stringify(draft.value) }
+function clearFeedback() { error.value = ''; notice.value = ''; saveAcknowledged.value = false }
 function rejectAccess(value: unknown): boolean {
   const code = value instanceof Error ? value.message : ''
   if (!['forbidden', 'not_found', 'session_expired', 'case_deleting'].includes(code)) return false
@@ -101,7 +113,7 @@ async function load() {
   const current = ++generation
   checklist.value = null; view.value = null; working.value = []; saved.value = '[]'
   evidence.value = []; parser.value = null; more.value = false; originalTarget.value = null
-  error.value = ''; notice.value = ''; conflicted.value = false; uncertain.value = false; pending.value = null
+  clearFeedback(); conflicted.value = false; uncertain.value = false; pending.value = null
   saving.value = false; paging.value = false; confirmed.value = false; resetDraft(); loading.value = true
   const { caseId, snapshotId, document } = props
   try {
@@ -148,7 +160,7 @@ function chooseAnchor(sku = false) {
 }
 function stage() {
   if (locked.value) return
-  error.value = ''; notice.value = ''
+  clearFeedback()
   try {
     const entry = buildBindingEntry(draft.value, props.document, items.value, evidence.value, parser.value)
     const next = [...working.value]
@@ -160,8 +172,8 @@ function stage() {
     working.value = next; resetDraft(); confirmed.value = false
   } catch (value) { error.value = value instanceof Error ? value.message : '请检查输入。' }
 }
-function edit(index: number) { if (!locked.value) { draft.value = draftFromEntry(working.value[index]!); editingIndex.value = index; confirmed.value = false } }
-function remove(index: number) { if (!locked.value) { working.value = working.value.filter((_, position) => position !== index); resetDraft(); confirmed.value = false } }
+function edit(index: number) { if (!locked.value) { clearFeedback(); draft.value = draftFromEntry(working.value[index]!); editingIndex.value = index; confirmed.value = false } }
+function remove(index: number) { if (!locked.value) { clearFeedback(); working.value = working.value.filter((_, position) => position !== index); resetDraft(); confirmed.value = false } }
 async function preview(id: string) {
   if (accessRejected.value) return
   originalTarget.value = { caseId: props.caseId, snapshotId: props.snapshotId, evidenceId: id }
@@ -182,7 +194,7 @@ async function save(retry = false) {
     if (new TextEncoder().encode(JSON.stringify(body.entries)).length > 128000) { error.value = errorTexts.item_binding_capacity!; return }
     pending.value = { body, key: crypto.randomUUID() }
   }
-  saving.value = true; error.value = ''
+  clearFeedback(); saving.value = true
   const request = pending.value!
   const notifyConfirmed = props.notifyConfirmed
   try {
@@ -194,7 +206,8 @@ async function save(retry = false) {
     notifyConfirmed?.({ caseId, snapshotId })
     if (current !== generation) return
     confirmed.value = false; uncertain.value = false; pending.value = null
-    notice.value = '资料对应关系已确认。原审查结果保留为历史，请重新发起审查；本次保存不会自动调用模型。'
+    saveAcknowledged.value = true
+    notice.value = '资料对应关系已确认。原审查结果保留为历史，请重新发起审查。'
     emit('confirmed', { caseId, snapshotId })
     // An idempotent receipt may describe an older committed version, never the latest head.
     try {
@@ -230,8 +243,14 @@ watch([() => props.caseId, () => props.snapshotId, () => props.document.id, () =
 watch([() => props.caseId, () => props.snapshotId, () => props.revision, () => props.document.id,
   () => props.document.source_sha256, () => props.document.parse_status, () => props.document.model_name,
   () => props.refreshKey, () => props.historical, () => props.canWrite], () => { void load() }, { immediate: true })
-watch(draft, () => { confirmed.value = false }, { deep: true })
+watch(draft, () => {
+  confirmed.value = false
+  if (saveAcknowledged.value && !saving.value && formChanged.value) clearFeedback()
+}, { deep: true })
 watch(reason, () => { confirmed.value = false })
+watch(feedback, result => {
+  if (result && result.tone !== 'pending') feedbackContainer.value?.focus({ preventScroll: true })
+}, { flush: 'post' })
 function closeModal() {
   if (dialog.value?.open) dialog.value.close()
   if (opener?.isConnected) opener.focus({ preventScroll: true })
@@ -267,11 +286,7 @@ onUnmounted(() => { generation++ })
     <section class="binding-editor binding-dialog-body" aria-label="资料关联采购品目">
     <p class="section-intro">明确这份资料的哪些原文用于哪个采购品目。对应关系不代替供应商承诺或达标证据。</p>
     <p v-if="loading" role="status">正在读取清单、对应关系和原文…</p>
-    <p v-if="error" class="form-error" role="alert">{{ error }}</p>
-    <p v-if="notice" class="state-note" role="status">{{ notice }}</p>
     <p v-if="accessRejected" class="state-note">访问已被拒绝，编辑已停止。请刷新采购任务或重新登录后，再打开此面板核对权限。</p>
-    <button class="text-button" :disabled="loading || saving" @click="load">刷新对应记录{{ dirty || formChanged ? '（舍弃本地未确认变更）' : '' }}</button>
-    <button v-if="uncertain" class="button button-secondary" data-test="binding-retry" :disabled="saving || busy || !writable" @click="save(true)">重试原保存请求</button>
     <template v-if="view && !loading">
       <p v-if="historical || !canWrite" class="state-note">当前为只读记录，不能修改或确认对应关系。</p>
       <p v-else-if="!writable" class="state-note">请先保存并确认当前审查清单，并等待资料完成解析，再关联采购品目。</p>
@@ -341,13 +356,19 @@ onUnmounted(() => { generation++ })
     <div v-if="originalTarget" ref="originalContainer" class="binding-original"><EvidencePanel :target="originalTarget" :width="390" @close="originalTarget = null" @settled="scrollOriginal" /></div>
     </section>
     <footer class="binding-dialog-footer">
-      <template v-if="view && !loading && writable && dirty">
+      <div v-if="feedback" ref="feedbackContainer" class="binding-feedback" :class="`binding-feedback-${feedback.tone}`"
+           :role="feedback.tone === 'error' || feedback.tone === 'warning' ? 'alert' : 'status'" aria-atomic="true" tabindex="-1">
+        <strong>{{ feedback.title }}</strong><p>{{ feedback.message }}</p>
+      </div>
+      <template v-if="view && !loading && writable && dirty && !uncertain">
         <label class="binding-checkbox"><input v-model="confirmed" data-test="binding-confirm" type="checkbox" :disabled="locked || formChanged" />我已核对当前清单及原文，确认保存这些对应关系</label>
         <p v-if="formChanged" class="state-note">还有未加入清单的填写，请先加入或取消，再确认保存。</p>
       </template>
       <div class="binding-dialog-buttons">
+        <button class="text-button" type="button" :disabled="loading || saving" @click="load">刷新对应记录{{ dirty || formChanged ? '（舍弃本地未确认变更）' : '' }}</button>
+        <button v-if="uncertain" class="button button-secondary" type="button" data-test="binding-retry" :disabled="saving || busy || !writable" @click="save(true)">重试原保存请求</button>
         <button class="button button-secondary" type="button" :disabled="saving" @click="requestClose">关闭</button>
-        <button v-if="view && !loading && writable && dirty" class="button button-primary" type="button" data-test="binding-save" :disabled="!canSave" @click="save()">{{ saving ? '保存中…' : '确认资料对应关系' }}</button>
+        <button v-if="view && !loading && writable && dirty && !uncertain" class="button button-primary" type="button" data-test="binding-save" :disabled="!canSave" @click="save()">{{ saving ? '保存中…' : '确认资料对应关系' }}</button>
       </div>
     </footer>
   </dialog>

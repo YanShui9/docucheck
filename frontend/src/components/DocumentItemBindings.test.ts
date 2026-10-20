@@ -132,13 +132,114 @@ test('unmounting an open editor closes its native modal', async () => {
 test('Tab and Shift+Tab cycle between the last and first modal controls', async () => {
   const wrapper = await editor()
   const first = wrapper.get('[data-test="binding-close"]').element as HTMLElement
-  const last = wrapper.get('.binding-dialog-footer button').element as HTMLElement
+  const lastControl = wrapper.findAll('.binding-dialog-footer button').at(-1)!
+  const last = lastControl.element as HTMLElement
   for (const element of [first, last]) vi.spyOn(element, 'getClientRects').mockReturnValue([new DOMRect()] as unknown as DOMRectList)
   first.focus()
   await wrapper.get('[data-test="binding-close"]').trigger('keydown', { key: 'Tab', shiftKey: true })
   expect(window.document.activeElement).toBe(last)
-  await wrapper.get('.binding-dialog-footer button').trigger('keydown', { key: 'Tab' })
+  await lastControl.trigger('keydown', { key: 'Tab' })
   expect(window.document.activeElement).toBe(first)
+})
+
+test('successful confirmation is visible and focused in the fixed footer', async () => {
+  const wrapper = await editor()
+  await stage(wrapper); await wrapper.get('[data-test="binding-confirm"]').setValue(true)
+  await wrapper.get('[data-test="binding-save"]').trigger('click'); await flushPromises()
+  const feedback = wrapper.get('.binding-dialog-footer .binding-feedback')
+  expect(feedback.classes()).toContain('binding-feedback-success')
+  expect(feedback.attributes('role')).toBe('status')
+  expect(feedback.text()).toContain('资料关联已确认')
+  expect(wrapper.get('.binding-dialog-body').find('.binding-feedback').exists()).toBe(false)
+  expect(window.document.activeElement).toBe(feedback.element)
+})
+
+test('a rejected save shows its reason in the fixed footer and preserves staged content', async () => {
+  const wrapper = await editor()
+  await stage(wrapper); await wrapper.get('[data-test="binding-confirm"]').setValue(true)
+  apiRequest.mockImplementation((path, token, init) => init?.method === 'PUT'
+    ? Promise.reject(new Error('item_binding_invalid')) : read(path, token, init))
+  await wrapper.get('[data-test="binding-save"]').trigger('click'); await flushPromises()
+  const feedback = wrapper.get('.binding-dialog-footer .binding-feedback')
+  expect(feedback.classes()).toContain('binding-feedback-error')
+  expect(feedback.attributes('role')).toBe('alert')
+  expect(feedback.text()).toContain('重叠范围')
+  expect(window.document.activeElement).toBe(feedback.element)
+  expect(wrapper.get('.binding-entry-list').text()).toContain('采购品目：苹果')
+  expect(wrapper.emitted('confirmed')).toBeUndefined()
+  expect(writes()).toHaveLength(1)
+})
+
+test('unknown save result offers the original retry next to its warning instead of another save', async () => {
+  const wrapper = await editor()
+  await stage(wrapper); await wrapper.get('[data-test="binding-confirm"]').setValue(true)
+  apiRequest.mockImplementation((path, token, init) => init?.method === 'PUT'
+    ? Promise.reject(new TypeError('Failed to fetch')) : read(path, token, init))
+  await wrapper.get('[data-test="binding-save"]').trigger('click'); await flushPromises()
+  const footer = wrapper.get('.binding-dialog-footer')
+  expect(footer.get('.binding-feedback').classes()).toContain('binding-feedback-warning')
+  expect(footer.text()).toContain('保存结果待核对')
+  expect(footer.find('[data-test="binding-retry"]').exists()).toBe(true)
+  expect(footer.find('[data-test="binding-save"]').exists()).toBe(false)
+  expect(writes()).toHaveLength(1)
+})
+
+test.each(['offline', 'forbidden'])('a received save receipt with a %s refresh shows one warning and no unknown-write retry', async code => {
+  const wrapper = await editor()
+  await stage(wrapper); await wrapper.get('[data-test="binding-confirm"]').setValue(true)
+  let saved = false
+  apiRequest.mockImplementation((path, token, init) => {
+    if (init?.method === 'PUT') { saved = true; return read(path, token, init) }
+    return saved && path.endsWith('/item-bindings') ? Promise.reject(new Error(code)) : read(path, token, init)
+  })
+  await wrapper.get('[data-test="binding-save"]').trigger('click'); await flushPromises()
+  const footer = wrapper.get('.binding-dialog-footer')
+  expect(footer.findAll('.binding-feedback')).toHaveLength(1)
+  expect(footer.get('.binding-feedback').classes()).toContain('binding-feedback-warning')
+  expect(footer.text()).toContain('资料关联已保存')
+  if (code === 'offline') expect(footer.text()).toContain('无需重复保存')
+  else expect(footer.text()).toContain('没有修改权限')
+  expect(footer.find('[data-test="binding-retry"]').exists()).toBe(false)
+  expect(wrapper.get('.binding-dialog-body').find('[role="alert"]').exists()).toBe(false)
+})
+
+test('saving progress stays in the footer until the response is known', async () => {
+  const wrapper = await editor()
+  await stage(wrapper); await wrapper.get('[data-test="binding-confirm"]').setValue(true)
+  let receipt!: (value: unknown) => void
+  apiRequest.mockImplementation((path, token, init) => init?.method === 'PUT'
+    ? new Promise(resolve => { receipt = resolve }) : read(path, token, init))
+  await wrapper.get('[data-test="binding-save"]').trigger('click')
+  const feedback = wrapper.get('.binding-dialog-footer .binding-feedback')
+  expect(feedback.attributes('role')).toBe('status')
+  expect(feedback.text()).toContain('正在保存')
+  receipt(await read('', undefined, writes()[0]![2])); await flushPromises()
+})
+
+test('local validation errors are visible without dropping the current form values', async () => {
+  const wrapper = await editor()
+  await wrapper.get('[data-test="binding-quote"]').setValue('尚未核对的摘录')
+  await wrapper.get('[data-test="binding-entry-form"]').trigger('submit')
+  const feedback = wrapper.get('.binding-dialog-footer .binding-feedback')
+  expect(feedback.text()).toContain('请选择已确认清单中的采购品目')
+  expect((wrapper.get('[data-test="binding-quote"]').element as HTMLTextAreaElement).value).toBe('尚未核对的摘录')
+  expect(writes()).toHaveLength(0)
+})
+
+test.each(['edit', 'add'])('starting another %s clears the previous successful confirmation message', async action => {
+  const wrapper = await editor()
+  await stage(wrapper); await wrapper.get('[data-test="binding-confirm"]').setValue(true)
+  let savedEntries: unknown
+  apiRequest.mockImplementation((path, token, init) => {
+    if (init?.method === 'PUT') { savedEntries = JSON.parse(init.body as string).entries; return read(path, token, init) }
+    return savedEntries && path.endsWith('/item-bindings') ? Promise.resolve({ case_id: 'case-a', snapshot_id: 'snap-a',
+      state: 'confirmed', binding_revision: 2, current_version: version(savedEntries as never), historical_version: null }) : read(path, token, init)
+  })
+  await wrapper.get('[data-test="binding-save"]').trigger('click'); await flushPromises()
+  expect(wrapper.text()).toContain('资料关联已确认')
+  if (action === 'edit') await wrapper.findAll('button').find(button => button.text() === '编辑范围')!.trigger('click')
+  else await wrapper.get('[data-test="binding-item"]').setValue('apple')
+  expect(wrapper.find('.binding-feedback').exists()).toBe(false)
 })
 
 test('staging is local; explicit confirmation preserves other documents and sends all revision guards', async () => {

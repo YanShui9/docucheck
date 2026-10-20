@@ -479,6 +479,12 @@ h1, h2, h3, p { margin-top: 0; }
 .binding-dialog-footer > .binding-checkbox { margin-bottom: 12px; }
 .binding-dialog-footer > .state-note { margin: 0 0 10px; }
 .binding-dialog-buttons { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+.binding-feedback { margin-bottom: 12px; padding: 10px 12px; border: 1px solid #cddfda; border-radius: 8px; background: #eef6f3; color: #225b4e; line-height: 1.6; max-height: min(180px, 26vh); max-height: min(180px, 26dvh); overflow: auto; overflow-wrap: anywhere; }
+.binding-feedback strong { display: block; font-size: 13px; }
+.binding-feedback p { margin: 4px 0 0; }
+.binding-feedback-error { border-color: #e8c7c2; background: #fff3f1; color: #8c4b43; }
+.binding-feedback-warning { border-color: #e5d29b; background: #fff8e9; color: #806532; }
+.binding-feedback-pending { border-color: #d4e3eb; background: #edf5f8; color: #476b7a; }
 @media (max-width: 540px) {
   .binding-dialog-header, .binding-dialog-body, .binding-dialog-footer { padding-left: 16px; padding-right: 16px; }
 }
