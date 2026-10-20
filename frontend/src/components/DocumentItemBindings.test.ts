@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { afterEach, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import DocumentItemBindings from './DocumentItemBindings.vue'
 
@@ -34,10 +34,22 @@ function read(path: string, _token?: unknown, init?: RequestInit): Promise<unkno
 }
 const wrappers: ReturnType<typeof mount>[] = []
 const originalScrollIntoView = HTMLElement.prototype.scrollIntoView
-async function editor(props: Record<string, unknown> = {}) {
-  apiRequest.mockImplementation(read)
+const originalShowModal = HTMLDialogElement.prototype.showModal
+const originalClose = HTMLDialogElement.prototype.close
+const showModal = vi.fn(function (this: HTMLDialogElement) {
+  this.open = true
+  this.querySelector<HTMLElement>('[autofocus]')?.focus()
+})
+const closeDialog = vi.fn(function (this: HTMLDialogElement) { this.open = false })
+beforeEach(() => {
+  HTMLDialogElement.prototype.showModal = showModal
+  HTMLDialogElement.prototype.close = closeDialog
+})
+async function editor(props: Record<string, unknown> = {}, request = read) {
+  apiRequest.mockImplementation(request)
   const wrapper = mount(DocumentItemBindings, { props: { caseId: 'case-a', snapshotId: 'snap-a', revision: 2,
     document: document as never, canWrite: true, historical: false, refreshKey: 0, ...props },
+    attachTo: window.document.body,
     global: { stubs: { EvidencePanel: { name: 'EvidencePanel', props: ['target'], template: '<div class="original-preview">原件预览</div>' } } } })
   wrappers.push(wrapper)
   await flushPromises()
@@ -51,7 +63,83 @@ async function stage(wrapper: ReturnType<typeof mount>) {
   await wrapper.get('[data-test="binding-entry-form"]').trigger('submit')
 }
 function writes() { return apiRequest.mock.calls.filter(([, , init]) => init?.method === 'PUT') }
-afterEach(() => { wrappers.splice(0).forEach(wrapper => wrapper.unmount()); apiRequest.mockReset(); HTMLElement.prototype.scrollIntoView = originalScrollIntoView })
+afterEach(() => {
+  wrappers.splice(0).forEach(wrapper => wrapper.unmount())
+  apiRequest.mockReset(); showModal.mockClear(); closeDialog.mockClear(); vi.restoreAllMocks()
+  HTMLElement.prototype.scrollIntoView = originalScrollIntoView
+  HTMLDialogElement.prototype.showModal = originalShowModal
+  HTMLDialogElement.prototype.close = originalClose
+  window.document.body.innerHTML = ''
+})
+
+test('opens a named modal before data arrives instead of expanding below the document list', async () => {
+  const wrapper = await editor({}, () => new Promise(() => {}))
+  const modal = wrapper.get('dialog')
+  expect(showModal).toHaveBeenCalledOnce()
+  expect((modal.element as HTMLDialogElement).open).toBe(true)
+  expect(modal.attributes('aria-modal')).toBe('true')
+  expect(modal.find(`#${modal.attributes('aria-labelledby')}`).text()).toBe('关联采购品目')
+  expect(modal.get('.binding-dialog-header').text()).toContain('水果报价.xlsx')
+  expect(modal.text()).toContain('正在读取清单、对应关系和原文')
+})
+
+test('keeps final confirmation outside the scrolling form', async () => {
+  const wrapper = await editor()
+  await stage(wrapper)
+  expect(wrapper.find('.binding-dialog-footer [data-test="binding-save"]').exists()).toBe(true)
+  expect(wrapper.find('.binding-dialog-footer [data-test="binding-confirm"]').exists()).toBe(true)
+  expect(wrapper.get('.binding-dialog-body').find('[data-test="binding-save"]').exists()).toBe(false)
+  expect(wrapper.get('.binding-dialog-body').find('[data-test="binding-entry-form"]').exists()).toBe(true)
+})
+
+test.each(['button', 'escape'])('closing by %s restores focus to the document entry', async method => {
+  const opener = window.document.createElement('button')
+  window.document.body.append(opener); opener.focus()
+  const wrapper = await editor()
+  expect(window.document.activeElement).toBe(wrapper.get('[data-test="binding-close"]').element)
+  if (method === 'button') await wrapper.get('[data-test="binding-close"]').trigger('click')
+  else await wrapper.get('dialog').trigger('cancel')
+  expect(wrapper.emitted('close')).toHaveLength(1)
+  expect((wrapper.get('dialog').element as HTMLDialogElement).open).toBe(false)
+  expect(window.document.activeElement).toBe(opener)
+})
+
+test('saving prevents both Escape and button dismissal', async () => {
+  const wrapper = await editor()
+  await stage(wrapper); await wrapper.get('[data-test="binding-confirm"]').setValue(true)
+  let receipt!: (value: unknown) => void
+  apiRequest.mockImplementation((path, token, init) => init?.method === 'PUT'
+    ? new Promise(resolve => { receipt = resolve }) : read(path, token, init))
+  await wrapper.get('[data-test="binding-save"]').trigger('click')
+  await wrapper.get('dialog').trigger('cancel')
+  expect(wrapper.get('[data-test="binding-close"]').attributes('disabled')).toBeDefined()
+  expect(wrapper.emitted('close')).toBeUndefined()
+  expect((wrapper.get('dialog').element as HTMLDialogElement).open).toBe(true)
+  receipt(await read('', undefined, writes()[0]![2]))
+  await flushPromises()
+  await wrapper.get('dialog').trigger('cancel')
+  expect(wrapper.emitted('close')).toHaveLength(1)
+})
+
+test('unmounting an open editor closes its native modal', async () => {
+  const wrapper = await editor()
+  const modal = wrapper.get('dialog').element as HTMLDialogElement
+  wrapper.unmount(); wrappers.pop()
+  expect(modal.open).toBe(false)
+  expect(closeDialog).toHaveBeenCalledOnce()
+})
+
+test('Tab and Shift+Tab cycle between the last and first modal controls', async () => {
+  const wrapper = await editor()
+  const first = wrapper.get('[data-test="binding-close"]').element as HTMLElement
+  const last = wrapper.get('.binding-dialog-footer button').element as HTMLElement
+  for (const element of [first, last]) vi.spyOn(element, 'getClientRects').mockReturnValue([new DOMRect()] as unknown as DOMRectList)
+  first.focus()
+  await wrapper.get('[data-test="binding-close"]').trigger('keydown', { key: 'Tab', shiftKey: true })
+  expect(window.document.activeElement).toBe(last)
+  await wrapper.get('.binding-dialog-footer button').trigger('keydown', { key: 'Tab' })
+  expect(window.document.activeElement).toBe(first)
+})
 
 test('staging is local; explicit confirmation preserves other documents and sends all revision guards', async () => {
   const wrapper = await editor()

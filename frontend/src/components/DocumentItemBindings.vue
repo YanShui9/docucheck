@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, nextTick, onUnmounted, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, onMounted, onUnmounted, ref, useId, watch } from 'vue'
 import { accessToken } from '../auth'
 import { fetchChecklist } from '../api'
 import type { ChecklistView, DocumentRecord, EvidenceRecord } from '../api'
@@ -13,6 +13,9 @@ const props = defineProps<{ caseId: string; snapshotId: string; revision: number
   canWrite: boolean; historical: boolean; refreshKey: number; busy?: boolean;
   notifyConfirmed?: (target: { caseId: string; snapshotId: string }) => void }>()
 const emit = defineEmits<{ close: []; confirmed: [target: { caseId: string; snapshotId: string }] }>()
+const dialog = ref<HTMLDialogElement | null>(null)
+const titleId = useId()
+let opener: HTMLElement | null = null
 const checklist = ref<ChecklistView | null>(null)
 const view = ref<ItemBindingView | null>(null)
 const working = ref<ItemBindingEntry[]>([])
@@ -229,13 +232,40 @@ watch([() => props.caseId, () => props.snapshotId, () => props.revision, () => p
   () => props.refreshKey, () => props.historical, () => props.canWrite], () => { void load() }, { immediate: true })
 watch(draft, () => { confirmed.value = false }, { deep: true })
 watch(reason, () => { confirmed.value = false })
+function closeModal() {
+  if (dialog.value?.open) dialog.value.close()
+  if (opener?.isConnected) opener.focus({ preventScroll: true })
+}
+function requestClose() {
+  if (saving.value) return
+  closeModal()
+  emit('close')
+}
+function keepFocus(event: KeyboardEvent) {
+  if (event.key !== 'Tab' || !dialog.value) return
+  const controls = [...dialog.value.querySelectorAll<HTMLElement>('button, input, select, textarea, a[href], [tabindex]')]
+    .filter(element => element.tabIndex >= 0 && !element.matches(':disabled') && element.getClientRects().length)
+  const first = controls[0]; const last = controls.at(-1)
+  const target = event.shiftKey && window.document.activeElement === first ? last
+    : !event.shiftKey && window.document.activeElement === last ? first : null
+  if (target) { event.preventDefault(); target.focus() }
+}
+onMounted(() => {
+  opener = window.document.activeElement instanceof HTMLElement ? window.document.activeElement : null
+  dialog.value?.showModal()
+})
+onBeforeUnmount(closeModal)
 onUnmounted(() => { generation++ })
 </script>
 
 <template>
-  <section class="binding-editor" aria-label="资料关联采购品目">
-    <div class="binding-heading"><h3>关联采购品目</h3><button class="text-button" :disabled="saving" @click="emit('close')">收起</button></div>
-    <p class="section-intro">{{ document.original_name }} · 明确这份资料的哪些原文用于哪个采购品目。对应关系不代替供应商承诺或达标证据。</p>
+  <dialog ref="dialog" class="binding-dialog" :aria-labelledby="titleId" aria-modal="true" @cancel.prevent="requestClose" @keydown="keepFocus">
+    <header class="binding-dialog-header">
+      <div><h3 :id="titleId">关联采购品目</h3><p class="binding-dialog-file" :title="document.original_name">{{ document.original_name }}</p></div>
+      <button class="text-button" type="button" data-test="binding-close" autofocus :disabled="saving" @click="requestClose">关闭</button>
+    </header>
+    <section class="binding-editor binding-dialog-body" aria-label="资料关联采购品目">
+    <p class="section-intro">明确这份资料的哪些原文用于哪个采购品目。对应关系不代替供应商承诺或达标证据。</p>
     <p v-if="loading" role="status">正在读取清单、对应关系和原文…</p>
     <p v-if="error" class="form-error" role="alert">{{ error }}</p>
     <p v-if="notice" class="state-note" role="status">{{ notice }}</p>
@@ -306,11 +336,19 @@ onUnmounted(() => { generation++ })
       <div v-if="writable && dirty" class="binding-confirmation">
         <p>待确认清单共 {{ working.length }} 个范围。保存后原审查结果保留为历史，需重新发起审查。</p>
         <label>确认理由<input v-model="reason" data-test="binding-reason" class="field-control" maxlength="1000" :disabled="locked" /></label>
-        <label class="binding-checkbox"><input v-model="confirmed" data-test="binding-confirm" type="checkbox" :disabled="locked || formChanged" />我已核对当前清单及原文，确认保存这些对应关系</label>
-        <p v-if="formChanged" class="state-note">还有未加入清单的填写，请先加入或取消，再确认保存。</p>
-        <button class="button button-primary" data-test="binding-save" :disabled="!canSave" @click="save()">{{ saving ? '保存中…' : '确认资料对应关系' }}</button>
       </div>
     </template>
     <div v-if="originalTarget" ref="originalContainer" class="binding-original"><EvidencePanel :target="originalTarget" :width="390" @close="originalTarget = null" @settled="scrollOriginal" /></div>
-  </section>
+    </section>
+    <footer class="binding-dialog-footer">
+      <template v-if="view && !loading && writable && dirty">
+        <label class="binding-checkbox"><input v-model="confirmed" data-test="binding-confirm" type="checkbox" :disabled="locked || formChanged" />我已核对当前清单及原文，确认保存这些对应关系</label>
+        <p v-if="formChanged" class="state-note">还有未加入清单的填写，请先加入或取消，再确认保存。</p>
+      </template>
+      <div class="binding-dialog-buttons">
+        <button class="button button-secondary" type="button" :disabled="saving" @click="requestClose">关闭</button>
+        <button v-if="view && !loading && writable && dirty" class="button button-primary" type="button" data-test="binding-save" :disabled="!canSave" @click="save()">{{ saving ? '保存中…' : '确认资料对应关系' }}</button>
+      </div>
+    </footer>
+  </dialog>
 </template>

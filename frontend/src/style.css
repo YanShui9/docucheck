@@ -463,9 +463,25 @@ h1, h2, h3, p { margin-top: 0; }
 }
 @media (prefers-reduced-motion: reduce) { .chat-app *, .chat-app *::before, .chat-app *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
 
-/* 资料与采购品目对应，沿用资料侧面板的样式与宽度。 */
+/* 资料与采购品目对应：原生模态脱离侧面板滚动区域。 */
 .binding-document-action { justify-self: start; padding-left: 0; font-size: 12px; }
-.binding-editor { margin-top: 18px; padding-top: 16px; border-top: 1px solid #e0e6df; font-size: 13px; overflow-wrap: anywhere; }
+.binding-dialog { width: min(760px, calc(100vw - 32px)); max-width: none; height: min(820px, calc(100vh - 32px)); height: min(820px, calc(100dvh - 32px)); max-height: none; margin: auto; padding: 0; border: 1px solid #dce5e3; border-radius: 14px; background: #fff; color: #243341; box-shadow: 0 18px 60px #1f29372e; overflow: hidden; }
+.binding-dialog[open] { display: flex; flex-direction: column; }
+.binding-dialog::backdrop { background: #1f293766; }
+.binding-dialog-header { flex-shrink: 0; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 18px 22px; border-bottom: 1px solid #e0e6df; }
+.binding-dialog-header > div { min-width: 0; }
+.binding-dialog-header h3 { margin: 0; font-size: 18px; }
+.binding-dialog-header > button { flex-shrink: 0; }
+.binding-dialog-file { margin: 6px 0 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; color: #52666f; }
+.binding-editor { font-size: 13px; overflow-wrap: anywhere; }
+.binding-dialog-body { flex: 1; min-height: 0; padding: 18px 22px; overflow: auto; overscroll-behavior: contain; }
+.binding-dialog-footer { flex-shrink: 0; padding: 14px 22px; border-top: 1px solid #e0e6df; background: #fff; font-size: 12px; }
+.binding-dialog-footer > .binding-checkbox { margin-bottom: 12px; }
+.binding-dialog-footer > .state-note { margin: 0 0 10px; }
+.binding-dialog-buttons { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+@media (max-width: 540px) {
+  .binding-dialog-header, .binding-dialog-body, .binding-dialog-footer { padding-left: 16px; padding-right: 16px; }
+}
 .binding-heading, .binding-actions { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
 .binding-heading h3 { margin: 0; }
 .binding-fields { margin: 14px 0; padding: 12px; border: 1px solid #e0e6df; border-radius: 10px; display: grid; gap: 12px; min-width: 0; }
