@@ -37,6 +37,11 @@ class ExpandedItemBindingOut(ItemBindingEntry):
     anchor_fingerprint: str = Field(pattern=r"^[a-f0-9]{64}$")
 
 
+class ItemBindingContinuationOut(Contract):
+    version_id: str = Field(pattern=r"^[a-f0-9]{32}$")
+    digest: str = Field(pattern=r"^[a-f0-9]{64}$")
+
+
 class ItemBindingPayloadOut(Contract):
     schema_version: Literal[1]
     case_id: str
@@ -44,6 +49,7 @@ class ItemBindingPayloadOut(Contract):
     checklist_version_id: str | None
     checklist_digest: str = Field(pattern=r"^[a-f0-9]{64}$")
     entries: list[ExpandedItemBindingOut]
+    continuation: ItemBindingContinuationOut | None = None
 
 
 class ItemBindingVersionOut(Contract):
@@ -74,6 +80,7 @@ def item_binding_router(engine: Engine) -> APIRouter:
     @router.get(
         "/cases/{case_id}/snapshots/{snapshot_id}/item-bindings",
         response_model=ItemBindingViewOut,
+        response_model_exclude_unset=True,
     )
     def get_bindings(case_id: str, snapshot_id: str) -> dict:
         return service.get(case_id, snapshot_id)
@@ -81,6 +88,7 @@ def item_binding_router(engine: Engine) -> APIRouter:
     @router.put(
         "/cases/{case_id}/snapshots/{snapshot_id}/item-bindings",
         response_model=ItemBindingViewOut,
+        response_model_exclude_unset=True,
     )
     def confirm_bindings(
         case_id: str,
@@ -108,6 +116,7 @@ def item_binding_router(engine: Engine) -> APIRouter:
     @router.get(
         "/cases/{case_id}/item-binding-versions/{version_id}",
         response_model=ItemBindingVersionOut,
+        response_model_exclude_unset=True,
     )
     def get_version(case_id: str, version_id: str) -> dict:
         return service.version(case_id, version_id)

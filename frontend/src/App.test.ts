@@ -41,7 +41,8 @@ const wrappers: ReturnType<typeof mount>[] = []
 async function workbench() {
   apiRequest.mockImplementation(reads)
   const wrapper = mount(App, { global: { stubs: {
-    DocumentsPanel: { name: 'DocumentsPanel', props: ['selectedCase', 'notifyBindingsConfirmed'],
+    DocumentsPanel: { name: 'DocumentsPanel', props: ['selectedCase', 'notifyBindingsConfirmed', 'documents',
+      'selectedHistoryId', 'historyDocuments', 'historyLoading', 'historyError', 'canWrite', 'busy'],
       template: '<div class="documents-stub">{{ selectedCase?.id }}</div>' },
     AgentWorkbench: true, EvidencePanel: true, ChatWorkspace: true,
   } } })
@@ -69,8 +70,175 @@ test('item binding confirmation refreshes chat currentness without resetting the
 
 afterEach(() => {
   wrappers.splice(0).forEach(wrapper => wrapper.unmount())
+  vi.useRealTimers()
   apiRequest.mockReset()
   uploadDocument.mockReset()
+})
+
+test('history failure stops loading and retry reads the selected snapshot without the current documents request', async () => {
+  const wrapper = await workbench()
+  const history = deferred<object>()
+  const path = '/cases/case-1/snapshots/history-a/documents'
+  apiRequest.mockImplementation((requested: string) => requested === path ? history.promise : reads(requested))
+  const documents = wrapper.findComponent({ name: 'DocumentsPanel' })
+  documents.vm.$emit('selectHistory', 'history-a')
+  await flushPromises()
+  expect(documents.props('historyLoading')).toBe(true)
+  history.reject(new Error('http_503'))
+  await flushPromises()
+  expect(documents.props('historyLoading')).toBe(false)
+  expect(documents.props('historyError')).toContain('历史资料')
+  expect(documents.props('historyDocuments')).toBeNull()
+  expect(wrapper.find('.chat-main [role="alert"]').exists()).toBe(false)
+
+  apiRequest.mockClear()
+  apiRequest.mockImplementation((requested: string) => requested === path
+    ? Promise.resolve({ case_id: 'case-1', revision: 7, snapshot_id: 'history-a', documents: [] })
+    : Promise.reject(new Error('current_documents_unavailable')))
+  documents.vm.$emit('refreshDocuments')
+  await flushPromises()
+  expect(apiRequest.mock.calls.map(([requested]) => requested)).toEqual([path])
+  expect(documents.props('historyDocuments')).toMatchObject({ revision: 7, snapshot_id: 'history-a' })
+  expect(documents.props('historyError')).toBe('')
+  expect(documents.props('canWrite')).toBe(true)
+  expect(documents.props('documents').snapshot_id).toBe('snapshot-case-1')
+})
+
+test.each(['success', 'failure'])('late history %s cannot replace a newer A to B to A selection', async outcome => {
+  const wrapper = await workbench()
+  const older = deferred<object>()
+  const latest = deferred<object>()
+  let aRequests = 0
+  apiRequest.mockImplementation((path: string) => {
+    if (path === '/cases/case-1/snapshots/history-a/documents') return ++aRequests === 1 ? older.promise : latest.promise
+    if (path === '/cases/case-1/snapshots/history-b/documents') return Promise.resolve({
+      case_id: 'case-1', revision: 2, snapshot_id: 'history-b', documents: [],
+    })
+    return reads(path)
+  })
+  const documents = wrapper.findComponent({ name: 'DocumentsPanel' })
+  for (const id of ['history-a', 'history-b', 'history-a']) {
+    documents.vm.$emit('selectHistory', id)
+    await flushPromises()
+  }
+  latest.resolve({ case_id: 'case-1', revision: 3, snapshot_id: 'history-a', documents: [] })
+  await flushPromises()
+  if (outcome === 'success') older.resolve({ case_id: 'case-1', revision: 1, snapshot_id: 'history-a', documents: [] })
+  else older.reject(new Error('not_found'))
+  await flushPromises()
+  expect(documents.props('historyDocuments')).toMatchObject({ revision: 3 })
+  expect(documents.props('historyError')).toBe('')
+  expect(documents.props('historyLoading')).toBe(false)
+  expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+})
+
+test('history retry supersedes a pending request for the same snapshot', async () => {
+  const wrapper = await workbench()
+  const older = deferred<object>()
+  const latest = deferred<object>()
+  const requests = [older, latest]
+  const signals: AbortSignal[] = []
+  apiRequest.mockImplementation((path: string, _token: unknown, init?: RequestInit) => {
+    if (path === '/cases/case-1/snapshots/history-a/documents') {
+      if (init?.signal) signals.push(init.signal)
+      return requests.shift()!.promise
+    }
+    return reads(path)
+  })
+  const documents = wrapper.findComponent({ name: 'DocumentsPanel' })
+  documents.vm.$emit('selectHistory', 'history-a')
+  await flushPromises()
+  documents.vm.$emit('refreshDocuments')
+  await flushPromises()
+  expect(signals[0]?.aborted).toBe(true)
+  latest.reject(new Error('http_503'))
+  await flushPromises()
+  older.resolve({ case_id: 'case-1', revision: 1, snapshot_id: 'history-a', documents: [] })
+  await flushPromises()
+  expect(documents.props('historyDocuments')).toBeNull()
+  expect(documents.props('historyError')).toContain('历史资料')
+  expect(documents.props('historyLoading')).toBe(false)
+})
+
+test('history requests time out locally even when the transport never settles', async () => {
+  const wrapper = await workbench()
+  vi.useFakeTimers()
+  let signal: AbortSignal | null = null
+  apiRequest.mockImplementation((path: string, _token: unknown, init?: RequestInit) => {
+    if (path === '/cases/case-1/snapshots/history-a/documents') {
+      signal = init?.signal as AbortSignal
+      return new Promise(() => {})
+    }
+    return reads(path)
+  })
+  const documents = wrapper.findComponent({ name: 'DocumentsPanel' })
+  documents.vm.$emit('selectHistory', 'history-a')
+  await flushPromises()
+  await vi.advanceTimersByTimeAsync(20_000)
+  await flushPromises()
+  expect(documents.props('historyLoading')).toBe(false)
+  expect(documents.props('historyError')).toContain('超时')
+  expect(signal).toMatchObject({ aborted: true })
+  documents.vm.$emit('selectHistory', null)
+  await flushPromises()
+  expect(documents.props('selectedHistoryId')).toBeNull()
+  expect(documents.props('historyError')).toBe('')
+  expect(documents.props('documents').snapshot_id).toBe('snapshot-case-1')
+})
+
+test('the history verification panel also exposes loading, failure, retry and return for the shared history request', async () => {
+  const wrapper = await workbench()
+  const history = deferred<object>()
+  const path = '/cases/case-1/snapshots/history-a/documents'
+  apiRequest.mockImplementation((requested: string) => requested === path ? history.promise : reads(requested))
+  wrapper.findComponent({ name: 'DocumentsPanel' }).vm.$emit('selectHistory', 'history-a')
+  await wrapper.findAll('button').find(button => button.text() === '历史核验')!.trigger('click')
+  await flushPromises()
+  expect(wrapper.get('.work-panel-content [role="status"]').text()).toBe('正在读取历史资料…')
+  history.reject(new Error('not_found'))
+  await flushPromises()
+  const alert = wrapper.get('.work-panel-content [role="alert"]')
+  expect(alert.text()).toContain('该历史资料不存在，或当前账号无权访问。')
+  const retry = deferred<object>()
+  apiRequest.mockImplementation((requested: string) => requested === path ? retry.promise : reads(requested))
+  await alert.findAll('button').find(button => button.text() === '重试')!.trigger('click')
+  await flushPromises()
+  expect(wrapper.find('.work-panel-content [role="alert"]').exists()).toBe(false)
+  retry.reject(new Error('session_expired'))
+  await flushPromises()
+  await wrapper.get('.work-panel-content [role="alert"]').findAll('button')
+    .find(button => button.text() === '返回当前版本')!.trigger('click')
+  await flushPromises()
+  expect(wrapper.find('.work-panel-content [role="alert"]').exists()).toBe(false)
+  expect(wrapper.findComponent({ name: 'AgentWorkbench' }).props('selectedHistoryId')).toBeNull()
+})
+
+test.each(['return', 'switch', 'unmount'])('leaving history by %s cancels its request and ignores late failure', async destination => {
+  const wrapper = await workbench()
+  const history = deferred<object>()
+  let signal: AbortSignal | undefined
+  apiRequest.mockImplementation((path: string, _token: unknown, init?: RequestInit) => {
+    if (path === '/cases/case-1/snapshots/history-a/documents') {
+      signal = init?.signal ?? undefined
+      return history.promise
+    }
+    return reads(path)
+  })
+  const documents = wrapper.findComponent({ name: 'DocumentsPanel' })
+  documents.vm.$emit('selectHistory', 'history-a')
+  await flushPromises()
+  if (destination === 'return') documents.vm.$emit('selectHistory', null)
+  else if (destination === 'switch') await wrapper.findAll('.case-item')[1]!.trigger('click')
+  else wrapper.unmount()
+  await flushPromises()
+  expect(signal?.aborted).toBe(true)
+  history.reject(new Error('session_expired'))
+  await flushPromises()
+  if (destination !== 'unmount') {
+    expect(documents.props('historyLoading')).toBe(false)
+    expect(documents.props('historyError')).toBe('')
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+  }
 })
 
 test('upload busy state blocks chat writes without changing owner permissions', async () => {

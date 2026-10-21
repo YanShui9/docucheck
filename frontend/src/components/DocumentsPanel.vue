@@ -17,6 +17,8 @@ const props = defineProps<{
   loadingOlder: boolean
   selectedHistoryId: string | null
   historyDocuments: DocumentsResult | null
+  historyLoading: boolean
+  historyError: string
   canWrite: boolean
   busy: boolean
   refreshKey?: number
@@ -48,6 +50,9 @@ const needsSupplier = computed(() => role.value !== 'requirement')
 const shownDocuments = computed(() =>
   props.selectedHistoryId ? props.historyDocuments : props.documents)
 const isHistorical = computed(() => props.selectedHistoryId !== null)
+const shownRevision = computed(() => isHistorical.value
+  ? props.snapshots.find(snapshot => snapshot.id === props.selectedHistoryId)?.revision ?? props.historyDocuments?.revision ?? '…'
+  : props.documents?.revision)
 const bindingView = ref<ItemBindingView | null>(null)
 const bindingLoading = ref(false)
 const bindingError = ref(false)
@@ -142,7 +147,7 @@ function roleLabel(value: string): string {
         <span class="eyebrow">资料准备</span>
         <h2 id="documents-title">上传采购资料</h2>
       </div>
-      <span v-if="documents" class="revision-tag">资料版本 {{ documents.revision }}</span>
+      <span v-if="shownRevision !== undefined" class="revision-tag">资料版本 {{ shownRevision }}</span>
     </div>
     <p class="section-intro">先上传需求单或订单，再添加供应商报价、产品说明及资质。每次上传都会保存新的资料版本，原件保留以便核对。</p>
 
@@ -194,9 +199,9 @@ function roleLabel(value: string): string {
       <div class="document-list-head">
         <div>
           <h3>{{ isHistorical ? '历史资料' : '当前资料' }}</h3>
-          <span>{{ shownDocuments?.documents.length ?? 0 }} 份</span>
+          <span>{{ shownDocuments?.documents.length ?? '—' }} 份</span>
         </div>
-        <button class="text-button" type="button" :disabled="busy"
+        <button class="text-button" type="button" :disabled="busy || (isHistorical && historyLoading)"
                 @click="emit('refreshDocuments')">刷新状态</button>
         <label v-if="snapshots.length" class="history-picker">
           <span>资料版本</span>
@@ -211,19 +216,24 @@ function roleLabel(value: string): string {
         </label>
       </div>
       <p v-if="isHistorical" class="history-notice">
-        正在查看历史版本 {{ historyDocuments?.revision ?? '…' }}。这里仅供追溯；上传和审查始终使用当前版本。
+        正在查看历史版本 {{ shownRevision }}。这里仅供追溯；上传和审查始终使用当前版本。
       </p>
       <button v-if="nextSnapshotBefore !== null" class="text-button history-more"
               type="button" :disabled="loadingOlder"
               @click="emit('loadOlderSnapshots')">
         {{ loadingOlder ? '读取中…' : '加载更早版本' }}
       </button>
-      <div v-if="isHistorical && !historyDocuments" class="loading-state" role="status">
+      <div v-if="isHistorical && historyLoading" class="loading-state" role="status">
         正在读取历史资料…
       </div>
+      <div v-else-if="isHistorical && historyError" class="alert" role="alert">
+        <span>{{ historyError }}</span>
+        <button class="text-button" type="button" :disabled="busy" @click="emit('refreshDocuments')">重试</button>
+        <button class="text-button" type="button" @click="emit('selectHistory', null)">返回当前版本</button>
+      </div>
       <div v-else-if="!shownDocuments?.documents.length" class="empty-state compact">
-        <strong>还没有资料</strong>
-        <span>上传采购需求后即可继续添加供应商资料。</span>
+        <strong>{{ isHistorical ? '该历史版本没有资料' : '还没有资料' }}</strong>
+        <span v-if="!isHistorical">上传采购需求后即可继续添加供应商资料。</span>
       </div>
       <ul v-else class="document-list">
         <li v-for="document in shownDocuments?.documents" :key="document.id" class="document-row">

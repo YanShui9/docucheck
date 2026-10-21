@@ -26,6 +26,8 @@ const nextSnapshotBefore = ref<number | null>(null)
 const loadingOlder = ref(false)
 const selectedHistoryId = ref<string | null>(null)
 const historyDocuments = ref<DocumentsResult | null>(null)
+const historyLoading = ref(false)
+const historyError = ref('')
 const busy = ref(false)
 const loading = ref(true)
 const error = ref('')
@@ -43,6 +45,8 @@ const pendingReportCorrections = ref<Record<string, { caseId: string; snapshotId
 const memoryOpen = ref(false)
 let refreshTimer: ReturnType<typeof setInterval> | undefined
 let selectionVersion = 0
+let historyRequestVersion = 0
+let historyController: AbortController | null = null
 let preparingCase: Promise<string | null> | null = null
 
 const checklistSnapshotId = computed(() =>
@@ -58,6 +62,7 @@ const panelTitles: Record<string, string> = {
 
 function newTask() {
   ++selectionVersion
+  cancelHistoryLoad()
   selectedCaseId.value = null; documents.value = null; snapshots.value = []
   nextSnapshotBefore.value = null; selectedHistoryId.value = null; historyDocuments.value = null
   evidenceTarget.value = null; panel.value = null; error.value = ''
@@ -166,6 +171,7 @@ async function loadProjects() {
     ? selectedProjectId.value : projects.value[0]?.id ?? null
   if (nextId) await selectProject(nextId)
   else {
+    cancelHistoryLoad()
     selectedProjectId.value = null
     selectedCaseId.value = null
     cases.value = []
@@ -180,6 +186,7 @@ async function loadProjects() {
 
 async function selectProject(projectId: string) {
   const version = ++selectionVersion
+  cancelHistoryLoad()
   selectedProjectId.value = projectId
   selectedCaseId.value = null
   cases.value = []
@@ -207,6 +214,7 @@ async function selectProject(projectId: string) {
 
 async function selectCase(caseId: string) {
   const version = ++selectionVersion
+  cancelHistoryLoad()
   selectedCaseId.value = caseId
   documents.value = null
   snapshots.value = []
@@ -245,23 +253,59 @@ async function refreshAfterCorrection(target: { caseId: string; fromSnapshotId: 
   panel.value = 'agent'
 }
 
+function cancelHistoryLoad() {
+  ++historyRequestVersion
+  historyController?.abort()
+  historyController = null
+  historyDocuments.value = null
+  historyLoading.value = false
+  historyError.value = ''
+}
+
 async function selectHistory(snapshotId: string | null) {
   const caseId = selectedCaseId.value
+  cancelHistoryLoad()
   evidenceTarget.value = null
   selectedHistoryId.value = snapshotId
-  historyDocuments.value = null
   if (!caseId || !snapshotId) return
   const version = selectionVersion
+  const requestVersion = historyRequestVersion
+  const controller = new AbortController()
+  historyController = controller
+  historyLoading.value = true
+  const isCurrent = () => version === selectionVersion && requestVersion === historyRequestVersion
+  let timedOut = false
+  let rejectInterrupted!: (reason: Error) => void
+  const interrupted = new Promise<never>((_resolve, reject) => { rejectInterrupted = reject })
+  const abort = () => rejectInterrupted(new Error(timedOut ? 'history_timeout' : 'history_cancelled'))
+  controller.signal.addEventListener('abort', abort, { once: true })
+  // Bound the UI wait as well as fetch, including a token provider that never settles.
+  const timeout = setTimeout(() => { timedOut = true; controller.abort() }, 20_000)
   try {
-    const result = await apiRequest<DocumentsResult>(
-      `/cases/${caseId}/snapshots/${snapshotId}/documents`, accessToken,
-    )
-    if (version === selectionVersion && selectedHistoryId.value === snapshotId) {
+    const result = await Promise.race([
+      apiRequest<DocumentsResult>(`/cases/${caseId}/snapshots/${snapshotId}/documents`, accessToken,
+        { signal: controller.signal }),
+      interrupted,
+    ])
+    if (isCurrent()) {
+      if (result.case_id !== caseId || result.snapshot_id !== snapshotId) throw new Error('history_scope')
       historyDocuments.value = result
     }
   } catch (reason) {
-    if (version === selectionVersion && selectedHistoryId.value === snapshotId) {
-      error.value = friendlyError(reason)
+    if (isCurrent()) {
+      const code = reason instanceof Error ? reason.message : ''
+      historyError.value = ({
+        history_timeout: '历史资料读取超时，请重试或返回当前版本。',
+        not_found: '该历史资料不存在，或当前账号无权访问。',
+        session_expired: '登录已过期，请重新登录后重试历史资料。',
+      } as Record<string, string>)[code] ?? '历史资料加载失败，请重试或返回当前版本。'
+    }
+  } finally {
+    clearTimeout(timeout)
+    controller.signal.removeEventListener('abort', abort)
+    if (isCurrent()) {
+      historyLoading.value = false
+      historyController = null
     }
   }
 }
@@ -369,6 +413,10 @@ async function refreshDocuments(force = false) {
   const caseId = selectedCaseId.value
   const version = selectionVersion
   if (!caseId || busy.value) return
+  if (force && selectedHistoryId.value) {
+    await selectHistory(selectedHistoryId.value)
+    return
+  }
   if (!force && !documents.value?.documents.some(item =>
     item.parse_status === 'pending' || item.parse_status === 'processing')) return
   try {
@@ -378,7 +426,6 @@ async function refreshDocuments(force = false) {
     if (caseId === selectedCaseId.value && version === selectionVersion &&
         (!documents.value || response.revision >= documents.value.revision)) {
       documents.value = response
-      if (force && selectedHistoryId.value) await selectHistory(selectedHistoryId.value)
     }
   } catch (reason) {
     if (version === selectionVersion) error.value = friendlyError(reason)
@@ -396,7 +443,7 @@ onMounted(async () => {
   refreshTimer = setInterval(() => { void refreshDocuments() }, 4000)
 })
 
-onUnmounted(() => { if (refreshTimer) clearInterval(refreshTimer) })
+onUnmounted(() => { cancelHistoryLoad(); if (refreshTimer) clearInterval(refreshTimer) })
 </script>
 
 <template>
@@ -435,6 +482,7 @@ onUnmounted(() => { if (refreshTimer) clearInterval(refreshTimer) })
         <DocumentsPanel v-if="panel === 'documents'" :selected-case="selectedCase" :documents="documents"
                         :snapshots="snapshots" :next-snapshot-before="nextSnapshotBefore" :loading-older="loadingOlder"
                         :selected-history-id="selectedHistoryId" :history-documents="historyDocuments" :can-write="canWrite" :busy="busy"
+                        :history-loading="historyLoading" :history-error="historyError"
                         :refresh-key="checklistChanges[documents?.snapshot_id ?? ''] ?? 0"
                         :binding-refresh-key="bindingChanges[documents?.snapshot_id ?? ''] ?? 0" :notify-bindings-confirmed="bindingsChanged"
                         @upload="handleUpload" @select-history="selectHistory" @load-older-snapshots="loadOlderSnapshots" @refresh-documents="refreshDocuments(true)" />
@@ -451,7 +499,13 @@ onUnmounted(() => { if (refreshTimer) clearInterval(refreshTimer) })
                      @open-evidence="evidenceTarget = $event; panel = null" @correction-submitted="trackReportCorrection" />
         <template v-else-if="panel === 'agent'">
           <label v-if="snapshots.length" class="workspace-history">查看资料版本<select class="field-control" :value="selectedHistoryId ?? ''" @change="selectHistory(($event.target as HTMLSelectElement).value || null)"><option value="">当前版本 {{ documents?.revision ?? 0 }}</option><option v-for="snapshot in snapshots.filter(item => item.revision !== documents?.revision)" :key="snapshot.id" :value="snapshot.id">历史版本 {{ snapshot.revision }}</option></select></label>
-          <AgentWorkbench :case-id="selectedCaseId" :documents="documents" :history-documents="historyDocuments" :selected-history-id="selectedHistoryId" :can-write="canWrite" history-only @open-evidence="evidenceTarget = $event; panel = null" @open-review="openReviewFromChat" @changed="refreshAfterCorrection" />
+          <div v-if="selectedHistoryId && historyLoading" class="loading-state" role="status">正在读取历史资料…</div>
+          <div v-else-if="selectedHistoryId && historyError" class="alert" role="alert">
+            <span>{{ historyError }}</span>
+            <button class="text-button" type="button" :disabled="busy" @click="refreshDocuments(true)">重试</button>
+            <button class="text-button" type="button" @click="selectHistory(null)">返回当前版本</button>
+          </div>
+          <AgentWorkbench v-else :case-id="selectedCaseId" :documents="documents" :history-documents="historyDocuments" :selected-history-id="selectedHistoryId" :can-write="canWrite" history-only @open-evidence="evidenceTarget = $event; panel = null" @open-review="openReviewFromChat" @changed="refreshAfterCorrection" />
         </template>
       </div>
     </aside>

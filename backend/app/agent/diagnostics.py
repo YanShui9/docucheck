@@ -22,12 +22,16 @@ DYNAMIC_REJECTION_CODES = frozenset({
     "candidate_invalid", "item_binding_scope", "item_binding_source_changed",
     "material_sources_rule", "material_sources_overlap", "material_source_criterion", "material_source_item",
 })
-_TOOLS = frozenset(DEFINITIONS) | {"get_checklist", "propose_checklist", "review_checklist", "read_sources", "batch_cache"}
+_TOOLS = frozenset(DEFINITIONS) | {
+    "get_checklist", "propose_checklist", "review_checklist", "read_sources", "batch_cache",
+    "read_checklist", "answer_checklist",
+}
 _ERRORS = ProviderError._CODES | frozenset({
     "invalid_tool_result", "evidence_scope", "supplier_scope", "fact_set_scope",
     "unknown_tool", "answer_invalid", "decision_budget", "input_budget",
     "output_budget", "model_budget", "tool_budget", "deadline", "cancelled",
     "memory_context_changed", "history_scope", "candidate_invalid", "cache_invalid",
+    "checklist_read_no_progress", "checklist_read_scope_budget",
 })
 _DETAILS = SAFE_VALIDATION_DETAILS | ProviderError._DETAILS | {
     "schema_validation", "other_validation",

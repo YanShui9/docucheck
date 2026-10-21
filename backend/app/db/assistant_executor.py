@@ -4,6 +4,7 @@ from sqlalchemy import select
 
 from ..agent.assistant import AssistantAgent
 from ..agent.assistant_answers import answer_digest
+from ..agent.assistant_checklist_answers import checklist_answer_digest
 from ..agent.dynamic import DynamicAgent
 from ..criteria.models import ChecklistDefinition
 from ..evidence.repository import digest
@@ -60,7 +61,8 @@ def execute_assistant(engine, claim, provider, *, heartbeat_interval_seconds=10.
                 repo = retriever.repository
             # Keep source revalidation under the same Case-first lock order as
             # submission/finish; standalone child -> parent locks can deadlock.
-            edit_base = store.binding(claim, source=source_digest(repo))["effective_definition"]
+            authority = store.binding(claim, source=source_digest(repo))
+            edit_base = authority["effective_definition"]
             context = load_conversation_context(engine, claim.run_id, claim.active_attempt_id)
             memory = load_memory_context(engine, repo, claim, request, context)
 
@@ -97,6 +99,7 @@ def execute_assistant(engine, claim, provider, *, heartbeat_interval_seconds=10.
                 return agent.ask(context.question, operation="propose_checklist" if operation == "proposal" else "review")
 
             agent = AssistantAgent(repo, provider, mode=request["mode"], definition=edit_base,
+                confirmed_definition=authority["confirmed_definition"], checklist_version_id=authority["checklist_version_id"],
                 retriever=retriever, formal=formal, validate=validate_context,
                 history=context.history, memory_layers=memory.layers, history_reader=memory.history_reader)
             result = agent.ask(context.question)
@@ -113,6 +116,8 @@ def execute_assistant(engine, claim, provider, *, heartbeat_interval_seconds=10.
                 "focus": None, "pending_clarification": None}
             if payload.get("evidence_answer") is not None:
                 checkpoint["evidence_answer_digest"] = answer_digest(payload)
+            if payload.get("checklist_answer") is not None:
+                checkpoint["checklist_answer_digest"] = checklist_answer_digest(payload)
             if binding["item_binding_digest"] is not None:
                 checkpoint.update(item_binding_version_id=binding["item_binding_version_id"], item_binding_digest=binding["item_binding_digest"])
             if result["status"] == "cancelled":

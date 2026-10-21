@@ -24,6 +24,7 @@
 | 上下文与分层记忆 | [记忆模块](context-memory-2026-10-04.md)、[分阶段上下文](repair-assistant-context-stages-2026-10-09.md)、[后续上下文复审](repair-assistant-context-audit-2026-10-09.md) |
 | 混合检索与异步索引 | [检索组件](hybrid-retrieval-2026-10-03.md)、[持久化索引](durable-indexing-2026-10-03.md)、[真实浏览器 RAG](repair-browser-rag-live-2026-10-08.md) |
 | 最新资料与品目对应 | [C闭环验收](document-item-binding-c-acceptance-2026-10-11.md)、[A1 契约与 API](document-item-binding-a1-2026-10-10.md)、[A2 规则与运行](document-item-binding-a2-2026-10-10.md)、[A3 范围检索](document-item-binding-a3-2026-10-10.md)、[B 中文前端与验证](document-item-binding-b-2026-10-10.md)、[C 指标与原件补修](document-item-binding-c-metric-labels-2026-10-11.md)、[人工继承补修](document-item-binding-c-manual-carry-2026-10-11.md) |
+| 清单问答与资料补修 | [已确认规则短答、关联续用与历史读取](repair-remaining-chat-materials-2026-10-20.md)、[本轮计划](superpowers/plans/2026-10-20-remaining-chat-material-repairs.md) |
 | 当前动态多品类质量 | [评估说明](evaluation.md)、[2026-10-14 测量摘要](../evals/reports/dynamic-development-2026-10-14.json)；12 包开发测量已交付，质量出口未通过，独立封存仍为 0；10 月 15 日 v12 源码修复尚未真实模型复测 |
 | 评估协议与合成资料 | [设计与评分口径](superpowers/specs/2026-10-11-dynamic-evaluation-design.md)、[12 包蓝图](../evals/dynamic/case_matrix.json)、[核实来源](../evals/dynamic/source_catalog.json)、[D1 准备记录](dynamic-evaluation-d1-2026-10-11.md)；动态合成资料的生成、校验方法见[评估工具说明](../evals/README.md) |
 | 历史固定字段开发验证 | [M5-B 原始开发验证](m5-b-development-validation-2026-10-03.md)、[后续同版本联调](m5-current-version-integration-2026-10-03.md)；104/104 不作为当前多品类准确率 |

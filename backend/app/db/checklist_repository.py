@@ -587,6 +587,17 @@ class ChecklistRepository:
                     )
                     if changed.rowcount != 1:
                         raise ChecklistError("checklist_revision_conflict")
+                if operation == "confirm":
+                    from .item_binding_repository import (
+                        ItemBindingError,
+                        continue_current,
+                    )
+
+                    try:
+                        continue_current(connection, case_id, snapshot_id, version_id,
+                                         selected_json, actor=actor)
+                    except ItemBindingError as exc:
+                        raise ChecklistError(exc.code) from None
                 response = _view(connection, case_id, snapshot_id, input_revision)
                 if operation == "confirm":
                     response["excluded_criterion_ids"] = remaining

@@ -1,6 +1,7 @@
 """Confirmed item attribution with Case-first transactions and immutable replay."""
 
 import json
+import re
 from datetime import UTC, datetime
 from uuid import uuid4
 
@@ -18,6 +19,7 @@ from .models import (
     agent_runs,
     cases,
     checklist_heads,
+    checklist_versions,
     document_versions,
     evidence_blocks,
     input_snapshots,
@@ -256,6 +258,8 @@ def _validate_payload(
         or payload.get("schema_version") != 1
     ):
         raise ItemBindingError("item_binding_source_changed")
+    if "continuation" in payload:
+        _continuation_origin(connection, payload, definition, current_read=current_read)
     if payload["entries"]:
         fields = set(ItemBindingEntry.model_fields)
         requests = [
@@ -274,6 +278,69 @@ def _validate_payload(
             != payload["entries"]
         ):
             raise ItemBindingError("item_binding_source_changed")
+
+
+def _same_items(left: dict | None, right: dict | None) -> bool:
+    """Only exact item identities survive rule edits, regardless of ordering."""
+    return bool(left and right) and {
+        item["item_id"]: item for item in left["items"]
+    } == {item["item_id"]: item for item in right["items"]}
+
+
+def _identity_continuous(
+    connection: Connection, case_id: str, snapshot_id: str,
+    previous: dict, version_id: str, definition: dict,
+) -> bool:
+    """Do not carry across identity changes later reverted to the same strings."""
+    target = _read(connection, select(checklist_versions.c.version).where(
+        checklist_versions.c.case_id == case_id, checklist_versions.c.id == version_id,
+    ), True).one()["version"]
+    rows = _read(connection, select(checklist_versions.c.id, checklist_versions.c.snapshot_id).where(
+        checklist_versions.c.case_id == case_id,
+        checklist_versions.c.version > previous["version"], checklist_versions.c.version <= target,
+    ).order_by(checklist_versions.c.version).limit(101), True).all()
+    if not 1 <= len(rows) <= 100 or len(rows) != target - previous["version"]:
+        return False
+    return all(row["snapshot_id"] == snapshot_id and _same_items(
+        _version(connection, case_id, row["id"], current_read=True)["definition"], definition,
+    ) for row in rows)
+
+
+def _continuation_origin(
+    connection: Connection, payload: dict, definition: dict | None, *, current_read: bool
+) -> dict:
+    """Resolve exactly one original confirmation; chains and cycles are invalid."""
+    origin = payload["continuation"]
+    if (
+        not isinstance(origin, dict)
+        or set(origin) != {"version_id", "digest"}
+        or not isinstance(origin["version_id"], str)
+        or not re.fullmatch(r"[a-f0-9]{32}", origin["version_id"])
+        or not isinstance(origin["digest"], str)
+        or not re.fullmatch(r"[a-f0-9]{64}", origin["digest"])
+    ):
+        raise ItemBindingError("item_binding_source_changed")
+    row = _read(connection, select(item_binding_versions).where(
+        item_binding_versions.c.case_id == payload["case_id"],
+        item_binding_versions.c.id == origin["version_id"],
+    ), current_read).first()
+    if (
+        not row
+        or row["snapshot_id"] != payload["snapshot_id"]
+        or row["content_digest"] != origin["digest"]
+        or "continuation" in row["payload_json"]
+    ):
+        raise ItemBindingError("item_binding_source_changed")
+    original_definition = _version(connection, payload["case_id"], row["checklist_version_id"],
+                                   current_read=current_read)["definition"]
+    if not _same_items(original_definition, definition):
+        raise ItemBindingError("item_binding_source_changed")
+    frozen = load_frozen(connection, payload["case_id"], payload["snapshot_id"],
+                         row["checklist_version_id"], original_definition, row["id"],
+                         origin["digest"], current_read=current_read)
+    if frozen["payload"]["entries"] != payload["entries"]:
+        raise ItemBindingError("item_binding_source_changed")
+    return dict(row)
 
 
 def load_frozen(
@@ -338,7 +405,12 @@ def freeze_current(
     definition: ChecklistDefinition | dict | None,
     *,
     current_read: bool = True,
+    allow_continuation: bool = False,
 ) -> dict:
+    if allow_continuation:
+        if not current_read:
+            raise ItemBindingError("invalid_request")
+        continue_current(connection, case_id, snapshot_id, checklist_version_id, definition)
     _check_access(connection, case_id, current_read=current_read)
     definition = _context(
         connection,
@@ -383,6 +455,86 @@ def freeze_current(
         )
     payload = _empty(case_id, snapshot_id, checklist_version_id, definition)
     return {"version_id": None, "digest": digest(payload), "payload": payload}
+
+
+def continue_current(
+    connection: Connection,
+    case_id: str,
+    snapshot_id: str,
+    checklist_version_id: str | None,
+    definition: ChecklistDefinition | dict | None,
+    *,
+    actor: str | None = None,
+) -> None:
+    """Caller owns a write transaction; append an exact scope under the Case lock.
+
+    Used by explicit checklist confirmations and new Run submissions only. Reads,
+    replays and validation never repair a head as a side effect.
+    """
+    case = _check_access(connection, case_id, actor, current_read=True)
+    definition = _context(connection, case_id, snapshot_id, checklist_version_id,
+                          definition, current_read=True)
+    if checklist_version_id is None:
+        return
+    snapshot = _read(connection, select(input_snapshots.c.revision).where(
+        input_snapshots.c.case_id == case_id, input_snapshots.c.id == snapshot_id,
+    ), True).first()
+    checklist = _read(connection, select(checklist_heads).where(
+        checklist_heads.c.case_id == case_id,
+    ), True).first()
+    if (case["revision"] != snapshot["revision"] or not checklist
+        or checklist["snapshot_id"] != snapshot_id
+        or checklist["confirmed_version_id"] != checklist_version_id
+        or (checklist["draft_json"] is not None
+            and checklist["draft_base_version_id"] != checklist_version_id)):
+        return
+    head = _read(connection, select(item_binding_heads).where(
+        item_binding_heads.c.case_id == case_id,
+    ), True).first()
+    if not head:
+        return
+    row = _read(connection, select(item_binding_versions).where(
+        item_binding_versions.c.case_id == case_id,
+        item_binding_versions.c.id == head["version_id"],
+    ), True).first()
+    if not row or row["version"] != head["revision"]:
+        raise ItemBindingError("item_binding_source_changed")
+    if row["snapshot_id"] != snapshot_id or row["checklist_version_id"] == checklist_version_id:
+        return
+    previous = _version(connection, case_id, row["checklist_version_id"], current_read=True)
+    if (not _same_items(previous["definition"], definition)
+        or not _identity_continuous(connection, case_id, snapshot_id, previous,
+                                    checklist_version_id, definition)):
+        return
+    old = load_frozen(connection, case_id, snapshot_id, row["checklist_version_id"],
+                      previous["definition"], row["id"], row["content_digest"], current_read=True)
+    active = _read(connection, select(agent_runs.c.id).where(
+        agent_runs.c.case_id == case_id,
+        agent_runs.c.status.in_(("queued", "running", "waiting_user")),
+    ).limit(1), True).first()
+    if active:
+        raise ItemBindingError("case_busy")
+    payload = _empty(case_id, snapshot_id, checklist_version_id, definition)
+    payload["entries"] = old["payload"]["entries"]
+    payload["continuation"] = old["payload"].get("continuation", {
+        "version_id": row["id"], "digest": row["content_digest"],
+    })
+    origin = _continuation_origin(connection, payload, definition, current_read=True)
+    _validate_payload(connection, payload, definition, current_read=True)
+    version_id, revision = uuid4().hex, head["revision"] + 1
+    connection.execute(insert(item_binding_versions).values(
+        id=version_id, case_id=case_id, snapshot_id=snapshot_id,
+        checklist_version_id=checklist_version_id, version=revision,
+        payload_json=payload, content_digest=digest(payload), confirmed_by=origin["confirmed_by"],
+        reason=origin["reason"], created_at=datetime.now(UTC).replace(tzinfo=None),
+    ))
+    changed = connection.execute(update(item_binding_heads).where(
+        item_binding_heads.c.case_id == case_id,
+        item_binding_heads.c.revision == head["revision"],
+        item_binding_heads.c.version_id == row["id"],
+    ).values(version_id=version_id, revision=revision))
+    if changed.rowcount != 1:
+        raise ItemBindingError("item_binding_revision_conflict")
 
 
 def load_run_bindings(connection: Connection, row, definition: dict | None,
@@ -480,6 +632,8 @@ class ItemBindingRepository:
             row["id"],
             row["content_digest"],
         )
+        confirmation = (_continuation_origin(connection, envelope["payload"], definition, current_read=False)
+                        if "continuation" in envelope["payload"] else row)
         return {
             "id": row["id"],
             "version": row["version"],
@@ -489,7 +643,7 @@ class ItemBindingRepository:
             "payload": envelope["payload"],
             "confirmed_by": row["confirmed_by"],
             "reason": row["reason"],
-            "confirmed_at": row["created_at"].replace(tzinfo=UTC).isoformat(),
+            "confirmed_at": confirmation["created_at"].replace(tzinfo=UTC).isoformat(),
         }
 
     def version(self, case_id: str, version_id: str) -> dict:

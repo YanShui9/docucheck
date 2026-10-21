@@ -87,7 +87,8 @@ def bind_workflow(connection, request, run_id, *, item_binding_override=None):
     try:
         frozen = (item_binding_override if item_binding_override is not None else
                   freeze_current(connection, request.case_id, request.snapshot_id,
-                                 version["id"] if version else None, version["definition"] if version else None))
+                                 version["id"] if version else None, version["definition"] if version else None,
+                                 allow_continuation=True))
     except ItemBindingError as exc:
         _error(exc.code)
     return {

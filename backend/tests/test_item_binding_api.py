@@ -296,7 +296,7 @@ def test_binding_change_is_blocked_while_run_is_queued(binding_db):
     assert put(engine, body)["binding_revision"] == 1
 
 
-def test_changed_checklist_marks_binding_stale_and_freezes_empty(binding_db):
+def test_changed_item_identity_marks_binding_stale_and_freezes_empty(binding_db):
     from backend.app.db.item_binding_repository import (
         ItemBindingRepository,
         freeze_current,
@@ -308,6 +308,7 @@ def test_changed_checklist_marks_binding_stale_and_freezes_empty(binding_db):
     old = service.version("case", body["checklist_version_id"])["definition"]
     changed = deepcopy(old)
     changed["criteria"][0]["rule"]["value"] = "50"
+    changed["items"][0]["specification"] = "型号：NEW-SKU"
     service.put(
         "case",
         "snap",

@@ -4,6 +4,10 @@ import json
 
 from sqlalchemy import insert, select, update
 
+from ..agent.assistant_checklist_answers import (
+    checklist_answer_digest,
+    render_checklist_answer,
+)
 from ..criteria.changes import apply_changes
 from ..criteria.models import ChecklistDefinition
 from ..criteria.validation import validate_definition
@@ -72,7 +76,7 @@ def bind_assistant(connection, request, run_id):
         version_id, confirmed = None, None
     try:
         frozen = freeze_current(connection, request.case_id, request.snapshot_id, version_id,
-                                confirmed["definition"] if confirmed else None)
+                                confirmed["definition"] if confirmed else None, allow_continuation=True)
     except ItemBindingError as exc:
         _error(exc.code)
     return {"run_id": run_id, "case_id": request.case_id, "snapshot_id": request.snapshot_id,
@@ -118,8 +122,9 @@ class AssistantRepository:
         if row is None or row["case_id"] != run["case_id"] or row["snapshot_id"] != run["snapshot_id"]:
             _error("assistant_scope")
         definition = self.validate_binding(connection, row, source=source)
-        frozen = load_run_bindings(connection, row, _confirmed_definition(connection, row, current_read=True), current_read=True)
-        return dict(row) | {"item_bindings": frozen} | ({"effective_definition": definition} if source is not None else {})
+        confirmed = _confirmed_definition(connection, row, current_read=True)
+        frozen = load_run_bindings(connection, row, confirmed, current_read=True)
+        return dict(row) | {"item_bindings": frozen, "confirmed_definition": confirmed} | ({"effective_definition": definition} if source is not None else {})
 
     def binding(self, claim, *, source=None):
         with self.engine.begin() as connection:
@@ -238,6 +243,9 @@ class AssistantRepository:
             direct_answer = payload.get("evidence_answer")
             if (row["memory_json"] or {}).get("evidence_answer_digest") != answer_digest(payload):
                 _error("assistant_source_changed")
+            checklist_answer = payload.get("checklist_answer")
+            if (row["memory_json"] or {}).get("checklist_answer_digest") != checklist_answer_digest(payload):
+                _error("assistant_source_changed")
             reply = connection.scalar(select(run_attempts.c.resume_message_id).where(run_attempts.c.run_id == run_id, run_attempts.c.resume_message_id.is_not(None)).order_by(run_attempts.c.attempt_no.desc()).limit(1))
             instruction = connection.scalar(select(messages.c.content).where(messages.c.id == (reply or row["message_id"])))
             if instruction != payload["instruction"]:
@@ -252,6 +260,12 @@ class AssistantRepository:
         if base:
             validate_definition(base, repo)
         kind = payload["kind"]
+        if checklist_answer is not None:
+            if kind != "chat" or payload["retrieval"] is not None or payload["source_reads"] or direct_answer is not None:
+                _error("assistant_source_changed")
+            confirmed = ChecklistDefinition.model_validate(scope_definition) if scope_definition else None
+            if render_checklist_answer(checklist_answer, confirmed, row["checklist_version_id"]) != payload["answer"]:
+                _error("assistant_source_changed")
         if kind == "changes":
             candidate, changes = apply_changes(base, payload["patch"], instruction)
             validate_definition(candidate, repo)
