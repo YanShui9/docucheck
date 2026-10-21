@@ -266,12 +266,12 @@ def test_known_usage_budget_stop_closes_model_event_without_replay():
 
     provider = OverBudget()
     result = agent(repository(), provider, definition(), budget=Budget(max_output=600)).ask("审查")
-    assert result["status"] == "partial" and result["error"] == "token_budget"
+    assert result["status"] == "partial" and result["error"] == "output_budget"
     assert len(provider.calls) == 1
     assert result["usage"]["actual_output"] == 601 and result["usage"]["unknown_usage_calls"] == 0
     models = [event for event in result["events"] if event["kind"] == "model"]
     assert len(models) == 1 and models[0]["status"] == "failed"
-    assert models[0]["error"] == "token_budget" and models[0]["outcome_unknown"] is False
+    assert models[0]["error"] == "output_budget" and models[0]["outcome_unknown"] is False
 
 
 def test_batch_cache_resumes_without_extracting_and_rejects_forged_cached_values():

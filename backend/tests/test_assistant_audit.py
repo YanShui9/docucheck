@@ -6,7 +6,7 @@ import pytest
 
 from backend.app.agent.assistant import AssistantAgent
 from backend.app.agent.assistant_evidence import supports, verify_windows
-from backend.app.agent.policy import input_bound
+from backend.app.agent.policy import Budget, input_bound
 from backend.app.evidence.repository import EvidenceRepository
 from backend.app.evidence.retrieval import Retriever
 from backend.app.parsing import EvidenceBlock
@@ -93,7 +93,7 @@ def test_repeated_retrieval_is_bounded_and_large_result_exposes_followup_handles
     repo = long_repository(count=12)
     provider = StageProvider(*[('search_evidence', {'query':'quantity','limit':12})] * 3,
         ('answer_evidence', {"answer": '本次未找到直接依据。', 'citations':[]}))
-    result = AssistantAgent(repo, provider, retriever=Retriever(repo)).ask('查采购数量')
+    result = AssistantAgent(repo, provider, retriever=Retriever(repo), budget=Budget(max_prompt=16000)).ask('查采购数量')
     assert result['status'] == 'completed', result['error']
     assert all(input_bound(m,s) <= 16000 for m,s in provider.requests)
     assert len(result['payload']['source_windows']) <= 12

@@ -19,7 +19,7 @@ def measure_request(messages: list[BaseMessage], schemas: list[dict], *,
                     budget: Budget, output_cap: int, phase: str) -> dict:
     if phase not in CONTEXT_PHASES:
         raise ValueError("invalid_context_phase")
-    planned_output = min(output_cap, budget.max_output - budget.output_reserved)
+    planned_output = budget.planned_output(output_cap)
     return {
         "version": 1,
         "phase": phase,
@@ -29,7 +29,13 @@ def measure_request(messages: list[BaseMessage], schemas: list[dict], *,
         "legacy_input_estimate": input_bound(messages, schemas),
         "legacy_schema_bytes": len(json.dumps(schemas, ensure_ascii=False).encode("utf-8")),
         "legacy_prompt_limit": budget.prompt_limit(output_cap),
-        "legacy_task_input_remaining": max(0, budget.max_input - budget.input_reserved),
+        "legacy_task_input_remaining": (None if budget.max_input is None else
+                                        max(0, budget.max_input - budget.input_reserved)),
+        "input_estimate_unit": "utf8_bytes",
+        "window_fit_method": "one_byte_per_token_allowance_v1",
+        "safety_reserved_tokens": budget.safety_reserved,
+        "task_input_hard_limit_tokens": budget.max_input,
+        "task_output_hard_limit_tokens": budget.max_output,
         "output_requested_tokens": output_cap,
         "output_planned_tokens": max(0, planned_output),
         "request_digest": digest([

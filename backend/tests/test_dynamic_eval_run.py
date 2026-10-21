@@ -787,6 +787,9 @@ def test_prepare_freezes_12_packs_104_positions_without_credentials(tmp_path, mo
         get=lambda *a, **k: pytest.fail("freeze_credentials"))))
     protocol = run.prepare_protocol(root)
     assert (protocol["planned_tasks"], protocol["planned_positions"], protocol["planned_files"]) == (12, 104, 58)
+    assert protocol["maximum_input_tokens"] is None and protocol["maximum_output_tokens"] is None
+    assert protocol["token_limit_source"] == "runtime_configuration_not_verified"
+    assert protocol["maximum_agent_requests"] == 12 * 32
     assert protocol["automatic_retries"] is False and protocol["track"] == "formal_review"
     assert protocol["candidate_generation_measured"] is False
     for task in protocol["tasks"]:

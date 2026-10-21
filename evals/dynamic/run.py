@@ -160,8 +160,9 @@ def prepare_protocol(root: Path, *, packs: list[str] | None = None) -> dict:
             "planned_tasks": len(tasks), "planned_files": sum(len(t["manifest"]["documents"]) for t in tasks),
             "planned_positions": sum(t["primary_cells"] for t in tasks),
             "mode": "thorough", "maximum_agent_requests": len(tasks) * limits["max_calls"],
-            "maximum_input_tokens": len(tasks) * limits["max_input"],
-            "maximum_output_tokens": len(tasks) * limits["max_output"],
+            # Preview does not inspect the target's optional per-Run quotas.
+            "maximum_input_tokens": None, "maximum_output_tokens": None,
+            "token_limit_source": "runtime_configuration_not_verified",
             "automatic_retries": False, "new_project": True, "new_case_per_attempt": True,
             "candidate_generation_measured": False,
             "environment": {key: "unknown" for key in (

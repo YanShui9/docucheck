@@ -56,7 +56,7 @@ from .context import (
 )
 from .context_usage import reserve_with_context
 from .diagnostics import DYNAMIC_REJECTION_CODES as REJECTION_CODES
-from .policy import MODE_LIMITS, Budget, RunStopped, input_bound
+from .policy import MODE_LIMITS, Budget, RunStopped, input_bound, quota_stop_message
 from .tools import HistoryRead
 
 MAX_RESPONSE_BYTES = 64_000
@@ -490,7 +490,7 @@ class DynamicAgent:
                             "location": _source_location(b), "role": b.role, "supplier": b.supplier} for b in blocks)
         guidance += ("\n当前快照可读取的来源句柄样例（仅用于read_sources定位，不能替代完整审查）="
                      + json.dumps(handles, ensure_ascii=False))
-        limit = min(budget.max_prompt, budget.context_window - 512)
+        limit = budget.prompt_limit(512)
         while True:
             optional = MEMORY_NOTICE + "\nMEMORY_DATA=" + json.dumps(payload, ensure_ascii=False)
             messages = [SystemMessage(content=guidance + optional), HumanMessage(content=question)]
@@ -504,13 +504,12 @@ class DynamicAgent:
                 break
         recent = readable_history(self.history[-8:], enabled=self.history_reader is not None)
         messages = [messages[0], *(m for turn in recent for m in turn), messages[-1]]
-        return fit_decision_history(messages, self.schemas, max_prompt=budget.max_prompt,
-                                    context_window=budget.context_window, output_cap=512)[0]
+        return fit_decision_history(messages, self.schemas, max_prompt=limit,
+                                    context_window=budget.context_window, output_cap=0)[0]
 
     def ask(self, question, *, operation="review") -> dict:
-        budget = self.budget or Budget(**MODE_LIMITS[self.mode],
-                        context_window=getattr(self.provider, "context_window", 32768),
-                        cancelled=lambda: self._cancelled)
+        budget = self.budget or Budget.for_provider(self.provider, self.mode,
+                                                   cancelled=lambda: self._cancelled)
         events, facts, batch_coverage = [], {}, []
         suppliers = sorted({d.supplier for d in self.repo.documents if d.supplier})
         payload = {"version": 1, "source_digest": self.source_digest, "rule_version": self.rule_version,
@@ -589,7 +588,7 @@ class DynamicAgent:
         def stop(exc):
             code = exc.code if isinstance(exc, (RunStopped, ProviderError)) else "dynamic_error"
             return {"status": "cancelled" if code == "cancelled" else "partial", "error": code,
-                    "answer": f"本次动态清单处理未完成：{code}。", "next_node": "end"}
+                    "answer": quota_stop_message(code) or f"本次动态清单处理未完成：{code}。", "next_node": "end"}
 
         def render_checked(*, source_refs=None):
             self._check(budget)

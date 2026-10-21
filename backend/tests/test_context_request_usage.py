@@ -45,8 +45,8 @@ def test_repair_instruction_and_tool_schema_change_measurement_and_fingerprint()
 
 @pytest.mark.parametrize("changes,code", [
     ({"max_prompt": 1}, "context_budget"),
-    ({"max_input": 1}, "token_budget"),
-    ({"max_output": 100}, "token_budget"),
+    ({"max_input": 1}, "input_budget"),
+    ({"max_output": 100}, "output_budget"),
     ({"max_calls": 0}, "model_budget"),
     ({"cancelled": lambda: True}, "cancelled"),
     ({"seconds": 0}, "deadline"),
@@ -86,7 +86,7 @@ def test_reserved_request_is_not_yet_a_provider_call_and_usage_is_not_fabricated
 
 
 def test_known_usage_reconciles_remaining_legacy_allowance():
-    budget, events = Budget(), []
+    budget, events = Budget(max_input=48000), []
     options, size, _ = reserve_with_context(budget, [], [], output_cap=512,
                                            phase="routing", events=events)
     budget.record(AIMessage(content="", usage_metadata={
@@ -107,8 +107,12 @@ def test_diagnostic_projection_rejects_untrusted_fields_and_preserves_signed_lim
            "context": measurement, "provider_called": "SECRET", "prompt": "SECRET"}
     summary = safe_trace_events([raw])[0]["summary"]
     assert "SECRET" not in str(summary)
-    assert summary["context"] == {"version": 1, "legacy_prompt_limit": -511,
-                                  "legacy_task_input_remaining": 48000, "output_planned_tokens": 512}
+    assert summary["context"] == {"version": 1, "legacy_prompt_limit": -512,
+                                  "legacy_task_input_remaining": None, "output_planned_tokens": 512,
+                                  "input_estimate_unit": "utf8_bytes",
+                                  "window_fit_method": "one_byte_per_token_allowance_v1",
+                                  "safety_reserved_tokens": 1,
+                                  "task_input_hard_limit_tokens": None, "task_output_hard_limit_tokens": None}
     assert "provider_called" not in summary
     for invalid in (None, [], "SECRET", {"version": True}, {"version": 2}):
         raw["context"] = invalid
@@ -118,3 +122,21 @@ def test_diagnostic_projection_rejects_untrusted_fields_and_preserves_signed_lim
 def test_invalid_phase_is_rejected_without_measuring():
     with pytest.raises(ValueError, match="invalid_context_phase"):
         measure_request([], [], budget=Budget(), output_cap=512, phase="SECRET")
+
+
+def test_original_a1_diagnostic_is_read_without_new_policy_fields():
+    context = {"version": 1, "phase": "routing", "exact_tokens": False,
+               "estimate_method": "serialized_utf8_plus_512_v1",
+               "legacy_task_input_remaining": 48000, "legacy_prompt_limit": 16000}
+    raw = {"kind": "model", "operation": "decide", "status": "completed", "context": context}
+    assert safe_trace_events([raw])[0]["summary"]["context"] == context
+
+
+def test_unlimited_and_explicit_limits_survive_safe_projection_without_percentages():
+    for budget in (Budget(), Budget(max_input=80000, max_output=9000)):
+        value = measure_request([], [], budget=budget, output_cap=512, phase="decide")
+        raw = {"kind": "model", "operation": "decide", "status": "started", "context": value}
+        assert safe_trace_events([raw])[0]["summary"]["context"] == value
+        assert value["task_input_hard_limit_tokens"] == budget.max_input
+        assert value["task_output_hard_limit_tokens"] == budget.max_output
+        assert "used_percent" not in value

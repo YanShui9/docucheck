@@ -54,9 +54,17 @@ def _safe_context(value) -> dict:
         return {}
     result = {"version": 1}
     for key in ("model_window_tokens", "legacy_input_estimate", "legacy_schema_bytes",
-                "legacy_task_input_remaining", "output_requested_tokens", "output_planned_tokens"):
+                "legacy_task_input_remaining", "output_requested_tokens", "output_planned_tokens",
+                "safety_reserved_tokens", "task_input_hard_limit_tokens", "task_output_hard_limit_tokens"):
         if _integer(value.get(key)):
             result[key] = value[key]
+    for key in ("legacy_task_input_remaining", "task_input_hard_limit_tokens", "task_output_hard_limit_tokens"):
+        if key in value and value[key] is None:
+            result[key] = None
+    for key, expected in (("input_estimate_unit", "utf8_bytes"),
+                          ("window_fit_method", "one_byte_per_token_allowance_v1")):
+        if value.get(key) == expected:
+            result[key] = expected
     # The legacy limit can be negative when output alone exceeds the window.
     limit = value.get("legacy_prompt_limit")
     if type(limit) is int and -2_147_483_647 <= limit <= 2_147_483_647:

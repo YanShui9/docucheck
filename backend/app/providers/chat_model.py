@@ -139,7 +139,9 @@ def _transport_error(error: Exception) -> ProviderError:
 class ChatModelProvider:
     """Wrap an injected model; callers reserve shared budgets before invoking."""
 
-    def __init__(self, model: BaseChatModel, *, context_window: int = 32768) -> None:
+    def __init__(self, model: BaseChatModel, *, context_window: int = 32768,
+                 run_max_input_tokens: int | None = None, run_max_output_tokens: int | None = None,
+                 context_safety_percent: int = 5) -> None:
         updates = {"callbacks": None, "tags": None, "metadata": None, "verbose": False}
         if "max_retries" in type(model).model_fields:
             updates["max_retries"] = 0
@@ -151,6 +153,9 @@ class ChatModelProvider:
             updates.update(root_client=client, client=client.chat.completions)
         self._model = model.model_copy(update=updates)
         self.context_window = context_window
+        self.run_max_input_tokens = run_max_input_tokens
+        self.run_max_output_tokens = run_max_output_tokens
+        self.context_safety_percent = context_safety_percent
         self.model_id = getattr(model, "model_name", None)
 
     def __repr__(self) -> str:

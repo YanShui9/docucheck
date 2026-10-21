@@ -85,7 +85,9 @@ Docker Desktop 切换 Linux Engine；从 `.env.example` 在本机首次建立 `.
 | `DOCUCHECK_MODEL_PROVIDER` | 当前为 `openai-compatible`，没有默认假模型回退。 |
 | `DOCUCHECK_MODEL_BASE_URL` / `ID` | 本次实测为 `https://api.deepseek.com` / `deepseek-flash`；更换模型须重新验证工具调用契约。 |
 | `DOCUCHECK_MODEL_API_KEY` | 仅本机或目标部署的密钥管理存储。 |
-| `DOCUCHECK_MODEL_CONTEXT_WINDOW` | Provider 配置容量；不取消应用自己的 prompt、调用、时间和 token 限额。 |
+| `DOCUCHECK_MODEL_CONTEXT_WINDOW` | 必填的模型窗口容量。A2a 源码按该值减去本次输出和安全余量，不再内置16k/24k单次限额；仍采用明确标记的字节估算，第三方实际容量须另外核验。 |
+| `DOCUCHECK_MODEL_CONTEXT_SAFETY_PERCENT` | 窗口安全余量百分数，默认5，允许0–99整数；输出额度另外预留。 |
+| `DOCUCHECK_RUN_MAX_INPUT_TOKENS` / `DOCUCHECK_RUN_MAX_OUTPUT_TOKENS` | 可选的每次请求执行过程（Run）累计输入/输出硬限。未设置或空白时只统计；设置时必须为正整数。调用前用保守预留，收到usage后校正，未知usage保留预留。调用次数、每次输出、耗时、取消保护始终生效。 |
 
 ```powershell
 python.exe -m backend.app.dev_oidc_realm

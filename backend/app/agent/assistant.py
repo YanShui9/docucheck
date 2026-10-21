@@ -49,7 +49,7 @@ from .assistant_runtime import clock_question, read_clock
 from .context import _memory_payload
 from .context_usage import reject_context_request, reserve_with_context
 from .dynamic import EmptyArgs, HistoryArgs, _schema, _source_location
-from .policy import MODE_LIMITS, Budget, RunStopped, input_bound
+from .policy import MODE_LIMITS, Budget, RunStopped, input_bound, quota_stop_message
 
 SYSTEM = """你是采购任务助手，通过服务端受控工具选择本轮意图，每次只调用一个工具。
 chat 用于普通交流和一般说明，不发布本任务的采购事实、供应商承诺或审查结论。
@@ -193,7 +193,7 @@ class AssistantAgent:
         self.runtime_context = None
         self.recalled_history = []
         self.history_reader = history_reader
-        self.budget = budget or Budget(**MODE_LIMITS[mode], context_window=getattr(provider, "context_window", 32768))
+        self.budget = budget or Budget.for_provider(provider, mode)
         self.source_digest = digest([asdict(b) for b in repo.blocks])
         self.schemas = [compact_schema(_schema(name, model, description)) for name, model, description in [
             ("chat", ChatArgs, "普通聊天；不发布本任务采购事实或结论"),
@@ -524,7 +524,7 @@ class AssistantAgent:
                 status = "waiting_user"
             answer = ("本次上下文超过安全处理预算，尚未生成新的清单或审查结论。直接重试同一问题不会缩短上下文；"
                       "请缩小本次任务范围，或联系维护者检查上下文配置。" if error == "context_budget"
-                      else f"本次助手处理未完成：{error}。")
+                      else quota_stop_message(error) or f"本次助手处理未完成：{error}。")
             if error == "checklist_edit_scope_budget":
                 answer = "本次选中的指标内容超出单次修改预算，原清单已保留。请减少本次修改的目标数量，或在清单编辑面板中编辑复杂指标；尚未生成新候选。"
             elif error in {"checklist_read_no_progress", "checklist_read_scope_budget"}:

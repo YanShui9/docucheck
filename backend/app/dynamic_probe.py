@@ -64,6 +64,9 @@ class CappedProvider:
         self.provider = provider
         self.context_window = provider.context_window
         self.model_id = getattr(provider, "model_id", None)
+        self.run_max_input_tokens = getattr(provider, "run_max_input_tokens", None)
+        self.run_max_output_tokens = getattr(provider, "run_max_output_tokens", None)
+        self.context_safety_percent = getattr(provider, "context_safety_percent", 5)
         self.calls = 0
 
     def _call(self, method, *args, **kwargs):

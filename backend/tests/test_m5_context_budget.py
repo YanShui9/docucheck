@@ -47,7 +47,7 @@ def test_history_uses_context_output_headroom_without_dropping_system_guidance()
     assert input_bound(trimmed, []) <= 2500 - 512
 
 
-def test_source_followup_after_large_history_fits_the_existing_standard_prompt_budget():
+def test_source_followup_after_large_history_fits_the_configured_prompt_budget():
     import json
 
     from backend.app.agent.graph import AgentSession
@@ -78,6 +78,7 @@ def test_source_followup_after_large_history_fits_the_existing_standard_prompt_b
                              usage_metadata={"input_tokens": 100, "output_tokens": 20, "total_tokens": 120})
 
     provider = ReadsKnownSources()
+    provider.context_window = 17380  # 15999 input allowance after output and safety.
     session = AgentSession(load_case(PACK_THREE), provider)
     extraction = session.tools.execute("extract_facts", {"supplier": "vendor-a"},
                                        lambda op, messages, schema: provider.extract(messages, schema))

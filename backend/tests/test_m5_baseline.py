@@ -43,6 +43,10 @@ def test_development_protocol_keeps_provenance_and_fixed_five_file_ten_runs(corp
     assert performance["planned_tasks"] == 10
     assert all(len(task["input"]["documents"]) == 5 for task in performance["tasks"])
     assert {task["pack_id"] for task in performance["tasks"]} == {"m5-c01"}
+    for protocol in (quality, performance):
+        assert protocol["maximum_input_tokens"] is None and protocol["maximum_output_tokens"] is None
+        assert protocol["token_limit_source"] == "runtime_configuration_not_verified"
+        assert protocol["maximum_agent_requests"] == protocol["planned_tasks"] * 32
 
 
 @pytest.mark.parametrize("mutation", ["human", "missing", "duplicate", "null_rows"])

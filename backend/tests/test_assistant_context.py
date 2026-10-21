@@ -67,7 +67,7 @@ def test_edit_phase_drops_optional_history_for_its_actual_output_reservation():
     baseline = AssistantAgent(repo, Decisions(("propose_changes", patch)), definition=base)
     completed = baseline.ask("删除第一项")
     assert completed["status"] == "completed", completed
-    window = completed["context"]["input_bound"] + 4096 + 100
+    window = (completed["context"]["input_bound"] + 4096 + 100) * 100 // 95 + 1
     provider = Decisions(("propose_changes", patch))
     result = AssistantAgent(repo, provider, definition=base, budget=Budget(context_window=window),
         history=[(HumanMessage(content="x" * 300), AIMessage(content="y" * 300))]).ask("删除第一项")

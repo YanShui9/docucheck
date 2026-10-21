@@ -138,8 +138,9 @@ def prepare_protocol(root: Path, review_path: Path, *, packs: list[str] | None =
             "planned_tasks": len(tasks), "application_cache_reuse_allowed": False,
             "new_case_and_conversation_per_attempt": True, "automatic_retries": False,
             "maximum_agent_requests": len(tasks) * limits["max_calls"],
-            "maximum_input_tokens": len(tasks) * limits["max_input"],
-            "maximum_output_tokens": len(tasks) * limits["max_output"],
+            # Preview does not inspect the target's optional per-Run quotas.
+            "maximum_input_tokens": None, "maximum_output_tokens": None,
+            "token_limit_source": "runtime_configuration_not_verified",
             "price_and_cost": "unknown_until_verified_prices_and_complete_usage",
             "model_authenticity": "not_verified_by_runner", "actual_business_measured": False}
 

@@ -146,7 +146,7 @@ def test_successful_review_has_one_diagnostic_per_model_call_with_real_usage():
 def test_legacy_format_repair_is_measured_without_replaying_the_provider(monkeypatch):
     budget = Budget(**MODE_LIMITS["thorough"])
     graph = import_module("backend.app.agent.graph")
-    monkeypatch.setattr(graph, "Budget", lambda **kwargs: budget)
+    monkeypatch.setattr(graph.Budget, "for_provider", lambda *args, **kwargs: budget)
 
     class InvalidSchema(RepeatsFirstSupplier):
         extracts = 0

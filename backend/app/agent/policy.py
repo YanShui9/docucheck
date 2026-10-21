@@ -7,10 +7,8 @@ from dataclasses import dataclass, field
 from langchain_core.messages import AIMessage, BaseMessage
 
 MODE_LIMITS = {
-    "standard": {"max_decisions": 8, "max_tools": 16, "max_calls": 16,
-                 "max_input": 48000, "max_output": 6000, "max_prompt": 16000},
-    "thorough": {"max_decisions": 12, "max_tools": 24, "max_calls": 32,
-                 "max_input": 96000, "max_output": 12000, "max_prompt": 24000},
+    "standard": {"max_decisions": 8, "max_tools": 16, "max_calls": 16},
+    "thorough": {"max_decisions": 12, "max_tools": 24, "max_calls": 32},
 }
 
 
@@ -20,10 +18,18 @@ class RunStopped(Exception):
         super().__init__(code)
 
 
+def quota_stop_message(code: str) -> str | None:
+    if code == "input_budget":
+        return "本次处理已达到配置的累计输入用量上限。已完成的处理保留，请调整任务用量限额后重新处理。"
+    if code == "output_budget":
+        return "本次处理已达到配置的累计输出用量上限。已完成的处理保留，请调整任务用量限额后重新处理。"
+    return None
+
+
 def input_bound(messages: list[BaseMessage], schemas: list[dict]) -> int:
-    # Byte-count upper estimate for the supported byte-tokenizer adapter.
-    # Usage returned by the provider is recorded separately. Include serialization
-    # and message/tool overhead, not just document text.
+    # Legacy byte estimate, not an exact tokenizer or the SDK wire payload.
+    # Admission conservatively allows one estimated byte per configured token.
+    # Actual provider usage is separate; no precise token percentage is implied.
     body = [{"role": m.type, "content": m.content,
              "tool_calls": getattr(m, "tool_calls", [])} for m in messages]
     return len(json.dumps([body, schemas], ensure_ascii=False).encode("utf-8")) + 512
@@ -34,9 +40,10 @@ class Budget:
     max_decisions: int = 8
     context_window: int = 32768
     cancelled: Callable[[], bool] = lambda: False
-    max_input: int = 48000
-    max_output: int = 6000
-    max_prompt: int = 16000
+    max_input: int | None = None
+    max_output: int | None = None
+    max_prompt: int | None = None
+    safety_percent: int = 5
     max_calls: int = 16
     max_tools: int = 16
     seconds: float = 120
@@ -49,6 +56,36 @@ class Budget:
     actual_output: int = 0
     unknown_usage_calls: int = 0
     started: float = field(default_factory=time.monotonic)
+
+    def __post_init__(self) -> None:
+        if type(self.context_window) is not int or self.context_window <= 0:
+            raise ValueError("invalid_context_capacity")
+        for value in (self.max_input, self.max_output, self.max_prompt):
+            if value is not None and (type(value) is not int or value <= 0):
+                raise ValueError("invalid_context_capacity")
+        if type(self.safety_percent) is not int or not 0 <= self.safety_percent < 100:
+            raise ValueError("invalid_context_capacity")
+        if self.max_prompt is None:
+            self.max_prompt = self.context_window
+
+    @classmethod
+    def for_provider(cls, provider, mode: str, **overrides) -> "Budget":
+        return cls(**(MODE_LIMITS[mode] | {
+            "context_window": getattr(provider, "context_window", 32768),
+            "max_input": getattr(provider, "run_max_input_tokens", None),
+            "max_output": getattr(provider, "run_max_output_tokens", None),
+            "safety_percent": getattr(provider, "context_safety_percent", 5),
+        } | overrides))
+
+    @property
+    def safety_reserved(self) -> int:
+        return (self.context_window * self.safety_percent + 99) // 100
+
+    def planned_output(self, output_cap: int) -> int:
+        if type(output_cap) is not int or output_cap <= 0:
+            raise ValueError("invalid_output_cap")
+        return (output_cap if self.max_output is None else
+                max(0, min(output_cap, self.max_output - self.output_reserved)))
 
     def check(self) -> None:
         if self.cancelled():
@@ -73,10 +110,12 @@ class Budget:
         self.check()
         if self.model_calls >= self.max_calls:
             raise RunStopped("model_budget")
-        output = min(output_cap, self.max_output - self.output_reserved)
+        output = self.planned_output(output_cap)
         size = input_bound(messages, schemas)
-        if output < 128 or self.input_reserved + size > self.max_input:
-            raise RunStopped("token_budget")
+        if output < 128:
+            raise RunStopped("output_budget")
+        if self.max_input is not None and self.input_reserved + size > self.max_input:
+            raise RunStopped("input_budget")
         if size > self.prompt_limit(output_cap):
             raise RunStopped("context_budget")
         self.input_reserved += size
@@ -87,7 +126,7 @@ class Budget:
 
     def prompt_limit(self, output_cap: int) -> int:
         """Use the same remaining output allowance when fitting and reserving."""
-        return min(self.max_prompt, self.context_window - min(output_cap, self.max_output - self.output_reserved))
+        return min(self.max_prompt, self.context_window - self.planned_output(output_cap) - self.safety_reserved)
 
     def record(self, reply: AIMessage, reserved_input: int, reserved_output: int) -> None:
         usage = reply.usage_metadata
@@ -98,8 +137,10 @@ class Budget:
             self.actual_output += usage["output_tokens"]
             self.input_reserved += usage["input_tokens"] - reserved_input
             self.output_reserved += usage["output_tokens"] - reserved_output
-            if self.actual_input > self.max_input or self.actual_output > self.max_output:
-                raise RunStopped("token_budget")
+            if self.max_input is not None and self.actual_input > self.max_input:
+                raise RunStopped("input_budget")
+            if self.max_output is not None and self.actual_output > self.max_output:
+                raise RunStopped("output_budget")
         self.check()
 
     def summary(self) -> dict:

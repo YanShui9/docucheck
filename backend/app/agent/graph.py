@@ -24,7 +24,7 @@ from .context import (
 )
 from .context_usage import reserve_with_context
 from .diagnostics import SAFE_COVERAGE_TYPES, SAFE_VALIDATION_DETAILS
-from .policy import MODE_LIMITS, Budget, RunStopped, input_bound
+from .policy import MODE_LIMITS, Budget, RunStopped, input_bound, quota_stop_message
 from .state import AgentState, RunContext, RunResult
 from .tools import AnswerDraft, Clarification, ToolExecutor, tool_schemas
 
@@ -99,9 +99,8 @@ class AgentSession:
                              self.conversation_id, run_id or uuid4().hex,
                              attempt_id or uuid4().hex,
                              getattr(self.provider, "model_id", None), self.mode)
-        budget = Budget(**(MODE_LIMITS[self.mode] | {"max_decisions": self.max_decisions}),
-                        context_window=getattr(self.provider, "context_window", 32768),
-                        cancelled=lambda: self._cancelled or self._external_cancelled())
+        budget = Budget.for_provider(self.provider, self.mode, max_decisions=self.max_decisions,
+                                    cancelled=lambda: self._cancelled or self._external_cancelled())
         if question_scope.unresolved_suppliers:
             available = sorted({source["supplier"] for source in self.repo.sources()
                                 if source["supplier"]})
@@ -129,8 +128,8 @@ class AgentSession:
             dropped_turns = 0
             if operation == "decide":
                 messages, dropped_turns = fit_decision_history(
-                    messages, schemas, max_prompt=budget.max_prompt,
-                    context_window=budget.context_window, output_cap=output_cap,
+                    messages, schemas, max_prompt=budget.prompt_limit(output_cap),
+                    context_window=budget.context_window, output_cap=0,
                 )
             for repair in range(2):
                 try:
@@ -182,7 +181,7 @@ class AgentSession:
             if isinstance(exc, ProviderError):
                 status = "failed"
             return {"status": status, "error": code, "next_node": "end",
-                    "answer": f"本次处理未完成：{code}。没有生成新的正式结论。"}
+                    "answer": quota_stop_message(code) or f"本次处理未完成：{code}。没有生成新的正式结论。"}
 
         def matrix_next_call() -> tuple[str, dict] | None:
             if not matrix_suppliers or not matrix_started:
@@ -384,8 +383,8 @@ class AgentSession:
             state = builder.compile().invoke({"messages": assemble(self.repo, self.history, question,
                 self.schemas, budget.context_window, self.focus,
                 self.pending_clarification, memory_layers=self.memory_layers,
-                context_audit=self.context_audit, max_prompt=budget.max_prompt,
-                output_cap=512, history_available=self.tools.history_reader is not None), "status": "running", "answer": "", "error": None,
+                context_audit=self.context_audit, max_prompt=budget.prompt_limit(512),
+                output_cap=0, history_available=self.tools.history_reader is not None), "status": "running", "answer": "", "error": None,
                 "repairs": 0, "tool_repairs": 0, "next_node": "decide"},
                 {"recursion_limit": 2 * self.max_decisions + 4,
                                                         "callbacks": []})

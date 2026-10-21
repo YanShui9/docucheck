@@ -6,7 +6,7 @@ from datetime import UTC, datetime
 import pytest
 
 from backend.app.agent.assistant import AssistantAgent
-from backend.app.agent.policy import input_bound
+from backend.app.agent.policy import Budget, input_bound
 from backend.app.criteria.models import ChecklistDefinition
 from backend.app.evidence.repository import EvidenceRepository
 from backend.tests.test_dynamic_agent import call
@@ -124,7 +124,8 @@ def test_extreme_single_target_has_an_actionable_scope_limit_without_clipping_it
     base["criteria"][0]["rule"] = {"type": "enum", "operator": "in", "values": [f"选项{i}" + "非常详细的限定内容" * 10 for i in range(32)]}
     original = deepcopy(base)
     provider = StageProvider(("prepare_changes", {"criterion_ids": ["criterion-0"], "item_ids": []}))
-    result = AssistantAgent(EvidenceRepository.empty("case", "snapshot"), provider, definition=base).ask("修改这项枚举条件")
+    result = AssistantAgent(EvidenceRepository.empty("case", "snapshot"), provider, definition=base,
+                            budget=Budget(max_prompt=16000)).ask("修改这项枚举条件")
     assert result["status"] == "waiting_user" and result["error"] == "checklist_edit_scope_budget"
     assert "编辑" in result["answer"] and "保留" in result["answer"]
     assert result["payload"]["candidate"] is None and result["usage"]["model_calls"] == 1
@@ -173,7 +174,8 @@ def test_long_names_across_twenty_items_still_allow_chat_and_lookup_of_last_item
         criterion["item_id"] = f"item-{i % 20}"
         criterion["name"] = f"要求{i}" + "详细核验方向" * 15
     provider = StageProvider(("read_context", {"query": "item-19"}), ("chat", {"answer": "已找到最后一个品目。"}))
-    result = AssistantAgent(EvidenceRepository.empty("case", "snapshot"), provider, definition=base).ask("查" * question_length)
+    result = AssistantAgent(EvidenceRepository.empty("case", "snapshot"), provider, definition=base,
+                            budget=Budget(max_prompt=16000)).ask("查" * question_length)
     assert result["status"] == "completed", result["error"]
     assert '"item_id":"item-19"' in provider.requests[-1][0][0].content
     assert all(input_bound(m, s) <= 16000 for m, s in provider.requests)

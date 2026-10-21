@@ -305,7 +305,6 @@ def test_review_output_allocation_handles_eleven_metrics_without_changing_batche
 
 
 def test_review_output_allocation_still_obeys_shared_output_budget(monkeypatch):
-    from backend.app.agent.policy import MODE_LIMITS
     from backend.app.providers.base import ProviderError
 
     definition, repo, frozen = sample()
@@ -316,7 +315,6 @@ def test_review_output_allocation_still_obeys_shared_output_budget(monkeypatch):
     definition = ChecklistDefinition.model_validate(data)
     frozen["payload"]["checklist_digest"] = digest(data)
     frozen["digest"] = digest(frozen["payload"])
-    monkeypatch.setitem(MODE_LIMITS, "standard", {**MODE_LIMITS["standard"], "max_output": 800})
 
     class Limited(Provider):
         def __init__(self):
@@ -328,6 +326,7 @@ def test_review_output_allocation_still_obeys_shared_output_budget(monkeypatch):
             raise ProviderError("invalid_output", detail="output_limit")
 
     provider = Limited()
+    provider.run_max_output_tokens = 800
     result = DynamicAgent(repo, provider, definition, item_bindings=frozen).ask("审查", operation="review")
     assert result["status"] == "partial" and result["error"] == "invalid_output"
     assert provider.output_caps == [775]

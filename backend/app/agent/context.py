@@ -3,7 +3,7 @@ import json
 
 from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
 
-from .policy import input_bound
+from .policy import Budget, input_bound
 
 SYSTEM_PROMPT = """你是 DocuCheck 采购资料初审 Agent，当前版本支持内存、存储、屏幕尺寸、重量、质保、采购数量、单价和交付期限八字段核验及来源追问。
 围绕用户问题自主选择工具，观察结果再决定继续检索、抽取、核验或澄清。
@@ -152,7 +152,7 @@ def assemble(repo, history: list[tuple[BaseMessage, BaseMessage]], question: str
              schemas: list[dict], context_window: int,
              focus: dict[str, str] | None = None,
              pending_clarification: str | None = None, *, memory_layers: dict | None = None,
-             context_audit: dict | None = None, max_prompt: int = 16000,
+             context_audit: dict | None = None, max_prompt: int | None = None,
              output_cap: int = 1024, history_available: bool = False) -> list[BaseMessage]:
     focus_context = (
         "\n先前核验结果只用于理解指代，不是新事实；短追问的上次范围："
@@ -166,7 +166,8 @@ def assemble(repo, history: list[tuple[BaseMessage, BaseMessage]], question: str
                            focus_context + pending)
     payload, omitted_entries = _memory_payload(memory_layers)
     entries = payload["summary"]["entries"]
-    limit = min(max_prompt, context_window - output_cap)
+    limit = (Budget(context_window=context_window).prompt_limit(output_cap)
+             if max_prompt is None else min(max_prompt, context_window - output_cap))
     def make_system():
         extra = MEMORY_NOTICE + "\nMEMORY_DATA=" + json.dumps(payload, ensure_ascii=False) if memory_layers else ""
         return SystemMessage(content=required + extra)

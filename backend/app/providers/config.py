@@ -18,6 +18,9 @@ class ProviderConfig:
     base_url: str
     context_window: int
     api_key: SecretStr = field(repr=False)
+    run_max_input_tokens: int | None = None
+    run_max_output_tokens: int | None = None
+    context_safety_percent: int = 5
 
     @classmethod
     def from_env(cls, environ: Mapping[str, str] | None = None) -> "ProviderConfig":
@@ -30,6 +33,17 @@ class ProviderConfig:
             if not all(values.values()) or values["PROVIDER"] != "openai-compatible":
                 raise ValueError
             context_window = int(values["CONTEXT_WINDOW"])
+            quotas = {}
+            for name in ("INPUT", "OUTPUT"):
+                key = f"DOCUCHECK_RUN_MAX_{name}_TOKENS"
+                raw = env.get(key, "").strip()
+                value = int(raw) if raw else None
+                if value is not None and not 0 < value <= 2_147_483_647:
+                    raise ValueError
+                quotas[f"run_max_{name.lower()}_tokens"] = value
+            safety_percent = int(env.get("DOCUCHECK_MODEL_CONTEXT_SAFETY_PERCENT", "5").strip())
+            if not 0 <= safety_percent < 100:
+                raise ValueError
             url = urlsplit(values["BASE_URL"])
             if (
                 context_window <= 0
@@ -51,6 +65,8 @@ class ProviderConfig:
                 base_url=values["BASE_URL"],
                 context_window=context_window,
                 api_key=SecretStr(values["API_KEY"]),
+                context_safety_percent=safety_percent,
+                **quotas,
             )
         except (KeyError, ValueError, AttributeError, TypeError):
             raise ProviderError("configuration_error") from None
@@ -85,4 +101,7 @@ def configured_provider(
         )
     except Exception:  # noqa: BLE001 - never expose SDK configuration or credentials
         raise ProviderError("configuration_error") from None
-    return ChatModelProvider(model, context_window=config.context_window)
+    return ChatModelProvider(model, context_window=config.context_window,
+                             run_max_input_tokens=config.run_max_input_tokens,
+                             run_max_output_tokens=config.run_max_output_tokens,
+                             context_safety_percent=config.context_safety_percent)
