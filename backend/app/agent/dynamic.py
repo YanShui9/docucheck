@@ -54,6 +54,7 @@ from .context import (
     fit_decision_history,
     readable_history,
 )
+from .context_usage import reserve_with_context
 from .diagnostics import DYNAMIC_REJECTION_CODES as REJECTION_CODES
 from .policy import MODE_LIMITS, Budget, RunStopped, input_bound
 from .tools import HistoryRead
@@ -538,13 +539,13 @@ class DynamicAgent:
                 request = messages
                 if repair:
                     request = [messages[0], SystemMessage(content="上次输出 schema 不合法。只修复格式；保留原文值与证据ID，禁止猜测。"), *messages[1:]]
-                options, size = budget.reserve(request, schemas, output_cap=output_cap)
-                progress = event("model", operation=kind, status="started", structured_repair=bool(repair))
-                if semantic_repair:
-                    progress["semantic_repair"] = True
+                options, size, progress = reserve_with_context(budget, request, schemas,
+                    output_cap=output_cap, phase=kind, events=events,
+                    structured_repair=bool(repair), semantic_repair=semantic_repair)
                 response_received = False
                 try:
                     try:
+                        progress["provider_called"] = True
                         reply = (self.provider.decide(request, schema, **options) if kind == "decide"
                                  else self.provider.extract(request, schema, **options))
                     except ProviderError:

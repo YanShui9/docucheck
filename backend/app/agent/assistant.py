@@ -47,6 +47,7 @@ from .assistant_evidence import (
 )
 from .assistant_runtime import clock_question, read_clock
 from .context import _memory_payload
+from .context_usage import reject_context_request, reserve_with_context
 from .dynamic import EmptyArgs, HistoryArgs, _schema, _source_location
 from .policy import MODE_LIMITS, Budget, RunStopped, input_bound
 
@@ -256,7 +257,7 @@ class AssistantAgent:
         self.context.update(audit)
         return messages
 
-    def _evidence_messages(self, question, reply, tool_id, originals, retrieval, previous):
+    def _evidence_messages(self, question, reply, tool_id, originals, retrieval, previous, *, events):
         """Fit complete source windows, publishing handles for those left out."""
         selected, omitted = list(originals), []
         prior = list(previous[-2:])
@@ -273,7 +274,8 @@ class AssistantAgent:
             elif len(selected) > 1:
                 omitted.append(selected.pop()["evidence_id"])
             else:
-                raise RunStopped("context_budget")
+                reject_context_request(self.budget, messages, self.evidence_schemas,
+                    output_cap=ROUTING_OUTPUT_CAP, phase="evidence", events=events)
 
     def ask(self, question):
         self.context, self.runtime_context, self.recalled_history = {}, None, []
@@ -302,6 +304,7 @@ class AssistantAgent:
             messages = self._messages(question)
             active_schemas = self.schemas
             tool_count_repaired = False
+            repair_pending = False
             while True:
                 self._check()
                 self.budget.decision()
@@ -311,15 +314,17 @@ class AssistantAgent:
                 limit = self.budget.prompt_limit(output_cap)
                 self.context.update(input_bound=size, prompt_limit=limit, mandatory_overflow=size > limit)
                 self.context["max_attempt_bound"] = max(size, self.context.get("max_attempt_bound", 0))
-                options, size = self.budget.reserve(messages, active_schemas, output_cap=output_cap)
+                options, size, progress = reserve_with_context(self.budget, messages, active_schemas,
+                    output_cap=output_cap, phase=phase, events=events,
+                    structured_repair=repair_pending)
+                repair_pending = False
                 self.context[phase + "_requests"] = self.context.get(phase + "_requests", 0) + 1
                 self.context["max_request_bound"] = max(size, self.context.get("max_request_bound", 0))
                 schema_bytes = len(json.dumps(active_schemas, ensure_ascii=False, separators=(",", ":")).encode())
                 self.context[phase + "_schema_bytes"] = schema_bytes
                 self.context["max_schema_bytes"] = max(schema_bytes, self.context.get("max_schema_bytes", 0))
-                progress = {"kind": "model", "operation": "decide", "status": "started"}
-                events.append(progress)
                 try:
+                    progress["provider_called"] = True
                     reply = self.provider.decide(messages, active_schemas, **options)
                 except ProviderError:
                     self.budget.unknown_usage_calls += 1
@@ -341,6 +346,7 @@ class AssistantAgent:
                     # call/decision/token/deadline budget.
                     if len(reply.tool_calls) > 1 and not tool_count_repaired:
                         tool_count_repaired = True
+                        repair_pending = True
                         messages = [messages[0], SystemMessage(content=(
                             "上次返回了多个工具，全部未执行。本轮只选择一个工具。"
                             "多个品目可一起准备并写入同一候选，不要为每个品目分别调用工具。")), *messages[1:]]
@@ -375,7 +381,9 @@ class AssistantAgent:
                         view={"view": "confirmed_rules", "complete": False}, tail=[reply,
                             ToolMessage(content=json.dumps(observation, ensure_ascii=False), tool_call_id=tool["id"])])
                     if self.context["mandatory_overflow"]:
-                        raise RunStopped("checklist_read_scope_budget")
+                        reject_context_request(self.budget, messages, active_schemas,
+                            output_cap=ROUTING_OUTPUT_CAP, phase="routing", events=events,
+                            error="checklist_read_scope_budget")
                     checklist_reads = {c["criterion_id"]: c for c in observation["criteria"]}
                     self.context["confirmed_rule_reads"] = self.context.get("confirmed_rule_reads", 0) + 1
                     continue
@@ -420,7 +428,9 @@ class AssistantAgent:
                     messages = self._messages(question, schemas=active_schemas, view=observation, output_cap=EDIT_OUTPUT_CAP, tail=[reply,
                         ToolMessage(content='{"prepared":true}', tool_call_id=tool["id"])])
                     if self.context["mandatory_overflow"]:
-                        raise RunStopped("checklist_edit_scope_budget")
+                        reject_context_request(self.budget, messages, active_schemas,
+                            output_cap=EDIT_OUTPUT_CAP, phase="edit", events=events,
+                            error="checklist_edit_scope_budget")
                     continue
                 if name in {"search_evidence", "read_source"}:
                     if name == "search_evidence":
@@ -456,7 +466,7 @@ class AssistantAgent:
                     # excerpt selection is allowed. A query cannot silently
                     # become a formal report on a later model decision.
                     active_schemas = self.evidence_schemas
-                    messages, selected, evidence_tail = self._evidence_messages(question, reply, tool["id"], originals, payload["retrieval"], evidence_tail)
+                    messages, selected, evidence_tail = self._evidence_messages(question, reply, tool["id"], originals, payload["retrieval"], evidence_tail, events=events)
                     if len(set(windows).union((row["evidence_id"], row.get("start_char", 0)) for row in selected)) > MAX_SOURCE_READS:
                         raise RunStopped("source_read_budget")
                     for row in selected:

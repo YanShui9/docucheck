@@ -22,6 +22,7 @@ from .context import (
     fit_decision_history,
     verified_result_handles,
 )
+from .context_usage import reserve_with_context
 from .diagnostics import SAFE_COVERAGE_TYPES, SAFE_VALIDATION_DETAILS
 from .policy import MODE_LIMITS, Budget, RunStopped, input_bound
 from .state import AgentState, RunContext, RunResult
@@ -143,7 +144,9 @@ class AgentSession:
                         "上次抽取响应不符合指定工具的 schema。仅纠正输出格式，调用该工具一次，"
                         "保留全部必填字段、原文数值与证据ID；无事实时返回空facts，不编造值或来源。"
                     )), *messages[1:]]
-                options, reserved_input = budget.reserve(request_messages, schemas, output_cap=output_cap)
+                options, reserved_input, event = reserve_with_context(budget, request_messages, schemas,
+                    output_cap=output_cap, phase=operation, events=events,
+                    structured_repair=bool(repair), history_turns_dropped=dropped_turns)
                 self.context_audit.setdefault("model_inputs", []).append({
                     "operation": operation,
                     "history_message_ids": [m.id for m in request_messages if m.type == "human" and m.id],
@@ -151,14 +154,8 @@ class AgentSession:
                     "input_digest": digest([m.model_dump(mode="json") for m in request_messages]),
                     "history_turns_dropped": dropped_turns,
                 })
-                event = {"kind": "model", "operation": operation, "sequence": len(events) + 1,
-                         "status": "started"}
-                if repair:
-                    event["structured_repair"] = True
-                if dropped_turns:
-                    event["history_turns_dropped"] = dropped_turns
-                events.append(event)
                 try:
+                    event["provider_called"] = True
                     response = (self.provider.decide(request_messages, schema, **options) if operation == "decide"
                                 else self.provider.extract(request_messages, schema, **options))
                     if not isinstance(response, AIMessage):

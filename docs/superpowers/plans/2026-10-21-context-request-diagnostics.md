@@ -1,6 +1,6 @@
 # 上下文第一步：完整请求计量与拒绝诊断实施计划
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. 本计划仅供审阅，尚未授权执行；不派发子代理。
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. 执行项以复选框跟踪。 用户于 2026-10-21 说“好，那我们开始吧”后授权执行 A1；在隔离工作区实施，不派发子代理。
 
 **Goal:** 每个准备调用模型的请求，在预算检查前留下同一口径的大小、限制、阶段和结果；明确区分请求前拒绝、已进入 Provider、已返回用量和未知结果。
 
@@ -18,19 +18,19 @@
 
 本步的“完整请求”指组装完成后的业务消息与工具定义，包含新增的修复说明；沿用 `input_bound()` 的字段投影和固定开销进行 legacy 对照，不宣称准确复现 Provider 的最终网络封装或模型分词。A2 再核对 Provider 消息转换、工具封装和匹配的计量方式。
 
-- [ ] 聊天、动态正式审查、格式修复、语义修复和旧兼容流程在 `reserve()` 拒绝前均有诊断。
-- [ ] 当前问题、修复说明、工具定义和消息开销计入完整请求；沿用旧估算算法作对照。
-- [ ] 记录模型窗口 token、legacy 估算单位/值、单次限制、任务剩余额度、输出预留，分别命名；不生成跨单位百分比。
-- [ ] 本地拒绝时 Provider 调用为 0，诊断为 rejected；真实 usage 未返回时保持未知。
-- [ ] 原有 source/version/attempt/fence/权限校验继续约束落库；旧历史无新字段仍可读取。
-- [ ] 诊断只存有限数字、枚举和请求指纹；不存原文、完整问题、工具参数、偏好内容、凭据。
-- [ ] 不混入资料关联引导的已有 WIP；源码检查和服务部署分别报告。
+- [x] 聊天、动态正式审查、格式修复、语义修复和旧兼容流程在 `reserve()` 拒绝前均有诊断。
+- [x] 当前问题、修复说明、工具定义和消息开销计入完整请求；沿用旧估算算法作对照。
+- [x] 记录模型窗口 token、legacy 估算单位/值、单次限制、任务剩余额度、输出预留，分别命名；不生成跨单位百分比。
+- [x] 本地拒绝时 Provider 调用为 0，诊断为 rejected；真实 usage 未返回时保持未知。
+- [x] 原有 source/version/attempt/fence/权限校验继续约束落库；旧历史无新字段仍可读取。
+- [x] 诊断只存有限数字、枚举和请求指纹；不存原文、完整问题、工具参数、偏好内容、凭据。
+- [x] 不混入资料关联引导的已有 WIP；源码检查和服务部署分别报告。
 
 ## 文件分工
 
 | 文件 | 动作和责任 |
 | --- | --- |
-| `backend/app/agent/context_usage.py` | 新建：纯计量和带诊断的预留适配器；不负责压缩或重试 |
+| `backend/app/agent/context_usage.py` | 新建：纯计量、带诊断的预留适配器和组装后直接拒绝记录；不负责压缩或重试 |
 | `backend/app/agent/assistant.py` | 接入聊天 routing/edit/evidence 请求；沿用已有阶段与错误处理 |
 | `backend/app/agent/dynamic.py` | 接入 decide/extract，每次格式/语义修复重新测量 |
 | `backend/app/agent/graph.py` | 接入旧兼容 AgentSession，避免旧入口漏测 |
@@ -43,8 +43,8 @@
 
 ## Task 1：固定基线并建立失败回归
 
-- [ ] 读取根入口、设计稿、当前 Git 与原 WIP；在实现开始时按 using-git-worktrees 技能创建隔离工作区。以当时已提交基线开始，不复制另一任务未提交的资料关联修改。
-- [ ] 先新增纯计量测试。下面是最低测试契约；模块不存在时应先出现导入失败。
+- [x] 读取根入口、设计稿、当前 Git 与原 WIP；在实现开始时按 using-git-worktrees 技能创建隔离工作区。以当时已提交基线开始，不复制另一任务未提交的资料关联修改。
+- [x] 先新增纯计量测试。下面是最低测试契约；模块不存在时应先出现导入失败。
 
 ```python
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -90,7 +90,7 @@ Run（仓库根目录，PowerShell）：
 
 ## Task 2：实现纯计量与拒绝前事件
 
-- [ ] 在 `context_usage.py` 实现以下最小算法。字段的单位以名称和 estimate_method 区分；不输出 token 百分比。
+- [x] 在 `context_usage.py` 实现以下最小算法。字段的单位以名称和 estimate_method 区分；不输出 token 百分比。
 
 ```python
 import json
@@ -117,14 +117,16 @@ def measure_request(messages, schemas, *, budget, output_cap, phase):
         "legacy_prompt_limit": budget.prompt_limit(output_cap),
         "legacy_task_input_remaining": max(0, budget.max_input - budget.input_reserved),
         "output_requested_tokens": output_cap,
-        "output_reserved_tokens": max(0, planned_output),
+        "output_planned_tokens": max(0, planned_output),
         "request_digest": digest([
             [message.model_dump(mode="json") for message in messages], schemas,
         ]),
     }
 
 
-def reserve_with_context(budget, messages, schemas, *, output_cap, phase, events):
+def reserve_with_context(budget, messages, schemas, *, output_cap, phase, events,
+                         structured_repair=False, semantic_repair=False,
+                         history_turns_dropped=0):
     measurement = measure_request(messages, schemas, budget=budget,
                                   output_cap=output_cap, phase=phase)
     event = {
@@ -132,6 +134,12 @@ def reserve_with_context(budget, messages, schemas, *, output_cap, phase, events
         "status": "rejected", "provider_called": False, "context": measurement,
         "sequence": len(events) + 1,
     }
+    if structured_repair:
+        event["structured_repair"] = True
+    if semantic_repair:
+        event["semantic_repair"] = True
+    if history_turns_dropped:
+        event["history_turns_dropped"] = history_turns_dropped
     events.append(event)
     try:
         options, size = budget.reserve(messages, schemas, output_cap=output_cap)
@@ -144,21 +152,24 @@ def reserve_with_context(budget, messages, schemas, *, output_cap, phase, events
 
 `legacy_task_input_remaining` 是当前预留和 usage 校正混合机制的数值，只用于解释旧机制；不可当作精确剩余 token。A2 将替换其语义，旧字段保留作历史诊断。
 
-- [ ] 增加本地拒绝测试：使用 `max_prompt=1` 和足够的 `max_input`，断言 `RunStopped.code == context_budget`、事件 rejected、`provider_called=False`、model_calls 未增加。再用小 `max_input` 单独触发 token_budget，记录原因不能混同。
-- [ ] 覆盖中文、空工具、长工具定义、工具调用/结果、输出额度不足、取消和超时；计量不得修改输入消息或工具对象。
-- [ ] 扩展 `safe_trace_events()`：只接受上面字段的有限类型/枚举，数字范围沿用原约束，指纹只接受 64 位十六进制；未知字段丢弃。明确接收现有 context_budget/token_budget 错误码。
-- [ ] 诊断脱敏测试向字段中注入原文、错误类型、任意枚举、非法 hash 和多余键，断言公开事件不含这些值。诊断沿用现有有界事件数量。
-- [ ] 重跑 Task 1 及新增拒绝/脱敏测试，应通过，网络 0。
+实现时将输出字段明确命名为 `output_planned_tokens`，因为被拒绝时尚未实际预留。修复标记也在预留前写入，防止拒绝导致标记丢失；`legacy_prompt_limit` 允许有界负数，用于说明输出预留已经大于模型窗口的情况。请求指纹对应消息与工具定义，不代表网络封装或输出选项的完整身份。
+
+- [x] 增加本地拒绝测试：使用 `max_prompt=1` 和足够的 `max_input`，断言 `RunStopped.code == context_budget`、事件 rejected、`provider_called=False`、model_calls 未增加。再用小 `max_input` 单独触发 token_budget，记录原因不能混同。
+- [x] 覆盖中文、空工具、长工具定义、工具调用/结果、输出额度不足、取消和超时；计量不得修改输入消息或工具对象。
+- [x] 扩展 `safe_trace_events()`：只接受上面字段的有限类型/枚举，非负数字范围沿用原约束；仅 `legacy_prompt_limit` 接受同幅度负数。指纹只接受 64 位十六进制；未知字段丢弃。明确接收现有 context_budget/token_budget 错误码。
+- [x] 诊断脱敏测试向字段中注入原文、错误类型、任意枚举、非法 hash 和多余键，断言公开事件不含这些值。诊断沿用现有有界事件数量。
+- [x] 重跑 Task 1 及新增拒绝/脱敏测试，应通过，网络 0。
 
 ## Task 3：三条实际调用路径接入并落库验证
 
-- [ ] 在 Assistant 的 `reserve()` 点调用适配器，复用返回的 progress，删除原来同次调用重复创建的 started 事件。在紧邻 Provider 调用前设 `provider_called=True`；它表示进入适配器，不保证网络请求已经送达。
-- [ ] Dynamic 的每轮 repair 先形成完整 request，再调用适配器；复用已有格式/语义修复标志。预留拒绝的事件随 partial 结果返回。
-- [ ] AgentSession 的 decide/extract 与格式修复采用相同处理；保留现有历史裁减、调用次数、响应校验与错误语义。
-- [ ] 三条路径各添加“原请求能放下、追加修复说明后超限”的测试。先在原实现证实缺少被拒绝请求诊断，再使测试通过；Provider 只收到允许的那一次，修复拒绝不多调用模型。
-- [ ] 使用现有合成定义和 FakeProvider 构造聊天与正式审查的预算拒绝，经过真实 executor/临时 SQLite 的 Run 事务，检查 `run_events.summary_json` 有 context、rejected、`provider_called=False`，业务状态为原 partial 而非 completed。
-- [ ] 使用现有 SQLite fixture 覆盖旧记录没有 context 的回读；越权、资料快照改变、旧 attempt 的持久化继续拒绝。没有数据库结构变化，本步不创建迁移。
-- [ ] 已知 usage 与未知 usage 断言继续通过：未知不记 0；preflight 拒绝不增加 unknown_usage_calls；请求指纹和业务 payload 指纹分别处理。
+- [x] 在 Assistant 的 `reserve()` 点调用适配器，复用返回的 progress，删除原来同次调用重复创建的 started 事件。在紧邻 Provider 调用前设 `provider_called=True`；它表示进入适配器，不保证网络请求已经送达。
+- [x] Dynamic 的每轮 repair 先形成完整 request，再调用适配器；复用已有格式/语义修复标志。预留拒绝的事件随 partial 结果返回。
+- [x] AgentSession 的 decide/extract 与格式修复采用相同处理；保留现有历史裁减、调用次数、响应校验与错误语义。
+- [x] 三条路径各添加“原请求能放下、追加修复说明后超限”的测试。先在原实现证实缺少被拒绝请求诊断，再使测试通过；Provider 只收到允许的那一次，修复拒绝不多调用模型。
+- [x] 资料问答的最后一个来源窗口仍放不下，或清单读取/编辑范围在组装后放不下、在预留前直接拒绝时，同样记录完整请求；保留原错误码和处理状态，不增加决策或模型调用次数。自审已复现这三处缺口，补失败回归后接入共享计量。
+- [x] 使用现有合成定义和 FakeProvider 构造聊天与正式审查的预算拒绝，经过真实 executor/临时 SQLite 的 Run 事务，检查 `run_events.summary_json` 有 context、rejected、`provider_called=False`，业务状态为原 partial 而非 completed。
+- [x] 使用现有 SQLite fixture 覆盖旧记录没有 context 的回读；越权、资料快照改变、旧 attempt 的持久化继续拒绝。没有数据库结构变化，本步不创建迁移。
+- [x] 已知 usage 与未知 usage 断言继续通过：未知不记 0；preflight 拒绝不增加 unknown_usage_calls；请求指纹和业务 payload 指纹分别处理。
 
 定向命令：
 
@@ -170,8 +181,8 @@ def reserve_with_context(budget, messages, schemas, *, output_cap, phase, events
 
 ## Task 4：验证、复核和独立本地提交
 
-- [ ] 自查每个进入 Provider 的路径与每个 request-before-reserve 路径，核对格式/语义修复、取消、已知未调用和未知结果；不用新建代理完成本步。
-- [ ] 运行 `python.exe -m ruff check backend/app backend/tests` 与项目要求的完整离线门禁，报告使用新的文件名。
+- [x] 自查每个进入 Provider 的路径与每个 request-before-reserve 路径，核对格式/语义修复、取消、已知未调用和未知结果；不用新建代理完成本步。
+- [x] 运行 `python.exe -m ruff check backend/app backend/tests` 与项目要求的完整离线门禁，报告使用新的文件名。
 
 ```powershell
 & E:\developTools\miniconda3\envs\docucheck\python.exe -m scripts.verify_offline --report data/verification/context-request-diagnostics-A1.json
@@ -179,8 +190,8 @@ def reserve_with_context(budget, messages, schemas, *, output_cap, phase, events
 
 若该报告已经存在，先选新的唯一文件名，不覆盖旧证据。没有前端改动，不为此重复前端构建。新增诊断不增加真实模型或服务调用；如出现需要数据库事务实连验证的实际缺口，先记录具体风险，再使用隔离测试库。
 
-- [ ] 新增 `docs/context-request-diagnostics-2026-10-21.md` 记录源码身份、回归/全量、网络 0、真实模型 0、未改变的旧阈值及 A2 待实施范围。更新设计/计划复选框，只勾实际完成内容。
-- [ ] 仅暂存本步隔离工作区的文件，检查 staged diff 后本地提交：`fix: record complete context requests before budget rejection`。不推送、不部署，不夹带原资料关联 WIP。
+- [x] 新增 `docs/context-request-diagnostics-2026-10-21.md` 记录源码身份、回归/全量、网络 0、真实模型 0、未改变的旧阈值及 A2 待实施范围。更新设计/计划复选框，只勾实际完成内容。
+- [x] 仅暂存本步隔离工作区的文件，检查 staged diff 后本地提交：`fix: record complete context requests before budget rejection`。不推送、不部署，不夹带原资料关联 WIP。
 
 ## 后续 A2 的明确输入
 

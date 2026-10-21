@@ -1,6 +1,6 @@
 # DocuCheck 文档导航
 
-本页是对外技术文档入口。最新整理日期：2026-10-15；各验证记录以其自身的日期、源码和数据范围为准。
+本页是对外技术文档入口。最新整理日期：2026-10-21；各验证记录以其自身的日期、源码和数据范围为准。
 
 ## 推荐阅读顺序
 
@@ -22,7 +22,7 @@
 | --- | --- |
 | 动态指标与确认协议 | [动态清单实现](dynamic-checklists-b-2026-10-04.md)、[聊天助手接口](backend-assistant-api-2026-10-04.md) |
 | 上下文与分层记忆 | [记忆模块](context-memory-2026-10-04.md)、[分阶段上下文](repair-assistant-context-stages-2026-10-09.md)、[后续上下文复审](repair-assistant-context-audit-2026-10-09.md) |
-| 上下文管理升级准备 | [轻量设计稿](superpowers/specs/2026-10-21-context-management-design.md)、[第一步计量与诊断计划](superpowers/plans/2026-10-21-context-request-diagnostics.md)；供审阅，尚未实施 |
+| 上下文管理升级 | [A1请求计量与拒绝诊断](context-request-diagnostics-2026-10-21.md)、[轻量设计稿](superpowers/specs/2026-10-21-context-management-design.md)、[第一步实施计划](superpowers/plans/2026-10-21-context-request-diagnostics.md)；A1源码实施与验收见记录，容量策略、语义摘要和用量界面仍待后续步骤 |
 | 混合检索与异步索引 | [检索组件](hybrid-retrieval-2026-10-03.md)、[持久化索引](durable-indexing-2026-10-03.md)、[真实浏览器 RAG](repair-browser-rag-live-2026-10-08.md) |
 | 最新资料与品目对应 | [C闭环验收](document-item-binding-c-acceptance-2026-10-11.md)、[A1 契约与 API](document-item-binding-a1-2026-10-10.md)、[A2 规则与运行](document-item-binding-a2-2026-10-10.md)、[A3 范围检索](document-item-binding-a3-2026-10-10.md)、[B 中文前端与验证](document-item-binding-b-2026-10-10.md)、[C 指标与原件补修](document-item-binding-c-metric-labels-2026-10-11.md)、[人工继承补修](document-item-binding-c-manual-carry-2026-10-11.md) |
 | 清单问答与资料补修 | [已确认规则短答、关联续用与历史读取](repair-remaining-chat-materials-2026-10-20.md)、[服务更新](service-checklist-update-2026-10-21.md)、[本轮计划](superpowers/plans/2026-10-20-remaining-chat-material-repairs.md) |

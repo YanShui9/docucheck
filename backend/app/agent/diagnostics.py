@@ -1,7 +1,10 @@
 """Bounded diagnostics without prompts, tool arguments, source text or credentials."""
 
+import re
+
 from ..field_contract import FieldKey
 from ..providers.base import ProviderError
+from .context_usage import CONTEXT_PHASES, ESTIMATE_METHOD
 from .tools import DEFINITIONS
 
 SAFE_VALIDATION_DETAILS = frozenset({
@@ -31,7 +34,8 @@ _ERRORS = ProviderError._CODES | frozenset({
     "unknown_tool", "answer_invalid", "decision_budget", "input_budget",
     "output_budget", "model_budget", "tool_budget", "deadline", "cancelled",
     "memory_context_changed", "history_scope", "candidate_invalid", "cache_invalid",
-    "checklist_read_no_progress", "checklist_read_scope_budget",
+    "checklist_read_no_progress", "checklist_read_scope_budget", "checklist_edit_scope_budget",
+    "context_budget", "token_budget",
 })
 _DETAILS = SAFE_VALIDATION_DETAILS | ProviderError._DETAILS | {
     "schema_validation", "other_validation",
@@ -43,6 +47,29 @@ MAX_DIAGNOSTIC_EVENTS = 128
 
 def _integer(value):
     return type(value) is int and 0 <= value <= 2_147_483_647
+
+
+def _safe_context(value) -> dict:
+    if not isinstance(value, dict) or type(value.get("version")) is not int or value["version"] != 1:
+        return {}
+    result = {"version": 1}
+    for key in ("model_window_tokens", "legacy_input_estimate", "legacy_schema_bytes",
+                "legacy_task_input_remaining", "output_requested_tokens", "output_planned_tokens"):
+        if _integer(value.get(key)):
+            result[key] = value[key]
+    # The legacy limit can be negative when output alone exceeds the window.
+    limit = value.get("legacy_prompt_limit")
+    if type(limit) is int and -2_147_483_647 <= limit <= 2_147_483_647:
+        result["legacy_prompt_limit"] = limit
+    if isinstance(value.get("phase"), str) and value["phase"] in CONTEXT_PHASES:
+        result["phase"] = value["phase"]
+    if value.get("estimate_method") == ESTIMATE_METHOD:
+        result["estimate_method"] = ESTIMATE_METHOD
+    if value.get("exact_tokens") is False:
+        result["exact_tokens"] = False
+    if isinstance(value.get("request_digest"), str) and re.fullmatch(r"[a-f0-9]{64}", value["request_digest"]):
+        result["request_digest"] = value["request_digest"]
+    return result
 
 
 def safe_trace_events(events) -> list[dict]:
@@ -64,6 +91,11 @@ def safe_trace_events(events) -> list[dict]:
         if _integer(event.get("sequence")):
             summary["sequence"] = event["sequence"]
         if kind == "model":
+            context = _safe_context(event.get("context"))
+            if context:
+                summary["context"] = context
+            if type(event.get("provider_called")) is bool:
+                summary["provider_called"] = event["provider_called"]
             summary["operation"] = (event.get("operation") if isinstance(event.get("operation"), str)
                                     and event["operation"] in {"decide", "extract"} else "other")
             usage = event.get("usage")
