@@ -56,6 +56,7 @@ async function editor(props: Record<string, unknown> = {}, request = read) {
   return wrapper
 }
 async function stage(wrapper: ReturnType<typeof mount>) {
+  if (!wrapper.find('[data-test="binding-entry-form"]').exists()) await wrapper.get('[data-test="binding-add"]').trigger('click')
   await wrapper.get('[data-test="binding-item"]').setValue('apple')
   await wrapper.get('[data-test="binding-anchor"]').setValue('title')
   await wrapper.get('[data-test="binding-identifier"]').setValue('category')
@@ -78,9 +79,9 @@ test('opens a named modal before data arrives instead of expanding below the doc
   expect(showModal).toHaveBeenCalledOnce()
   expect((modal.element as HTMLDialogElement).open).toBe(true)
   expect(modal.attributes('aria-modal')).toBe('true')
-  expect(modal.find(`#${modal.attributes('aria-labelledby')}`).text()).toBe('关联采购品目')
+  expect(modal.find(`#${modal.attributes('aria-labelledby')}`).text()).toBe('关联采购商品')
   expect(modal.get('.binding-dialog-header').text()).toContain('水果报价.xlsx')
-  expect(modal.text()).toContain('正在读取清单、对应关系和原文')
+  expect(modal.text()).toContain('正在读取清单、关联记录和原文')
 })
 
 test('keeps final confirmation outside the scrolling form', async () => {
@@ -89,6 +90,8 @@ test('keeps final confirmation outside the scrolling form', async () => {
   expect(wrapper.find('.binding-dialog-footer [data-test="binding-save"]').exists()).toBe(true)
   expect(wrapper.find('.binding-dialog-footer [data-test="binding-confirm"]').exists()).toBe(true)
   expect(wrapper.get('.binding-dialog-body').find('[data-test="binding-save"]').exists()).toBe(false)
+  expect(wrapper.get('.binding-dialog-body').find('[data-test="binding-entry-form"]').exists()).toBe(false)
+  await wrapper.get('[data-test="binding-add"]').trigger('click')
   expect(wrapper.get('.binding-dialog-body').find('[data-test="binding-entry-form"]').exists()).toBe(true)
 })
 
@@ -221,7 +224,7 @@ test('local validation errors are visible without dropping the current form valu
   await wrapper.get('[data-test="binding-quote"]').setValue('尚未核对的摘录')
   await wrapper.get('[data-test="binding-entry-form"]').trigger('submit')
   const feedback = wrapper.get('.binding-dialog-footer .binding-feedback')
-  expect(feedback.text()).toContain('请选择已确认清单中的采购品目')
+  expect(feedback.text()).toContain('请选择已确认审查清单中的采购商品')
   expect((wrapper.get('[data-test="binding-quote"]').element as HTMLTextAreaElement).value).toBe('尚未核对的摘录')
   expect(writes()).toHaveLength(0)
 })
@@ -237,8 +240,8 @@ test.each(['edit', 'add'])('starting another %s clears the previous successful c
   })
   await wrapper.get('[data-test="binding-save"]').trigger('click'); await flushPromises()
   expect(wrapper.text()).toContain('资料关联已确认')
-  if (action === 'edit') await wrapper.findAll('button').find(button => button.text() === '编辑范围')!.trigger('click')
-  else await wrapper.get('[data-test="binding-item"]').setValue('apple')
+  if (action === 'edit') await wrapper.get('[data-test="binding-edit"]').trigger('click')
+  else { await wrapper.get('[data-test="binding-add"]').trigger('click'); await wrapper.get('[data-test="binding-item"]').setValue('apple') }
   expect(wrapper.find('.binding-feedback').exists()).toBe(false)
 })
 
@@ -283,10 +286,10 @@ test('unconfirmed checklist blocks attribution even when an old version exists',
 test('stale bindings remain historical and are never included silently in a new request', async () => {
   const wrapper = await editor()
   apiRequest.mockImplementation((path, token, init) => !init && path.endsWith('/item-bindings')
-    ? Promise.resolve({ case_id: 'case-a', snapshot_id: 'snap-a', state: 'stale', binding_revision: 4, current_version: null, historical_version: version() })
+    ? Promise.resolve({ case_id: 'case-a', snapshot_id: 'snap-a', state: 'stale', binding_revision: 4, current_version: null, historical_version: version([otherEntry, appleEntry]) })
     : read(path, token, init))
   await wrapper.setProps({ refreshKey: 1 }); await flushPromises()
-  expect(wrapper.text()).toContain('历史对应关系')
+  expect(wrapper.text()).toContain('查看旧关联')
   await stage(wrapper)
   await wrapper.get('[data-test="binding-confirm"]').setValue(true)
   await wrapper.get('[data-test="binding-save"]').trigger('click'); await flushPromises()
@@ -337,7 +340,7 @@ test('version conflict asks for refresh without discarding or claiming the stage
   await wrapper.get('[data-test="binding-save"]').trigger('click'); await flushPromises()
   expect(wrapper.text()).toContain('请刷新')
   expect(wrapper.emitted('confirmed')).toBeUndefined()
-  expect(wrapper.text()).toContain('待确认变更')
+  expect(wrapper.get('[data-test="binding-pending"]').text()).toContain('待保存的修改')
 })
 
 test.each(['validation_error', 'invalid_request'])('explicit validation refusal remains editable instead of retrying an invalid body: %s', async code => {
@@ -347,6 +350,7 @@ test.each(['validation_error', 'invalid_request'])('explicit validation refusal 
   await stage(wrapper); await wrapper.get('[data-test="binding-confirm"]').setValue(true)
   await wrapper.get('[data-test="binding-save"]').trigger('click'); await flushPromises()
   expect(wrapper.find('[data-test="binding-retry"]').exists()).toBe(false)
+  await wrapper.get('[data-test="binding-edit"]').trigger('click')
   expect(wrapper.get('[data-test="binding-entry-form"] fieldset').attributes('disabled')).toBeUndefined()
   expect(wrapper.text()).not.toContain('保存结果暂时无法确认')
   expect(wrapper.emitted('confirmed')).toBeUndefined()
@@ -354,6 +358,7 @@ test.each(['validation_error', 'invalid_request'])('explicit validation refusal 
 
 test('an un-staged edit cannot be silently omitted by the confirmation button', async () => {
   const wrapper = await editor(); await stage(wrapper)
+  await wrapper.get('[data-test="binding-add"]').trigger('click')
   await wrapper.get('[data-test="binding-item"]').setValue('clothes')
   expect(wrapper.get('[data-test="binding-save"]').attributes('disabled')).toBeDefined()
   expect(wrapper.get('[data-test="binding-confirm"]').attributes('disabled')).toBeDefined()
@@ -364,8 +369,9 @@ test('an un-staged edit cannot be silently omitted by the confirmation button', 
 test('temporary upload busy state locks editing without clearing staged entries or an in-flight confirmation', async () => {
   const wrapper = await editor(); await stage(wrapper)
   await wrapper.setProps({ busy: true }); await flushPromises()
-  expect(wrapper.text()).toContain('待确认变更')
-  expect(wrapper.get('[data-test="binding-entry-form"] fieldset').attributes('disabled')).toBeDefined()
+  expect(wrapper.get('[data-test="binding-pending"]').text()).toContain('待保存的修改')
+  expect(wrapper.get('[data-test="binding-edit"]').attributes('disabled')).toBeDefined()
+  expect(wrapper.get('[data-test="binding-save"]').attributes('disabled')).toBeDefined()
   await wrapper.setProps({ busy: false }); await flushPromises()
   let resolve!: (value: unknown) => void
   apiRequest.mockImplementation((path, token, init) => init?.method === 'PUT'
@@ -380,15 +386,17 @@ test('temporary upload busy state locks editing without clearing staged entries 
 
 test('editing and removing one file never alters other confirmed file entries', async () => {
   const wrapper = await editor(); await stage(wrapper)
-  await wrapper.findAll('button').find(button => button.text() === '编辑范围')!.trigger('click')
+  await wrapper.get('[data-test="binding-edit"]').trigger('click')
   await wrapper.get('[data-test="binding-kind"]').setValue('xlsx')
   await wrapper.get('[data-test="binding-sheet"]').setValue('报价')
   await wrapper.get('[data-test="binding-start-row"]').setValue('4')
   await wrapper.get('[data-test="binding-end-row"]').setValue('4')
   await wrapper.get('[data-test="binding-entry-form"]').trigger('submit')
   expect(wrapper.get('.binding-entry-list').text()).toContain('报价!A4:B4')
-  await wrapper.findAll('button').find(button => button.text() === '移出待确认清单')!.trigger('click')
+  await wrapper.get('[data-test="binding-undo"]').trigger('click')
   expect(wrapper.findAll('.binding-entry-list li')).toHaveLength(0)
+  expect(wrapper.find('[data-test="binding-save"]').exists()).toBe(false)
+  await stage(wrapper)
   expect(wrapper.text()).toContain('保留其他文件的 1 个当前对应范围')
   expect(writes()).toHaveLength(0)
 })
@@ -411,7 +419,7 @@ test('evidence pagination loads a later anchor and reports parser changes withou
   changedParser = true
   await wrapper.get('[data-test="binding-load-more"]').trigger('click'); await flushPromises()
   expect(wrapper.text()).toContain('解析版本不一致')
-  expect(wrapper.text()).toContain('当前对应关系')
+  expect(wrapper.get('[data-test="binding-state"]').text()).toContain('尚未关联')
   expect(writes()).toHaveLength(0)
 })
 
@@ -479,8 +487,8 @@ test('a replayed successful receipt is not mistaken for the current head after a
   await stage(wrapper); await wrapper.get('[data-test="binding-confirm"]').setValue(true)
   await wrapper.get('[data-test="binding-save"]').trigger('click'); await flushPromises()
   await wrapper.get('[data-test="binding-retry"]').trigger('click'); await flushPromises()
-  expect(wrapper.text()).toContain('对应版本 3')
-  expect(wrapper.text()).not.toContain('对应版本 2')
+  expect(wrapper.text()).toContain('关联版本 3')
+  expect(wrapper.text()).not.toContain('关联版本 2')
 })
 
 test('successful save followed by a failed current-head read is not retried as an unknown write', async () => {
@@ -509,7 +517,7 @@ test.each(['forbidden', 'not_found', 'session_expired', 'case_deleting'])('acces
   expect(wrapper.find('[data-test="binding-entry-form"]').exists()).toBe(false)
   expect(wrapper.find('[data-test="binding-save"]').exists()).toBe(false)
   expect(wrapper.find('[data-test="binding-retry"]').exists()).toBe(false)
-  await wrapper.findAll('button').find(button => button.text().startsWith('刷新对应记录'))!.trigger('click')
+  await wrapper.get('[data-test="binding-refresh"]').trigger('click')
   await flushPromises()
   expect(wrapper.find('[data-test="binding-entry-form"]').exists()).toBe(false)
   expect(writes()).toHaveLength(1)
@@ -550,4 +558,281 @@ test('an evidence access rejection stops editing before any mutation', async () 
   expect(wrapper.find('[data-test="binding-entry-form"]').exists()).toBe(false)
   expect(wrapper.find('[data-test="binding-range-preview"]').exists()).toBe(false)
   expect(writes()).toHaveLength(0)
+})
+
+const appleEntry = { ...otherEntry, document_id: 'doc-a', source_sha256: document.source_sha256,
+  item_id: 'apple', anchor: { evidence_refs: ['title'], quote: '采购品目：苹果' },
+  identifier_class: 'category', evidence_refs: ['title', 'qty'] }
+function currentApple(path: string, token?: unknown, init?: RequestInit) {
+  return path.endsWith('/item-bindings') && !init?.method
+    ? Promise.resolve({ case_id: 'case-a', snapshot_id: 'snap-a', state: 'confirmed', binding_revision: 1,
+      current_version: version([otherEntry, appleEntry]), historical_version: null }) : read(path, token, init)
+}
+
+test('confirmed associations are the default view without an unrelated empty editor', async () => {
+  const wrapper = await editor({}, currentApple)
+  expect(wrapper.get('[data-test="binding-state"]').text()).toContain('已关联')
+  expect(wrapper.get('[data-test="binding-current"]').text()).toContain('苹果')
+  expect(wrapper.text()).toContain('无需重复关联')
+  expect(wrapper.find('[data-test="binding-entry-form"]').exists()).toBe(false)
+  expect(wrapper.find('[data-test="binding-pending"]').exists()).toBe(false)
+  expect(writes()).toHaveLength(0)
+})
+
+test('cancelling a confirmed association keeps its effective value visible until explicitly saved', async () => {
+  const wrapper = await editor({}, currentApple)
+  await wrapper.get('[data-test="binding-remove"]').trigger('click')
+  expect(wrapper.get('[data-test="binding-current"]').text()).toContain('苹果')
+  expect(wrapper.get('[data-test="binding-pending"]').text()).toContain('待取消')
+  expect(wrapper.text()).toContain('保存后生效')
+  expect(wrapper.text()).not.toContain('此文件尚未确认对应品目')
+  expect(writes()).toHaveLength(0)
+  await wrapper.get('[data-test="binding-undo"]').trigger('click')
+  expect(wrapper.find('[data-test="binding-pending"]').exists()).toBe(false)
+  expect(wrapper.find('[data-test="binding-save"]').exists()).toBe(false)
+})
+
+test('editing a confirmed range shows both the effective range and the pending replacement', async () => {
+  const wrapper = await editor({}, currentApple)
+  await wrapper.get('[data-test="binding-edit"]').trigger('click')
+  await wrapper.get('[data-test="binding-kind"]').setValue('xlsx')
+  await wrapper.get('[data-test="binding-sheet"]').setValue('报价')
+  await wrapper.get('[data-test="binding-start-row"]').setValue('4')
+  await wrapper.get('[data-test="binding-end-row"]').setValue('4')
+  await wrapper.get('[data-test="binding-entry-form"]').trigger('submit')
+  expect(wrapper.get('[data-test="binding-current"]').text()).toContain('整份文件')
+  expect(wrapper.get('[data-test="binding-pending"]').text()).toContain('待修改')
+  expect(wrapper.get('[data-test="binding-pending"]').text()).toContain('报价!A4:B4')
+  expect(wrapper.find('[data-test="binding-entry-form"]').exists()).toBe(false)
+  await wrapper.get('[data-test="binding-undo"]').trigger('click')
+  expect(wrapper.find('[data-test="binding-pending"]').exists()).toBe(false)
+  expect(wrapper.get('[data-test="binding-current"]').text()).toContain('整份文件')
+  expect(writes()).toHaveLength(0)
+})
+
+test.each(['close', 'refresh'])('unsaved typing is protected before %s and is kept when the user continues', async action => {
+  const wrapper = await editor()
+  await wrapper.get('[data-test="binding-item"]').setValue('apple')
+  const calls = apiRequest.mock.calls.length
+  await wrapper.get(`[data-test="binding-${action}"]`).trigger('click')
+  expect(wrapper.get('[data-test="binding-leave-warning"]').text()).toContain('尚未保存')
+  expect(wrapper.emitted('close')).toBeUndefined()
+  expect(apiRequest.mock.calls).toHaveLength(calls)
+  await wrapper.get('[data-test="binding-keep-editing"]').trigger('click')
+  expect((wrapper.get('[data-test="binding-item"]').element as HTMLSelectElement).value).toBe('apple')
+  await wrapper.get(`[data-test="binding-${action}"]`).trigger('click')
+  await wrapper.get('[data-test="binding-discard"]').trigger('click'); await flushPromises()
+  if (action === 'close') expect(wrapper.emitted('close')).toHaveLength(1)
+  else expect((wrapper.get('[data-test="binding-item"]').element as HTMLSelectElement).value).toBe('')
+  expect(writes()).toHaveLength(0)
+})
+
+test('old associations needing confirmation are distinguished from new associations without being copied', async () => {
+  const wrapper = await editor({}, (path, token, init) => path.endsWith('/item-bindings') && !init?.method
+    ? Promise.resolve({ case_id: 'case-a', snapshot_id: 'snap-a', state: 'stale', binding_revision: 2,
+      current_version: null, historical_version: version([appleEntry]) }) : read(path, token, init))
+  expect(wrapper.get('[data-test="binding-state"]').text()).toContain('需要重新确认')
+  expect(wrapper.get('[data-test="binding-previous"]').text()).toContain('苹果')
+  expect(wrapper.get('[data-test="binding-previous"]').text()).toContain('整份文件')
+  expect(wrapper.text()).toContain('旧关联')
+  expect(wrapper.find('[data-test="binding-current"]').exists()).toBe(false)
+  expect((wrapper.get('[data-test="binding-item"]').element as HTMLSelectElement).value).toBe('')
+  expect(writes()).toHaveLength(0)
+})
+
+test('an absent legacy upload identifier does not ask the user to classify nothing', async () => {
+  const wrapper = await editor({ document: { ...document, model_name: null } })
+  expect(wrapper.find('[data-test="binding-identifier"]').exists()).toBe(false)
+  expect(wrapper.text()).not.toContain('旧产品标识')
+  expect(wrapper.text()).toContain('具体型号或货号')
+})
+
+
+test('saving a pending cancellation removes only that file after explicit confirmation', async () => {
+  let entries = [otherEntry, appleEntry]
+  const wrapper = await editor({}, (path, token, init) => {
+    if (init?.method === 'PUT') entries = JSON.parse(init.body as string).entries
+    return path.endsWith('/item-bindings') ? Promise.resolve({ case_id: 'case-a', snapshot_id: 'snap-a',
+      state: 'confirmed', binding_revision: 2, current_version: version(entries), historical_version: null }) : read(path, token, init)
+  })
+  await wrapper.get('[data-test="binding-remove"]').trigger('click')
+  expect(writes()).toHaveLength(0)
+  expect(wrapper.get('[data-test="binding-save"]').attributes('disabled')).toBeDefined()
+  await wrapper.get('[data-test="binding-confirm"]').setValue(true)
+  await wrapper.get('[data-test="binding-save"]').trigger('click'); await flushPromises()
+  expect(JSON.parse(writes()[0]![2].body).entries).toEqual([expect.objectContaining({ document_id: 'doc-other', item_id: 'clothes' })])
+  expect(wrapper.find('[data-test="binding-current"]').exists()).toBe(false)
+  expect(wrapper.get('[data-test="binding-state"]').text()).toContain('尚未关联')
+  expect(wrapper.find('[data-test="binding-pending"]').exists()).toBe(false)
+})
+
+test('a pending replacement preserves confirmed values and other documents in the save request', async () => {
+  const wrapper = await editor({}, currentApple)
+  await wrapper.get('[data-test="binding-edit"]').trigger('click')
+  await wrapper.get('[data-test="binding-kind"]').setValue('xlsx')
+  await wrapper.get('[data-test="binding-sheet"]').setValue('报价')
+  await wrapper.get('[data-test="binding-start-row"]').setValue('4')
+  await wrapper.get('[data-test="binding-end-row"]').setValue('4')
+  await wrapper.get('[data-test="binding-entry-form"]').trigger('submit')
+  expect(wrapper.get('[data-test="binding-current"]').text()).toContain('整份文件')
+  await wrapper.get('[data-test="binding-confirm"]').setValue(true)
+  await wrapper.get('[data-test="binding-save"]').trigger('click'); await flushPromises()
+  expect(JSON.parse(writes()[0]![2].body).entries).toEqual([
+    expect.objectContaining({ document_id: 'doc-other', item_id: 'clothes' }),
+    expect.objectContaining({ document_id: 'doc-a', selector: { kind: 'xlsx', sheet: '报价', start_row: 4, end_row: 4, start_column: 1, end_column: 2 } }),
+  ])
+  expect(appleEntry.selector).toEqual({ kind: 'whole' })
+})
+
+test.each(['snapshot_id', 'checklist_version_id'])('a mismatched %s is never described as an effective association', async field => {
+  const wrapper = await editor({}, (path, token, init) => path.endsWith('/item-bindings') && !init?.method
+    ? Promise.resolve({ case_id: 'case-a', snapshot_id: 'snap-a', state: 'confirmed', binding_revision: 1,
+      current_version: { ...version([appleEntry]), [field]: 'different-version' }, historical_version: null }) : read(path, token, init))
+  expect(wrapper.get('[data-test="binding-state"]').text()).toContain('需要刷新核对')
+  expect(wrapper.find('[data-test="binding-current"]').exists()).toBe(false)
+  expect(wrapper.get('[data-test="binding-add"]').attributes('disabled')).toBeDefined()
+  expect(writes()).toHaveLength(0)
+})
+
+test('historical associations are labelled read only instead of effective for the current review', async () => {
+  const wrapper = await editor({ historical: true }, currentApple)
+  expect(wrapper.get('[data-test="binding-state"]').text()).toContain('历史关联')
+  expect(wrapper.text()).not.toContain('当前生效的关联')
+  expect(wrapper.find('[data-test="binding-edit"]').exists()).toBe(false)
+  expect(wrapper.find('[data-test="binding-remove"]').exists()).toBe(false)
+  expect(writes()).toHaveLength(0)
+})
+
+test.each(['close', 'refresh'])('an unknown write outcome is not offered as a discardable local edit on %s', async action => {
+  const wrapper = await editor()
+  apiRequest.mockImplementation((path, token, init) => init?.method === 'PUT'
+    ? Promise.reject(new TypeError('Failed to fetch')) : read(path, token, init))
+  await stage(wrapper); await wrapper.get('[data-test="binding-confirm"]').setValue(true)
+  await wrapper.get('[data-test="binding-save"]').trigger('click'); await flushPromises()
+  await wrapper.get(`[data-test="binding-${action}"]`).trigger('click')
+  const warning = wrapper.get('[data-test="binding-leave-warning"]')
+  expect(warning.text()).toContain('请求可能已经保存')
+  expect(warning.text()).toContain('不会取消已经发出的请求')
+  expect(warning.text()).not.toContain('放弃修改')
+  expect(window.document.activeElement).toBe(wrapper.get('[data-test="binding-keep-editing"]').element)
+  expect(wrapper.get('.binding-dialog-body').attributes('inert')).toBeDefined()
+  await wrapper.get('[data-test="binding-keep-editing"]').trigger('click')
+  expect(wrapper.get('.binding-dialog-body').attributes('inert')).toBeUndefined()
+  expect(wrapper.find('[data-test="binding-retry"]').exists()).toBe(true)
+  expect(writes()).toHaveLength(1)
+})
+
+test('a successful write with failed refresh can close without claiming the write is unsaved', async () => {
+  let saved = false
+  const wrapper = await editor({}, (path, token, init) => {
+    if (init?.method === 'PUT') { saved = true; return read(path, token, init) }
+    return saved && path.endsWith('/item-bindings') ? Promise.reject(new Error('offline')) : read(path, token, init)
+  })
+  await stage(wrapper); await wrapper.get('[data-test="binding-confirm"]').setValue(true)
+  await wrapper.get('[data-test="binding-save"]').trigger('click'); await flushPromises()
+  await wrapper.get('[data-test="binding-close"]').trigger('click')
+  expect(wrapper.emitted('close')).toHaveLength(1)
+  expect(wrapper.find('[data-test="binding-leave-warning"]').exists()).toBe(false)
+  expect(writes()).toHaveLength(1)
+})
+
+test('an active edit cannot be replaced by starting another row operation', async () => {
+  const wrapper = await editor({}, currentApple)
+  await wrapper.get('[data-test="binding-edit"]').trigger('click')
+  await wrapper.get('[data-test="binding-quote"]').setValue('苹果')
+  expect(wrapper.get('[data-test="binding-remove"]').attributes('disabled')).toBeDefined()
+  expect(wrapper.get('[data-test="binding-edit"]').attributes('disabled')).toBeDefined()
+  expect(wrapper.find('[data-test="binding-add"]').exists()).toBe(false)
+  expect((wrapper.get('[data-test="binding-quote"]').element as HTMLTextAreaElement).value).toBe('苹果')
+  expect(writes()).toHaveLength(0)
+})
+
+test('an unknown outcome never presents submitted edits as definitely not effective', async () => {
+  const wrapper = await editor({}, currentApple)
+  apiRequest.mockImplementation((path, token, init) => init?.method === 'PUT'
+    ? Promise.reject(new TypeError('Failed to fetch')) : currentApple(path, token, init))
+  await wrapper.get('[data-test="binding-remove"]').trigger('click')
+  await wrapper.get('[data-test="binding-confirm"]').setValue(true)
+  await wrapper.get('[data-test="binding-save"]').trigger('click'); await flushPromises()
+  expect(wrapper.get('[data-test="binding-pending"]').text()).not.toContain('尚未生效')
+  expect(wrapper.get('[data-test="binding-current"]').text()).not.toContain('当前生效的关联')
+  expect(wrapper.get('[data-test="binding-pending"]').text()).toContain('保存结果待核实')
+  expect(wrapper.get('[data-test="binding-pending"]').attributes('aria-label')).toContain('保存结果待核实')
+})
+
+test('a failed refresh of an unknown save preserves the same frozen retry and staged content', async () => {
+  const wrapper = await editor()
+  let failRead = false
+  let attempts = 0
+  apiRequest.mockImplementation((path, token, init) => {
+    if (init?.method === 'PUT') return ++attempts === 1 ? Promise.reject(new TypeError('Failed to fetch')) : read(path, token, init)
+    return failRead && path.endsWith('/item-bindings') ? Promise.reject(new Error('offline')) : read(path, token, init)
+  })
+  await stage(wrapper); await wrapper.get('[data-test="binding-confirm"]').setValue(true)
+  await wrapper.get('[data-test="binding-save"]').trigger('click'); await flushPromises()
+  failRead = true
+  await wrapper.get('[data-test="binding-refresh"]').trigger('click')
+  await wrapper.get('[data-test="binding-discard"]').trigger('click'); await flushPromises()
+  expect(wrapper.get('[data-test="binding-pending"]').text()).toContain('苹果')
+  expect(wrapper.get('[data-test="binding-retry"]').attributes('disabled')).toBeUndefined()
+  expect(wrapper.text()).toContain('保存结果仍待核实')
+  failRead = false
+  await wrapper.get('[data-test="binding-retry"]').trigger('click'); await flushPromises()
+  expect(writes()).toHaveLength(2)
+  expect(writes()[0]![2]).toEqual(writes()[1]![2])
+})
+
+test.each(['forbidden', 'session_expired'])('refreshing an unknown save cannot restore editing after %s', async code => {
+  const wrapper = await editor()
+  let denyRead = false
+  apiRequest.mockImplementation((path, token, init) => {
+    if (init?.method === 'PUT') return Promise.reject(new TypeError('Failed to fetch'))
+    return denyRead && path.endsWith('/item-bindings') ? Promise.reject(new Error(code)) : read(path, token, init)
+  })
+  await stage(wrapper); await wrapper.get('[data-test="binding-confirm"]').setValue(true)
+  await wrapper.get('[data-test="binding-save"]').trigger('click'); await flushPromises()
+  denyRead = true
+  await wrapper.get('[data-test="binding-refresh"]').trigger('click')
+  await wrapper.get('[data-test="binding-discard"]').trigger('click'); await flushPromises()
+  expect(wrapper.text()).toContain('访问已被拒绝')
+  expect(wrapper.find('[data-test="binding-pending"]').exists()).toBe(false)
+  expect(wrapper.find('[data-test="binding-retry"]').exists()).toBe(false)
+  expect(wrapper.find('[data-test="binding-entry-form"]').exists()).toBe(false)
+  denyRead = false
+  await wrapper.get('[data-test="binding-refresh"]').trigger('click'); await flushPromises()
+  expect(wrapper.find('[data-test="binding-retry"]').exists()).toBe(false)
+  expect(wrapper.find('[data-test="binding-save"]').exists()).toBe(false)
+  expect(wrapper.find('[data-test="binding-entry-form"]').exists()).toBe(false)
+  expect(writes()).toHaveLength(1)
+})
+
+test('an old unknown-save refresh failure cannot restore a frozen request after the task revision changes', async () => {
+  const wrapper = await editor()
+  let holdOldRead = false
+  let held = false
+  let revision = 2
+  let rejectOldRead!: (error: Error) => void
+  apiRequest.mockImplementation((path, token, init) => {
+    if (init?.method === 'PUT') return Promise.reject(new TypeError('Failed to fetch'))
+    if (path.endsWith('/checklist')) return Promise.resolve({ ...checklist, revision })
+    if (holdOldRead && !held && path.endsWith('/item-bindings')) {
+      held = true
+      return new Promise((_resolve, reject) => { rejectOldRead = reject })
+    }
+    return read(path, token, init)
+  })
+  await stage(wrapper); await wrapper.get('[data-test="binding-confirm"]').setValue(true)
+  await wrapper.get('[data-test="binding-save"]').trigger('click'); await flushPromises()
+  holdOldRead = true
+  await wrapper.get('[data-test="binding-refresh"]').trigger('click')
+  await wrapper.get('[data-test="binding-discard"]').trigger('click'); await flushPromises()
+  expect(wrapper.text()).toContain('正在读取')
+  revision = 3
+  await wrapper.setProps({ revision }); await flushPromises()
+  rejectOldRead(new Error('offline')); await flushPromises()
+  expect(wrapper.find('[data-test="binding-pending"]').exists()).toBe(false)
+  expect(wrapper.find('[data-test="binding-retry"]').exists()).toBe(false)
+  expect(wrapper.text()).not.toContain('保存结果仍待核实')
+  expect(wrapper.get('[data-test="binding-item"]').attributes('disabled')).toBeUndefined()
+  expect(writes()).toHaveLength(1)
 })

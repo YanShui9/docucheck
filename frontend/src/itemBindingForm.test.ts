@@ -36,7 +36,7 @@ test.each([
 
 test('whole file requires a separate single item declaration', () => {
   const input = { ...draft(), kind: 'whole' as const }
-  expect(() => buildBindingEntry(input, document, [{ item_id: 'apple', name: '苹果' }], evidence, 'xlsx-v1')).toThrow('单一品目')
+  expect(() => buildBindingEntry(input, document, [{ item_id: 'apple', name: '苹果' }], evidence, 'xlsx-v1')).toThrow('只描述这个采购商品')
   expect(buildBindingEntry({ ...input, singleItem: true }, document,
     [{ item_id: 'apple', name: '苹果' }], evidence, 'xlsx-v1').single_item_confirmed).toBe(true)
 })

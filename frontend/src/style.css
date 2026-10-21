@@ -465,7 +465,7 @@ h1, h2, h3, p { margin-top: 0; }
 
 /* 资料与采购品目对应：原生模态脱离侧面板滚动区域。 */
 .binding-document-action { justify-self: start; padding-left: 0; font-size: 12px; }
-.binding-dialog { width: min(760px, calc(100vw - 32px)); max-width: none; height: min(820px, calc(100vh - 32px)); height: min(820px, calc(100dvh - 32px)); max-height: none; margin: auto; padding: 0; border: 1px solid #dce5e3; border-radius: 14px; background: #fff; color: #243341; box-shadow: 0 18px 60px #1f29372e; overflow: hidden; }
+.binding-dialog { width: min(760px, calc(100vw - 32px)); max-width: none; max-height: min(820px, calc(100vh - 32px)); max-height: min(820px, calc(100dvh - 32px)); margin: auto; padding: 0; border: 1px solid #dce5e3; border-radius: 14px; background: #fff; color: #243341; box-shadow: 0 18px 60px #1f29372e; overflow: hidden; }
 .binding-dialog[open] { display: flex; flex-direction: column; }
 .binding-dialog::backdrop { background: #1f293766; }
 .binding-dialog-header { flex-shrink: 0; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 18px 22px; border-bottom: 1px solid #e0e6df; }
@@ -474,11 +474,40 @@ h1, h2, h3, p { margin-top: 0; }
 .binding-dialog-header > button { flex-shrink: 0; }
 .binding-dialog-file { margin: 6px 0 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; color: #52666f; }
 .binding-editor { font-size: 13px; overflow-wrap: anywhere; }
+.binding-editor .state-note { padding: 0; border: 0; background: none; color: #52666f; }
+.binding-editor .state-note.warning { padding: 10px 12px; border-left: 3px solid #d6a84e; background: #fff8e9; color: #806532; }
 .binding-dialog-body { flex: 1; min-height: 0; padding: 18px 22px; overflow: auto; overscroll-behavior: contain; }
 .binding-dialog-footer { flex-shrink: 0; padding: 14px 22px; border-top: 1px solid #e0e6df; background: #fff; font-size: 12px; }
 .binding-dialog-footer > .binding-checkbox { margin-bottom: 12px; }
 .binding-dialog-footer > .state-note { margin: 0 0 10px; }
 .binding-dialog-buttons { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+.binding-refresh { margin-right: auto; }
+.binding-state { padding: 14px 16px; border: 1px solid #dce5e3; border-radius: 10px; background: #f5f7f6; line-height: 1.7; }
+.binding-state strong { display: block; font-size: 16px; }
+.binding-state p { margin: 3px 0 0; }
+.binding-state-success { background: #edf5f1; border-color: #c9dfd3; color: #265d47; }
+.binding-state-warning { background: #fffaef; border-color: #e4d6b2; color: #735b2e; }
+.binding-group { margin-top: 22px; }
+.binding-group h4 { margin: 0 0 10px; font-size: 14px; }
+.binding-group h4 > span { margin-left: 6px; font-size: 12px; font-weight: 400; color: #64736e; }
+.binding-group > .state-note { margin: 0 0 10px; }
+.binding-previous { padding: 12px 14px; border: 1px dashed #cfd8d3; border-radius: 8px; background: #f8faf9; }
+.binding-previous p { margin: 8px 0; }
+.binding-entry-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.binding-entry-heading strong { font-size: 15px; }
+.binding-badge { flex-shrink: 0; padding: 2px 8px; border-radius: 5px; background: #edf5f1; color: #265d47; font-size: 12px; }
+.binding-badge-pending { background: #f8eed3; color: #735b2e; }
+.binding-entry-range { margin: 0; line-height: 1.7; }
+.binding-entry-evidence { color: #52666f; font-size: 12px; line-height: 1.7; }
+.binding-entry-evidence summary { cursor: pointer; }
+.binding-entry-evidence blockquote { margin-top: 6px; padding-left: 10px; border-left: 2px solid #dce5e3; }
+.binding-row-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.binding-row-actions .text-button, .binding-actions > .text-button { padding: 4px 0; }
+.binding-danger { color: #925347; }
+.binding-add { margin-top: 16px; }
+.binding-leave-warning { padding: 12px; border: 1px solid #e4d6b2; border-radius: 8px; background: #fffaef; color: #735b2e; line-height: 1.7; }
+.binding-leave-warning strong { font-size: 14px; }
+.binding-leave-warning p { margin: 6px 0 12px; }
 .binding-feedback { margin-bottom: 12px; padding: 10px 12px; border: 1px solid #cddfda; border-radius: 8px; background: #eef6f3; color: #225b4e; line-height: 1.6; max-height: min(180px, 26vh); max-height: min(180px, 26dvh); overflow: auto; overflow-wrap: anywhere; }
 .binding-feedback strong { display: block; font-size: 13px; }
 .binding-feedback p { margin: 4px 0 0; }
@@ -495,14 +524,21 @@ h1, h2, h3, p { margin-top: 0; }
 .binding-fields label, .binding-confirmation > label { display: grid; gap: 5px; font-size: 12px; color: #52666f; min-width: 0; }
 .binding-fields .field-control, .binding-confirmation .field-control { width: 100%; min-width: 0; font-size: 13px; }
 .binding-fields textarea { resize: vertical; }
+.binding-fields .state-note { margin: 0; line-height: 1.7; }
+.binding-advanced { padding-top: 10px; border-top: 1px solid #e6ebe8; }
+.binding-advanced summary { cursor: pointer; font-size: 12px; color: #52666f; }
+.binding-advanced[open] { display: grid; gap: 10px; }
+.binding-advanced > p, .binding-advanced > label { margin-top: 10px; }
 .binding-range-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
 .binding-wide { grid-column: 1 / -1; }
 .binding-checkbox { display: flex !important; align-items: flex-start; gap: 7px !important; line-height: 1.7; }
 .binding-checkbox input { margin-top: 4px; flex-shrink: 0; }
 .binding-entry-list, .binding-preview ul { list-style: none; padding: 0; display: grid; gap: 10px; }
-.binding-entry-list li { border: 1px solid #e0e6df; border-radius: 8px; padding: 10px; display: grid; gap: 5px; }
+.binding-entry-list > li { border: 1px solid #e0e6df; border-radius: 8px; padding: 14px; display: grid; gap: 8px; }
+.binding-pending .binding-entry-list > li { border-color: #e4d6b2; background: #fffdf7; }
 .binding-entry-list blockquote { margin: 0; white-space: pre-wrap; color: #52666f; font-size: 12px; }
 .binding-preview, .binding-history { margin: 14px 0; line-height: 1.7; }
+.binding-history { font-size: 12px; color: #52666f; }
 .binding-preview summary, .binding-history summary { cursor: pointer; font-weight: 600; }
 .binding-preview ul { max-height: 300px; overflow-y: auto; }
 .binding-preview li { padding: 8px; background: #f4f6f1; border-radius: 6px; }
@@ -513,3 +549,9 @@ h1, h2, h3, p { margin-top: 0; }
 .binding-original .evidence-panel { display: block; position: static; width: 100%; min-width: 0; border: 0; padding: 12px 0; }
 .binding-original .panel-width { display: none; }
 .binding-original canvas { max-width: 100%; height: auto; }
+@media (max-width: 540px) {
+  .binding-dialog { width: calc(100vw - 16px); max-height: calc(100dvh - 16px); }
+  .binding-entry-list > li { padding: 12px; }
+  .binding-dialog-buttons .button { padding: 8px 12px; }
+  .binding-fields .binding-actions { align-items: flex-start; }
+}

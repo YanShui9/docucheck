@@ -53,7 +53,7 @@ export function evidenceInSelector(block: EvidenceRecord, selector: BindingSelec
   return row >= selector.start_row && row <= selector.end_row && column >= selector.start_column && column <= selector.end_column
 }
 export function rangeLabel(selector: BindingSelector): string {
-  if (selector.kind === 'whole') return '整份文件（单一品目）'
+  if (selector.kind === 'whole') return '整份文件（只包含这个商品）'
   if (selector.kind === 'pdf') return `PDF 第 ${selector.start_page}–${selector.end_page} 页`
   return `${selector.sheet}!${columnLabel(selector.start_column)}${selector.start_row}:${columnLabel(selector.end_column)}${selector.end_row}`
 }
@@ -65,19 +65,19 @@ function context(id: string, quote: string, document: DocumentRecord, blocks: Ev
 export function buildBindingEntry(draft: BindingDraft, document: DocumentRecord, items: ChecklistItem[],
   blocks: EvidenceRecord[], parser: string | null): ItemBindingEntry {
   const item = items.find(entry => entry.item_id === draft.itemId)
-  if (!item) throw new Error('请选择已确认清单中的采购品目。')
+  if (!item) throw new Error('请选择已确认审查清单中的采购商品。')
   if (!parser || parser.length > 1000 || !/^[a-f0-9]{64}$/.test(document.source_sha256)) throw new Error('当前资料的解析信息不可用，请刷新。')
   const selector = draftSelector(draft)
-  if (selector.kind === 'whole' && !draft.singleItem) throw new Error('请明确确认整份文件只描述此单一品目。')
+  if (selector.kind === 'whole' && !draft.singleItem) throw new Error('请勾选确认：整份文件只描述这个采购商品。')
   if (selector.kind !== 'whole' && selector.kind !== (document.original_name.toLowerCase().endsWith('.pdf') ? 'pdf' : 'xlsx')) throw new Error('范围类型与文件不一致。')
   const anchor = context(draft.anchorId, draft.anchorQuote, document, blocks)
-  if (draft.identifierClass === 'category' && document.model_name && document.model_name !== item.name) throw new Error('旧产品标识与品目名称不同，请重新分类。')
+  if (draft.identifierClass === 'category' && document.model_name && document.model_name !== item.name) throw new Error('上传时填写的信息与商品名称不同，请重新核对它是名称还是具体型号。')
   const sku = draft.sku.trim() || null
-  if (sku && /[\x00-\x1f]/.test(sku)) throw new Error('具体型号／SKU不能包含控制字符。')
-  if (sku && sku.length > 120) throw new Error('具体型号／SKU不能超过 120 字。')
+  if (sku && /[\x00-\x1f]/.test(sku)) throw new Error('具体型号或货号不能包含控制字符（如换行或制表符）。')
+  if (sku && sku.length > 120) throw new Error('具体型号或货号不能超过 120 字。')
   const skuAnchor = sku ? context(draft.skuAnchorId, draft.skuQuote, document, blocks) : null
-  if (sku && !skuAnchor!.quote.includes(sku)) throw new Error('SKU依据须包含所填写的具体型号／SKU。')
-  if (draft.identifierClass === 'sku' && (!sku || (document.model_name && document.model_name !== sku))) throw new Error('请填写与旧产品标识一致的具体型号／SKU，并选择原文依据。')
+  if (sku && !skuAnchor!.quote.includes(sku)) throw new Error('型号依据的引用内容必须包含所填写的具体型号或货号。')
+  if (draft.identifierClass === 'sku' && (!sku || (document.model_name && document.model_name !== sku))) throw new Error('请填写与上传信息一致的具体型号或货号，并选择文件中的原文依据。')
   return { document_id: document.id, source_sha256: document.source_sha256, parser_version: parser, item_id: item.item_id,
     selector, anchor, identifier_class: draft.identifierClass, supplier_sku: sku, sku_anchor: skuAnchor,
     single_item_confirmed: selector.kind === 'whole' }
