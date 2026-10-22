@@ -177,7 +177,7 @@ class AssistantAgent:
     def __init__(self, repo, provider, *, mode="standard", definition=None,
                  confirmed_definition=None, checklist_version_id=None,
                  retriever=None, formal=None, validate=lambda: None,
-                 history=None, memory_layers=None, budget=None, clock=None, history_reader=None):
+                 history=None, memory_layers=None, budget=None, clock=None, history_reader=None, semantic_refresh=None):
         if mode not in MODE_LIMITS:
             raise ValueError("invalid_mode")
         self.repo, self.provider = repo, provider
@@ -188,6 +188,7 @@ class AssistantAgent:
         self.checklist_version_id = checklist_version_id
         self.retriever, self.formal, self.validate = retriever, formal, validate
         self.history, self.memory_layers = list(history or []), memory_layers
+        self.semantic_refresh = semantic_refresh
         self.context = {}
         self.clock = clock or (lambda: datetime.now(UTC))
         self.runtime_context = None
@@ -257,6 +258,17 @@ class AssistantAgent:
         self.context.update(audit)
         return messages
 
+    def _semantic_target_available(self, question):
+        previous_layers, previous_context = self.memory_layers, dict(self.context)
+        try:
+            self.memory_layers = {"preferences": (previous_layers or {}).get("preferences", {})}
+            self._messages(question)
+            return (not self.context["mandatory_overflow"]
+                    and self.context["input_bound"] * 2 <= self.context["prompt_limit"]
+                    and self.context["history_turns_omitted"] <= previous_context["history_turns_omitted"])
+        finally:
+            self.memory_layers, self.context = previous_layers, previous_context
+
     def _evidence_messages(self, question, reply, tool_id, originals, retrieval, previous, *, events):
         """Fit complete source windows, publishing handles for those left out."""
         selected, omitted = list(originals), []
@@ -322,6 +334,26 @@ class AssistantAgent:
                 return {"status": status, "error": error, "answer": payload["answer"], "payload": payload,
                         "dynamic_payload": None, "events": events, "usage": self.budget.summary(), "context": self.context}
             messages = self._messages(question)
+            if self.semantic_refresh is not None and self._semantic_target_available(question):
+                def accept_summary(summary):
+                    previous_layers, previous_context = self.memory_layers, dict(self.context)
+                    try:
+                        self.memory_layers = dict(previous_layers or {}, semantic_summary=summary)
+                        self._messages(question)
+                        return (not self.context["mandatory_overflow"]
+                                and self.context["input_bound"] * 2 <= self.context["prompt_limit"]
+                                and (self.context["input_bound"] < previous_context["input_bound"]
+                                     or ((previous_layers or {}).get("semantic_summary") is not None
+                                         and previous_context["input_bound"] * 2 <= previous_context["prompt_limit"]))
+                                and self.context["semantic_notes_omitted"] == 0
+                                and self.context["history_turns_omitted"] <= previous_context["history_turns_omitted"])
+                    finally:
+                        self.memory_layers, self.context = previous_layers, previous_context
+
+                updated_summary = self.semantic_refresh(self.budget, events, dict(self.context), accept_summary)
+                if updated_summary is not None:
+                    self.memory_layers = dict(self.memory_layers or {}, semantic_summary=updated_summary)
+                messages = self._messages(question)
             active_schemas = self.schemas
             tool_count_repaired = False
             repair_pending = False

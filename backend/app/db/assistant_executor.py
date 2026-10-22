@@ -6,6 +6,8 @@ from ..agent.assistant import AssistantAgent
 from ..agent.assistant_answers import answer_digest
 from ..agent.assistant_checklist_answers import checklist_answer_digest
 from ..agent.dynamic import DynamicAgent
+from ..agent.policy import RunStopped
+from ..agent.semantic_memory import refresh_summary
 from ..criteria.models import ChecklistDefinition
 from ..evidence.repository import digest
 from ..runtime.lifecycle import RunStatus
@@ -18,6 +20,7 @@ from .models import agent_runs, document_versions
 from .persisted_retrieval import persisted_retriever
 from .run_heartbeat import run_heartbeat
 from .run_repository import RepositoryError, RunRepository
+from .semantic_memory_repository import SemanticMemoryRepository
 from .source_repository import protect_sources
 
 
@@ -65,6 +68,20 @@ def execute_assistant(engine, claim, provider, *, heartbeat_interval_seconds=10.
             edit_base = authority["effective_definition"]
             context = load_conversation_context(engine, claim.run_id, claim.active_attempt_id)
             memory = load_memory_context(engine, repo, claim, request, context)
+            semantic_store = SemanticMemoryRepository(engine)
+            semantic_view = semantic_store.prepare(claim)
+            semantic_summary = semantic_view["summary"]
+            semantic_saved = None
+            layers = dict(memory.layers)
+            if semantic_summary is not None:
+                layers["semantic_summary"] = semantic_summary
+
+            def semantic_manifest():
+                return {"version": 1, "scope_digest": semantic_view["scope_digest"],
+                        "input_digest": semantic_view["input_digest"],
+                        "summary_id": semantic_summary["id"] if semantic_summary else None,
+                        "summary_version": semantic_summary["version"] if semantic_summary else None,
+                        "through_version": semantic_summary["through_version"] if semantic_summary else 0}
 
             def validate_context():
                 validate()
@@ -72,6 +89,7 @@ def execute_assistant(engine, claim, provider, *, heartbeat_interval_seconds=10.
                     dynamic.validate_manual_previous(claim, manual_stamp)
                 try:
                     memory.validate()
+                    semantic_store.validate(claim, semantic_view, semantic_saved)
                 except ValueError:
                     raise RepositoryError("memory_context_changed") from None
 
@@ -98,10 +116,33 @@ def execute_assistant(engine, claim, provider, *, heartbeat_interval_seconds=10.
                     item_bindings=formal_binding["item_bindings"])
                 return agent.ask(context.question, operation="propose_checklist" if operation == "proposal" else "review")
 
+            def update_semantic(budget, events, audit, accept):
+                nonlocal semantic_summary, semantic_saved
+
+                def save(notes):
+                    nonlocal semantic_summary, semantic_saved
+                    semantic_summary = semantic_store.save(claim, semantic_view, notes)
+                    semantic_saved = semantic_summary
+                    return semantic_summary
+
+                def check():
+                    try:
+                        validate_context()
+                    except (ValueError, RepositoryError):
+                        raise RunStopped("memory_context_changed") from None
+
+                try:
+                    return refresh_summary(provider, budget, events, semantic_view, audit=audit,
+                        begin=lambda: semantic_store.begin_attempt(claim, semantic_view),
+                        save=save, validate=check, accept=accept)
+                except ValueError:
+                    raise RunStopped("memory_context_changed") from None
+
             agent = AssistantAgent(repo, provider, mode=request["mode"], definition=edit_base,
                 confirmed_definition=authority["confirmed_definition"], checklist_version_id=authority["checklist_version_id"],
                 retriever=retriever, formal=formal, validate=validate_context,
-                history=context.history, memory_layers=memory.layers, history_reader=memory.history_reader)
+                history=context.history, memory_layers=layers, history_reader=memory.history_reader,
+                semantic_refresh=update_semantic)
             result = agent.ask(context.question, formal_operation=store.retry_operation(claim))
             if dynamic.retain_cancelled_usage(claim, result, provider):
                 return ExecutionReport(claim.run_id, claim.active_attempt_id, "cancelled", "本次处理已取消。", "cancelled", result["usage"]["model_calls"])
@@ -128,7 +169,8 @@ def execute_assistant(engine, claim, provider, *, heartbeat_interval_seconds=10.
                     RunStatus(result["status"]), answer_text=result["answer"], error_code=result["error"],
                     model_id=getattr(provider, "model_id", None), usage_json=result["usage"],
                     trace_events=result["events"], memory_json=checkpoint,
-                    context_manifest=memory.manifest | {"assistant": checkpoint, "assistant_context": result["context"]},
+                    context_manifest=memory.manifest | {"assistant": checkpoint, "assistant_context": result["context"],
+                        "semantic_memory": semantic_manifest()},
                     dynamic_payload=result["dynamic_payload"], assistant_payload=payload,
                     outcome_unknown=any(e.get("outcome_unknown") is True for e in result["events"]))
             return ExecutionReport(claim.run_id, claim.active_attempt_id, result["status"], result["answer"], result["error"], result["usage"]["model_calls"])

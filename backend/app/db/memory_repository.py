@@ -244,7 +244,10 @@ def save_checkpoint(
     previous = (
         connection.execute(
             select(conversation_summaries)
-            .where(conversation_summaries.c.conversation_id == run["conversation_id"])
+            .where(
+                conversation_summaries.c.conversation_id == run["conversation_id"],
+                conversation_summaries.c.summary_json["kind"].as_string() == "source_excerpts_v1",
+            )
             .order_by(conversation_summaries.c.version.desc())
             .limit(1)
         )
@@ -288,7 +291,11 @@ def save_checkpoint(
             case_id=run["case_id"],
             conversation_id=run["conversation_id"],
             snapshot_id=run["snapshot_id"],
-            version=(previous["version"] + 1) if previous else 1,
+            version=connection.scalar(
+                select(func.coalesce(func.max(conversation_summaries.c.version), 0)).where(
+                    conversation_summaries.c.conversation_id == run["conversation_id"]
+                )
+            ) + 1,
             source_digest=fingerprint,
             summary_json={
                 "kind": "source_excerpts_v1",
@@ -529,6 +536,7 @@ class MemoryRepository:
                         conversation_summaries.c.case_id == case_id,
                         conversation_summaries.c.conversation_id == conversation_id,
                         conversation_summaries.c.snapshot_id == snapshot_id,
+                        conversation_summaries.c.summary_json["kind"].as_string() == "source_excerpts_v1",
                         (
                             (
                                 conversation_summaries.c.summary_json[

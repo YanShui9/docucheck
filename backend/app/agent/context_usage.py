@@ -11,7 +11,7 @@ from langchain_core.messages import BaseMessage
 from ..evidence.repository import digest
 from .policy import Budget, RunStopped, input_bound
 
-CONTEXT_PHASES = frozenset({"routing", "edit", "evidence", "decide", "extract"})
+CONTEXT_PHASES = frozenset({"routing", "edit", "evidence", "decide", "extract", "summary"})
 ESTIMATE_METHOD = "serialized_utf8_plus_512_v1"
 
 
@@ -47,7 +47,7 @@ def measure_request(messages: list[BaseMessage], schemas: list[dict], *,
 def _request_event(budget: Budget, messages: list[BaseMessage], schemas: list[dict], *,
                    output_cap: int, phase: str, sequence: int) -> dict:
     return {
-        "kind": "model", "operation": "extract" if phase == "extract" else "decide",
+        "kind": "model", "operation": "extract" if phase in {"extract", "summary"} else "decide",
         "sequence": sequence, "status": "rejected", "provider_called": False,
         "context": measure_request(messages, schemas, budget=budget,
                                    output_cap=output_cap, phase=phase),
