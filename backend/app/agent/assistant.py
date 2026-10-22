@@ -277,7 +277,21 @@ class AssistantAgent:
                 reject_context_request(self.budget, messages, self.evidence_schemas,
                     output_cap=ROUTING_OUTPUT_CAP, phase="evidence", events=events)
 
-    def ask(self, question):
+    def _run_formal(self, operation, payload, events):
+        if operation not in {"review", "proposal"}:
+            raise ValueError("assistant_tool")
+        if self.formal is None:
+            raise ValueError("formal_unavailable")
+        formal = self.formal(operation, self.budget)
+        formal_payload = formal.get("payload")
+        events.extend(formal.get("events", []))
+        payload.update(kind=operation, answer=formal["answer"],
+                       candidate=formal_payload.get("definition") if operation == "proposal" and formal_payload else None,
+                       dynamic_payload_digest=digest(formal_payload))
+        return formal["status"], formal.get("error"), formal_payload
+
+    def ask(self, question, *, formal_operation=None):
+        """formal_operation is supplied only by the executor's guarded retry lookup."""
         self.context, self.runtime_context, self.recalled_history = {}, None, []
         payload = {"version": 1, "kind": "chat", "answer": "", "source_digest": self.source_digest,
                    "citations": [], "candidate": None, "changes": [], "patch": None,
@@ -292,6 +306,12 @@ class AssistantAgent:
         status, error = "completed", None
         try:
             self._check()
+            if formal_operation is not None:
+                status, error, formal_payload = self._run_formal(formal_operation, payload, events)
+                self._check()
+                return {"status": status, "error": error, "answer": payload["answer"], "payload": payload,
+                        "dynamic_payload": formal_payload, "events": events, "usage": self.budget.summary(),
+                        "context": self.context}
             simple_clock = clock_question(question)
             if simple_clock:
                 _memory_payload(self.memory_layers)  # Keep the same validated preference boundary.
@@ -504,16 +524,8 @@ class AssistantAgent:
                     break
                 if name in {"review_checklist", "propose_checklist"}:
                     EmptyArgs.model_validate(args)
-                    if self.formal is None:
-                        raise ValueError("formal_unavailable")
                     operation: Literal["review", "proposal"] = "review" if name == "review_checklist" else "proposal"
-                    formal = self.formal(operation, self.budget)
-                    formal_payload = formal.get("payload")
-                    events.extend(formal.get("events", []))
-                    status, error = formal["status"], formal.get("error")
-                    payload.update(kind=operation, answer=formal["answer"],
-                                   candidate=formal_payload.get("definition") if operation == "proposal" and formal_payload else None,
-                                   dynamic_payload_digest=digest(formal_payload))
+                    status, error, formal_payload = self._run_formal(operation, payload, events)
                     break
                 raise ValueError("assistant_tool")
             self._check()

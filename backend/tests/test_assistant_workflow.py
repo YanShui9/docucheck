@@ -226,7 +226,7 @@ def test_fixed_base_candidate_historical_get_and_diff_tamper_rejected(dynamic_ca
     assert client.get(url + "/assistant-result").status_code == 409
 
 
-def test_partial_formal_retry_to_chat_cannot_promote_old_dynamic_findings(dynamic_case):
+def test_new_chat_run_cannot_promote_previous_partial_dynamic_findings(dynamic_case):
     from backend.app.providers.base import ProviderError
 
     test_dynamic_workflow.confirm(dynamic_case)
@@ -240,10 +240,12 @@ def test_partial_formal_retry_to_chat_cannot_promote_old_dynamic_findings(dynami
     receipt = send(dynamic_case, "正式审查")
     assert run(dynamic_case, receipt, FailLast()).status == "partial"
     url = f"/api/v1/agent-runs/{receipt['run_id']}"
-    retry = dynamic_case[0].post(url + "/retry", headers={"Idempotency-Key": "chat-retry"}, json={"expected_revision": 3})
-    assert retry.status_code == 202, retry.text
-    report = run(dynamic_case, retry.json(), Decisions(("chat", {"answer": "可以先说明下一步需求。"})))
+    chat = send(dynamic_case, "先聊一下下一步", key="new-chat")
+    assert chat["run_id"] != receipt["run_id"]
+    report = run(dynamic_case, chat, Decisions(("chat", {"answer": "可以先说明下一步需求。"})))
     assert report.status == "completed"
+    assert dynamic_case[0].get(url).json()["status"] == "partial"
+    url = f"/api/v1/agent-runs/{chat['run_id']}"
     assert dynamic_case[0].get(url + "/checks").json()["checks"] == []
     assert dynamic_case[0].get(url + "/facts").json()["fact_sets"] == []
     assert dynamic_case[0].get(url + "/export").status_code == 409

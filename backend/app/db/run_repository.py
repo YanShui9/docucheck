@@ -183,12 +183,13 @@ class RunRepository:
             raise RepositoryError("snapshot_changed")
 
     def _append_event(self, connection, run_id: str, attempt_id: str,
-                      kind: str, status: RunStatus, now: datetime) -> None:
+                      kind: str, status: RunStatus, now: datetime, *,
+                      summary: dict | None = None) -> None:
         seq = connection.scalar(select(func.coalesce(func.max(run_events.c.seq), 0))
                                 .where(run_events.c.run_id == run_id)) + 1
         connection.execute(insert(run_events).values(
             id=_id(), run_id=run_id, attempt_id=attempt_id, seq=seq,
-            kind=kind, status=status.value, summary_json={}, created_at=now,
+            kind=kind, status=status.value, summary_json=summary or {}, created_at=now,
         ))
 
     def _dispatch(self, connection, run_id: str, attempt_id: str,

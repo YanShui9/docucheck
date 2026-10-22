@@ -102,7 +102,7 @@ def execute_assistant(engine, claim, provider, *, heartbeat_interval_seconds=10.
                 confirmed_definition=authority["confirmed_definition"], checklist_version_id=authority["checklist_version_id"],
                 retriever=retriever, formal=formal, validate=validate_context,
                 history=context.history, memory_layers=memory.layers, history_reader=memory.history_reader)
-            result = agent.ask(context.question)
+            result = agent.ask(context.question, formal_operation=store.retry_operation(claim))
             if dynamic.retain_cancelled_usage(claim, result, provider):
                 return ExecutionReport(claim.run_id, claim.active_attempt_id, "cancelled", "本次处理已取消。", "cancelled", result["usage"]["model_calls"])
             validate_context()

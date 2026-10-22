@@ -12,6 +12,7 @@ from ..criteria.changes import apply_changes
 from ..criteria.models import ChecklistDefinition
 from ..criteria.validation import validate_definition
 from ..evidence.repository import digest
+from ..runtime.lifecycle import RunStatus
 from .assistant_preview import authority_base, bind_preview, effective_base
 from .checklist_repository import _validated, _version
 from .dynamic_repository import DynamicRepository, _error, bind_workflow, source_digest
@@ -29,6 +30,7 @@ from .models import (
     dynamic_runs,
     messages,
     run_attempts,
+    run_events,
 )
 
 
@@ -133,12 +135,55 @@ class AssistantRepository:
     def validate(self, claim):
         self.binding(claim)
 
+    def retry_operation(self, claim):
+        """Only an explicit retry may reuse this Run's guarded formal binding."""
+        with self.engine.begin() as connection:
+            self._guard(connection, claim)
+            attempt = connection.execute(select(run_attempts).where(
+                run_attempts.c.id == claim.active_attempt_id,
+                run_attempts.c.run_id == claim.run_id,
+            ).with_for_update()).mappings().one()
+            if attempt["attempt_no"] <= 1 or attempt["resume_message_id"] is not None:
+                return None
+            # New instructions supersede older intent. Only a formal operation
+            # registered after the most recent resume may survive its retries.
+            last_resume = connection.scalar(select(run_attempts.c.attempt_no).where(
+                    run_attempts.c.run_id == claim.run_id,
+                    run_attempts.c.attempt_no <= attempt["attempt_no"],
+                    run_attempts.c.resume_message_id.is_not(None))
+                .order_by(run_attempts.c.attempt_no.desc()).limit(1).with_for_update())
+            marker = connection.execute(select(run_events.c.summary_json).join(run_attempts,
+                (run_events.c.run_id == run_attempts.c.run_id)
+                & (run_events.c.attempt_id == run_attempts.c.id)).where(
+                    run_events.c.run_id == claim.run_id,
+                    run_events.c.kind == "assistant_formal_registered",
+                    run_attempts.c.attempt_no >= (last_resume or 1),
+                    run_attempts.c.attempt_no <= attempt["attempt_no"])
+                .order_by(run_events.c.seq.desc()).limit(1).with_for_update()).first()
+            if last_resume is not None and marker is None:
+                return None
+            if connection.scalar(select(dynamic_runs.c.run_id).where(
+                    dynamic_runs.c.run_id == claim.run_id)) is None:
+                return None
+            binding = DynamicRepository(self.engine)._guard(connection, claim)
+            if binding["workflow"] not in {"review", "proposal"}:
+                _error("dynamic_scope")
+            if marker is not None:
+                summary = marker.summary_json
+                if (not isinstance(summary, dict) or set(summary) != {"version", "operation"}
+                        or type(summary["version"]) is not int or summary["version"] != 1
+                        or summary["operation"] != binding["workflow"]):
+                    _error("dynamic_scope")
+            return binding["workflow"]
+
     def register_formal(self, claim, operation):
         """The executor owns routing to dynamic workflows; no model binding is accepted."""
         from dataclasses import replace
 
-        from .run_repository import SubmitRun
+        from .run_repository import RunRepository, SubmitRun, _now
 
+        if operation not in {"review", "proposal"}:
+            _error("invalid_request")
         with self.engine.begin() as connection:
             assistant_binding = self._guard(connection, claim)
             run = connection.execute(select(agent_runs).where(agent_runs.c.id == claim.run_id).with_for_update()).mappings().one()
@@ -157,6 +202,9 @@ class AssistantRepository:
                 connection.execute(insert(dynamic_runs).values(**binding))
             elif any(old[k] != v for k, v in binding.items()):
                 _error("dynamic_scope")
+            RunRepository(self.engine)._append_event(connection, claim.run_id, claim.active_attempt_id,
+                "assistant_formal_registered", RunStatus.RUNNING, _now(),
+                summary={"version": 1, "operation": operation})
         return DynamicRepository(self.engine).binding(claim)
 
     def store_terminal(self, connection, run_id, payload):
@@ -176,8 +224,8 @@ class AssistantRepository:
             except (ValueError, TypeError):
                 _error("assistant_source_changed")
             if payload.get("kind") not in {"review", "proposal"}:
-                # A retry may choose a different assistant intent. Never pair
-                # its new completed status with the previous attempt's facts.
+                # A resume may choose a different intent. Never pair its new
+                # completed status with the previous attempt's facts.
                 connection.execute(update(dynamic_runs).where(dynamic_runs.c.run_id == run_id).values(payload_json=None, payload_digest=None))
             connection.execute(update(assistant_runs).where(assistant_runs.c.run_id == run_id).values(payload_json=payload, payload_digest=digest(payload)))
 

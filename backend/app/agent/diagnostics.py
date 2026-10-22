@@ -121,7 +121,7 @@ def safe_trace_events(events) -> list[dict]:
                     summary[key] = event[key]
         elif kind == "tool":
             summary["tool"] = event.get("tool") if isinstance(event.get("tool"), str) and event["tool"] in _TOOLS else "other"
-            for key in ("ordinal", "rejected_count"):
+            for key in ("ordinal", "rejected_count", "request_parts", "completed_parts", "context_repack_count"):
                 if _integer(event.get(key)):
                     summary[key] = event[key]
             for key in ("initial_rejection_codes", "rejection_codes"):
