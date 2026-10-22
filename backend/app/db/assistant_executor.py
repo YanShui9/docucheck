@@ -22,6 +22,7 @@ from .run_heartbeat import run_heartbeat
 from .run_repository import RepositoryError, RunRepository
 from .semantic_memory_repository import SemanticMemoryRepository
 from .source_repository import protect_sources
+from .task_handoff_repository import TaskHandoffRepository
 
 
 def execute_assistant(engine, claim, provider, *, heartbeat_interval_seconds=10.0,
@@ -75,6 +76,10 @@ def execute_assistant(engine, claim, provider, *, heartbeat_interval_seconds=10.
             layers = dict(memory.layers)
             if semantic_summary is not None:
                 layers["semantic_summary"] = semantic_summary
+            handoff_store = TaskHandoffRepository(engine)
+            handoff_view = handoff_store.prepare(claim)
+            if handoff_view["context"] is not None:
+                layers["task_handoff"] = handoff_view["context"]
 
             def semantic_manifest():
                 return {"version": 1, "scope_digest": semantic_view["scope_digest"],
@@ -90,6 +95,7 @@ def execute_assistant(engine, claim, provider, *, heartbeat_interval_seconds=10.
                 try:
                     memory.validate()
                     semantic_store.validate(claim, semantic_view, semantic_saved)
+                    handoff_store.validate(claim, handoff_view)
                 except ValueError:
                     raise RepositoryError("memory_context_changed") from None
 
@@ -142,6 +148,8 @@ def execute_assistant(engine, claim, provider, *, heartbeat_interval_seconds=10.
                 confirmed_definition=authority["confirmed_definition"], checklist_version_id=authority["checklist_version_id"],
                 retriever=retriever, formal=formal, validate=validate_context,
                 history=context.history, memory_layers=layers, history_reader=memory.history_reader,
+                task_history_reader=(lambda ids, **kwargs: handoff_store.read_history(claim, handoff_view, ids, **kwargs))
+                    if handoff_view["manifest"]["sources"] else None,
                 semantic_refresh=update_semantic)
             result = agent.ask(context.question, formal_operation=store.retry_operation(claim))
             if dynamic.retain_cancelled_usage(claim, result, provider):
@@ -170,7 +178,7 @@ def execute_assistant(engine, claim, provider, *, heartbeat_interval_seconds=10.
                     model_id=getattr(provider, "model_id", None), usage_json=result["usage"],
                     trace_events=result["events"], memory_json=checkpoint,
                     context_manifest=memory.manifest | {"assistant": checkpoint, "assistant_context": result["context"],
-                        "semantic_memory": semantic_manifest()},
+                        "semantic_memory": semantic_manifest(), "task_handoff": handoff_view["manifest"]},
                     dynamic_payload=result["dynamic_payload"], assistant_payload=payload,
                     outcome_unknown=any(e.get("outcome_unknown") is True for e in result["events"]))
             return ExecutionReport(claim.run_id, claim.active_attempt_id, result["status"], result["answer"], result["error"], result["usage"]["model_calls"])

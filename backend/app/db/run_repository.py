@@ -316,6 +316,10 @@ class RunRepository:
                 ).limit(1).with_for_update())
                 if busy is not None:
                     raise RepositoryError("conversation_busy")
+                # The Case lock orders this submission after committed phases.
+                # JSON preserves microseconds even on legacy DATETIME(0) columns.
+                handoff_cutoff = (_now().isoformat(timespec="microseconds")
+                                  if assistant_binding is not None else None)
                 connection.execute(insert(messages).values(
                     id=message_id, conversation_id=request.conversation_id,
                     sequence=next_sequence(connection, request.conversation_id),
@@ -343,7 +347,9 @@ class RunRepository:
                     created_at=now,
                 ))
                 self._append_event(connection, run_id, attempt_id,
-                                   "queued", RunStatus.QUEUED, now)
+                                   "queued", RunStatus.QUEUED, now,
+                                   summary={"task_handoff_cutoff_at": handoff_cutoff}
+                                       if handoff_cutoff is not None else None)
                 self._dispatch(connection, run_id, attempt_id, now)
                 return RunReceipt(run_id, message_id, attempt_id)
         except IntegrityError:
@@ -496,9 +502,9 @@ class RunRepository:
         if status not in {RunStatus.COMPLETED, RunStatus.PARTIAL,
                           RunStatus.FAILED, RunStatus.WAITING_USER}:
             raise RepositoryError("invalid_transition")
-        now = _now()
         with self.engine.begin() as connection:
             self._require_current_case(connection, run_id)
+            now = _now()
             from .dynamic_repository import DynamicRepository
             DynamicRepository(self.engine).store_terminal(connection, run_id, dynamic_payload)
             from .assistant_repository import AssistantRepository

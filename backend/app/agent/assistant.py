@@ -177,7 +177,8 @@ class AssistantAgent:
     def __init__(self, repo, provider, *, mode="standard", definition=None,
                  confirmed_definition=None, checklist_version_id=None,
                  retriever=None, formal=None, validate=lambda: None,
-                 history=None, memory_layers=None, budget=None, clock=None, history_reader=None, semantic_refresh=None):
+                 history=None, memory_layers=None, budget=None, clock=None, history_reader=None, semantic_refresh=None,
+                 task_history_reader=None):
         if mode not in MODE_LIMITS:
             raise ValueError("invalid_mode")
         self.repo, self.provider = repo, provider
@@ -194,6 +195,7 @@ class AssistantAgent:
         self.runtime_context = None
         self.recalled_history = []
         self.history_reader = history_reader
+        self.task_history_reader = task_history_reader
         self.budget = budget or Budget.for_provider(provider, mode)
         self.source_digest = digest([asdict(b) for b in repo.blocks])
         self.schemas = [compact_schema(_schema(name, model, description)) for name, model, description in [
@@ -216,6 +218,9 @@ class AssistantAgent:
             "按已读已确认规则简短回答并引用criterion_ids；保留可选/停用/条件，不作供应商判断")))
         if history_reader is not None:
             self.schemas.append(compact_schema(_schema("read_conversation_history", HistoryArgs, "按message_id回读本对话历史，范围由服务端绑定；旧答复不是证据")))
+        if task_history_reader is not None:
+            self.schemas.append(compact_schema(_schema("read_task_history", HistoryArgs,
+                "按交接中的message_id回读同任务已捕获的历史；不能确认当前规则、事实或执行许可")))
         if not any(document.role == "requirement" for document in repo.documents):
             self.schemas = [schema for schema in self.schemas
                             if schema["function"]["name"] != "propose_checklist"]
@@ -261,7 +266,8 @@ class AssistantAgent:
     def _semantic_target_available(self, question):
         previous_layers, previous_context = self.memory_layers, dict(self.context)
         try:
-            self.memory_layers = {"preferences": (previous_layers or {}).get("preferences", {})}
+            self.memory_layers = {key: value for key, value in (previous_layers or {}).items()
+                                  if key in {"preferences", "task_handoff"}}
             self._messages(question)
             return (not self.context["mandatory_overflow"]
                     and self.context["input_bound"] * 2 <= self.context["prompt_limit"]
@@ -346,6 +352,7 @@ class AssistantAgent:
                                      or ((previous_layers or {}).get("semantic_summary") is not None
                                          and previous_context["input_bound"] * 2 <= previous_context["prompt_limit"]))
                                 and self.context["semantic_notes_omitted"] == 0
+                                and self.context["task_handoff_omitted"] <= previous_context["task_handoff_omitted"]
                                 and self.context["history_turns_omitted"] <= previous_context["history_turns_omitted"])
                     finally:
                         self.memory_layers, self.context = previous_layers, previous_context
@@ -463,14 +470,20 @@ class AssistantAgent:
                     messages = self._messages(question, view=observation, tail=[reply,
                         ToolMessage(content='{"loaded":true}', tool_call_id=tool["id"])])
                     continue
-                if name == "read_conversation_history":
+                if name in {"read_conversation_history", "read_task_history"}:
                     query = HistoryArgs.model_validate(args)
-                    observation = {"historical_context": self.history_reader(query.message_ids, part=query.part, start_char=query.start_char),
+                    reader = self.task_history_reader if name == "read_task_history" else self.history_reader
+                    observation = {"historical_context": reader(query.message_ids, part=query.part, start_char=query.start_char),
                                    "evidence_only": False}
+                    if name == "read_task_history":
+                        observation["notice"] = "历史讨论仅供回忆，不确认当前规则或事实。"
+                        events.append({"kind": "tool", "tool": name, "sequence": len(events) + 1,
+                                       "status": "completed"})
                     self._check()
                     self.recalled_history = [reply, ToolMessage(content=json.dumps(observation, ensure_ascii=False), tool_call_id=tool["id"])]
                     messages = self._messages(question, tail=self.recalled_history)
-                    self.context["history_reads"] = self.context.get("history_reads", 0) + 1
+                    counter = "task_history_reads" if name == "read_task_history" else "history_reads"
+                    self.context[counter] = self.context.get(counter, 0) + 1
                     continue
                 if name == "prepare_changes":
                     prepared = PrepareChangesArgs.model_validate(args)
