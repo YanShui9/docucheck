@@ -1,5 +1,7 @@
 # DocuCheck · 多品类采购文档审查助手
 
+2026-10-23真实验收发现两处边界并补修，API/worker运行1328140，页面地址不变。离线门禁2431通过/59跳过、网络0；首次真实问题失败保留，补修后真实重问等待验证浏览器重新登录，见[当前运行与待验](docs/context-live-service-2026-10-23.md)。
+
 2026-10-23本机已应用上下文改造固定版本b0923ec，页面为`http://127.0.0.1:15173/`；健康、运行源码及旧历史核验通过，登录后真实请求待试用，见[服务应用记录](docs/service-context-update-2026-10-23.md)。下文各阶段“未部署”指原交付时状态；主工作区未合并，真实模型本轮0次。
 
 [![Offline verification](https://github.com/YanShui9/docucheck/actions/workflows/offline-ci.yml/badge.svg?branch=phase-0-foundation)](https://github.com/YanShui9/docucheck/actions/workflows/offline-ci.yml)
