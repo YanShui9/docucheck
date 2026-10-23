@@ -15,6 +15,7 @@ from .agent_snapshot import SnapshotLoadError, load_agent_snapshot
 from .assistant_repository import AssistantRepository
 from .conversation_context import load_conversation_context
 from .dynamic_repository import DynamicRepository, source_digest
+from .first_task_message_repository import FirstTaskMessageRepository
 from .memory_context import load_memory_context
 from .models import agent_runs, document_versions
 from .persisted_retrieval import persisted_retriever
@@ -80,6 +81,14 @@ def execute_assistant(engine, claim, provider, *, heartbeat_interval_seconds=10.
             handoff_view = handoff_store.prepare(claim)
             if handoff_view["context"] is not None:
                 layers["task_handoff"] = handoff_view["context"]
+            first_message_store = FirstTaskMessageRepository(engine)
+            first_message_view = None
+
+            def read_first_message(*, start_char=0):
+                nonlocal first_message_view
+                if first_message_view is None:
+                    first_message_view = first_message_store.prepare(claim)
+                return first_message_store.read(claim, first_message_view, start_char=start_char)
 
             def semantic_manifest():
                 return {"version": 1, "scope_digest": semantic_view["scope_digest"],
@@ -96,6 +105,8 @@ def execute_assistant(engine, claim, provider, *, heartbeat_interval_seconds=10.
                     memory.validate()
                     semantic_store.validate(claim, semantic_view, semantic_saved)
                     handoff_store.validate(claim, handoff_view)
+                    if first_message_view is not None:
+                        first_message_store.validate(claim, first_message_view)
                 except ValueError:
                     raise RepositoryError("memory_context_changed") from None
 
@@ -150,7 +161,7 @@ def execute_assistant(engine, claim, provider, *, heartbeat_interval_seconds=10.
                 history=context.history, memory_layers=layers, history_reader=memory.history_reader,
                 task_history_reader=(lambda ids, **kwargs: handoff_store.read_history(claim, handoff_view, ids, **kwargs))
                     if handoff_view["manifest"]["sources"] else None,
-                semantic_refresh=update_semantic)
+                first_task_message_reader=read_first_message, semantic_refresh=update_semantic)
             result = agent.ask(context.question, formal_operation=store.retry_operation(claim))
             if dynamic.retain_cancelled_usage(claim, result, provider):
                 return ExecutionReport(claim.run_id, claim.active_attempt_id, "cancelled", "本次处理已取消。", "cancelled", result["usage"]["model_calls"])
@@ -178,7 +189,8 @@ def execute_assistant(engine, claim, provider, *, heartbeat_interval_seconds=10.
                     model_id=getattr(provider, "model_id", None), usage_json=result["usage"],
                     trace_events=result["events"], memory_json=checkpoint,
                     context_manifest=memory.manifest | {"assistant": checkpoint, "assistant_context": result["context"],
-                        "semantic_memory": semantic_manifest(), "task_handoff": handoff_view["manifest"]},
+                        "semantic_memory": semantic_manifest(), "task_handoff": handoff_view["manifest"],
+                        **({"first_task_message": first_message_view} if first_message_view is not None else {})},
                     dynamic_payload=result["dynamic_payload"], assistant_payload=payload,
                     outcome_unknown=any(e.get("outcome_unknown") is True for e in result["events"]))
             return ExecutionReport(claim.run_id, claim.active_attempt_id, result["status"], result["answer"], result["error"], result["usage"]["model_calls"])

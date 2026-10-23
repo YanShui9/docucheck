@@ -27,7 +27,7 @@ DYNAMIC_REJECTION_CODES = frozenset({
 })
 _TOOLS = frozenset(DEFINITIONS) | {
     "get_checklist", "propose_checklist", "review_checklist", "read_sources", "batch_cache",
-    "read_checklist", "answer_checklist", "read_task_history", "read_conversation_history",
+    "read_checklist", "answer_checklist", "read_task_history", "read_conversation_history", "read_first_task_message",
 }
 _ERRORS = ProviderError._CODES | frozenset({
     "invalid_tool_result", "evidence_scope", "supplier_scope", "fact_set_scope",

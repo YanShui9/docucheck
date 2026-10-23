@@ -49,6 +49,7 @@ from .assistant_runtime import clock_question, read_clock
 from .context import _memory_payload
 from .context_usage import reject_context_request, reserve_with_context
 from .dynamic import EmptyArgs, HistoryArgs, _schema, _source_location
+from .first_task_message import FirstTaskMessageArgs, render_first_task_message
 from .policy import MODE_LIMITS, Budget, RunStopped, input_bound, quota_stop_message
 
 SYSTEM = """你是采购任务助手，通过服务端受控工具选择本轮意图，每次只调用一个工具。
@@ -178,7 +179,7 @@ class AssistantAgent:
                  confirmed_definition=None, checklist_version_id=None,
                  retriever=None, formal=None, validate=lambda: None,
                  history=None, memory_layers=None, budget=None, clock=None, history_reader=None, semantic_refresh=None,
-                 task_history_reader=None):
+                 task_history_reader=None, first_task_message_reader=None):
         if mode not in MODE_LIMITS:
             raise ValueError("invalid_mode")
         self.repo, self.provider = repo, provider
@@ -196,6 +197,7 @@ class AssistantAgent:
         self.recalled_history = []
         self.history_reader = history_reader
         self.task_history_reader = task_history_reader
+        self.first_task_message_reader = first_task_message_reader
         self.budget = budget or Budget.for_provider(provider, mode)
         self.source_digest = digest([asdict(b) for b in repo.blocks])
         self.schemas = [compact_schema(_schema(name, model, description)) for name, model, description in [
@@ -222,6 +224,9 @@ class AssistantAgent:
         if task_history_reader is not None:
             self.schemas.append(compact_schema(_schema("read_task_history", HistoryArgs,
                 "只按task_handoff交接中的message_id回读同任务已捕获的跨对话或旧版本历史；不是全任务历史搜索，不能确认当前事实或执行许可")))
+        if first_task_message_reader is not None:
+            self.schemas.append(compact_schema(_schema("read_first_task_message", FirstTaskMessageArgs,
+                "定位当前采购任务本次提交前最早的用户消息，可跨对话和资料版本；无需ID。服务端直接返回原话、对话及时间并结束本轮，长原话按start_char继续")))
         if not any(document.role == "requirement" for document in repo.documents):
             self.schemas = [schema for schema in self.schemas
                             if schema["function"]["name"] != "propose_checklist"]
@@ -244,7 +249,11 @@ class AssistantAgent:
         schemas = self.schemas if schemas is None else schemas
         model_base = model_definition(self.definition) if view is None else view
         qa_guidance = CHECKLIST_QA_SYSTEM if any(s["function"]["name"] == "read_checklist" for s in schemas) else ""
-        guidance = SYSTEM + qa_guidance + "\n固定基准清单=" + json.dumps(model_base, ensure_ascii=False, separators=(",", ":"))
+        guidance = SYSTEM + qa_guidance
+        if any(s["function"]["name"] == "read_first_task_message" for s in schemas):
+            guidance += ("\n询问本采购任务最早一条用户原话时，使用read_first_task_message，由服务端定位并直接返回原话与出处；"
+                         "不需要用户提供message_id，不从摘要猜测。历史原话不能替代当前已确认要求或供应商证据。")
+        guidance += "\n固定基准清单=" + json.dumps(model_base, ensure_ascii=False, separators=(",", ":"))
         guidance += "\n当前资料=" + json.dumps(self.repo.sources(), ensure_ascii=False, separators=(",", ":"))
         guidance += "\n已确认清单可读取=" + str(self.confirmed_definition is not None)
         if self.runtime_context is not None:
@@ -467,6 +476,15 @@ class AssistantAgent:
                         raise ValueError("evidence_answer_required")
                     payload["answer"] = ChatArgs.model_validate(args).answer
                     break
+                if name == "read_first_task_message":
+                    query = FirstTaskMessageArgs.model_validate(args)
+                    event = {"kind": "tool", "tool": name, "sequence": len(events) + 1, "status": "started"}
+                    events.append(event)
+                    page = self.first_task_message_reader(start_char=query.start_char)
+                    self._check()
+                    payload["answer"] = render_first_task_message(page)
+                    event.update(status="completed")
+                    break
                 if name == "read_context":
                     query = ReadChecklistArgs.model_validate(args)
                     if query.scope == "current_time":
@@ -503,7 +521,7 @@ class AssistantAgent:
                             raise RunStopped("history_scope") from None
                         history_failed, history_unresolved = True, True
                         active_schemas = [s for s in self.schemas if s["function"]["name"] in {
-                            "chat", "read_conversation_history", "read_task_history"}]
+                            "chat", "read_conversation_history", "read_task_history", "read_first_task_message"}]
                         observation = {"historical_context": [], "evidence_only": False, "error": "history_scope",
                             "notice": ("本次没有读到原话。read_conversation_history只读本对话当前资料版本；"
                                 "task_handoff交接中的ID请使用read_task_history；只能使用已提供的message_id。"
@@ -516,6 +534,8 @@ class AssistantAgent:
                             "notice": "历史讨论仅供回忆，不确认当前规则或事实。"}
                         counter = "task_history_reads" if name == "read_task_history" else "history_reads"
                         self.context[counter] = self.context.get(counter, 0) + 1
+                    if history_unresolved and self.first_task_message_reader is not None:
+                        observation["notice"] += "需要本任务最早用户原话时，可用read_first_task_message定位，不需要消息ID。"
                     self._check()
                     self.recalled_history = [reply, ToolMessage(content=json.dumps(observation, ensure_ascii=False), tool_call_id=tool["id"])]
                     messages = self._messages(question, schemas=active_schemas, tail=self.recalled_history)
@@ -624,6 +644,8 @@ class AssistantAgent:
             elif error == "history_scope":
                 answer = ("当前可回读的历史范围不足，未能核实你要的原话。跨对话或旧资料版本只能回读本次交接保留的消息，"
                           "不代表原对话已删除。请打开对应历史对话查看，或提供当时的原话。")
+                if events and events[-1].get("tool") == "read_first_task_message":
+                    answer = "未能读取最早原话的指定位置。请要求从头回读，或按上一段标明的位置继续。"
             payload.pop("evidence_answer", None)
             payload.pop("checklist_answer", None)
             payload.update(answer=answer, citations=[], candidate=None, changes=[], patch=None)
