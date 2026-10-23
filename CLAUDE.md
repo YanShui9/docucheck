@@ -1,6 +1,6 @@
 # DocuCheck 当前开发上下文
 
-2026-10-23真实验收补修：已登录后的首问未命中已确认20箱，受限诊断重现组合查询问题及首次摘要与截断摘录比较问题，固定1328140已应用API/worker。后端2431通过/59跳过、网络0，相关83项及独立复核通过；139份worker源码、健康/匿名鉴权和654份原件保留核对通过。页面重问前浏览器会话丢失，已请用户重登；真实复测未通过不能算完成。当前启动入口改为主工作区`data/verification/context-live-repair-deploy-20261023/start_entries.ps1`，见[本轮记录](docs/context-live-service-2026-10-23.md)。
+2026-10-23真实验收补修：固定1328140已应用API/worker，重新登录后数量问答返回20箱，6条语义摘要保存并选入，页面用量与后台最近请求一致；回答仍重复配置且将既有条件“20”扩写为“20箱”。原话回读和新对话回忆均history_scope，未通过；正式审查及一次重试保持review意图但抽取校验失败、coverage_incomplete，无context_budget。离线2431通过/59跳过，相关83项/网络0及独立复核保持原证据。本次验收及诊断累计16次真实请求、未知0，不代表全部上下文真实验收完成。当前启动入口为主工作区`data/verification/context-live-repair-deploy-20261023/start_entries.ps1`，见[本轮记录](docs/context-live-service-2026-10-23.md)。
 
 2026-10-23服务应用：已将上下文A1/A2/B1/B2/C固定b0923ec应用到本机worker、API与前端，当前入口为主工作区`data/verification/context-service-deploy-20261023/start_entries.ps1`。源码身份、健康/匿名鉴权、旧历史、脚本Provider及数据保留核验通过；登录后试用、真实模型、Ollama/解析链路未复验，见[运行记录](docs/service-context-update-2026-10-23.md)。主HEAD与六份WIP保留，未合并/推送；下文未部署为当时状态。
 
