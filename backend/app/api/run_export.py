@@ -263,6 +263,44 @@ def render_xlsx(payload: dict) -> bytes:
         for column in ("A", "B", "C", "D", "E"):
             material.column_dimensions[column].width = 31
 
+    tax_groups = [
+        (check, group)
+        for check in result["checks"]
+        for group in check.get("tax_source_groups", [])
+    ]
+    if tax_groups:
+        tax = workbook.create_sheet("税口径引用分组")
+        for column, label in enumerate(("核验结果 ID", "指标 ID", "品目 ID", "事实 ID", "税说明来源 ID"), 1):
+            _text(tax, 1, column, label)
+        for row, (check, group) in enumerate(tax_groups, 2):
+            values = (check["check_result_id"], check["criterion_id"], check["item_id"],
+                      group["fact_id"], "\n".join(group["evidence_refs"]))
+            for column, value in enumerate(values, 1):
+                _text(tax, row, column, value)
+        tax.freeze_panes = "A2"
+        tax.auto_filter.ref = tax.dimensions
+        for column in ("A", "B", "C", "D", "E"):
+            tax.column_dimensions[column].width = 31
+
+    price_groups = [
+        (check, group)
+        for check in result["checks"]
+        for group in check.get("price_source_groups", [])
+    ]
+    if price_groups:
+        price = workbook.create_sheet("单价引用分组")
+        for column, label in enumerate(("核验结果 ID", "指标 ID", "品目 ID", "事实 ID", "单价来源 ID"), 1):
+            _text(price, 1, column, label)
+        for row, (check, group) in enumerate(price_groups, 2):
+            values = (check["check_result_id"], check["criterion_id"], check["item_id"],
+                      group["fact_id"], "\n".join(group["evidence_refs"]))
+            for column, value in enumerate(values, 1):
+                _text(price, row, column, value)
+        price.freeze_panes = "A2"
+        price.auto_filter.ref = price.dimensions
+        for column in ("A", "B", "C", "D", "E"):
+            price.column_dimensions[column].width = 31
+
     source_headers = (
         "来源 ID",
         "文档 ID",

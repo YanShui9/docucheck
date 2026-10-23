@@ -355,6 +355,16 @@ class MaterialSourceGroupOut(BaseModel):
     evidence_refs: list[str] = Field(min_length=1, max_length=4)
 
 
+class TaxSourceGroupOut(BaseModel):
+    fact_id: str = Field(pattern=r"^[a-f0-9]{64}$")
+    evidence_refs: list[str] = Field(min_length=1, max_length=4)
+
+
+class PriceSourceGroupOut(BaseModel):
+    fact_id: str = Field(pattern=r"^[a-f0-9]{64}$")
+    evidence_refs: list[str] = Field(min_length=1, max_length=4)
+
+
 class CheckOut(DynamicCompatibleOut):
     check_result_id: str
     snapshot_id: str
@@ -374,6 +384,12 @@ class CheckOut(DynamicCompatibleOut):
     criterion_name: str | None = None
     checklist_version_id: str | None = None
     material_source_groups: list[MaterialSourceGroupOut] | None = Field(
+        default=None, exclude_if=lambda value: value is None,
+    )
+    tax_source_groups: list[TaxSourceGroupOut] | None = Field(
+        default=None, exclude_if=lambda value: value is None,
+    )
+    price_source_groups: list[PriceSourceGroupOut] | None = Field(
         default=None, exclude_if=lambda value: value is None,
     )
 

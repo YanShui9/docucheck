@@ -117,7 +117,7 @@ def source_comparator(text: str) -> str:
 
 def strict_source_comparator(text: str, criterion: Criterion, item: ProcurementItem,
                              unit: str, *, model=None, start_event=None,
-                             bound_aliases=False, allow_range=False) -> str:
+                             bound_aliases=False, allow_range=False, money_aliases_v13=False) -> str:
     """Accept finite affirmative measurements; unknown prose is never equality.
 
     Check the full verified source span, including qualifications outside the
@@ -154,6 +154,10 @@ def strict_source_comparator(text: str, criterion: Criterion, item: ProcurementI
         labels.extend(("数量", "采购数量"))
     if bound_aliases and label in {"单价", "含税单价", "采购单价", "单价上限", "含税单价上限", "采购单价上限"} and criterion.rule.type == "money":
         labels.extend(("单价", "含税单价", "采购单价"))
+    if bound_aliases and money_aliases_v13 and criterion.rule.type == "money" and label in {
+            "单价", "采购单价", "含税单价", "不含税单价", "未含税单价", "税前单价",
+            "单价上限", "采购单价上限", "含税单价上限", "不含税单价上限", "未含税单价上限", "税前单价上限"}:
+        labels.extend(("不含税单价", "未含税单价", "税前单价", "含税单价", "采购单价", "单价"))
     tokens = [re.escape(normalize(value)) for value in labels if value]
     tokens.extend((r"[:：=()（）,，;；。]", "为", "是", "等于", "提供", "供货", "交付", "交货",
                    "承诺", "合同约定", "至少", "不低于", "不少于", "不小于", "至多", "不超过",

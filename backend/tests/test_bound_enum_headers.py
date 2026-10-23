@@ -166,7 +166,7 @@ def test_v8_enum_fact_checks_and_manifest_remain_frozen():
     assert_v8_identity(sample, old, "enum")
     old_plan, _ = review_plan(repo, definition, rule_version=V8, item_bindings=frozen)
     new_plan, _ = review_plan(repo, definition, rule_version=BINDING_RULE_VERSION, item_bindings=frozen)
-    assert BINDING_RULE_VERSION == "dynamic-rules-v12" and RULE_VERSION == "dynamic-rules-v7"
+    assert BINDING_RULE_VERSION == "dynamic-rules-v13" and RULE_VERSION == "dynamic-rules-v7"
     assert old_plan["A"][0][-1]["input_digest"] != new_plan["A"][0][-1]["input_digest"]
     assert old_plan["A"][0][-1]["batch_id"] != new_plan["A"][0][-1]["batch_id"]
 

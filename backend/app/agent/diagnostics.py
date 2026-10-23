@@ -24,6 +24,7 @@ DYNAMIC_REJECTION_CODES = frozenset({
     "fact_per_unit", "fact_tax_basis", "fact_calendar", "fact_start_event",
     "candidate_invalid", "item_binding_scope", "item_binding_source_changed",
     "material_sources_rule", "material_sources_overlap", "material_source_criterion", "material_source_item",
+    "money_tax_source_budget",
 })
 _TOOLS = frozenset(DEFINITIONS) | {
     "get_checklist", "propose_checklist", "review_checklist", "read_sources", "batch_cache",

@@ -26,6 +26,7 @@ from .models import (
     Label,
     ProcurementItem,
 )
+from .money_sources import money_tax_sources
 from .validation import (
     COMPLEX,
     NUMBER_PATTERN,
@@ -49,12 +50,13 @@ from .validation import (
 )
 
 RULE_VERSION = "dynamic-rules-v7"
-BINDING_RULE_VERSION = "dynamic-rules-v12"
+BINDING_RULE_VERSION = "dynamic-rules-v13"
 BINDING_RULE_VERSIONS = {"dynamic-rules-v4", "dynamic-rules-v5", "dynamic-rules-v6", "dynamic-rules-v8",
-                         "dynamic-rules-v9", "dynamic-rules-v10", "dynamic-rules-v11", BINDING_RULE_VERSION}
+                         "dynamic-rules-v9", "dynamic-rules-v10", "dynamic-rules-v11", "dynamic-rules-v12",
+                         BINDING_RULE_VERSION}
 SUPPORTED_RULE_VERSIONS = {"dynamic-rules-v1", "dynamic-rules-v2", "dynamic-rules-v3", RULE_VERSION, *BINDING_RULE_VERSIONS}
 STRICT_NUMERIC_VERSIONS = {RULE_VERSION, "dynamic-rules-v8", "dynamic-rules-v9", "dynamic-rules-v10",
-                           "dynamic-rules-v11", BINDING_RULE_VERSION}
+                           "dynamic-rules-v11", "dynamic-rules-v12", BINDING_RULE_VERSION}
 NORMALIZED_START_VERSIONS = {"dynamic-rules-v5", "dynamic-rules-v6", *STRICT_NUMERIC_VERSIONS}
 _VALUE_NUMBER = re.compile(r"^-?\d{1,12}(?:\.\d{1,6})?$")
 _UNCERTAIN = re.compile(r"最大|最高|最多支持|支持扩展|参考|宣传|另一型号|其他型号|"
@@ -110,13 +112,15 @@ def fact_source_groups(value: dict | FactCandidate) -> list[tuple[str, ...]]:
     """Return each source group's identity, without turning groups into a quote."""
     data = value.model_dump(mode="json") if isinstance(value, FactCandidate) else value
     return [tuple(sorted(group["evidence_refs"]))
-            for group in [data, *data.get("material_sources", [])]]
+            for group in [data, *data.get("material_sources", []), *data.get("tax_sources", []),
+                          *data.get("price_sources", [])]]
 
 
 def fact_source_refs(value: dict | FactCandidate) -> list[str]:
     """All cited original blocks, in main/source-group order without duplicates."""
     data = value.model_dump(mode="json") if isinstance(value, FactCandidate) else value
-    return list(dict.fromkeys(ref for group in [data, *data.get("material_sources", [])]
+    return list(dict.fromkeys(ref for group in [data, *data.get("material_sources", []), *data.get("tax_sources", []),
+                                               *data.get("price_sources", [])]
                               for ref in group["evidence_refs"]))
 
 
@@ -136,7 +140,7 @@ def _criterion(definition, criterion_id, item_id):
 
 
 def _fact_clause(text: str, criterion: Criterion, item: ProcurementItem, *, model: str | None,
-                 multi_item: bool, bound_aliases=False) -> str:
+                 multi_item: bool, bound_aliases=False, money_aliases_v13=False) -> str:
     # Current bound money facts must retain their full source basis even when
     # the display label matches literally. Older rule identities stay frozen.
     if (bound_aliases and criterion.rule.type == "money"
@@ -151,6 +155,10 @@ def _fact_clause(text: str, criterion: Criterion, item: ProcurementItem, *, mode
                    ("含税单价", "采购单价", "单价") if label in {
                        "含税单价", "采购单价", "单价", "含税单价上限", "采购单价上限", "单价上限"}
                    and criterion.rule.type == "money" else ())
+        if (money_aliases_v13 and criterion.rule.type == "money" and label in {
+                "单价", "采购单价", "含税单价", "不含税单价", "未含税单价", "税前单价",
+                "单价上限", "采购单价上限", "含税单价上限", "不含税单价上限", "未含税单价上限", "税前单价上限"}):
+            aliases = ("不含税单价", "未含税单价", "税前单价", "含税单价", "采购单价", "单价")
         matches = {matched for name in aliases if (matched := metric_clause(text, name)) is not None
                    and re.match(rf"^\s*{re.escape(name)}\s*[:：=]?\s*"
                                 r"(?:(?:至少|至多|不超过|不低于|不少于|最多|最少)\s*)?"
@@ -204,7 +212,8 @@ def validate_fact(candidate: dict | FactCandidate, definition: ChecklistDefiniti
     definition = _definition(definition)
     criterion, item = _criterion(definition, candidate.criterion_id, candidate.item_id)
     material = isinstance(candidate, MaterialFactCandidate)
-    if material and (rule_version not in {"dynamic-rules-v11", "dynamic-rules-v12"} or criterion.rule.type != "presence"
+    if material and (rule_version not in {"dynamic-rules-v11", "dynamic-rules-v12", "dynamic-rules-v13"}
+                     or criterion.rule.type != "presence"
                      or candidate.value is not True):
         raise ValueError("material_sources_rule")
     repo.assert_supplier(supplier)
@@ -227,12 +236,14 @@ def validate_fact(candidate: dict | FactCandidate, definition: ChecklistDefiniti
                          multi_item=entry is None and len(definition.items) > 1,
                          bound_aliases=entry is not None and rule_version in {
                              "dynamic-rules-v6", "dynamic-rules-v8", "dynamic-rules-v9", "dynamic-rules-v10",
-                             "dynamic-rules-v11", "dynamic-rules-v12"})
+                             "dynamic-rules-v11", "dynamic-rules-v12", "dynamic-rules-v13"},
+                         money_aliases_v13=rule_version == "dynamic-rules-v13")
     rule = criterion.rule
     ambiguous = bool(COMPLEX.search(text) or _UNCERTAIN.search(text))
     comparator = source_comparator(clause)
     observed = {"calendar": None, "start_event": None, "currency": None,
                 "per_unit": None, "tax_basis": None}
+    tax_metadata = {}
     if rule.type in {"numeric", "money", "duration"}:
         if not isinstance(candidate.value, str) or not _VALUE_NUMBER.fullmatch(candidate.value):
             raise ValueError("fact_value")
@@ -261,14 +272,19 @@ def validate_fact(candidate: dict | FactCandidate, definition: ChecklistDefiniti
                 ambiguous = True
         if rule_version in STRICT_NUMERIC_VERSIONS:
             comparator = strict_source_comparator(text, criterion, item, candidate.unit, model=model,
-                start_event=observed["start_event"], bound_aliases=entry is not None)
+                start_event=observed["start_event"], bound_aliases=entry is not None,
+                money_aliases_v13=rule_version == "dynamic-rules-v13")
             ambiguous = ambiguous or comparator == "unknown"
+        if rule.type == "money" and rule_version == "dynamic-rules-v13":
+            tax_metadata = money_tax_sources(
+                repo, bound, entry, blocks, definition, item, observed["tax_basis"])
+            ambiguous = ambiguous or tax_metadata["tax_scope_state"] == "unclear"
     elif rule.type == "presence":
         if not isinstance(candidate.value, bool) or candidate.value != _presence_value(clause, rule.description):
             raise ValueError("fact_value")
         if candidate.unit:
             raise ValueError("fact_unit")
-        if rule_version in {"dynamic-rules-v10", "dynamic-rules-v11", "dynamic-rules-v12"} and candidate.value is True:
+        if rule_version in {"dynamic-rules-v10", "dynamic-rules-v11", "dynamic-rules-v12", "dynamic-rules-v13"} and candidate.value is True:
             ambiguous = ambiguous or bool(_PRESENCE_PROSPECTIVE.search(text))
     else:
         if (not isinstance(candidate.value, str) or not mentions(clause, candidate.value)
@@ -281,7 +297,7 @@ def validate_fact(candidate: dict | FactCandidate, definition: ChecklistDefiniti
             enum_clause = (_bound_enum_clause(blocks, criterion, clause)
                            if entry is not None and rule_version in {
                                "dynamic-rules-v9", "dynamic-rules-v10", "dynamic-rules-v11",
-                               "dynamic-rules-v12"} else clause)
+                               "dynamic-rules-v12", "dynamic-rules-v13"} else clause)
             ambiguous = ambiguous or enum_choices(enum_clause, criterion.name) != [candidate.value]
     for name, observed_value in observed.items():
         proposed = getattr(candidate, name)
@@ -310,7 +326,7 @@ def validate_fact(candidate: dict | FactCandidate, definition: ChecklistDefiniti
         model = entry.supplier_sku
         # Unknown classification must retain the old raw model applicability.
     ambiguous = ambiguous or not applicable
-    canonical = candidate.model_dump(mode="json") | observed
+    canonical = candidate.model_dump(mode="json") | observed | tax_metadata
     canonical.update(evidence_refs=[block.evidence_id for block in blocks], quote=compact(candidate.quote),
                      case_id=repo.case_id, snapshot_id=repo.snapshot_id, model=model,
                      comparator=comparator, ambiguous=ambiguous, applicable=applicable)
@@ -425,8 +441,16 @@ def _evaluate(criterion, item, offered, *, rule_version):
             scale, _ = _numeric("1", rule.unit)
             actual = [value / scale for value, _ in normalized]
         elif rule.type == "money":
+            if rule_version == "dynamic-rules-v13":
+                if any(fact.get("price_scope_state") != "resolved" for fact in offered):
+                    return "待人工确认", "money_price_scope_unclear"
+                if any(fact.get("tax_scope_state") != "resolved" for fact in offered):
+                    return "待人工确认", "money_tax_scope_unclear"
+                if any(fact.get("tax_conflict") for fact in offered):
+                    return "资料冲突", "money_tax_conflict"
             if (rule.tax_basis == "unspecified" or any(
-                    (fact.get("currency"), fact.get("per_unit"), fact.get("tax_basis"))
+                    (fact.get("currency"), fact.get("per_unit"),
+                     fact.get("effective_tax_basis") if rule_version == "dynamic-rules-v13" else fact.get("tax_basis"))
                     != (rule.currency, rule.per_unit, rule.tax_basis) for fact in offered)):
                 return "待人工确认", "money_basis_mismatch"
             actual = [Decimal(fact["value"]) for fact in offered]
@@ -455,7 +479,7 @@ def _evaluate(criterion, item, offered, *, rule_version):
             passes = actual[0] in rule.values
         elif rule.type == "presence":
             # Source groups prove provenance, not independently verified material content.
-            if rule_version == "dynamic-rules-v12" and actual[0] is True:
+            if rule_version in {"dynamic-rules-v12", "dynamic-rules-v13"} and actual[0] is True:
                 return "待人工确认", "material_body_unverified"
             passes = actual[0] == rule.must_be_present
         elif rule.type == "duration" and comparators == {"lt"} and rule.operator == "lt":
@@ -532,6 +556,14 @@ def evaluate_checklist(definition: ChecklistDefinition | dict, facts: list[dict]
                                for fact in offered for source in fact.get("material_sources", [])]
             if material_groups:
                 result["material_source_groups"] = material_groups
+            tax_groups = [{"fact_id": fact["fact_id"], "evidence_refs": source["evidence_refs"]}
+                          for fact in offered for source in fact.get("tax_sources", [])]
+            if tax_groups:
+                result["tax_source_groups"] = tax_groups
+            price_groups = [{"fact_id": fact["fact_id"], "evidence_refs": source["evidence_refs"]}
+                            for fact in offered for source in fact.get("price_sources", [])]
+            if price_groups:
+                result["price_source_groups"] = price_groups
             identity = digest([definition.model_dump(mode="json"), offered, result])
             results.append({"check_result_id": identity, **result})
     return results
