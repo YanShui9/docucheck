@@ -15,6 +15,19 @@ CONTEXT_PHASES = frozenset({"routing", "edit", "evidence", "decide", "extract", 
 ESTIMATE_METHOD = "serialized_utf8_plus_512_v1"
 
 
+def safe_memory_counts(value) -> dict:
+    """A request-local selection snapshot, never memory text or authority."""
+    if not isinstance(value, dict):
+        return {}
+    result = {}
+    for key in ("history_turns_selected", "semantic_notes_selected", "task_handoff_selected"):
+        count = value.get(key)
+        maximum = 1 if key == "task_handoff_selected" else 2_147_483_647
+        if type(count) is int and 0 <= count <= maximum:
+            result[key] = count
+    return result
+
+
 def measure_request(messages: list[BaseMessage], schemas: list[dict], *,
                     budget: Budget, output_cap: int, phase: str) -> dict:
     if phase not in CONTEXT_PHASES:
@@ -68,7 +81,8 @@ def reject_context_request(budget: Budget, messages: list[BaseMessage], schemas:
 def reserve_with_context(budget: Budget, messages: list[BaseMessage], schemas: list[dict], *,
                          output_cap: int, phase: str, events: list[dict],
                          structured_repair: bool = False, semantic_repair: bool = False,
-                         history_turns_dropped: int = 0) -> tuple[dict, int, dict]:
+                         history_turns_dropped: int = 0,
+                         memory_audit: dict | None = None) -> tuple[dict, int, dict]:
     event = _request_event(budget, messages, schemas, output_cap=output_cap,
                            phase=phase, sequence=len(events) + 1)
     # Attach repair metadata before reserve: reserve itself can reject the call.
@@ -78,6 +92,9 @@ def reserve_with_context(budget: Budget, messages: list[BaseMessage], schemas: l
         event["semantic_repair"] = True
     if history_turns_dropped:
         event["history_turns_dropped"] = history_turns_dropped
+    memory = safe_memory_counts(memory_audit)
+    if memory:
+        event["memory"] = memory
     events.append(event)
     try:
         options, size = budget.reserve(messages, schemas, output_cap=output_cap)

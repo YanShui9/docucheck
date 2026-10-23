@@ -24,6 +24,54 @@ function reads(path: string) {
 }
 afterEach(() => { wrappers.splice(0).forEach(w => w.unmount()); apiRequest.mockReset(); vi.useRealTimers() })
 
+test('context usage is below the composer and does not read diagnostics until opened', async () => {
+  apiRequest.mockImplementation(reads)
+  const wrapper = setup(); await flushPromises()
+  expect(wrapper.find('.composer-dock .context-usage-trigger').exists()).toBe(true)
+  expect(apiRequest.mock.calls.some(([path]) => path.endsWith('/context-usage'))).toBe(false)
+  await wrapper.get('.context-usage-trigger').trigger('click')
+  expect(wrapper.text()).toContain('发送消息后可查看')
+})
+
+test('context usage selects the latest message Run even when an older Run finishes hydrating last', async () => {
+  let releaseOld!: () => void
+  const run = (id: string) => ({ id, conversation_id: 'conv-a', status: 'completed', workflow: 'legacy',
+    revision: 0, active_attempt_id: `attempt-${id}`, answer_text: id })
+  apiRequest.mockImplementation((path: string) => {
+    if (path.includes('/conversations?')) return Promise.resolve({ conversations: [{ id: 'conv-a', created_at: '' }], next_offset: null })
+    if (path.includes('/messages?')) return Promise.resolve({ messages: ['old', 'new'].map(id => ({
+      id: `message-${id}`, role: 'user', content: id, run_id: id })), next_offset: null })
+    if (path === '/agent-runs/old') return new Promise(resolve => { releaseOld = () => resolve(run('old')) })
+    if (path === '/agent-runs/new') return Promise.resolve(run('new'))
+    if (path.endsWith('/context-usage')) return Promise.resolve({ run_id: 'new', case_id: 'case-a', conversation_id: 'conv-a',
+      attempt_id: 'attempt-new', run_status: 'completed', record: null })
+    return reads(path)
+  })
+  const wrapper = setup(); await flushPromises(); releaseOld(); await flushPromises()
+  await wrapper.get('.context-usage-trigger').trigger('click'); await flushPromises()
+  expect(apiRequest.mock.calls.filter(([path]) => path.endsWith('/context-usage')).map(([path]) => path))
+    .toEqual(['/agent-runs/new/context-usage'])
+})
+
+test('loss of history permission clears already displayed context diagnostics', async () => {
+  let denied = false
+  apiRequest.mockImplementation((path: string) => {
+    if (path.includes('/conversations?')) return Promise.resolve({ conversations: [{ id: 'conv-a', created_at: '' }], next_offset: null })
+    if (path.includes('/messages?')) return Promise.resolve({ messages: [{ id: 'message-a', role: 'user', content: '问题', run_id: 'run-a' }], next_offset: null })
+    if (path === '/agent-runs/run-a') return denied ? Promise.reject(new Error('forbidden'))
+      : Promise.resolve({ id: 'run-a', conversation_id: 'conv-a', status: 'completed', workflow: 'legacy', revision: 0 })
+    if (path.endsWith('/context-usage')) return Promise.resolve({ run_id: 'run-a', case_id: 'case-a', conversation_id: 'conv-a', attempt_id: 'attempt-a',
+      record: { estimate: { input_bytes: 2048, limit_bytes: 8192, model_window_tokens: 65536 }, memory: null, usage: null } })
+    return reads(path)
+  })
+  const wrapper = setup(); await flushPromises()
+  await wrapper.get('.context-usage-trigger').trigger('click'); await flushPromises()
+  expect(wrapper.text()).toContain('2 KB / 8 KB')
+  denied = true
+  await (wrapper.vm as unknown as { refresh: () => Promise<void> }).refresh(); await flushPromises()
+  expect(wrapper.text()).not.toContain('2 KB')
+})
+
 test('document answer displays concise text with source links and keeps internal IDs out of the transcript', async () => {
   const evidenceId = '02621ddc0f5c6f7376cc6faf1afbccfc81feaef53a902d48902a21d7add39ec1'
   const answer = '供应商的苹果报价为25元/箱，不含税。'

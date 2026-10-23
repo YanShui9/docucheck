@@ -27,6 +27,7 @@ from ..db.api_queries import ApiQueries, ApiQueryError
 from ..db.case_deletion import CaseDeletion, CaseDeletionError
 from ..db.checklist_repository import ChecklistError
 from ..db.connection import ROOT, database_url
+from ..db.context_usage_query import context_usage_view
 from ..db.correction_recheck import CorrectionRecheck
 from ..db.correction_repository import (
     CorrectionError,
@@ -46,6 +47,7 @@ from ..vector_store.target import configured_target
 from .auth import AuthenticationError, Principal, authenticator_from_env
 from .body_limit import MAX_UPLOAD_BODY_BYTES, UploadBodyLimitMiddleware
 from .checklists import checklist_router
+from .context_usage_schemas import ContextUsageOut
 from .dynamic_schemas import DynamicCorrectionIn
 from .index_schemas import IndexAccepted, IndexesOut, IndexIn
 from .item_bindings import item_binding_router
@@ -602,6 +604,11 @@ def create_app(engine: Engine | None = None, authenticator=None) -> FastAPI:
     @router.get("/agent-runs/{run_id}/events", response_model=EventsOut)
     def get_events(run_id: str, after_seq: int = Query(default=0, ge=0)):
         return queries.events(run_id, after_seq)
+
+    @router.get("/agent-runs/{run_id}/context-usage", response_model=ContextUsageOut,
+                response_model_exclude_unset=True)
+    def get_context_usage(run_id: str):
+        return context_usage_view(engine, run_id)
 
     @router.post("/agent-runs/{run_id}/cancel", response_model=RunOut)
     def cancel_run(run_id: str):

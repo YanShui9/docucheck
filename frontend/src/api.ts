@@ -81,6 +81,21 @@ export interface ChatRun {
   id: string; conversation_id: string; message_id: string; snapshot_id: string | null
   revision: number; status: string; answer_text: string | null; error_code: string | null
   workflow: string | null; outcome_unknown: boolean; is_current: boolean
+  active_attempt_id?: string
+}
+export interface ContextUsageView {
+  run_id: string; case_id: string; conversation_id: string; snapshot_id: string
+  revision: number; attempt_id: string; run_status: string
+  record: null | {
+    seq: number; created_at: string; phase: string; status: string; provider_called: boolean | null
+    estimate: {
+      input_bytes: number; limit_bytes: number; model_window_tokens: number
+      output_reserved_tokens: number | null; safety_reserved_tokens: number | null
+    }
+    usage: null | { input_tokens?: number; output_tokens?: number; total_tokens?: number }
+    memory: null | { history_turns: number | null; summary_notes: number | null; task_handoff: boolean | null }
+    summary_status: 'completed' | 'failed' | 'not_recorded'
+  }
 }
 export interface AssistantCitation { evidence_id: string; quote: string; file_name: string; location: string }
 export type RuleType = 'numeric' | 'money' | 'enum' | 'presence' | 'duration' | 'manual'

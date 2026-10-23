@@ -375,7 +375,7 @@ class AssistantAgent:
                 self.context["max_attempt_bound"] = max(size, self.context.get("max_attempt_bound", 0))
                 options, size, progress = reserve_with_context(self.budget, messages, active_schemas,
                     output_cap=output_cap, phase=phase, events=events,
-                    structured_repair=repair_pending)
+                    structured_repair=repair_pending, memory_audit=self.context)
                 repair_pending = False
                 self.context[phase + "_requests"] = self.context.get(phase + "_requests", 0) + 1
                 self.context["max_request_bound"] = max(size, self.context.get("max_request_bound", 0))

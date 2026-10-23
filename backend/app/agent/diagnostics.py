@@ -4,7 +4,7 @@ import re
 
 from ..field_contract import FieldKey
 from ..providers.base import ProviderError
-from .context_usage import CONTEXT_PHASES, ESTIMATE_METHOD
+from .context_usage import CONTEXT_PHASES, ESTIMATE_METHOD, safe_memory_counts
 from .tools import DEFINITIONS
 
 SAFE_VALIDATION_DETAILS = frozenset({
@@ -99,6 +99,9 @@ def safe_trace_events(events) -> list[dict]:
         if _integer(event.get("sequence")):
             summary["sequence"] = event["sequence"]
         if kind == "model":
+            memory = safe_memory_counts(event.get("memory"))
+            if memory:
+                summary["memory"] = memory
             context = _safe_context(event.get("context"))
             if context:
                 summary["context"] = context

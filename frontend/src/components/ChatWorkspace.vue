@@ -9,6 +9,7 @@ import { candidateState } from '../checklistCandidate'
 import type { ChecklistTarget } from '../checklistCandidate'
 import { accessToken } from '../auth'
 import ChatComposer from './ChatComposer.vue'
+import ContextUsage from './ContextUsage.vue'
 const props = defineProps<{ caseId: string | null; scopeKey?: string; revision: number; canWrite: boolean; prepareCase: () => Promise<string | null>;
   busy?: boolean;
   checklistChanges?: Record<string, number>;
@@ -51,6 +52,11 @@ const totalKnown = ref<number | null>(null)
 const PAGE_SIZE = 100
 const MAX_PAGES = 20
 const activeRun = computed(() => Object.values(runs.value).find(run => ['queued', 'running', 'waiting_user'].includes(run.status)))
+const latestRun = computed(() => {
+  const runId = [...messages.value].reverse().find(message => !!message.run_id)?.run_id
+  const run = runId ? runs.value[runId] : undefined
+  return run?.conversation_id === conversationId.value ? run : undefined
+})
 const running = computed(() => !!activeRun.value && activeRun.value.status !== 'waiting_user')
 const labels: Record<string, string> = { queued: '排队中', running: '正在处理', completed: '处理完成', partial: '部分完成', failed: '处理失败', cancelled: '已停止', waiting_user: '等待补充信息', interrupted: '处理已中断' }
 function notice(reason: unknown): string {
@@ -565,6 +571,8 @@ onUnmounted(() => { disposed = true; ++generation; if (timer) clearTimeout(timer
       <button v-else-if="Object.keys(resultErrors).length" class="text-button" :disabled="loading || sending || olderLoading" @click="refresh">刷新对话</button>
       <div v-if="activeRun?.status === 'waiting_user'" class="state-note">请补充信息后发送，或<button class="text-button" :disabled="sending || !canWrite || busy" @click="stop">结束本次处理</button>。</div>
       <ChatComposer v-model="draft" :disabled="!canWrite || busy || loading || sending || olderLoading || uncertain || !historyReady" :running="running && canWrite && !busy" @send="send()" @upload="emit('upload')" @stop="stop" />
+      <ContextUsage :case-id="caseId" :conversation-id="conversationId" :run-id="latestRun?.id ?? null"
+                    :attempt-id="latestRun?.active_attempt_id" :run-status="latestRun?.status" />
       <p class="composer-disclaimer">{{ !canWrite ? '当前为只读权限，可查看对话和资料。' : busy ? '正在更新采购任务，完成后可继续发送消息。' : '助手结论供采购审查参考，请结合原文确认。' }}</p>
     </div>
   </section>
