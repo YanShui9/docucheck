@@ -349,6 +349,12 @@ class AssistantAgent:
                         return (not self.context["mandatory_overflow"]
                                 and self.context["input_bound"] * 2 <= self.context["prompt_limit"]
                                 and (self.context["input_bound"] < previous_context["input_bound"]
+                                     # Initial semantic notes may recover older
+                                     # content missing from byte-clipped excerpts.
+                                     # refresh_summary still requires compression
+                                     # of the complete authorized source text.
+                                     or ((previous_layers or {}).get("semantic_summary") is None
+                                         and previous_context["summary_entries_omitted"] > 0)
                                      or ((previous_layers or {}).get("semantic_summary") is not None
                                          and previous_context["input_bound"] * 2 <= previous_context["prompt_limit"]))
                                 and self.context["semantic_notes_omitted"] == 0

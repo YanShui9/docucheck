@@ -29,6 +29,35 @@ def answer_actions(text="苹果的单价上限为25 CNY/箱，不含税；该指
             ("answer_checklist", {"answer": text, "criterion_ids": ["metric-1"]}))
 
 
+@pytest.mark.parametrize("query", ["苹果 单价上限", "  苹果\t单价上限  ", "item-1 metric-1"])
+def test_confirmed_combined_item_and_metric_query_returns_full_rule(query):
+    confirmed = price_definition()
+    provider = Decisions(("read_checklist", {"query": query}), answer_actions()[1])
+    result = AssistantAgent(EvidenceRepository.empty("case", "snap"), provider,
+        confirmed_definition=confirmed, checklist_version_id="v1").ask("苹果的单价上限是多少？")
+    assert result["status"] == "completed", result["error"]
+    assert "25 CNY/箱" in result["answer"]
+    assert result["usage"]["model_calls"] == 2
+    assert result["payload"]["checklist_answer"]["criteria"][0]["rule"] == confirmed["criteria"][0]["rule"]
+
+
+def test_combined_query_never_combines_terms_from_different_items():
+    from backend.app.agent.assistant_checklist_answers import (
+        ReadConfirmedArgs,
+        read_confirmed,
+    )
+
+    data = price_definition()
+    data["items"].append({"item_id": "pear", "name": "梨", "specification": ""})
+    other = deepcopy(data["criteria"][0])
+    other.update(criterion_id="pear-weight", item_id="pear", name="重量")
+    data["criteria"].append(other)
+    confirmed = ChecklistDefinition.model_validate(data)
+    assert not read_confirmed(confirmed, ReadConfirmedArgs(query="苹果 重量"))["criteria"]
+    page = read_confirmed(confirmed, ReadConfirmedArgs(query="梨 重量"))
+    assert [c["criterion_id"] for c in page["criteria"]] == ["pear-weight"]
+
+
 def test_confirmed_price_answer_reads_full_rule_without_document_retrieval_or_edits():
     provider = Decisions(*answer_actions())
     confirmed = price_definition()

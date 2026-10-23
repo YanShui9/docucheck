@@ -36,7 +36,8 @@ class ChecklistAnswer(Contract):
 
 
 def read_confirmed(definition: ChecklistDefinition, query: ReadConfirmedArgs):
-    page = catalog(definition, ReadChecklistArgs(query=query.query, offset=query.offset, limit=query.limit))
+    page = catalog(definition, ReadChecklistArgs(query=query.query, offset=query.offset, limit=query.limit),
+                   combined=True)
     ids = {c["criterion_id"] for c in page["criteria"]}
     items = {i.item_id: i.model_dump(mode="json") for i in definition.items}
     page.update(view="confirmed_rules", confirmed=True)

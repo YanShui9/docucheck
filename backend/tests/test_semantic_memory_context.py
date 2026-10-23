@@ -83,6 +83,28 @@ def test_summary_that_increases_actual_route_is_rejected():
     assert seen == [False]
     assert result["status"] == "completed"
 
+
+def test_first_summary_can_restore_omitted_excerpts_without_losing_recent_history():
+    # Old excerpts were byte-clipped before semantic compaction; a useful
+    # source-checked summary can be longer than that incomplete projection.
+    updated = {"notes": [{"kind": "open_question", "text": "待核实旧讨论中的资料口径。" * 15,
+                           "source_message_ids": ["old"]}]}
+    history = [(HumanMessage(content=f"问题{i}"), AIMessage(content=f"答复{i}")) for i in range(8)]
+    seen = []
+    def refresh(budget, events, audit, accept):
+        assert audit["summary_entries_omitted"] > 0
+        seen.append(accept(updated))
+        return updated if seen[-1] else None
+    provider = Decisions(("chat", {"answer": "请继续。"}))
+    result = AssistantAgent(EvidenceRepository.empty("c", "s"), provider, history=history,
+        memory_layers={"summary": {"entries": [
+            {"question": "长" * 600, "answer": "原答复"},
+            {"question": "短问题", "answer": "短答复"}]}},
+        semantic_refresh=refresh, budget=Budget(context_window=100000)).ask("下一步")
+    assert seen == [True]
+    assert result["context"]["semantic_notes_selected"] == 1
+    assert result["context"]["history_turns_selected"] == 8
+
 def test_fixed_recent_context_over_half_window_skips_optional_summary_call():
     def forbidden(*_):
         pytest.fail("cannot reach summary target without removing recent originals")

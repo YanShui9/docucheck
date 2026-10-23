@@ -33,7 +33,7 @@ def model_definition(definition):
     return data
 
 
-def catalog(definition, query):
+def catalog(definition, query, *, combined=False):
     """Search scoped identifiers/names only. No rule or source is truncated."""
     data = model_definition(definition) or {"items": [], "criteria": []}
     phrase = query.query.strip().casefold()
@@ -41,6 +41,11 @@ def catalog(definition, query):
     matched_items = [i["item_id"] for i in data["items"] if not phrase or phrase in (i["item_id"] + " " + i["name"]).casefold()]
     matches = [c for c in data["criteria"] if not phrase or c["item_id"] in matched_items
                or phrase in (c["criterion_id"] + " " + c["name"]).casefold()]
+    if combined and len(terms := phrase.split()) > 1:
+        matches = [c for c in data["criteria"] if all(
+            any(term in field.casefold() for field in (
+                c["criterion_id"], c["name"], c["item_id"], items[c["item_id"]]["name"]))
+            for term in terms)]
     selected = matches[query.offset:query.offset + query.limit] if query.scope == "criteria" else []
     selected_items = (list(dict.fromkeys(c["item_id"] for c in selected)) or matched_items[:query.limit]
                       if query.scope == "criteria" else matched_items[query.offset:query.offset + query.limit])
