@@ -27,7 +27,7 @@ DYNAMIC_REJECTION_CODES = frozenset({
 })
 _TOOLS = frozenset(DEFINITIONS) | {
     "get_checklist", "propose_checklist", "review_checklist", "read_sources", "batch_cache",
-    "read_checklist", "answer_checklist", "read_task_history",
+    "read_checklist", "answer_checklist", "read_task_history", "read_conversation_history",
 }
 _ERRORS = ProviderError._CODES | frozenset({
     "invalid_tool_result", "evidence_scope", "supplier_scope", "fact_set_scope",
@@ -39,6 +39,7 @@ _ERRORS = ProviderError._CODES | frozenset({
 })
 _DETAILS = SAFE_VALIDATION_DETAILS | ProviderError._DETAILS | {
     "schema_validation", "other_validation",
+    "history_scope_rejected", "history_no_progress",
 }
 _STATUSES = {"started", "completed", "failed", "rejected"}
 _FIELDS = {field.value for field in FieldKey}

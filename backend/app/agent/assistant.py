@@ -217,10 +217,11 @@ class AssistantAgent:
         self.checklist_schemas.append(compact_schema(_schema("answer_checklist", ChecklistAnswerArgs,
             "按已读已确认规则简短回答并引用criterion_ids；保留可选/停用/条件，不作供应商判断")))
         if history_reader is not None:
-            self.schemas.append(compact_schema(_schema("read_conversation_history", HistoryArgs, "按message_id回读本对话历史，范围由服务端绑定；旧答复不是证据")))
+            self.schemas.append(compact_schema(_schema("read_conversation_history", HistoryArgs,
+                "按message_id回读本对话当前资料版本的历史；交接中的跨对话/旧版本ID使用read_task_history；旧答复不是证据")))
         if task_history_reader is not None:
             self.schemas.append(compact_schema(_schema("read_task_history", HistoryArgs,
-                "按交接中的message_id回读同任务已捕获的历史；不能确认当前规则、事实或执行许可")))
+                "只按task_handoff交接中的message_id回读同任务已捕获的跨对话或旧版本历史；不是全任务历史搜索，不能确认当前事实或执行许可")))
         if not any(document.role == "requirement" for document in repo.documents):
             self.schemas = [schema for schema in self.schemas
                             if schema["function"]["name"] != "propose_checklist"]
@@ -322,6 +323,7 @@ class AssistantAgent:
         checklist_reads, last_read = {}, None
         prepared_items, allowed_refs, windows, evidence_tail = set(), set(), {}, []
         status, error = "completed", None
+        history_failed, history_unresolved, history_requests = False, False, set()
         try:
             self._check()
             if formal_operation is not None:
@@ -459,6 +461,8 @@ class AssistantAgent:
                         answer=render_checklist_answer(answer, self.confirmed_definition, self.checklist_version_id))
                     break
                 if name == "chat":
+                    if history_unresolved:
+                        raise RunStopped("history_scope")
                     if searched:
                         raise ValueError("evidence_answer_required")
                     payload["answer"] = ChatArgs.model_validate(args).answer
@@ -478,18 +482,43 @@ class AssistantAgent:
                     continue
                 if name in {"read_conversation_history", "read_task_history"}:
                     query = HistoryArgs.model_validate(args)
+                    event = {"kind": "tool", "tool": name, "sequence": len(events) + 1, "status": "started"}
+                    events.append(event)
+                    stamp = digest([name, query.model_dump(mode="json") | {"message_ids": sorted(query.message_ids)}])
+                    if stamp in history_requests:
+                        event.update(status="rejected", error="history_scope", failure_detail="history_no_progress")
+                        raise RunStopped("history_scope")
+                    history_requests.add(stamp)
                     reader = self.task_history_reader if name == "read_task_history" else self.history_reader
-                    observation = {"historical_context": reader(query.message_ids, part=query.part, start_char=query.start_char),
-                                   "evidence_only": False}
-                    if name == "read_task_history":
-                        observation["notice"] = "历史讨论仅供回忆，不确认当前规则或事实。"
-                        events.append({"kind": "tool", "tool": name, "sequence": len(events) + 1,
-                                       "status": "completed"})
+                    try:
+                        rows = reader(query.message_ids, part=query.part, start_char=query.start_char)
+                    except ValueError as exc:
+                        # Only a known range rejection gets one correction. Access,
+                        # snapshot/fence changes and cancellation still stop immediately.
+                        if getattr(exc, "code", None) != "history_scope":
+                            raise
+                        self._check()
+                        event.update(status="rejected", error="history_scope", failure_detail="history_scope_rejected")
+                        if history_failed:
+                            raise RunStopped("history_scope") from None
+                        history_failed, history_unresolved = True, True
+                        active_schemas = [s for s in self.schemas if s["function"]["name"] in {
+                            "chat", "read_conversation_history", "read_task_history"}]
+                        observation = {"historical_context": [], "evidence_only": False, "error": "history_scope",
+                            "notice": ("本次没有读到原话。read_conversation_history只读本对话当前资料版本；"
+                                "task_handoff交接中的ID请使用read_task_history；只能使用已提供的message_id。"
+                                "可纠正一次工具或分页位置；不要猜测ID或重复失败请求。"
+                                "没有可用句柄时用chat结束，服务端将说明可回读范围不足。")}
+                    else:
+                        history_unresolved = False
+                        event.update(status="completed")
+                        observation = {"historical_context": rows, "evidence_only": False,
+                            "notice": "历史讨论仅供回忆，不确认当前规则或事实。"}
+                        counter = "task_history_reads" if name == "read_task_history" else "history_reads"
+                        self.context[counter] = self.context.get(counter, 0) + 1
                     self._check()
                     self.recalled_history = [reply, ToolMessage(content=json.dumps(observation, ensure_ascii=False), tool_call_id=tool["id"])]
-                    messages = self._messages(question, tail=self.recalled_history)
-                    counter = "task_history_reads" if name == "read_task_history" else "history_reads"
-                    self.context[counter] = self.context.get(counter, 0) + 1
+                    messages = self._messages(question, schemas=active_schemas, tail=self.recalled_history)
                     continue
                 if name == "prepare_changes":
                     prepared = PrepareChangesArgs.model_validate(args)
@@ -592,6 +621,9 @@ class AssistantAgent:
                 answer = "本次选中的指标内容超出单次修改预算，原清单已保留。请减少本次修改的目标数量，或在清单编辑面板中编辑复杂指标；尚未生成新候选。"
             elif error in {"checklist_read_no_progress", "checklist_read_scope_budget"}:
                 answer = "本次未能完成清单规则读取。请指定一个采购品目和指标名称，或在审查清单中查看该指标的完整要求。"
+            elif error == "history_scope":
+                answer = ("当前可回读的历史范围不足，未能核实你要的原话。跨对话或旧资料版本只能回读本次交接保留的消息，"
+                          "不代表原对话已删除。请打开对应历史对话查看，或提供当时的原话。")
             payload.pop("evidence_answer", None)
             payload.pop("checklist_answer", None)
             payload.update(answer=answer, citations=[], candidate=None, changes=[], patch=None)

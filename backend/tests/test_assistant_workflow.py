@@ -478,4 +478,5 @@ def test_assistant_history_reader_enforces_conversation_scope_and_records_read(i
         assert manifest['assistant_context']['history_reads'] == 1
     else:
         assert report.status == 'partial' and report.error_code == 'history_scope'
-        assert len(provider.messages) == 1 and not manifest.get('history_reads')
+        assert len(provider.messages) == 2 and not manifest.get('history_reads')
+        assert '当前可回读' in report.answer_text
