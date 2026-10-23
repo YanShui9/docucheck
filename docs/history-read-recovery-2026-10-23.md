@@ -22,6 +22,24 @@
 
 独立只读复核没有发现本次差异引入的实证P1/P2。完整离线门禁2445 passed、59 skipped，819.73秒，依赖/Ruff通过、网络尝试0。外部服务跳过项不是通过；本步不改数据库事务。运行应用情况单列后续核对。源码冻结清单位于主工作区忽略目录data/verification/history-read-recovery-20261023/source-before-full-01.json，含本次4份代码/测试Git blob。
 
+## 固定版本应用与真实复测限制
+
+源码提交3fbf0f586fdfbc15f4fa2cfe56e3a93483387f67已应用到本机API与worker。139份后端源码逐项匹配；API从固定快照加载，worker healthy，live/ready/首页200、匿名me401。前端和解析仍复用原固定构建，不将本次两份后端文件修改说成所有服务都更新。
+
+切换前确认无活动Run、Outbox派发或worker保留任务，暂停dispatcher并保留回退镜像。容器环境指纹、挂载、网络、运行用户、命令、健康检查与重启策略保持；切换窗口内业务表摘要及654份原件一致。index_manifests独立调度字段只核对行数。另存本地SQL备份，未做恢复演练，不称灾备通过。没有读取真实.env、迁移或修改主工作区WIP。
+
+页面入口仍为http://127.0.0.1:15173/。当前启停入口为主工作区忽略目录：
+
+```powershell
+& E:/PycharmProjects/docucheck/data/verification/history-read-deploy-20261023/start_entries.ps1
+```
+
+此前context-live-repair-deploy入口固定1328140，不能再作为新后端的启动入口。新目录保留固定快照、target/source/before/drained/applied/verified记录及回退worker脚本；回退前须排空并核对固定版本，未实际在线回切。源证据与提交的对应关系在history-read-recovery-20261023/commit-receipt-01.json。
+
+本轮开始曾通过原验证浏览器的snapshot确认仍在项目页面，未要求用户重新登录。随后截图和重新连接均出现本地自动化连接超时；只终止本任务失效的自动化连接进程，保留原Chrome进程和用户窗口，未重发业务问题。另一浏览器工具没有接入该Chrome页面。最终未完成新版本的两条页面真实模型复测，因此不能说原两个真实失败已端到端关闭。
+
+本步新增真实模型请求0；此前本次验收账本仍为16次（输入56544/输出4192 token，未知0），并非全局预警轮账本。源码/API→worker测试使用离线Provider，不替代真实模型成功率。后续先恢复验证浏览器连接，再分别复测跨对话已授权句柄读取及最早原话范围说明，不重跑正式审查。
+
 ## 未包含的工作
 
 采购任务全历史目录/最早原话搜索、正式候选来源校验失败、异常条件“20”、答案重复与长ID排版、真实大窗口缩批均不在本步验收范围。不能由本次局部恢复推导为所有长期记忆问题已解决。
