@@ -13,6 +13,14 @@ _TAX_LABEL = r"(?:税费口径|税口径|是否含税|税费说明|税说明|含
 _TAX_MARKER = re.compile(r"税")
 _BARE_TAX = re.compile(r"(?:价格|报价)?(?:均)?(?:不含税|未含税|含税|税前|税后)[。.]?")
 _PRICE_LABEL = re.compile(r"单价|价格|报价|售价|金额|总价|总额|预算|参考价")
+# v13 remains frozen for historical facts. Only an entire, recognized metadata
+# row can be excluded in v14; extra text or amounts remain conservatively priced.
+_QUOTE_METADATA = re.compile(
+    r"报价(?:日期|时间)\s*[:：=]?\s*\d{4}[-/]\d{1,2}[-/]\d{1,2}(?:[ T]\d{1,2}:\d{2}(?::\d{2})?)?"
+    r"|报价有效期\s*[:：=]?\s*\d+(?:个)?(?:天|日|小时|月)"
+    r"|报价编号\s*[:：=]?\s*[A-Za-z0-9_-]+"
+)
+_QUOTE_METADATA_LABEL = re.compile(r"报价(?:日期|时间|有效期|编号)[:：=]?")
 MAX_TAX_SOURCE_GROUPS = 64
 MAX_PRICE_SOURCE_GROUPS = 64
 
@@ -42,7 +50,16 @@ def _tax_basis(text):
     return "unspecified"
 
 
-def money_tax_sources(repo, bound, entry, blocks, definition, item, main_tax):
+def _is_quote_metadata(row):
+    # Keep cell and word boundaries: deleting whitespace could absorb an extra
+    # amount such as "Q20261019 30 CNY" into an otherwise valid identifier.
+    parts = [block.text.strip() for block in row if block.text.strip()]
+    if len(parts) == 2 and _QUOTE_METADATA_LABEL.fullmatch(parts[0]):
+        return bool(_QUOTE_METADATA.fullmatch(parts[0].rstrip(":：=") + ":" + parts[1]))
+    return len(parts) == 1 and bool(_QUOTE_METADATA.fullmatch(parts[0]))
+
+
+def money_tax_sources(repo, bound, entry, blocks, definition, item, main_tax, *, quote_metadata=False):
     """Scan all confirmed ranges for this supplier/item, never model-selected rows.
 
     Only a complete, contiguous Excel row in the same confirmed range as the
@@ -65,9 +82,13 @@ def money_tax_sources(repo, bound, entry, blocks, definition, item, main_tax):
             raise ValueError("supplier_scope")
         scoped_rows.extend((source_entry, row) for row in _rows(source_blocks))
     main_rows = [row for source_entry, row in scoped_rows if source_entry == entry]
-    price_rows = [(source_entry, row) for source_entry, row in scoped_rows
-                  if _PRICE_LABEL.search(" ".join(block.text for block in row))
-                  and re.search(NUMBER_PATTERN, " ".join(block.text for block in row))]
+    price_rows = []
+    for source_entry, row in scoped_rows:
+        text = " ".join(block.text for block in row)
+        if _PRICE_LABEL.search(text) and re.search(NUMBER_PATTERN, text):
+            if quote_metadata and _is_quote_metadata(row):
+                continue
+            price_rows.append((source_entry, row))
     unique_price = (len(price_rows) == 1
                     and price_rows[0][0] == entry
                     and main_refs <= {block.evidence_id for block in price_rows[0][1]}

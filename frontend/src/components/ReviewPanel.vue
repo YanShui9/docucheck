@@ -55,6 +55,9 @@ const reasonNames: Record<string, string> = {
   item_model_unclear: '品目/规格对应关系待确认',
   duration_basis_mismatch: '期限口径与要求不一致',
   money_basis_mismatch: '计价口径与要求不一致',
+  money_tax_conflict: '报价中的含税与不含税说明相互冲突',
+  money_tax_scope_unclear: '税费说明与当前单价的适用关系待确认',
+  money_price_scope_unclear: '存在多个价格或单价适用范围待确认',
   unit_basis_mismatch: '单位口径与要求不一致',
 }
 const errorTexts: Record<string, string> = {

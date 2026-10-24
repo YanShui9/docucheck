@@ -118,18 +118,18 @@ def _extraction_messages(data, *, bound, rule_version):
     extraction_system = EXTRACTION_SYSTEM
     if bound:
         extraction_system += "\n服务端已确认item_attribution所述品目对应。anchor只作归属依据，不是事实范围，不得引用或拼入数值quote。事实只能引用evidence中的原文格；型号冲突或不明仍须保留。"
-    material_sources = rule_version in {"dynamic-rules-v11", "dynamic-rules-v12", "dynamic-rules-v13"}
+    material_sources = rule_version in {"dynamic-rules-v11", "dynamic-rules-v12", "dynamic-rules-v13", "dynamic-rules-v14"}
     if material_sources:
         extraction_system += (
             "\n本版presence的肯定事实可带material_sources独立正文引用组；主quote仍必须精确支持完整rule.description。"
             "每个独立组均按原有同段或同排连续格合同保留完整quote和evidence_refs，不跨段拼接；"
             "不同组可属于同品目已授权的不同文档，但所有引用都必须在当前批evidence内，禁止跨批读取或猜测。"
             "合法定位不证明材料语义完整或真实；不得仅凭body标签、正文缺失、未来承诺或检索无命中确认已附。")
-    if rule_version in {"dynamic-rules-v12", "dynamic-rules-v13"}:
+    if rule_version in {"dynamic-rules-v12", "dynamic-rules-v13", "dynamic-rules-v14"}:
         extraction_system += (
             "\n本版presence肯定的true候选仍须如实提取并保留完整来源，不得改写为false或删除候选；"
             "未独立验证正文语义前不得自动判满足，由服务端保留待人工确认。")
-    if rule_version == "dynamic-rules-v13":
+    if rule_version in {"dynamic-rules-v13", "dynamic-rules-v14"}:
         extraction_system += (
             "\n金额事实保留完整单价行，包括含税、不含税、未含税或税前等原文口径。"
             "独立税说明由服务端在已确认范围内核对，不将不同业务行拼成主quote，"
@@ -655,7 +655,7 @@ class DynamicAgent:
             return answer
 
         def checked_candidates(raw, batch, supplier, criterion_ids, *, diagnostics=None):
-            model = DynamicMaterialFactCandidates if self.rule_version in {"dynamic-rules-v11", "dynamic-rules-v12", "dynamic-rules-v13"} else DynamicFactCandidates
+            model = DynamicMaterialFactCandidates if self.rule_version in {"dynamic-rules-v11", "dynamic-rules-v12", "dynamic-rules-v13", "dynamic-rules-v14"} else DynamicFactCandidates
             candidates = model.model_validate(raw).facts
             allowed = {b["evidence_id"] for b in batch}
             validated, rejections = [], Counter()
@@ -763,7 +763,7 @@ class DynamicAgent:
 
         def extract_part(batch, data, supplier, progress):
             messages = extraction_messages(data)
-            material_sources = self.rule_version in {"dynamic-rules-v11", "dynamic-rules-v12", "dynamic-rules-v13"}
+            material_sources = self.rule_version in {"dynamic-rules-v11", "dynamic-rules-v12", "dynamic-rules-v13", "dynamic-rules-v14"}
             # JSON fact candidates include long IDs, source refs and
             # basis fields. Larger criterion groups need more output
             # room; Budget.reserve still owns the shared hard limit.
@@ -886,7 +886,7 @@ class DynamicAgent:
                             nonlocal last_probe
                             self._check(budget)
                             messages = extraction_messages(part)
-                            material = self.rule_version in {"dynamic-rules-v11", "dynamic-rules-v12", "dynamic-rules-v13"}
+                            material = self.rule_version in {"dynamic-rules-v11", "dynamic-rules-v12", "dynamic-rules-v13", "dynamic-rules-v14"}
                             schema = _facts_schema(bound_supplier, material_sources=material)
                             cap = min(4096, max(1536, 384 * len(part["criteria"])))
                             # Keep ordinary quota/call failures ahead of fitting.

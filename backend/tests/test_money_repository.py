@@ -27,7 +27,8 @@ def money_case(ingestion_case):
     book = Workbook()
     sheet = book.active
     sheet.title = "报价"
-    for row in [("苹果",), ("不含税单价", 25, "元/箱"), ("税费口径", "含税")]:
+    for row in [("苹果",), ("不含税单价", 25, "元/箱"), ("税费口径", "含税"),
+                ("报价日期", "2026-10-19 00:00:00")]:
         sheet.append(row)
     stream = BytesIO()
     book.save(stream)
@@ -81,7 +82,7 @@ def execute_money(case):
 def test_worker_persists_tax_conflict_and_api_exports_both_independent_sources(money_case):
     client, _, *_ = money_case
     run_id, payload, repo = execute_money(money_case)
-    assert payload["rule_version"] == "dynamic-rules-v13"
+    assert payload["rule_version"] == "dynamic-rules-v14"
     assert payload["checks"][0]["business_status"] == "资料冲突"
     tax_refs = {b.evidence_id for b in repo.blocks if b.cell in {"A3", "B3"}}
     fact = payload["facts"][0]

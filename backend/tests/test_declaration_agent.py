@@ -11,6 +11,7 @@ from backend.app.agent.dynamic import (
     render_review,
     review_plan,
 )
+from backend.app.criteria.facts import BINDING_RULE_VERSION
 from backend.tests.test_material_agent import (
     MaterialProvider,
     material_candidate,
@@ -109,7 +110,7 @@ def test_v11_cache_identity_cannot_reuse_success_for_v12_and_current_cache_keeps
 
 
 @pytest.mark.parametrize("needs_review", [False, True])
-@pytest.mark.parametrize("version", [V12, V13])
+@pytest.mark.parametrize("version", [V12, V13, BINDING_RULE_VERSION])
 def test_v11_report_readback_or_manual_carry_recalculates_positive_fact_in_newer_version(needs_review, version):
     sample = material_sample()
     raw = material_candidate(sample[1])

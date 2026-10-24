@@ -169,7 +169,7 @@ def test_frozen_scope_ready_manifest_and_permission_recheck_after_embedding(bind
 
 
 @pytest.mark.parametrize("historical_version", [None, "dynamic-rules-v8", "dynamic-rules-v9", "dynamic-rules-v10",
-                                               "dynamic-rules-v11", "dynamic-rules-v12"])
+                                               "dynamic-rules-v11", "dynamic-rules-v12", "dynamic-rules-v13"])
 def test_uploaded_phone_review_history_export_and_empty_scope_isolation(ingestion_case, monkeypatch, historical_version):
     from copy import deepcopy
     from io import BytesIO
