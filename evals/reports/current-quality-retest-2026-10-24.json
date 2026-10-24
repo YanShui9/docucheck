@@ -1,0 +1,2594 @@
+{
+  "schema_version": 1,
+  "measured_on": "2026-10-24",
+  "generated_at_utc": "2026-10-24T10:36:26.694766+00:00",
+  "backend_commit": "e5da3d2b864819775de76ed00d363229da4bd7d9",
+  "frontend_commit": "e1fb25c9c04f0776835b88153bb988966351cd57",
+  "evaluation_commit": "6e32152",
+  "rule_version": "dynamic-rules-v14",
+  "data_class": "ai_authored_seen_development",
+  "independent_sealed_packs": 0,
+  "candidate_generation_measured": false,
+  "first_attempt_only": true,
+  "manual_retries": 0,
+  "groups": {
+    "old": {
+      "label": "previously seen development inputs",
+      "index_sha256": "3f02c8a0517a6875eac512385733e9bf0fdc45db729559826d26c3ec8d25cde8",
+      "original_files": 58,
+      "aggregate": {
+        "pack_count": 12,
+        "data_class": "ai_authored_seen_development",
+        "agent_tasks": {
+          "numerator": 1,
+          "denominator": 12
+        },
+        "dangerous_meets": 0,
+        "formal_independent_acceptance": false,
+        "status_accuracy": {
+          "numerator": 44,
+          "denominator": 104
+        },
+        "necessary_evidence": {
+          "numerator": 38,
+          "denominator": 82
+        },
+        "grounded_correct_cells": {
+          "numerator": 38,
+          "denominator": 82
+        },
+        "anchor_group_recall": {
+          "numerator": 199,
+          "denominator": 209
+        },
+        "absence_coverage": {
+          "numerator": 1,
+          "denominator": 5
+        },
+        "citation_errors": {
+          "numerator": 0,
+          "denominator": 234
+        },
+        "citation_error_rate": 0.0,
+        "by_category": {
+          "phone": {
+            "status_accuracy": {
+              "numerator": 16,
+              "denominator": 30
+            },
+            "grounded_correct_cells": {
+              "numerator": 16,
+              "denominator": 28
+            },
+            "anchor_group_recall": {
+              "numerator": 61,
+              "denominator": 61
+            }
+          },
+          "fruit": {
+            "status_accuracy": {
+              "numerator": 14,
+              "denominator": 24
+            },
+            "grounded_correct_cells": {
+              "numerator": 10,
+              "denominator": 16
+            },
+            "anchor_group_recall": {
+              "numerator": 42,
+              "denominator": 48
+            }
+          },
+          "clothing": {
+            "status_accuracy": {
+              "numerator": 14,
+              "denominator": 28
+            },
+            "grounded_correct_cells": {
+              "numerator": 12,
+              "denominator": 21
+            },
+            "anchor_group_recall": {
+              "numerator": 53,
+              "denominator": 57
+            }
+          },
+          "mixed": {
+            "status_accuracy": {
+              "numerator": 0,
+              "denominator": 22
+            },
+            "grounded_correct_cells": {
+              "numerator": 0,
+              "denominator": 17
+            },
+            "anchor_group_recall": {
+              "numerator": 43,
+              "denominator": 43
+            }
+          }
+        },
+        "by_rule": {
+          "numeric": {
+            "status_accuracy": {
+              "numerator": 24,
+              "denominator": 32
+            },
+            "grounded_correct_cells": {
+              "numerator": 23,
+              "denominator": 31
+            },
+            "anchor_group_recall": {
+              "numerator": 66,
+              "denominator": 66
+            }
+          },
+          "money": {
+            "status_accuracy": {
+              "numerator": 0,
+              "denominator": 21
+            },
+            "grounded_correct_cells": {
+              "numerator": 0,
+              "denominator": 20
+            },
+            "anchor_group_recall": {
+              "numerator": 42,
+              "denominator": 42
+            }
+          },
+          "enum": {
+            "status_accuracy": {
+              "numerator": 7,
+              "denominator": 15
+            },
+            "grounded_correct_cells": {
+              "numerator": 6,
+              "denominator": 14
+            },
+            "anchor_group_recall": {
+              "numerator": 29,
+              "denominator": 30
+            }
+          },
+          "duration": {
+            "status_accuracy": {
+              "numerator": 11,
+              "denominator": 17
+            },
+            "grounded_correct_cells": {
+              "numerator": 9,
+              "denominator": 13
+            },
+            "anchor_group_recall": {
+              "numerator": 32,
+              "denominator": 32
+            }
+          },
+          "presence": {
+            "status_accuracy": {
+              "numerator": 0,
+              "denominator": 9
+            },
+            "grounded_correct_cells": {
+              "numerator": 0,
+              "denominator": 4
+            },
+            "anchor_group_recall": {
+              "numerator": 13,
+              "denominator": 19
+            }
+          },
+          "manual": {
+            "status_accuracy": {
+              "numerator": 2,
+              "denominator": 10
+            },
+            "grounded_correct_cells": {
+              "numerator": 0,
+              "denominator": 0
+            },
+            "anchor_group_recall": {
+              "numerator": 17,
+              "denominator": 20
+            }
+          }
+        }
+      },
+      "packs": [
+        {
+          "pack_id": "dyn-d01",
+          "run_id": "c11eded3c399478c877112f96fa8a9b0",
+          "attempt_id": "7223c0d89ddd481ab2d60116d3bebf51",
+          "run_status": "completed",
+          "error_code": null,
+          "status_accuracy": {
+            "numerator": 4,
+            "denominator": 6
+          },
+          "strict_task_success": false,
+          "elapsed_ms": 43187.0,
+          "usage": {
+            "requests": 3,
+            "input_tokens": 11530,
+            "output_tokens": 1652,
+            "unknown_requests": 0,
+            "semantic_repair_requests": 0
+          },
+          "surface_consistency": {
+            "api_json_xlsx": true,
+            "frozen_visible_parser_errors": [
+              "visible_answer_identity_or_status_unresolved"
+            ],
+            "supplemental_literal_status_comparison": true
+          },
+          "frozen_score_errors": [
+            "visible_answer_identity_or_status_unresolved"
+          ],
+          "frozen_score_identity_errors": [
+            {
+              "surface": "visible_cells",
+              "key": [
+                "dyn-d01",
+                "vendor-a",
+                "phone",
+                "price"
+              ],
+              "code": "missing_cell"
+            }
+          ],
+          "reason_counts": {
+            "threshold_met": 3,
+            "money_price_scope_unclear": 1,
+            "threshold_failed": 1,
+            "semantics_unclear": 1
+          },
+          "coverage": {
+            "planned_batches": 2,
+            "validated_batches": 2,
+            "supplier": {
+              "vendor-a": true
+            },
+            "item": {
+              "vendor-a": {
+                "phone": true
+              }
+            }
+          },
+          "batch_diagnostics": [
+            {
+              "supplier": "vendor-a",
+              "item_id": "phone",
+              "ordinal": 0,
+              "complete": true,
+              "rejected_count": 0,
+              "rejection_codes": {}
+            },
+            {
+              "supplier": "vendor-a",
+              "item_id": "phone",
+              "ordinal": 1,
+              "complete": true,
+              "rejected_count": 0,
+              "rejection_codes": {}
+            }
+          ],
+          "tool_diagnostics": [
+            {
+              "status": "completed",
+              "error": "other",
+              "rejected_count": 0,
+              "rejection_codes": {},
+              "initial_rejection_codes": {}
+            },
+            {
+              "status": "completed",
+              "error": "other",
+              "rejected_count": 0,
+              "rejection_codes": {},
+              "initial_rejection_codes": {}
+            }
+          ],
+          "frozen": {
+            "manifest_sha256": "1103fffd60a9883697897deed026905340987fd5cc59bc07af9061d79239f95a",
+            "gold_sha256": "96febd94ac4c839cc098d727b4b0f1fc8d1b970b9dd5ce1cd9b128aaf00c70ab"
+          },
+          "artifacts": {
+            "attempt_sha256": "dee94fa2cf7153d0960c1e5883cb610821f885c35e26deca3adfbf6685a6de6b",
+            "xlsx_sha256": "caa7e33d4cfb611ae381fef92d0ceb58bd5cb2a5eb088df8c46400e1e33605cb",
+            "score_sha256": "6f1fb1c552660c181c98293e09e180b1a5cb893e349ba92b3055137712b54ff2"
+          }
+        },
+        {
+          "pack_id": "dyn-d02",
+          "run_id": "bbc79e5e611c4ea181ebc4044be6c184",
+          "attempt_id": "27951c6455a5442eadb7855c4ec97fcc",
+          "run_status": "completed",
+          "error_code": null,
+          "status_accuracy": {
+            "numerator": 6,
+            "denominator": 8
+          },
+          "strict_task_success": false,
+          "elapsed_ms": 50641.0,
+          "usage": {
+            "requests": 3,
+            "input_tokens": 13088,
+            "output_tokens": 1842,
+            "unknown_requests": 0,
+            "semantic_repair_requests": 0
+          },
+          "surface_consistency": {
+            "api_json_xlsx": true,
+            "frozen_visible_parser_errors": [
+              "visible_answer_identity_or_status_unresolved",
+              "visible_answer_identity_or_status_unresolved"
+            ],
+            "supplemental_literal_status_comparison": true
+          },
+          "frozen_score_errors": [
+            "visible_answer_identity_or_status_unresolved",
+            "visible_answer_identity_or_status_unresolved"
+          ],
+          "frozen_score_identity_errors": [
+            {
+              "surface": "visible_cells",
+              "key": [
+                "dyn-d02",
+                "vendor-a",
+                "phone",
+                "price"
+              ],
+              "code": "missing_cell"
+            },
+            {
+              "surface": "visible_cells",
+              "key": [
+                "dyn-d02",
+                "vendor-b",
+                "phone",
+                "price"
+              ],
+              "code": "missing_cell"
+            }
+          ],
+          "reason_counts": {
+            "conflicting_supplier_values": 1,
+            "threshold_met": 3,
+            "money_price_scope_unclear": 2,
+            "threshold_failed": 2
+          },
+          "coverage": {
+            "planned_batches": 2,
+            "validated_batches": 2,
+            "supplier": {
+              "vendor-a": true,
+              "vendor-b": true
+            },
+            "item": {
+              "vendor-a": {
+                "phone": true
+              },
+              "vendor-b": {
+                "phone": true
+              }
+            }
+          },
+          "batch_diagnostics": [
+            {
+              "supplier": "vendor-a",
+              "item_id": "phone",
+              "ordinal": 0,
+              "complete": true,
+              "rejected_count": 0,
+              "rejection_codes": {}
+            },
+            {
+              "supplier": "vendor-b",
+              "item_id": "phone",
+              "ordinal": 0,
+              "complete": true,
+              "rejected_count": 0,
+              "rejection_codes": {}
+            }
+          ],
+          "tool_diagnostics": [
+            {
+              "status": "completed",
+              "error": "other",
+              "rejected_count": 0,
+              "rejection_codes": {},
+              "initial_rejection_codes": {}
+            },
+            {
+              "status": "completed",
+              "error": "other",
+              "rejected_count": 0,
+              "rejection_codes": {},
+              "initial_rejection_codes": {}
+            }
+          ],
+          "frozen": {
+            "manifest_sha256": "0f97974504ecd4351ebfdc064e63e6c3cd451b74a73cd3c774aa8c96e6a31989",
+            "gold_sha256": "c94f73a3556db29ba10fe14a2265d8ec44033052500b451d46db202f6288e7ff"
+          },
+          "artifacts": {
+            "attempt_sha256": "6f46566f84dc151fcc904be69cc0b50547b17ecfcbcdd7dc2a7ab3914e022da4",
+            "xlsx_sha256": "ad15554b7291941f58e1a4dd10fd7cd99eb0373df43a3a783b0b875ec6efcbb1",
+            "score_sha256": "ea77b4a7568e80c461347d5b4befbb7380ab1c45228a13d3874039775a9be067"
+          }
+        },
+        {
+          "pack_id": "dyn-d03",
+          "run_id": "f639cc12e159461a98eee9ebd34a1708",
+          "attempt_id": "72a0ffcd2f504e34a3ab30fa599583c7",
+          "run_status": "partial",
+          "error_code": "coverage_incomplete",
+          "status_accuracy": {
+            "numerator": 0,
+            "denominator": 8
+          },
+          "strict_task_success": false,
+          "elapsed_ms": 48578.0,
+          "usage": {
+            "requests": 3,
+            "input_tokens": 12677,
+            "output_tokens": 1386,
+            "unknown_requests": 0,
+            "semantic_repair_requests": 0
+          },
+          "surface_consistency": {
+            "api_json_xlsx": true,
+            "frozen_visible_parser_errors": [],
+            "supplemental_literal_status_comparison": true
+          },
+          "frozen_score_errors": [
+            "coverage_incomplete"
+          ],
+          "frozen_score_identity_errors": [],
+          "reason_counts": {
+            "coverage_incomplete": 8
+          },
+          "coverage": {
+            "planned_batches": 2,
+            "validated_batches": 2,
+            "supplier": {
+              "vendor-a": false,
+              "vendor-b": false
+            },
+            "item": {
+              "vendor-a": {
+                "phone": false
+              },
+              "vendor-b": {
+                "phone": false
+              }
+            }
+          },
+          "batch_diagnostics": [
+            {
+              "supplier": "vendor-a",
+              "item_id": "phone",
+              "ordinal": 0,
+              "complete": true,
+              "rejected_count": 0,
+              "rejection_codes": {}
+            },
+            {
+              "supplier": "vendor-b",
+              "item_id": "phone",
+              "ordinal": 0,
+              "complete": true,
+              "rejected_count": 0,
+              "rejection_codes": {}
+            }
+          ],
+          "tool_diagnostics": [
+            {
+              "status": "completed",
+              "error": "other",
+              "rejected_count": 0,
+              "rejection_codes": {},
+              "initial_rejection_codes": {}
+            },
+            {
+              "status": "completed",
+              "error": "other",
+              "rejected_count": 0,
+              "rejection_codes": {},
+              "initial_rejection_codes": {}
+            }
+          ],
+          "frozen": {
+            "manifest_sha256": "5105c9c0dafa13502c5b918561183885ff725275048191f2ca98eb89eefb5bb3",
+            "gold_sha256": "e17358d3e01e9616b9e3cd58bdbfc2c4bad8839f28a74748abbd795c0703a459"
+          },
+          "artifacts": {
+            "attempt_sha256": "7bddef581526cfe101a56cae55b88a8b37fc3c5913ede5e2edfa2a6179054855",
+            "xlsx_sha256": "717557311badf5e7329adf794f9c1e7aff5aa6a114f6895d83bb1df94a044101",
+            "score_sha256": "16254ee6b3804e1fc98d3450e117ae3e2808ae955cd8adc15f3c78452d518759"
+          }
+        },
+        {
+          "pack_id": "dyn-d04",
+          "run_id": "b52b5eee2f534b54b34c82915e0c67ee",
+          "attempt_id": "3416cf1189f642af84243df493c6fda1",
+          "run_status": "completed",
+          "error_code": null,
+          "status_accuracy": {
+            "numerator": 6,
+            "denominator": 8
+          },
+          "strict_task_success": false,
+          "elapsed_ms": 51718.0,
+          "usage": {
+            "requests": 3,
+            "input_tokens": 12675,
+            "output_tokens": 1510,
+            "unknown_requests": 0,
+            "semantic_repair_requests": 0
+          },
+          "surface_consistency": {
+            "api_json_xlsx": true,
+            "frozen_visible_parser_errors": [
+              "visible_answer_identity_or_status_unresolved",
+              "visible_answer_identity_or_status_unresolved"
+            ],
+            "supplemental_literal_status_comparison": true
+          },
+          "frozen_score_errors": [
+            "visible_answer_identity_or_status_unresolved",
+            "visible_answer_identity_or_status_unresolved"
+          ],
+          "frozen_score_identity_errors": [
+            {
+              "surface": "visible_cells",
+              "key": [
+                "dyn-d04",
+                "vendor-a",
+                "fruit",
+                "price"
+              ],
+              "code": "missing_cell"
+            },
+            {
+              "surface": "visible_cells",
+              "key": [
+                "dyn-d04",
+                "vendor-b",
+                "fruit",
+                "price"
+              ],
+              "code": "missing_cell"
+            }
+          ],
+          "reason_counts": {
+            "threshold_met": 3,
+            "money_price_scope_unclear": 2,
+            "threshold_failed": 2,
+            "supplier_fact_missing": 1
+          },
+          "coverage": {
+            "planned_batches": 2,
+            "validated_batches": 2,
+            "supplier": {
+              "vendor-a": true,
+              "vendor-b": true
+            },
+            "item": {
+              "vendor-a": {
+                "fruit": true
+              },
+              "vendor-b": {
+                "fruit": true
+              }
+            }
+          },
+          "batch_diagnostics": [
+            {
+              "supplier": "vendor-a",
+              "item_id": "fruit",
+              "ordinal": 0,
+              "complete": true,
+              "rejected_count": 0,
+              "rejection_codes": {}
+            },
+            {
+              "supplier": "vendor-b",
+              "item_id": "fruit",
+              "ordinal": 0,
+              "complete": true,
+              "rejected_count": 0,
+              "rejection_codes": {}
+            }
+          ],
+          "tool_diagnostics": [
+            {
+              "status": "completed",
+              "error": "other",
+              "rejected_count": 0,
+              "rejection_codes": {},
+              "initial_rejection_codes": {}
+            },
+            {
+              "status": "completed",
+              "error": "other",
+              "rejected_count": 0,
+              "rejection_codes": {},
+              "initial_rejection_codes": {}
+            }
+          ],
+          "frozen": {
+            "manifest_sha256": "544ea6cf658f5aacc4e43c78a69b23f7467da274c71c1b0d7f7ee7ee2d80d4b4",
+            "gold_sha256": "4aeaf1bec2cb7c16893e58c9b53b0209c04895d69813e9a83abc3f699e67e4e1"
+          },
+          "artifacts": {
+            "attempt_sha256": "b283d66a81b87e79eec835632a38c7132a31cdfc4a1bf49ba14b1efc4b87401e",
+            "xlsx_sha256": "182278061d7fcf10b2d8ac94e8618948084d84606b18b97c6408f2aec343c943",
+            "score_sha256": "5255bccdeb41ec9bb690d0dc4514738cfe554c383c973180016e49791988a5ba"
+          }
+        },
+        {
+          "pack_id": "dyn-d05",
+          "run_id": "2cc3fc6dae84494694f1d37a300976d2",
+          "attempt_id": "46dcfb890c2a459994da68eef4015b35",
+          "run_status": "completed",
+          "error_code": null,
+          "status_accuracy": {
+            "numerator": 8,
+            "denominator": 8
+          },
+          "strict_task_success": true,
+          "elapsed_ms": 51859.0,
+          "usage": {
+            "requests": 3,
+            "input_tokens": 13033,
+            "output_tokens": 1777,
+            "unknown_requests": 0,
+            "semantic_repair_requests": 0
+          },
+          "surface_consistency": {
+            "api_json_xlsx": true,
+            "frozen_visible_parser_errors": [],
+            "supplemental_literal_status_comparison": true
+          },
+          "frozen_score_errors": [],
+          "frozen_score_identity_errors": [],
+          "reason_counts": {
+            "threshold_met": 3,
+            "requirement_manual": 2,
+            "threshold_failed": 2,
+            "unit_basis_mismatch": 1
+          },
+          "coverage": {
+            "planned_batches": 2,
+            "validated_batches": 2,
+            "supplier": {
+              "vendor-a": true,
+              "vendor-b": true
+            },
+            "item": {
+              "vendor-a": {
+                "fruit": true
+              },
+              "vendor-b": {
+                "fruit": true
+              }
+            }
+          },
+          "batch_diagnostics": [
+            {
+              "supplier": "vendor-a",
+              "item_id": "fruit",
+              "ordinal": 0,
+              "complete": true,
+              "rejected_count": 0,
+              "rejection_codes": {}
+            },
+            {
+              "supplier": "vendor-b",
+              "item_id": "fruit",
+              "ordinal": 0,
+              "complete": true,
+              "rejected_count": 0,
+              "rejection_codes": {}
+            }
+          ],
+          "tool_diagnostics": [
+            {
+              "status": "completed",
+              "error": "other",
+              "rejected_count": 0,
+              "rejection_codes": {},
+              "initial_rejection_codes": {}
+            },
+            {
+              "status": "completed",
+              "error": "other",
+              "rejected_count": 0,
+              "rejection_codes": {},
+              "initial_rejection_codes": {}
+            }
+          ],
+          "frozen": {
+            "manifest_sha256": "2d50e32e26791757cad7809b4fa7ac8ac92e981d1cf28c1137a9d1f84f88359b",
+            "gold_sha256": "9592b9f15299516620831afa19c2af73bb1fdca36bbce82e406977e4481090da"
+          },
+          "artifacts": {
+            "attempt_sha256": "6241d3a0e388a0ed0156670fe2795d0cbcfc66d2da50b411937b896fe935254a",
+            "xlsx_sha256": "fb0ed5a5a9b63bb370b3310f5ae09e6dab5d5c23866ae4ea079fe67f38a780f4",
+            "score_sha256": "16b879dfa63db506365436ce787194af61a3650c17b45cca510ccd8d01eacd03"
+          }
+        },
+        {
+          "pack_id": "dyn-d06",
+          "run_id": "aeaf7ab2b55643e78c5f105d9953635c",
+          "attempt_id": "f0ae02d026c743579185d625400af209",
+          "run_status": "partial",
+          "error_code": "coverage_incomplete",
+          "status_accuracy": {
+            "numerator": 0,
+            "denominator": 8
+          },
+          "strict_task_success": false,
+          "elapsed_ms": 65906.0,
+          "usage": {
+            "requests": 6,
+            "input_tokens": 25694,
+            "output_tokens": 2328,
+            "unknown_requests": 0,
+            "semantic_repair_requests": 2
+          },
+          "surface_consistency": {
+            "api_json_xlsx": true,
+            "frozen_visible_parser_errors": [],
+            "supplemental_literal_status_comparison": true
+          },
+          "frozen_score_errors": [
+            "coverage_incomplete"
+          ],
+          "frozen_score_identity_errors": [],
+          "reason_counts": {
+            "coverage_incomplete": 6,
+            "requirement_manual": 2
+          },
+          "coverage": {
+            "planned_batches": 3,
+            "validated_batches": 0,
+            "supplier": {
+              "vendor-a": false,
+              "vendor-b": false
+            },
+            "item": {
+              "vendor-a": {
+                "fruit": false
+              },
+              "vendor-b": {
+                "fruit": false
+              }
+            }
+          },
+          "batch_diagnostics": [
+            {
+              "supplier": "vendor-a",
+              "item_id": "fruit",
+              "ordinal": 0,
+              "complete": false,
+              "rejected_count": 4,
+              "rejection_codes": {
+                "fact_value": 1,
+                "evidence_quote": 3
+              },
+              "initial_rejection_codes": {
+                "fact_value": 1,
+                "evidence_quote": 3
+              }
+            },
+            {
+              "supplier": "vendor-a",
+              "item_id": "fruit",
+              "ordinal": 1,
+              "complete": false,
+              "rejected_count": 1,
+              "rejection_codes": {
+                "fact_value": 1
+              },
+              "initial_rejection_codes": {
+                "fact_value": 1
+              }
+            },
+            {
+              "supplier": "vendor-b",
+              "item_id": "fruit",
+              "ordinal": 0,
+              "complete": false,
+              "rejected_count": 1,
+              "rejection_codes": {
+                "candidate_invalid": 1
+              },
+              "initial_rejection_codes": {
+                "fact_criterion": 1
+              }
+            }
+          ],
+          "tool_diagnostics": [
+            {
+              "status": "rejected",
+              "error": "candidate_invalid",
+              "rejected_count": 4,
+              "rejection_codes": {
+                "fact_value": 1,
+                "evidence_quote": 3
+              },
+              "initial_rejection_codes": {
+                "fact_value": 1,
+                "evidence_quote": 3
+              }
+            },
+            {
+              "status": "rejected",
+              "error": "candidate_invalid",
+              "rejected_count": 1,
+              "rejection_codes": {
+                "fact_value": 1
+              },
+              "initial_rejection_codes": {
+                "fact_value": 1
+              }
+            },
+            {
+              "status": "rejected",
+              "error": "candidate_invalid",
+              "rejected_count": 1,
+              "rejection_codes": {
+                "candidate_invalid": 1
+              },
+              "initial_rejection_codes": {
+                "fact_criterion": 1
+              }
+            }
+          ],
+          "frozen": {
+            "manifest_sha256": "f20b990cc0ed620ecd1a10ad4b6ccd1e41515d46e99e6834d25c6e44becbb371",
+            "gold_sha256": "e8f473f011e1d3f90d600c62349c2ac34c244409d5b8216e772bc3bee12df6cd"
+          },
+          "artifacts": {
+            "attempt_sha256": "9feec3c8741198399d1807649f70bc3ca966048d19d184efb205fe26bbc63f2a",
+            "xlsx_sha256": "b7ade8750c76bc13acac1900828117915fb5bbbbc69d15710f71d6248c55b894",
+            "score_sha256": "08047ff44e62ccda94d611d7bd1a1ce93e4952c89715709544ff391f09df89bb"
+          }
+        },
+        {
+          "pack_id": "dyn-d07",
+          "run_id": "15067a4681024c10b0dbfe44fe2ed9c8",
+          "attempt_id": "1e530164bcb443efa1925365494ae600",
+          "run_status": "completed",
+          "error_code": null,
+          "status_accuracy": {
+            "numerator": 6,
+            "denominator": 8
+          },
+          "strict_task_success": false,
+          "elapsed_ms": 50563.0,
+          "usage": {
+            "requests": 3,
+            "input_tokens": 13032,
+            "output_tokens": 937,
+            "unknown_requests": 0,
+            "semantic_repair_requests": 0
+          },
+          "surface_consistency": {
+            "api_json_xlsx": true,
+            "frozen_visible_parser_errors": [
+              "visible_answer_identity_or_status_unresolved",
+              "visible_answer_identity_or_status_unresolved"
+            ],
+            "supplemental_literal_status_comparison": true
+          },
+          "frozen_score_errors": [
+            "visible_answer_identity_or_status_unresolved",
+            "visible_answer_identity_or_status_unresolved"
+          ],
+          "frozen_score_identity_errors": [
+            {
+              "surface": "visible_cells",
+              "key": [
+                "dyn-d07",
+                "vendor-a",
+                "clothing",
+                "price"
+              ],
+              "code": "missing_cell"
+            },
+            {
+              "surface": "visible_cells",
+              "key": [
+                "dyn-d07",
+                "vendor-b",
+                "clothing",
+                "price"
+              ],
+              "code": "missing_cell"
+            }
+          ],
+          "reason_counts": {
+            "threshold_met": 3,
+            "money_price_scope_unclear": 2,
+            "threshold_failed": 3
+          },
+          "coverage": {
+            "planned_batches": 2,
+            "validated_batches": 2,
+            "supplier": {
+              "vendor-a": true,
+              "vendor-b": true
+            },
+            "item": {
+              "vendor-a": {
+                "clothing": true
+              },
+              "vendor-b": {
+                "clothing": true
+              }
+            }
+          },
+          "batch_diagnostics": [
+            {
+              "supplier": "vendor-a",
+              "item_id": "clothing",
+              "ordinal": 0,
+              "complete": true,
+              "rejected_count": 0,
+              "rejection_codes": {}
+            },
+            {
+              "supplier": "vendor-b",
+              "item_id": "clothing",
+              "ordinal": 0,
+              "complete": true,
+              "rejected_count": 0,
+              "rejection_codes": {}
+            }
+          ],
+          "tool_diagnostics": [
+            {
+              "status": "completed",
+              "error": "other",
+              "rejected_count": 0,
+              "rejection_codes": {},
+              "initial_rejection_codes": {}
+            },
+            {
+              "status": "completed",
+              "error": "other",
+              "rejected_count": 0,
+              "rejection_codes": {},
+              "initial_rejection_codes": {}
+            }
+          ],
+          "frozen": {
+            "manifest_sha256": "4969a1dbe6d0ca62a24c5fb3d6fc035dc2dd5d49e17318c0ed1591280cc282f1",
+            "gold_sha256": "6bf23e11e0b2b8e0a26c56335eda9bb30f97bbbb2300aae7730cae70a915b4ff"
+          },
+          "artifacts": {
+            "attempt_sha256": "b60efd33bae747d872d6ce2f5f5aa1fa37acc01c23ebae66e4c8161f2258e5ab",
+            "xlsx_sha256": "88de3dada6d0dbb03a426965d7de3bbaef6037585a07d14aedaea0e91ca4c117",
+            "score_sha256": "deabbc8131f640df5a49858aa1218d5e828e96464db7b784feeb500c0eb4ef82"
+          }
+        },
+        {
+          "pack_id": "dyn-d08",
+          "run_id": "d286fcf23f144a67aa3ec4ea19dc1e0f",
+          "attempt_id": "1d6bf0b6c84c46698921c465d4129ee1",
+          "run_status": "completed",
+          "error_code": null,
+          "status_accuracy": {
+            "numerator": 8,
+            "denominator": 10
+          },
+          "strict_task_success": false,
+          "elapsed_ms": 56766.0,
+          "usage": {
+            "requests": 3,
+            "input_tokens": 13659,
+            "output_tokens": 2023,
+            "unknown_requests": 0,
+            "semantic_repair_requests": 0
+          },
+          "surface_consistency": {
+            "api_json_xlsx": true,
+            "frozen_visible_parser_errors": [
+              "visible_answer_identity_or_status_unresolved",
+              "visible_answer_identity_or_status_unresolved"
+            ],
+            "supplemental_literal_status_comparison": true
+          },
+          "frozen_score_errors": [
+            "visible_answer_identity_or_status_unresolved",
+            "visible_answer_identity_or_status_unresolved"
+          ],
+          "frozen_score_identity_errors": [
+            {
+              "surface": "visible_cells",
+              "key": [
+                "dyn-d08",
+                "vendor-a",
+                "clothing",
+                "price"
+              ],
+              "code": "missing_cell"
+            },
+            {
+              "surface": "visible_cells",
+              "key": [
+                "dyn-d08",
+                "vendor-b",
+                "clothing",
+                "price"
+              ],
+              "code": "missing_cell"
+            }
+          ],
+          "reason_counts": {
+            "conflicting_supplier_values": 1,
+            "threshold_met": 4,
+            "money_price_scope_unclear": 2,
+            "threshold_failed": 1,
+            "semantics_unclear": 1,
+            "duration_basis_mismatch": 1
+          },
+          "coverage": {
+            "planned_batches": 2,
+            "validated_batches": 2,
+            "supplier": {
+              "vendor-a": true,
+              "vendor-b": true
+            },
+            "item": {
+              "vendor-a": {
+                "clothing": true
+              },
+              "vendor-b": {
+                "clothing": true
+              }
+            }
+          },
+          "batch_diagnostics": [
+            {
+              "supplier": "vendor-a",
+              "item_id": "clothing",
+              "ordinal": 0,
+              "complete": true,
+              "rejected_count": 0,
+              "rejection_codes": {}
+            },
+            {
+              "supplier": "vendor-b",
+              "item_id": "clothing",
+              "ordinal": 0,
+              "complete": true,
+              "rejected_count": 0,
+              "rejection_codes": {}
+            }
+          ],
+          "tool_diagnostics": [
+            {
+              "status": "completed",
+              "error": "other",
+              "rejected_count": 0,
+              "rejection_codes": {},
+              "initial_rejection_codes": {}
+            },
+            {
+              "status": "completed",
+              "error": "other",
+              "rejected_count": 0,
+              "rejection_codes": {},
+              "initial_rejection_codes": {}
+            }
+          ],
+          "frozen": {
+            "manifest_sha256": "f60b8fc4a98d24980d87a8400bbd319f918751b412873fcf8ca54bbe5dadd8f1",
+            "gold_sha256": "1ccc6d60eec0a4dd9f0bb01d918c3f87218c55e8a3fd52d5a7d623fb9e05be46"
+          },
+          "artifacts": {
+            "attempt_sha256": "143cd2f38bf72737fe441541e2d4ba7ce27e6daa74cfc4c79fd820ce70e262e1",
+            "xlsx_sha256": "eb0a37297fbf7da1454dd3423f3a8590593cbf52a8b9a80d7c30259ceea1daf7",
+            "score_sha256": "8368833e80c62ffe4e704b35c6600a4935da0647b1e7d97763a4314601e0266e"
+          }
+        },
+        {
+          "pack_id": "dyn-d09",
+          "run_id": "85f2bc5b707a43368bc11b3f48afa4a5",
+          "attempt_id": "823af5e368fe4f2f8608783e7b8a2d31",
+          "run_status": "partial",
+          "error_code": "coverage_incomplete",
+          "status_accuracy": {
+            "numerator": 0,
+            "denominator": 10
+          },
+          "strict_task_success": false,
+          "elapsed_ms": 56859.0,
+          "usage": {
+            "requests": 5,
+            "input_tokens": 21362,
+            "output_tokens": 2000,
+            "unknown_requests": 0,
+            "semantic_repair_requests": 1
+          },
+          "surface_consistency": {
+            "api_json_xlsx": true,
+            "frozen_visible_parser_errors": [],
+            "supplemental_literal_status_comparison": true
+          },
+          "frozen_score_errors": [
+            "coverage_incomplete"
+          ],
+          "frozen_score_identity_errors": [],
+          "reason_counts": {
+            "requirement_manual": 4,
+            "coverage_incomplete": 6
+          },
+          "coverage": {
+            "planned_batches": 3,
+            "validated_batches": 0,
+            "supplier": {
+              "vendor-a": false,
+              "vendor-b": false
+            },
+            "item": {
+              "vendor-a": {
+                "clothing": false
+              },
+              "vendor-b": {
+                "clothing": false
+              }
+            }
+          },
+          "batch_diagnostics": [
+            {
+              "supplier": "vendor-a",
+              "item_id": "clothing",
+              "ordinal": 0,
+              "complete": false,
+              "rejected_count": 3,
+              "rejection_codes": {
+                "fact_value": 2,
+                "evidence_relationship": 1
+              },
+              "initial_rejection_codes": {
+                "fact_value": 2,
+                "evidence_relationship": 1
+              }
+            },
+            {
+              "supplier": "vendor-a",
+              "item_id": "clothing",
+              "ordinal": 1,
+              "complete": false,
+              "rejected_count": 1,
+              "rejection_codes": {
+                "fact_value": 1
+              },
+              "initial_rejection_codes": {
+                "fact_value": 1
+              }
+            },
+            {
+              "supplier": "vendor-b",
+              "item_id": "clothing",
+              "ordinal": 0,
+              "complete": false,
+              "rejected_count": 1,
+              "rejection_codes": {
+                "evidence_quote": 1
+              },
+              "initial_rejection_codes": {
+                "evidence_quote": 1
+              }
+            }
+          ],
+          "tool_diagnostics": [
+            {
+              "status": "rejected",
+              "error": "candidate_invalid",
+              "rejected_count": 3,
+              "rejection_codes": {
+                "fact_value": 2,
+                "evidence_relationship": 1
+              },
+              "initial_rejection_codes": {
+                "fact_value": 2,
+                "evidence_relationship": 1
+              }
+            },
+            {
+              "status": "rejected",
+              "error": "candidate_invalid",
+              "rejected_count": 1,
+              "rejection_codes": {
+                "fact_value": 1
+              },
+              "initial_rejection_codes": {
+                "fact_value": 1
+              }
+            },
+            {
+              "status": "rejected",
+              "error": "candidate_invalid",
+              "rejected_count": 1,
+              "rejection_codes": {
+                "evidence_quote": 1
+              },
+              "initial_rejection_codes": {
+                "evidence_quote": 1
+              }
+            }
+          ],
+          "frozen": {
+            "manifest_sha256": "1418f6ff8109bb1ef5c89eac9e79ae71c5683e7b1fc4038f4655bf82649e7ad1",
+            "gold_sha256": "caa3a1f8aec3ba191468f0208f9607c7945d9d8969ddb7cad2bc2dc0e22d49cf"
+          },
+          "artifacts": {
+            "attempt_sha256": "94763742453389d725773825e5d143d41d66a90a94411b8141fbe01f35065d60",
+            "xlsx_sha256": "a7cb0d9b854b13acbcf1c1555d702dfd38e1f20f08f5d8a28316cdf6ba63aa05",
+            "score_sha256": "32a72c91719f38531ae215e884b365d4d1008ddd08e37c43e4e9efeff0f85a78"
+          }
+        },
+        {
+          "pack_id": "dyn-d10",
+          "run_id": "7aa7c31b65fd422886be7cfc1e926cce",
+          "attempt_id": "3adfc249281b47758a76f808faa7ba87",
+          "run_status": "partial",
+          "error_code": "coverage_incomplete",
+          "status_accuracy": {
+            "numerator": 0,
+            "denominator": 12
+          },
+          "strict_task_success": false,
+          "elapsed_ms": 73125.0,
+          "usage": {
+            "requests": 5,
+            "input_tokens": 21890,
+            "output_tokens": 2945,
+            "unknown_requests": 0,
+            "semantic_repair_requests": 0
+          },
+          "surface_consistency": {
+            "api_json_xlsx": true,
+            "frozen_visible_parser_errors": [
+              "visible_answer_identity_or_status_unresolved",
+              "visible_answer_identity_or_status_unresolved",
+              "visible_answer_identity_or_status_unresolved"
+            ],
+            "supplemental_literal_status_comparison": true
+          },
+          "frozen_score_errors": [
+            "coverage_incomplete",
+            "visible_answer_identity_or_status_unresolved",
+            "visible_answer_identity_or_status_unresolved",
+            "visible_answer_identity_or_status_unresolved"
+          ],
+          "frozen_score_identity_errors": [
+            {
+              "surface": "visible_cells",
+              "key": [
+                "dyn-d10",
+                "vendor-a",
+                "clothing",
+                "clothing_price"
+              ],
+              "code": "missing_cell"
+            },
+            {
+              "surface": "visible_cells",
+              "key": [
+                "dyn-d10",
+                "vendor-b",
+                "clothing",
+                "clothing_price"
+              ],
+              "code": "missing_cell"
+            },
+            {
+              "surface": "visible_cells",
+              "key": [
+                "dyn-d10",
+                "vendor-b",
+                "fruit",
+                "fruit_price"
+              ],
+              "code": "missing_cell"
+            }
+          ],
+          "reason_counts": {
+            "coverage_incomplete": 3,
+            "threshold_met": 3,
+            "money_price_scope_unclear": 3,
+            "threshold_failed": 2,
+            "supplier_fact_missing": 1
+          },
+          "coverage": {
+            "planned_batches": 4,
+            "validated_batches": 3,
+            "supplier": {
+              "vendor-a": false,
+              "vendor-b": true
+            },
+            "item": {
+              "vendor-a": {
+                "fruit": false,
+                "clothing": true
+              },
+              "vendor-b": {
+                "fruit": true,
+                "clothing": true
+              }
+            }
+          },
+          "batch_diagnostics": [
+            {
+              "supplier": "vendor-a",
+              "item_id": "fruit",
+              "ordinal": 0,
+              "complete": false,
+              "rejected_count": 3,
+              "rejection_codes": {
+                "evidence_quote": 3
+              },
+              "initial_rejection_codes": {
+                "evidence_quote": 3
+              }
+            },
+            {
+              "supplier": "vendor-a",
+              "item_id": "clothing",
+              "ordinal": 1,
+              "complete": true,
+              "rejected_count": 0,
+              "rejection_codes": {}
+            },
+            {
+              "supplier": "vendor-b",
+              "item_id": "fruit",
+              "ordinal": 0,
+              "complete": true,
+              "rejected_count": 0,
+              "rejection_codes": {}
+            },
+            {
+              "supplier": "vendor-b",
+              "item_id": "clothing",
+              "ordinal": 1,
+              "complete": true,
+              "rejected_count": 0,
+              "rejection_codes": {}
+            }
+          ],
+          "tool_diagnostics": [
+            {
+              "status": "rejected",
+              "error": "candidate_invalid",
+              "rejected_count": 3,
+              "rejection_codes": {
+                "evidence_quote": 3
+              },
+              "initial_rejection_codes": {
+                "evidence_quote": 3
+              }
+            },
+            {
+              "status": "completed",
+              "error": "other",
+              "rejected_count": 0,
+              "rejection_codes": {},
+              "initial_rejection_codes": {}
+            },
+            {
+              "status": "completed",
+              "error": "other",
+              "rejected_count": 0,
+              "rejection_codes": {},
+              "initial_rejection_codes": {}
+            },
+            {
+              "status": "completed",
+              "error": "other",
+              "rejected_count": 0,
+              "rejection_codes": {},
+              "initial_rejection_codes": {}
+            }
+          ],
+          "frozen": {
+            "manifest_sha256": "0cc30834a70e39e876f9deead30065ddf277bc082d8925e107ff1ccda4cd33a5",
+            "gold_sha256": "cef291dcb7633df172115df5192216c2df52fb4f23eb2e9e81e2d5f3218c1ad2"
+          },
+          "artifacts": {
+            "attempt_sha256": "dd53ce3cd0221986ad62c01b04a842b70a339f3641dc09133689b581be6c56ee",
+            "xlsx_sha256": "d58fe2345aad7320114434bc1c13946fb894032bfc8c0c2bf67c866a929403bc",
+            "score_sha256": "a52efdbb089497dc3a7f14c03cde848e3b735cd3eae23f151a83fc4fa42f2977"
+          }
+        },
+        {
+          "pack_id": "dyn-d11",
+          "run_id": "8ef15d4d92f1413aafb0e694e713738d",
+          "attempt_id": "21306f7708524b6abee45d017bbb1d36",
+          "run_status": "partial",
+          "error_code": "coverage_incomplete",
+          "status_accuracy": {
+            "numerator": 0,
+            "denominator": 10
+          },
+          "strict_task_success": false,
+          "elapsed_ms": 64922.0,
+          "usage": {
+            "requests": 6,
+            "input_tokens": 26943,
+            "output_tokens": 2913,
+            "unknown_requests": 0,
+            "semantic_repair_requests": 1
+          },
+          "surface_consistency": {
+            "api_json_xlsx": true,
+            "frozen_visible_parser_errors": [
+              "visible_answer_identity_or_status_unresolved"
+            ],
+            "supplemental_literal_status_comparison": true
+          },
+          "frozen_score_errors": [
+            "coverage_incomplete",
+            "visible_answer_identity_or_status_unresolved"
+          ],
+          "frozen_score_identity_errors": [
+            {
+              "surface": "visible_cells",
+              "key": [
+                "dyn-d11",
+                "vendor-a",
+                "equipment",
+                "price"
+              ],
+              "code": "missing_cell"
+            }
+          ],
+          "reason_counts": {
+            "threshold_met": 3,
+            "money_price_scope_unclear": 1,
+            "requirement_manual": 2,
+            "coverage_incomplete": 4
+          },
+          "coverage": {
+            "planned_batches": 4,
+            "validated_batches": 3,
+            "supplier": {
+              "vendor-a": true,
+              "vendor-b": false
+            },
+            "item": {
+              "vendor-a": {
+                "equipment": true
+              },
+              "vendor-b": {
+                "equipment": false
+              }
+            }
+          },
+          "batch_diagnostics": [
+            {
+              "supplier": "vendor-a",
+              "item_id": "equipment",
+              "ordinal": 0,
+              "complete": true,
+              "rejected_count": 0,
+              "rejection_codes": {}
+            },
+            {
+              "supplier": "vendor-a",
+              "item_id": "equipment",
+              "ordinal": 1,
+              "complete": true,
+              "rejected_count": 0,
+              "rejection_codes": {}
+            },
+            {
+              "supplier": "vendor-b",
+              "item_id": "equipment",
+              "ordinal": 0,
+              "complete": false,
+              "rejected_count": 1,
+              "rejection_codes": {
+                "candidate_invalid": 1
+              },
+              "initial_rejection_codes": {
+                "fact_tax_basis": 1
+              }
+            },
+            {
+              "supplier": "vendor-b",
+              "item_id": "equipment",
+              "ordinal": 1,
+              "complete": true,
+              "rejected_count": 0,
+              "rejection_codes": {}
+            }
+          ],
+          "tool_diagnostics": [
+            {
+              "status": "completed",
+              "error": "other",
+              "rejected_count": 0,
+              "rejection_codes": {},
+              "initial_rejection_codes": {}
+            },
+            {
+              "status": "completed",
+              "error": "other",
+              "rejected_count": 0,
+              "rejection_codes": {},
+              "initial_rejection_codes": {}
+            },
+            {
+              "status": "rejected",
+              "error": "candidate_invalid",
+              "rejected_count": 1,
+              "rejection_codes": {
+                "candidate_invalid": 1
+              },
+              "initial_rejection_codes": {
+                "fact_tax_basis": 1
+              }
+            },
+            {
+              "status": "completed",
+              "error": "other",
+              "rejected_count": 0,
+              "rejection_codes": {},
+              "initial_rejection_codes": {}
+            }
+          ],
+          "frozen": {
+            "manifest_sha256": "2b8f57d38ce0859112f6bcab423f10ccef0b8ba64d65f4e93dc6eab5cbd5712e",
+            "gold_sha256": "0079c9cefca8751b9994a5d98f5fbe79c3d5ae06957bd86369f1b041b3b02242"
+          },
+          "artifacts": {
+            "attempt_sha256": "751e462b9e7b06746a25743d722b0d0f68ccb94edf3853e7d2aab1e3ab1c69fb",
+            "xlsx_sha256": "fc48b7f651a050da87061e6e9dbc8ae0737b1716bf23909d5a65b3339b97d01c",
+            "score_sha256": "39d3729a928af43617fe23aaba1f5bd58de87a359857568efe5d712717b4d37c"
+          }
+        },
+        {
+          "pack_id": "dyn-d12",
+          "run_id": "c6ff5f82b4604ae2a384b01d8dfa9a5b",
+          "attempt_id": "0ce7fa7ad7754a3c8fde9b2c9db0def5",
+          "run_status": "completed",
+          "error_code": null,
+          "status_accuracy": {
+            "numerator": 6,
+            "denominator": 8
+          },
+          "strict_task_success": false,
+          "elapsed_ms": 55015.0,
+          "usage": {
+            "requests": 3,
+            "input_tokens": 13087,
+            "output_tokens": 2100,
+            "unknown_requests": 0,
+            "semantic_repair_requests": 0
+          },
+          "surface_consistency": {
+            "api_json_xlsx": true,
+            "frozen_visible_parser_errors": [
+              "visible_answer_identity_or_status_unresolved",
+              "visible_answer_identity_or_status_unresolved"
+            ],
+            "supplemental_literal_status_comparison": true
+          },
+          "frozen_score_errors": [
+            "visible_answer_identity_or_status_unresolved",
+            "visible_answer_identity_or_status_unresolved"
+          ],
+          "frozen_score_identity_errors": [
+            {
+              "surface": "visible_cells",
+              "key": [
+                "dyn-d12",
+                "vendor-a",
+                "phone",
+                "price"
+              ],
+              "code": "missing_cell"
+            },
+            {
+              "surface": "visible_cells",
+              "key": [
+                "dyn-d12",
+                "vendor-b",
+                "phone",
+                "price"
+              ],
+              "code": "missing_cell"
+            }
+          ],
+          "reason_counts": {
+            "threshold_met": 3,
+            "money_price_scope_unclear": 2,
+            "threshold_failed": 3
+          },
+          "coverage": {
+            "planned_batches": 2,
+            "validated_batches": 2,
+            "supplier": {
+              "vendor-a": true,
+              "vendor-b": true
+            },
+            "item": {
+              "vendor-a": {
+                "phone": true
+              },
+              "vendor-b": {
+                "phone": true
+              }
+            }
+          },
+          "batch_diagnostics": [
+            {
+              "supplier": "vendor-a",
+              "item_id": "phone",
+              "ordinal": 0,
+              "complete": true,
+              "rejected_count": 0,
+              "rejection_codes": {}
+            },
+            {
+              "supplier": "vendor-b",
+              "item_id": "phone",
+              "ordinal": 0,
+              "complete": true,
+              "rejected_count": 0,
+              "rejection_codes": {}
+            }
+          ],
+          "tool_diagnostics": [
+            {
+              "status": "completed",
+              "error": "other",
+              "rejected_count": 0,
+              "rejection_codes": {},
+              "initial_rejection_codes": {}
+            },
+            {
+              "status": "completed",
+              "error": "other",
+              "rejected_count": 0,
+              "rejection_codes": {},
+              "initial_rejection_codes": {}
+            }
+          ],
+          "frozen": {
+            "manifest_sha256": "3f8c8086c6751f31c349851278d286a474a0ea266d9fbcfa189fc3f116fb4fa9",
+            "gold_sha256": "3f7c3b9aa0331db03972025a98bfa27dc9fae4a03d1c89980c76a059b5afde75"
+          },
+          "artifacts": {
+            "attempt_sha256": "dde65f2589b60c66611b7ced2f239d39cfe6b626b12def8ff3efd58a78ecb072",
+            "xlsx_sha256": "b2382df3bbf1573b0811690be28d7a13b4aecd6323efe39f745c343a241a3be2",
+            "score_sha256": "c52e0b643823082e475987c01dcbe07e3c1cfe70f7761f35c6aa16e561db52bc"
+          }
+        }
+      ],
+      "run_status_counts": {
+        "completed": 7,
+        "partial": 5
+      },
+      "reason_counts": {
+        "threshold_met": 28,
+        "money_price_scope_unclear": 15,
+        "threshold_failed": 16,
+        "semantics_unclear": 2,
+        "conflicting_supplier_values": 2,
+        "coverage_incomplete": 27,
+        "supplier_fact_missing": 2,
+        "requirement_manual": 10,
+        "unit_basis_mismatch": 1,
+        "duration_basis_mismatch": 1
+      },
+      "status_discrepancy_reasons": {
+        "money_price_scope_unclear": 15,
+        "semantics_unclear": 1,
+        "coverage_incomplete": 27,
+        "requirement_manual": 8,
+        "threshold_met": 6,
+        "threshold_failed": 2,
+        "supplier_fact_missing": 1
+      },
+      "confusion_matrix": {
+        "满足": {
+          "满足": 28,
+          "待人工确认": 9,
+          "未完成或无结果": 13
+        },
+        "不满足": {
+          "不满足": 16,
+          "待人工确认": 7,
+          "未完成或无结果": 7
+        },
+        "资料冲突": {
+          "资料冲突": 2
+        },
+        "待人工确认": {
+          "未完成或无结果": 11,
+          "待人工确认": 6
+        },
+        "证据不足": {
+          "未完成或无结果": 3,
+          "证据不足": 2
+        }
+      },
+      "processing_counts": {
+        "complete": 70,
+        "partial": 34
+      },
+      "needs_review_count": 0,
+      "usage": {
+        "requests": 46,
+        "input_tokens": 198670,
+        "output_tokens": 23413,
+        "unknown_requests": 0,
+        "semantic_repair_requests": 4
+      },
+      "elapsed_ms": {
+        "definition": "one run_pack invocation, case setup through artifact collection; sequential local measurement",
+        "count": 12,
+        "min": 43187.0,
+        "median": 53437.0,
+        "p95_nearest_rank": 73125.0,
+        "max": 73125.0
+      }
+    },
+    "new": {
+      "label": "new content using existing layout generator; AI authored",
+      "index_sha256": "6d0a71b084dc364f89a346bd521261b63da66bc62d04fd12539e101b02f02002",
+      "original_files": 18,
+      "aggregate": {
+        "pack_count": 6,
+        "data_class": "ai_authored_seen_development",
+        "agent_tasks": {
+          "numerator": 1,
+          "denominator": 6
+        },
+        "dangerous_meets": 0,
+        "formal_independent_acceptance": false,
+        "status_accuracy": {
+          "numerator": 16,
+          "denominator": 24
+        },
+        "necessary_evidence": {
+          "numerator": 11,
+          "denominator": 18
+        },
+        "grounded_correct_cells": {
+          "numerator": 11,
+          "denominator": 18
+        },
+        "anchor_group_recall": {
+          "numerator": 47,
+          "denominator": 48
+        },
+        "absence_coverage": {
+          "numerator": 2,
+          "denominator": 2
+        },
+        "citation_errors": {
+          "numerator": 0,
+          "denominator": 50
+        },
+        "citation_error_rate": 0.0,
+        "by_category": {
+          "fruit": {
+            "status_accuracy": {
+              "numerator": 6,
+              "denominator": 8
+            },
+            "grounded_correct_cells": {
+              "numerator": 6,
+              "denominator": 8
+            },
+            "anchor_group_recall": {
+              "numerator": 17,
+              "denominator": 17
+            }
+          },
+          "clothing": {
+            "status_accuracy": {
+              "numerator": 7,
+              "denominator": 8
+            },
+            "grounded_correct_cells": {
+              "numerator": 3,
+              "denominator": 4
+            },
+            "anchor_group_recall": {
+              "numerator": 15,
+              "denominator": 15
+            }
+          },
+          "phone": {
+            "status_accuracy": {
+              "numerator": 0,
+              "denominator": 4
+            },
+            "grounded_correct_cells": {
+              "numerator": 0,
+              "denominator": 3
+            },
+            "anchor_group_recall": {
+              "numerator": 8,
+              "denominator": 9
+            }
+          },
+          "mixed": {
+            "status_accuracy": {
+              "numerator": 3,
+              "denominator": 4
+            },
+            "grounded_correct_cells": {
+              "numerator": 2,
+              "denominator": 3
+            },
+            "anchor_group_recall": {
+              "numerator": 7,
+              "denominator": 7
+            }
+          }
+        },
+        "by_rule": {
+          "numeric": {
+            "status_accuracy": {
+              "numerator": 5,
+              "denominator": 7
+            },
+            "grounded_correct_cells": {
+              "numerator": 5,
+              "denominator": 7
+            },
+            "anchor_group_recall": {
+              "numerator": 15,
+              "denominator": 15
+            }
+          },
+          "enum": {
+            "status_accuracy": {
+              "numerator": 5,
+              "denominator": 5
+            },
+            "grounded_correct_cells": {
+              "numerator": 4,
+              "denominator": 4
+            },
+            "anchor_group_recall": {
+              "numerator": 10,
+              "denominator": 10
+            }
+          },
+          "money": {
+            "status_accuracy": {
+              "numerator": 0,
+              "denominator": 5
+            },
+            "grounded_correct_cells": {
+              "numerator": 0,
+              "denominator": 5
+            },
+            "anchor_group_recall": {
+              "numerator": 11,
+              "denominator": 11
+            }
+          },
+          "duration": {
+            "status_accuracy": {
+              "numerator": 5,
+              "denominator": 5
+            },
+            "grounded_correct_cells": {
+              "numerator": 2,
+              "denominator": 2
+            },
+            "anchor_group_recall": {
+              "numerator": 9,
+              "denominator": 9
+            }
+          },
+          "presence": {
+            "status_accuracy": {
+              "numerator": 1,
+              "denominator": 2
+            },
+            "grounded_correct_cells": {
+              "numerator": 0,
+              "denominator": 0
+            },
+            "anchor_group_recall": {
+              "numerator": 2,
+              "denominator": 3
+            }
+          }
+        }
+      },
+      "packs": [
+        {
+          "pack_id": "new-n01",
+          "run_id": "d385b227aebe4796a307f3e1da84d907",
+          "attempt_id": "2773ce5d636741a586341b0d1ed997a4",
+          "run_status": "completed",
+          "error_code": null,
+          "status_accuracy": {
+            "numerator": 3,
+            "denominator": 4
+          },
+          "strict_task_success": false,
+          "elapsed_ms": 37766.0,
+          "usage": {
+            "requests": 2,
+            "input_tokens": 7135,
+            "output_tokens": 1043,
+            "unknown_requests": 0,
+            "semantic_repair_requests": 0
+          },
+          "surface_consistency": {
+            "api_json_xlsx": true,
+            "frozen_visible_parser_errors": [
+              "visible_answer_identity_or_status_unresolved"
+            ],
+            "supplemental_literal_status_comparison": true
+          },
+          "frozen_score_errors": [
+            "visible_answer_identity_or_status_unresolved"
+          ],
+          "frozen_score_identity_errors": [
+            {
+              "surface": "visible_cells",
+              "key": [
+                "new-n01",
+                "vendor-a",
+                "item",
+                "price"
+              ],
+              "code": "missing_cell"
+            }
+          ],
+          "reason_counts": {
+            "threshold_met": 3,
+            "money_price_scope_unclear": 1
+          },
+          "coverage": {
+            "planned_batches": 1,
+            "validated_batches": 1,
+            "supplier": {
+              "vendor-a": true
+            },
+            "item": {
+              "vendor-a": {
+                "item": true
+              }
+            }
+          },
+          "batch_diagnostics": [
+            {
+              "supplier": "vendor-a",
+              "item_id": "item",
+              "ordinal": 0,
+              "complete": true,
+              "rejected_count": 0,
+              "rejection_codes": {}
+            }
+          ],
+          "tool_diagnostics": [
+            {
+              "status": "completed",
+              "error": "other",
+              "rejected_count": 0,
+              "rejection_codes": {},
+              "initial_rejection_codes": {}
+            }
+          ],
+          "frozen": {
+            "manifest_sha256": "ad939ad4cf6d4b82785caedbef7730db763daa4d4424ce5f4dcfde7ac6b70a18",
+            "gold_sha256": "3f20e95fa949687190c7e4b203e84a289ba162a9ab91a6ce365a7b131cd79c4e"
+          },
+          "artifacts": {
+            "attempt_sha256": "0843a8e7ab64d103ecca019833dd8f4c1cf26cfcf167d0bffbc09c5bdf5c0852",
+            "xlsx_sha256": "70fd84b657c2881b9bf7f52b86a6b0913c321dfc7593e862218b86630b05483f",
+            "score_sha256": "cb571a57cc3e99cbcd78c8b8f4b5ecba2f8cfd502a588012f7ddcd641e717b4c"
+          }
+        },
+        {
+          "pack_id": "new-n02",
+          "run_id": "aeb3138c3780427aa129d0736667b7a5",
+          "attempt_id": "3bbdfb5fd95e4689882ee4da3831b847",
+          "run_status": "completed",
+          "error_code": null,
+          "status_accuracy": {
+            "numerator": 4,
+            "denominator": 4
+          },
+          "strict_task_success": true,
+          "elapsed_ms": 34109.0,
+          "usage": {
+            "requests": 2,
+            "input_tokens": 6781,
+            "output_tokens": 628,
+            "unknown_requests": 0,
+            "semantic_repair_requests": 0
+          },
+          "surface_consistency": {
+            "api_json_xlsx": true,
+            "frozen_visible_parser_errors": [],
+            "supplemental_literal_status_comparison": true
+          },
+          "frozen_score_errors": [],
+          "frozen_score_identity_errors": [],
+          "reason_counts": {
+            "threshold_failed": 2,
+            "duration_basis_mismatch": 1,
+            "supplier_fact_missing": 1
+          },
+          "coverage": {
+            "planned_batches": 1,
+            "validated_batches": 1,
+            "supplier": {
+              "vendor-a": true
+            },
+            "item": {
+              "vendor-a": {
+                "item": true
+              }
+            }
+          },
+          "batch_diagnostics": [
+            {
+              "supplier": "vendor-a",
+              "item_id": "item",
+              "ordinal": 0,
+              "complete": true,
+              "rejected_count": 0,
+              "rejection_codes": {}
+            }
+          ],
+          "tool_diagnostics": [
+            {
+              "status": "completed",
+              "error": "other",
+              "rejected_count": 0,
+              "rejection_codes": {},
+              "initial_rejection_codes": {}
+            }
+          ],
+          "frozen": {
+            "manifest_sha256": "22b2ac03a221c062968421957846976f2b08568256578560a618dba8cbf01415",
+            "gold_sha256": "e9852397f5e650f63d4e475b55c5486500b622f7d27829d297d966e63d0e4fd5"
+          },
+          "artifacts": {
+            "attempt_sha256": "d49c75a60fd1ed2cbd07afc7f62bdb4755c9771769a67fb78ca33b8498addc0d",
+            "xlsx_sha256": "f2e61463b0eaccc7bd80f09f4ae46086548c5ef619d54d8554247c23374ef729",
+            "score_sha256": "712f77a46a084239730576fea2cce8e41345dab749d4b9e25f658457058ef0f3"
+          }
+        },
+        {
+          "pack_id": "new-n03",
+          "run_id": "743e8757a01342de83743a420f061c47",
+          "attempt_id": "a8e256d89d5740c9941082ef2febd444",
+          "run_status": "partial",
+          "error_code": "coverage_incomplete",
+          "status_accuracy": {
+            "numerator": 0,
+            "denominator": 4
+          },
+          "strict_task_success": false,
+          "elapsed_ms": 35094.0,
+          "usage": {
+            "requests": 2,
+            "input_tokens": 7233,
+            "output_tokens": 1211,
+            "unknown_requests": 0,
+            "semantic_repair_requests": 0
+          },
+          "surface_consistency": {
+            "api_json_xlsx": true,
+            "frozen_visible_parser_errors": [],
+            "supplemental_literal_status_comparison": true
+          },
+          "frozen_score_errors": [
+            "coverage_incomplete"
+          ],
+          "frozen_score_identity_errors": [],
+          "reason_counts": {
+            "coverage_incomplete": 4
+          },
+          "coverage": {
+            "planned_batches": 1,
+            "validated_batches": 0,
+            "supplier": {
+              "vendor-a": false
+            },
+            "item": {
+              "vendor-a": {
+                "item": false
+              }
+            }
+          },
+          "batch_diagnostics": [
+            {
+              "supplier": "vendor-a",
+              "item_id": "item",
+              "ordinal": 0,
+              "complete": false,
+              "rejected_count": 2,
+              "rejection_codes": {
+                "material_sources_overlap": 2
+              },
+              "initial_rejection_codes": {
+                "material_sources_overlap": 2
+              }
+            }
+          ],
+          "tool_diagnostics": [
+            {
+              "status": "rejected",
+              "error": "candidate_invalid",
+              "rejected_count": 2,
+              "rejection_codes": {
+                "material_sources_overlap": 2
+              },
+              "initial_rejection_codes": {
+                "material_sources_overlap": 2
+              }
+            }
+          ],
+          "frozen": {
+            "manifest_sha256": "7a6252dab8cd7d11f64c614ad51d67232e7946825499730eaf48e0d672381c35",
+            "gold_sha256": "b63f17d3eeddef7504baa761ea7b4315986e0cb9985aff5bd5d127477ba540ef"
+          },
+          "artifacts": {
+            "attempt_sha256": "8d2e9a09bbda31703c42c636f7679f07524114000f2f89094ab7d57d8acb467d",
+            "xlsx_sha256": "38085e3e5e22469aa8b845deee82be187729063235bf10aadcab15f4bb1c64ae",
+            "score_sha256": "195e1aa2cb6e716091155c2f0aa77598245612e29b3a87e6c0cd30d6203b6896"
+          }
+        },
+        {
+          "pack_id": "new-n04",
+          "run_id": "973456352490491086b9814aed21258c",
+          "attempt_id": "b484d615ac13442a8be2e9b686d4645f",
+          "run_status": "completed",
+          "error_code": null,
+          "status_accuracy": {
+            "numerator": 3,
+            "denominator": 4
+          },
+          "strict_task_success": false,
+          "elapsed_ms": 33422.0,
+          "usage": {
+            "requests": 2,
+            "input_tokens": 7114,
+            "output_tokens": 463,
+            "unknown_requests": 0,
+            "semantic_repair_requests": 0
+          },
+          "surface_consistency": {
+            "api_json_xlsx": true,
+            "frozen_visible_parser_errors": [
+              "visible_answer_identity_or_status_unresolved"
+            ],
+            "supplemental_literal_status_comparison": true
+          },
+          "frozen_score_errors": [
+            "visible_answer_identity_or_status_unresolved"
+          ],
+          "frozen_score_identity_errors": [
+            {
+              "surface": "visible_cells",
+              "key": [
+                "new-n04",
+                "vendor-a",
+                "item",
+                "price"
+              ],
+              "code": "missing_cell"
+            }
+          ],
+          "reason_counts": {
+            "threshold_met": 1,
+            "semantics_unclear": 1,
+            "money_price_scope_unclear": 1,
+            "duration_basis_mismatch": 1
+          },
+          "coverage": {
+            "planned_batches": 1,
+            "validated_batches": 1,
+            "supplier": {
+              "vendor-a": true
+            },
+            "item": {
+              "vendor-a": {
+                "item": true
+              }
+            }
+          },
+          "batch_diagnostics": [
+            {
+              "supplier": "vendor-a",
+              "item_id": "item",
+              "ordinal": 0,
+              "complete": true,
+              "rejected_count": 0,
+              "rejection_codes": {}
+            }
+          ],
+          "tool_diagnostics": [
+            {
+              "status": "completed",
+              "error": "other",
+              "rejected_count": 0,
+              "rejection_codes": {},
+              "initial_rejection_codes": {}
+            }
+          ],
+          "frozen": {
+            "manifest_sha256": "1d19b494cd9e4d88365a40184f5b79f4cc283476fc0607b4306d5a715618ad21",
+            "gold_sha256": "acf8edfb78feabed040a0cee97ce422943196e7779349f50d6c81181539e2386"
+          },
+          "artifacts": {
+            "attempt_sha256": "cb0dd0603c357e68f34ca938583f0179924a460c7ec46ba9b117947f3807e289",
+            "xlsx_sha256": "9c5361013db54735f801e7d3c808231f176c7188438acc9e17f51c9cb06b9bd7",
+            "score_sha256": "2bb0f584e1df6cef645ca69af73584944ff6afe58b70bdf4d3bed9b820dca8eb"
+          }
+        },
+        {
+          "pack_id": "new-n05",
+          "run_id": "eea15d95c2ac487a80961d6808d579d2",
+          "attempt_id": "9e80a129b6b04e61a4ce87a5da9426f2",
+          "run_status": "completed",
+          "error_code": null,
+          "status_accuracy": {
+            "numerator": 3,
+            "denominator": 4
+          },
+          "strict_task_success": false,
+          "elapsed_ms": 33391.0,
+          "usage": {
+            "requests": 2,
+            "input_tokens": 7112,
+            "output_tokens": 1032,
+            "unknown_requests": 0,
+            "semantic_repair_requests": 0
+          },
+          "surface_consistency": {
+            "api_json_xlsx": true,
+            "frozen_visible_parser_errors": [
+              "visible_answer_identity_or_status_unresolved"
+            ],
+            "supplemental_literal_status_comparison": true
+          },
+          "frozen_score_errors": [
+            "visible_answer_identity_or_status_unresolved"
+          ],
+          "frozen_score_identity_errors": [
+            {
+              "surface": "visible_cells",
+              "key": [
+                "new-n05",
+                "vendor-a",
+                "item",
+                "price"
+              ],
+              "code": "missing_cell"
+            }
+          ],
+          "reason_counts": {
+            "threshold_met": 2,
+            "money_price_scope_unclear": 1,
+            "threshold_failed": 1
+          },
+          "coverage": {
+            "planned_batches": 1,
+            "validated_batches": 1,
+            "supplier": {
+              "vendor-a": true
+            },
+            "item": {
+              "vendor-a": {
+                "item": true
+              }
+            }
+          },
+          "batch_diagnostics": [
+            {
+              "supplier": "vendor-a",
+              "item_id": "item",
+              "ordinal": 0,
+              "complete": true,
+              "rejected_count": 0,
+              "rejection_codes": {}
+            }
+          ],
+          "tool_diagnostics": [
+            {
+              "status": "completed",
+              "error": "other",
+              "rejected_count": 0,
+              "rejection_codes": {},
+              "initial_rejection_codes": {}
+            }
+          ],
+          "frozen": {
+            "manifest_sha256": "42427f3c10c9b1513038701684cee5d91e8f4994bb5af24b305fc2124fd2ad98",
+            "gold_sha256": "73be807523a1e261edce8414a18616dc242776ef212bd16414bdbb11521bbfe2"
+          },
+          "artifacts": {
+            "attempt_sha256": "f6aa859afe872e35a2b08f0b7cb90ed3608cfbaf88e7ccf29cfaedd8bc24ff85",
+            "xlsx_sha256": "c36321d3896d9b2f847c7cd35849fdd9db3aed0a8320fc65f97eda2b68d58f17",
+            "score_sha256": "ac4915517d7f22a82da65ed1f5f9ccb47acdffc6bfb60531939c91daeba43c74"
+          }
+        },
+        {
+          "pack_id": "new-n06",
+          "run_id": "ac63477b241e4eb09f7227f9c877622a",
+          "attempt_id": "2382a1b96dd04e30aac46da54fa2a0a0",
+          "run_status": "completed",
+          "error_code": null,
+          "status_accuracy": {
+            "numerator": 3,
+            "denominator": 4
+          },
+          "strict_task_success": false,
+          "elapsed_ms": 30562.0,
+          "usage": {
+            "requests": 2,
+            "input_tokens": 6813,
+            "output_tokens": 347,
+            "unknown_requests": 0,
+            "semantic_repair_requests": 0
+          },
+          "surface_consistency": {
+            "api_json_xlsx": true,
+            "frozen_visible_parser_errors": [
+              "visible_answer_identity_or_status_unresolved"
+            ],
+            "supplemental_literal_status_comparison": true
+          },
+          "frozen_score_errors": [
+            "visible_answer_identity_or_status_unresolved"
+          ],
+          "frozen_score_identity_errors": [
+            {
+              "surface": "visible_cells",
+              "key": [
+                "new-n06",
+                "vendor-a",
+                "item",
+                "price"
+              ],
+              "code": "missing_cell"
+            }
+          ],
+          "reason_counts": {
+            "threshold_met": 1,
+            "threshold_failed": 1,
+            "money_price_scope_unclear": 1,
+            "supplier_fact_missing": 1
+          },
+          "coverage": {
+            "planned_batches": 1,
+            "validated_batches": 1,
+            "supplier": {
+              "vendor-a": true
+            },
+            "item": {
+              "vendor-a": {
+                "item": true
+              }
+            }
+          },
+          "batch_diagnostics": [
+            {
+              "supplier": "vendor-a",
+              "item_id": "item",
+              "ordinal": 0,
+              "complete": true,
+              "rejected_count": 0,
+              "rejection_codes": {}
+            }
+          ],
+          "tool_diagnostics": [
+            {
+              "status": "completed",
+              "error": "other",
+              "rejected_count": 0,
+              "rejection_codes": {},
+              "initial_rejection_codes": {}
+            }
+          ],
+          "frozen": {
+            "manifest_sha256": "6bc5523afc565eec0ed080e952990f117b1073658921388ef387fd3eac3412f5",
+            "gold_sha256": "c39458a4f5e849353871b20007e2beb5cc59da82322be21cdd36113675e0316b"
+          },
+          "artifacts": {
+            "attempt_sha256": "f6d00ced5f9fd45452ec83d259cdda319917bd3bcbf5da094a89d884b35c7a89",
+            "xlsx_sha256": "8ef91e1aeb544c213c218f37db6643ae97943f6365489a562fa7ad5c95089f0b",
+            "score_sha256": "830bd2fbd585ee80ae29a00230eb77745ab1a2a35b5d4a356a77dc9642ab3d3f"
+          }
+        }
+      ],
+      "run_status_counts": {
+        "completed": 5,
+        "partial": 1
+      },
+      "reason_counts": {
+        "threshold_met": 7,
+        "money_price_scope_unclear": 4,
+        "threshold_failed": 4,
+        "duration_basis_mismatch": 2,
+        "supplier_fact_missing": 2,
+        "coverage_incomplete": 4,
+        "semantics_unclear": 1
+      },
+      "status_discrepancy_reasons": {
+        "money_price_scope_unclear": 4,
+        "coverage_incomplete": 4
+      },
+      "confusion_matrix": {
+        "满足": {
+          "满足": 7,
+          "未完成或无结果": 2,
+          "待人工确认": 1
+        },
+        "不满足": {
+          "待人工确认": 2,
+          "不满足": 4
+        },
+        "待人工确认": {
+          "待人工确认": 3,
+          "未完成或无结果": 1
+        },
+        "证据不足": {
+          "证据不足": 2
+        },
+        "资料冲突": {
+          "未完成或无结果": 1,
+          "待人工确认": 1
+        }
+      },
+      "processing_counts": {
+        "complete": 20,
+        "partial": 4
+      },
+      "needs_review_count": 0,
+      "usage": {
+        "requests": 12,
+        "input_tokens": 42188,
+        "output_tokens": 4724,
+        "unknown_requests": 0,
+        "semantic_repair_requests": 0
+      },
+      "elapsed_ms": {
+        "definition": "one run_pack invocation, case setup through artifact collection; sequential local measurement",
+        "count": 6,
+        "min": 30562.0,
+        "median": 33765.5,
+        "p95_nearest_rank": 37766.0,
+        "max": 37766.0
+      }
+    }
+  },
+  "usage": {
+    "requests": 58,
+    "input_tokens": 240858,
+    "output_tokens": 28137,
+    "unknown_requests": 0,
+    "semantic_repair_requests": 4
+  },
+  "measurement_parser_compatibility": {
+    "old_affected_packs": 8,
+    "old_unparsed_lines": 15,
+    "new_affected_packs": 4,
+    "new_unparsed_lines": 4,
+    "cause": "frozen visible-answer parser does not accept explanatory text after status punctuation",
+    "original_scores_preserved": true,
+    "supplemental_literal_status_comparison_all_18_packs": true,
+    "supplemental_comparison_changes_scores": false
+  },
+  "warning_accounting": {
+    "persisted_lower_bound_before": 88,
+    "persisted_lower_bound_after": 146,
+    "global_complete_total": null,
+    "renewal_anchor": 103,
+    "user_approved": true,
+    "requests_after_renewal": 43,
+    "historical_134_unchanged": true,
+    "embedding": "not independently measured",
+    "actual_bill": null
+  },
+  "d03_unassigned_supplier_blocks": [
+    {
+      "file_name": "vendor-a-spec.pdf",
+      "page": 2,
+      "sheet": null,
+      "cell": null,
+      "text": "合成开发评估资料:内容均为虚构，不代表真实产品、证书或供应商。"
+    },
+    {
+      "file_name": "vendor-a-spec.pdf",
+      "page": 2,
+      "sheet": null,
+      "cell": null,
+      "text": "品目:其他手机；型号:DEMO-OTHER"
+    },
+    {
+      "file_name": "vendor-a-spec.pdf",
+      "page": 2,
+      "sheet": null,
+      "cell": null,
+      "text": "此页产品不在当前采购范围。"
+    },
+    {
+      "file_name": "vendor-a-spec.pdf",
+      "page": 2,
+      "sheet": null,
+      "cell": null,
+      "text": "存储容量 512 GB"
+    },
+    {
+      "file_name": "vendor-a-spec.pdf",
+      "page": 2,
+      "sheet": null,
+      "cell": null,
+      "text": "含税单价 6800 CNY/台"
+    },
+    {
+      "file_name": "vendor-b-spec.pdf",
+      "page": 2,
+      "sheet": null,
+      "cell": null,
+      "text": "合成开发评估资料:内容均为虚构，不代表真实产品、证书或供应商。"
+    },
+    {
+      "file_name": "vendor-b-spec.pdf",
+      "page": 2,
+      "sheet": null,
+      "cell": null,
+      "text": "品目:其他手机；型号:DEMO-OTHER"
+    },
+    {
+      "file_name": "vendor-b-spec.pdf",
+      "page": 2,
+      "sheet": null,
+      "cell": null,
+      "text": "此页产品不在当前采购范围。"
+    },
+    {
+      "file_name": "vendor-b-spec.pdf",
+      "page": 2,
+      "sheet": null,
+      "cell": null,
+      "text": "存储容量 512 GB"
+    },
+    {
+      "file_name": "vendor-b-spec.pdf",
+      "page": 2,
+      "sheet": null,
+      "cell": null,
+      "text": "含税单价 6800 CNY/台"
+    }
+  ],
+  "limits": [
+    "partial runs retain all planned positions and score zero status matches",
+    "new content uses the existing layout generator and is not independent layout generalization",
+    "zero observed dangerous meets and citation errors describe only the measured samples",
+    "visible answer means server-rendered answer text in this HTTP protocol; browser evidence is separate",
+    "no production capacity, independent accuracy, restoration, or billing claim"
+  ],
+  "local_evidence_hashes": {
+    "persisted-diagnostics-01.json": "856edfec71b3602541443236ef448d85c81c4dfa4d9e7c86c60ab355730a465f",
+    "coverage-diagnostics-01.json": "b2923e8b83afc2c426b44504ac19a218d4dbcb4e92962a9fb19f0cbc7fcbd60d",
+    "d03-source-scope-01.json": "f9d26914ee3b7d7f1cd6091dd9706a952618025a28ecc680e23a9a2f0eb6f263",
+    "preservation-final-01.json": "d40c98644c6027fa8b17c01440a1632aba83082580d77adffeaa031fbd5e2038"
+  }
+}
