@@ -87,9 +87,51 @@ test('document answer displays concise text with source links and keeps internal
   expect(wrapper.text()).toContain(answer)
   expect(wrapper.text()).not.toContain(evidenceId)
   const source = wrapper.get('.chat-citations button')
-  expect(source.text()).toBe('供应商C-苹果报价.xlsx · 报价!B8 ↗')
+  expect(source.text()).toBe('[1] 供应商C-苹果报价.xlsx · 报价!B8 ↗')
   await source.trigger('click')
   expect(wrapper.emitted('openEvidence')).toEqual([[{ caseId: 'case-a', snapshotId: 'snap-1', evidenceId }]])
+})
+
+test('formal answer separates verified sources from conclusions without changing its original text', async () => {
+  const id = 'a'.repeat(64)
+  const conclusion = '本次已确认并启用的指标审查完成；未确认或停用项未参与本次审查。\n供应商A · 苹果 · 数量：满足。'
+  const answer = `${conclusion}\n核验来源：\n来源 [${id}]：苹果报价.xlsx · 报价!B4\n原文：20箱`
+  apiRequest.mockImplementation((path: string) => {
+    if (path.includes('/conversations?')) return Promise.resolve({ conversations: [{ id: 'conv-a', created_at: '' }], next_offset: null })
+    if (path.includes('/messages?')) return Promise.resolve({ messages: [{ id: 'message-a', role: 'user', content: '完整审查', run_id: 'run-a' }], next_offset: null })
+    if (path === '/agent-runs/run-a') return Promise.resolve({ id: 'run-a', conversation_id: 'conv-a', status: 'completed', workflow: 'assistant', revision: 0 })
+    if (path.endsWith('/assistant-result')) return Promise.resolve({ run_id: 'run-a', case_id: 'case-a', snapshot_id: 'snap-1', revision: 0, is_current: true,
+      result: { kind: 'review', answer, citations: [], candidate: null } })
+    if (path.endsWith('/export?format=json')) return Promise.resolve({ result: { run_id: 'run-a', case_id: 'case-a', snapshot_id: 'snap-1', revision: 0 },
+      sources: [{ evidence_id: id, document_name: '苹果报价.xlsx', page: null, sheet: '报价', cell: 'B4', source_text: '20箱' }] })
+    return reads(path)
+  })
+  const wrapper = setup(); await flushPromises()
+  expect(wrapper.get('.answer-text').text()).toBe(conclusion)
+  expect(wrapper.get('.answer-original p').text()).toBe(answer)
+  expect((wrapper.get('.answer-original').element as HTMLDetailsElement).open).toBe(false)
+  const source = wrapper.get('.chat-citations button')
+  expect(source.text()).toBe('[1] 苹果报价.xlsx · 报价!B4 ↗')
+  await source.trigger('click')
+  expect(wrapper.emitted('openEvidence')).toEqual([[{ caseId: 'case-a', snapshotId: 'snap-1', evidenceId: id }]])
+})
+
+test('a review export from a different snapshot cannot replace the displayed answer or supply links', async () => {
+  const answer = '本次已确认并启用的指标审查完成；未确认或停用项未参与本次审查。\n核验来源：\n来源 [' + 'b'.repeat(64) + ']：外部文件.pdf · 第 1 页\n原文：错误范围'
+  apiRequest.mockImplementation((path: string) => {
+    if (path.includes('/conversations?')) return Promise.resolve({ conversations: [{ id: 'conv-a', created_at: '' }], next_offset: null })
+    if (path.includes('/messages?')) return Promise.resolve({ messages: [{ id: 'message-a', role: 'user', content: '审查', run_id: 'run-a' }], next_offset: null })
+    if (path === '/agent-runs/run-a') return Promise.resolve({ id: 'run-a', conversation_id: 'conv-a', status: 'completed', workflow: 'assistant', revision: 0 })
+    if (path.endsWith('/assistant-result')) return Promise.resolve({ run_id: 'run-a', case_id: 'case-a', snapshot_id: 'snap-1', revision: 0, is_current: true,
+      result: { kind: 'review', answer, citations: [], candidate: null } })
+    if (path.endsWith('/export?format=json')) return Promise.resolve({ result: { run_id: 'run-a', case_id: 'case-a', snapshot_id: 'other', revision: 0 },
+      sources: [{ evidence_id: 'b'.repeat(64), document_name: '外部文件.pdf', page: 1, source_text: '错误范围' }] })
+    return reads(path)
+  })
+  const wrapper = setup(); await flushPromises()
+  expect(wrapper.get('.answer-text').text()).toBe(answer)
+  expect(wrapper.find('.chat-citations button').exists()).toBe(false)
+  expect(wrapper.text()).toContain('来源暂时无法读取')
 })
 
 test('external busy state disables input while keeping write permission and draft', async () => {

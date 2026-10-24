@@ -10,6 +10,7 @@ import type { ChecklistTarget } from '../checklistCandidate'
 import { accessToken } from '../auth'
 import ChatComposer from './ChatComposer.vue'
 import ContextUsage from './ContextUsage.vue'
+import AssistantAnswer from './AssistantAnswer.vue'
 const props = defineProps<{ caseId: string | null; scopeKey?: string; revision: number; canWrite: boolean; prepareCase: () => Promise<string | null>;
   busy?: boolean;
   checklistChanges?: Record<string, number>;
@@ -541,11 +542,12 @@ onUnmounted(() => { disposed = true; ++generation; if (timer) clearTimeout(timer
           </article>
           <article v-if="message.run_id && lastMessageFor(message.run_id) === message.id" class="chat-message assistant">
             <span class="message-author"><span class="mini-symbol" aria-hidden="true">✳</span> DocuCheck</span>
-            <p v-if="answer(message)">{{ answer(message) }}</p>
+            <AssistantAnswer v-if="answer(message)" :key="message.run_id" :answer="answer(message)"
+              :kind="results[message.run_id]?.result?.kind" :citations="results[message.run_id]?.result?.citations"
+              :case-id="caseId" :snapshot-id="results[message.run_id]?.snapshot_id ?? null" :run-id="message.run_id"
+              :revision="results[message.run_id]?.revision ?? runs[message.run_id]?.revision ?? revision"
+              @cite="cite(message, $event)" @source-error="fail" />
             <p v-if="resultErrors[message.run_id]" class="state-note" role="alert">{{ resultErrors[message.run_id] }}</p>
-            <div v-if="results[message.run_id]?.result?.citations?.length" class="chat-citations">
-              <button v-for="citation in results[message.run_id]?.result?.citations" :key="citation.evidence_id" @click="cite(message, citation.evidence_id)">{{ citation.file_name }} · {{ citation.location }} ↗</button>
-            </div>
             <div v-if="candidateOf(message)" class="candidate-card">
               <p class="candidate-title">{{ candidateLabels[stateOf(message)] }} · {{ candidateOf(message)!.items.length }} 个品目 / {{ candidateOf(message)!.criteria.length }} 项指标</p>
               <p class="candidate-note">{{ candidateNote(message) }}</p>
