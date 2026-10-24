@@ -20,6 +20,7 @@ from backend.tests.test_material_agent import (
 
 V11 = "dynamic-rules-v11"
 V12 = "dynamic-rules-v12"
+V13 = "dynamic-rules-v13"
 V11_EXTRACTION_PROMPT_SHA256 = "0f04dc2a8a32fa362460e35b10045b3bad757581014966505864eff29ebd471d"
 BODY_NOTICE = "材料正文尚未确认，不能仅凭声明判为已提供。"
 
@@ -108,7 +109,8 @@ def test_v11_cache_identity_cannot_reuse_success_for_v12_and_current_cache_keeps
 
 
 @pytest.mark.parametrize("needs_review", [False, True])
-def test_v11_report_readback_or_manual_carry_recalculates_positive_fact_in_v12(needs_review):
+@pytest.mark.parametrize("version", [V12, V13])
+def test_v11_report_readback_or_manual_carry_recalculates_positive_fact_in_newer_version(needs_review, version):
     sample = material_sample()
     raw = material_candidate(sample[1])
     old = run_version(sample, MaterialProvider([raw]), V11)["payload"]
@@ -116,9 +118,9 @@ def test_v11_report_readback_or_manual_carry_recalculates_positive_fact_in_v12(n
     if needs_review:
         old["needs_review"] = True
     provider = MaterialProvider([] if needs_review else [raw], decision="get_checklist")
-    current = run(sample, provider, previous_payload=deepcopy(old))
+    current = run_version(sample, provider, version, previous_payload=deepcopy(old))
     assert_unverified(current)
-    assert current["payload"]["rule_version"] == V12
+    assert current["payload"]["rule_version"] == version
     fact = current["payload"]["facts"][0]
     assert fact["value"] is True and fact["material_sources"] == raw["material_sources"]
     assert fact == old["facts"][0]

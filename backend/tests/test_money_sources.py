@@ -129,7 +129,7 @@ def test_v12_fact_check_and_batch_identities_match_pre_change_source():
 
 
 def independent(*, supplier="A", item_id="sample", sheet="报价", split_entry=False,
-                pdf=False, whole=False, classification="category"):
+                pdf=False, whole=False, classification="category", second_text="税费口径：含税"):
     """A tax statement in a separately confirmed document/range is never guessed."""
     definition = ChecklistDefinition.model_validate({
         "items": [{"item_id": "sample", "name": "样品"}, {"item_id": "other", "name": "其他商品"}],
@@ -138,7 +138,7 @@ def independent(*, supplier="A", item_id="sample", sheet="报价", split_entry=F
     documents, requests = [], []
     for doc_id, owner, anchor, text, position in [
             ("main", "A", "样品", "不含税单价25元/箱", "A6"),
-            ("tax", supplier, "样品" if item_id == "sample" else "其他商品", "税费口径：含税", "A8")]:
+            ("tax", supplier, "样品" if item_id == "sample" else "其他商品", second_text, "A8")]:
         blocks = (EvidenceBlock("anchor", doc_id, anchor, **({"page_idx": 0} if pdf else {"sheet": sheet, "cell": "A1"})),
                   EvidenceBlock("body", doc_id, text, **({"page_idx": 1} if pdf else {"sheet": sheet, "cell": position})))
         documents.append(Document(doc_id, ("a" if doc_id == "main" else "b") * 64, "quote", owner, None,
@@ -197,6 +197,29 @@ def test_other_supplier_or_item_tax_cannot_be_inherited(options):
     built, body = independent(**options)
     fact = verify(built, body, V13)
     assert fact["tax_sources"] == []
+    assert checks(built, [fact], V13)[0]["business_status"] == "满足"
+
+
+@pytest.mark.parametrize("split_entry", [False, True])
+def test_unselected_price_in_another_confirmed_entry_requires_manual(split_entry):
+    built, body = independent(split_entry=split_entry, second_text="单价30元/箱")
+    fact = verify(built, body, V13)
+    result = checks(built, [fact], V13)[0]
+    assert (result["business_status"], result["reason_code"]) == ("待人工确认", "money_price_scope_unclear")
+    other = next(block for block in built[1].blocks if block.text == "单价30元/箱")
+    source = fact["price_sources"][0]
+    assert source["evidence_refs"] == [other.evidence_id]
+    assert source["quote"] == "单价30元/箱"
+    assert source["item_binding_entry_digest"] != fact["item_binding_entry_digest"]
+    assert other.evidence_id in result["evidence_refs"]
+    assert revalidate_fact(fact, built[0], built[1], "A", rule_version=V13, item_bindings=built[2]) == fact
+
+
+@pytest.mark.parametrize("options", [{"supplier": "B"}, {"item_id": "other"}])
+def test_other_supplier_or_item_price_cannot_be_inherited(options):
+    built, body = independent(**options, second_text="单价30元/箱")
+    fact = verify(built, body, V13)
+    assert fact["price_sources"] == [] and fact["price_scope_state"] == "resolved"
     assert checks(built, [fact], V13)[0]["business_status"] == "满足"
 
 

@@ -10,6 +10,7 @@ from backend.app.criteria.facts import BINDING_RULE_VERSION
 from backend.tests.test_bound_enum_headers import source
 from backend.tests.test_dynamic_agent import call
 from backend.tests.test_material_agent import MaterialProvider
+from backend.tests.test_money_sources import independent
 
 
 def money_sample(*, price="25", tax="含税", label="不含税单价"):
@@ -140,3 +141,21 @@ def test_unrecognized_tax_qualifications_remain_visible_and_block_automatic_pass
     assert result["status"] == "completed", result
     assert result["payload"]["checks"][0]["business_status"] == "待人工确认"
     assert result["payload"]["facts"][0]["tax_sources"][0]["quote"] == note
+
+
+@pytest.mark.parametrize("split_entry", [False, True])
+def test_formal_and_cached_review_keep_unselected_price_from_other_entry(split_entry):
+    sample, candidate = independent(split_entry=split_entry, second_text="单价30元/箱")
+    cache = {}
+    result = run_money(sample, MaterialProvider([candidate]), cache_save=lambda key, fingerprint, raw:
+                       cache.update({(key, fingerprint): deepcopy(raw)}))
+    assert result["status"] == "completed", result
+    check = result["payload"]["checks"][0]
+    assert (check["business_status"], check["reason_code"]) == ("待人工确认", "money_price_scope_unclear")
+    assert "多个单价" in result["answer"]
+    other = next(block for block in sample[1].blocks if block.text == "单价30元/箱")
+    assert other.evidence_id in check["evidence_refs"]
+    cached = run_money(sample, MaterialProvider([], failure=AssertionError("cache must be reused")),
+                       cache_load=lambda key, fingerprint: cache.get((key, fingerprint)))
+    assert cached["status"] == "completed", cached
+    assert cached["payload"]["facts"] == result["payload"]["facts"]

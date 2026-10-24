@@ -348,6 +348,8 @@ def render_review(checks: list[dict], *, complete: bool, needs_review: bool = Fa
             lines[-1] += "单价与税口径说明存在冲突，请核实两处原文。"
         elif check.get("reason_code") == "money_tax_scope_unclear":
             lines[-1] += "税口径说明与本条单价的对应关系尚不明确，请人工核实。"
+        elif check.get("reason_code") == "money_price_scope_unclear":
+            lines[-1] += "单价适用范围尚不明确，可能存在多个单价，请核实各处原文。"
     if repo is not None:
         refs = [*(source_refs or []), *(ref for check in checks for ref in
                                      [*check.get("evidence_refs", []), *check.get("reason_evidence_refs", [])])]
