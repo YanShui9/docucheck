@@ -1,6 +1,6 @@
 # 架构与设计取舍
 
-更新日期：2026-10-15。本文介绍当前源码的设计；各功能是否已经应用到本地服务、经过真实模型验收，以[评估说明](evaluation.md)及阶段记录为准。当前已冻结新功能，修复后的源码门禁与未通过的业务质量出口分别记录在[收尾计划](superpowers/plans/2026-10-13-project-consolidation.md)，设计目标不等于全部故障边界已通过。
+更新日期：2026-10-24。本文介绍采购文档审查系统的核心设计与实现取舍。最近冻结源码、服务应用和指定业务验证见[v14 交付记录](money-tax-live-2026-10-24.md)与[数量复审记录](quantity-condition-live-2026-10-24.md)；跨版本质量测量见[评估说明](evaluation.md)。
 
 ## 一分钟理解项目
 
@@ -47,13 +47,14 @@ LangChain 提供模型、消息与工具契约，LangGraph 管理审查状态流
 | --- | --- | --- |
 | 原始会话 | MySQL 保存真实消息与不可变答复阶段 | 裁剪模型窗口不删除原消息 |
 | 近期上下文 | 有界完整问答对，按剩余预算选择 | 不无限堆叠聊天记录 |
-| 较旧摘录 | 确定性结构摘录，保留消息 / 阶段来源，必要时分页回读 | 不是模型生成的语义长期记忆，也不成为采购证据 |
+| 较旧讨论 | 滚动语义摘要与确定性结构摘录，保留原消息位置；原始消息可按权限、任务和截止范围回读 | 摘要不能确认规则、报价事实或正式结论；失败保留旧摘要，未知请求不盲目重发 |
+| 跨对话交接 | 同一采购任务内选择有界历史交接，必要时读取白名单原消息；最早采购原话由服务端定位并展示出处 | 旧待办不自动执行，旧规则和事实须重读当前权威对象 |
 | 任务状态 | 焦点、待澄清和已验证事实 / 结果句柄，绑定任务、快照与来源 Run | 跨版本、失权或来源无效时拒绝复用 |
 | 账号偏好 | 用户明确保存的语言、长度和格式，可删除及到期 | 不能写入采购阈值、供应商事实或任意系统提示词 |
 
 完整清单保留在服务端。模型先读取有限目录，编辑时只装配目标指标与必要工具；未修改项由服务端合并保留。工具观察分页和替换，按阶段审计输入上界及省略内容。纯日期问题按需读取宿主时间，不在每轮注入日期。
 
-输入上界估算与 Provider 的真实 token usage 分开。必要问题、单位和条件不能为适配预算而静默截掉；必要内容仍放不下时明确停止或请求缩小范围。
+输入上界估算与 Provider 的真实 token usage 分开。按配置模型窗口减去本次输出和安全余量；累计用量默认统计，显式配置额度后才作为累计硬限。正式审查按完整请求及修复预留最多三次拆分为四个子请求，全部验证后才完成父批次和缓存。必要问题、单位和条件不静默截断；仍放不下时明确停止。前端显示当前 attempt 的最近请求估算、实际用量和记忆选用状态。实现与测试见[容量管理](context-capacity-A2a-2026-10-21.md)、[拆批](context-batching-A2b-2026-10-22.md)、[语义摘要](semantic-memory-B1-2026-10-22.md)、[任务交接](task-handoff-B2-2026-10-22.md)和[用量入口](context-usage-C-2026-10-23.md)。
 
 ## 5. 异步执行与失败恢复
 
@@ -90,7 +91,7 @@ Redis 不是任务状态真值。重复投递可以发生，但过期 attempt �
 | 动态业务契约 | Pydantic、Decimal、确定性规则 | [指标](../backend/app/criteria/models.py)、[事实与核验](../backend/app/criteria/facts.py) |
 | 数据与任务 | MySQL、SQLAlchemy、Alembic、Redis、Celery | [运行存储](../backend/app/db/run_repository.py)、[Outbox](../backend/app/db/outbox_dispatcher.py) |
 | RAG / 索引 | BM25Plus、Ollama BGE-M3、Milvus、RRF | [融合检索](../backend/app/evidence/hybrid.py)、[持久化检索](../backend/app/db/persisted_retrieval.py) |
-| 上下文 / 记忆 | 有界视图、版本化任务状态、SQL 摘录与偏好 | [助手上下文](../backend/app/agent/assistant_context.py)、[记忆存储](../backend/app/db/memory_repository.py) |
+| 上下文 / 记忆 | 有界视图、滚动摘要、版本化任务交接与偏好 | [助手上下文](../backend/app/agent/assistant_context.py)、[语义摘要](../backend/app/db/semantic_memory_repository.py)、[任务交接](../backend/app/db/task_handoff_repository.py) |
 | 前端 | Vue 3、TypeScript、Vite、PDF.js、Vitest | [聊天工作区](../frontend/src/components/ChatWorkspace.vue)、[报告](../frontend/src/components/ReviewPanel.vue) |
 
 模型配置可替换，但工具调用与结构化输出契约须重新验证。演示使用过 DeepSeek；`standard/thorough` 是应用预算和审查模式，不等同于模型内部思考开关，系统不记录或展示私有思维链。
