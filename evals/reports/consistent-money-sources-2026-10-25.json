@@ -1,0 +1,170 @@
+{
+  "schema_version": 1,
+  "recorded_on": "2026-10-25",
+  "backend_commit": "1d4e1070400dfad3dc9c8ddb193ebf70fdc6d6e8",
+  "frontend_commit": "e1fb25c9c04f0776835b88153bb988966351cd57",
+  "rule_version": "dynamic-rules-v15",
+  "scope": "bounded deterministic consistent-price support; live extraction acceptance incomplete",
+  "offline": {
+    "passed": 2655,
+    "skipped": 62,
+    "failed": 0,
+    "network_attempts": 0
+  },
+  "frozen_files": 773,
+  "source_unchanged": true,
+  "targeted_tests": 255,
+  "live_acceptance_passed": false,
+  "live_results": {
+    "same": {
+      "run_id": "cc20509320a442ceae13645779975ff6",
+      "case_id": "624f625a08c74134bb934b7d43f8fdef",
+      "status": "partial",
+      "business_status": null,
+      "is_formal": false,
+      "reason_code": "coverage_incomplete",
+      "candidate_rejection_codes": {
+        "evidence_relationship": 1
+      },
+      "sources": 0,
+      "planned_expectation_met": false,
+      "source_documents": [],
+      "json_xlsx_sources_match": true,
+      "xlsx_sha256": "7248d958d2a82723ac900ef0551877bf08b9c87bff1575733aa719b31265ddb6"
+    },
+    "different": {
+      "run_id": "db150f912d19450abcd6adc5892d4149",
+      "case_id": "284c9bc8d1c34ff8bcb4cd4ba0fcf903",
+      "status": "partial",
+      "business_status": null,
+      "is_formal": false,
+      "reason_code": "coverage_incomplete",
+      "candidate_rejection_codes": {
+        "evidence_relationship": 2
+      },
+      "sources": 0,
+      "planned_expectation_met": false,
+      "source_documents": [],
+      "json_xlsx_sources_match": true,
+      "xlsx_sha256": "5f8e4eaa48b0e32b2f530fc544e0304ef11107dc529de75d52d7509d527bb799"
+    },
+    "original_d01": {
+      "run_id": "ec6c58793f47493e87ef022998d21983",
+      "case_id": "1ad7612ef536423fb81133efa645305b",
+      "status": "completed",
+      "price_business_status": "待人工确认",
+      "reason_code": "money_price_scope_unclear",
+      "scope": "original bindings and criteria unchanged; unknown source prose remains manual"
+    }
+  },
+  "readonly_rule_probe": {
+    "at_utc": "2026-10-25T01:03:06.419464+00:00",
+    "passed": true,
+    "kind": "read_only_rule_probe",
+    "source_commit": "1d4e1070400dfad3dc9c8ddb193ebf70fdc6d6e8",
+    "model_calls": 0,
+    "database_mutations": 0,
+    "hypothetical_coverage_for_rule_only": true,
+    "formal_live_acceptance": false,
+    "results": {
+      "same": {
+        "source_run_id": "cc20509320a442ceae13645779975ff6",
+        "actual_run_status": "partial",
+        "candidate_origin": "explicit source-derived probe; not model output",
+        "versions": {
+          "dynamic-rules-v14": {
+            "business_status": "待人工确认",
+            "reason_code": "money_price_scope_unclear",
+            "price_scope_state": "unclear",
+            "tax_scope_state": "unclear"
+          },
+          "dynamic-rules-v15": {
+            "business_status": "满足",
+            "reason_code": "threshold_met",
+            "price_scope_state": "resolved",
+            "tax_scope_state": "resolved"
+          }
+        }
+      },
+      "different": {
+        "source_run_id": "db150f912d19450abcd6adc5892d4149",
+        "actual_run_status": "partial",
+        "candidate_origin": "explicit source-derived probe; not model output",
+        "versions": {
+          "dynamic-rules-v14": {
+            "business_status": "待人工确认",
+            "reason_code": "money_price_scope_unclear",
+            "price_scope_state": "unclear",
+            "tax_scope_state": "unclear"
+          },
+          "dynamic-rules-v15": {
+            "business_status": "待人工确认",
+            "reason_code": "money_price_scope_unclear",
+            "price_scope_state": "unclear",
+            "tax_scope_state": "unclear"
+          }
+        }
+      }
+    }
+  },
+  "known_live_rejection": "evidence_relationship; rejected candidate details not persisted; exact shape unconfirmed",
+  "usage": {
+    "requests": 8,
+    "input_tokens": 26644,
+    "output_tokens": 2419,
+    "unknown_usage": 0
+  },
+  "semantic_repairs": 1,
+  "manual_model_retries": 0,
+  "warning_anchor": 103,
+  "warning_round_persisted_known": 51,
+  "global_complete_model_total": null,
+  "embedding_independently_metered": false,
+  "originals_preserved": 730,
+  "new_originals": 6,
+  "old_immutable_rows_preserved": {
+    "checklist_heads": 55,
+    "checklist_versions": 62,
+    "item_binding_heads": 49,
+    "item_binding_versions": 53,
+    "document_versions": 1625,
+    "evidence_blocks": 8261,
+    "input_snapshots": 641,
+    "dynamic_runs": 62,
+    "dynamic_batches": 97,
+    "run_events": 2847,
+    "run_attempts": 297
+  },
+  "main_head_and_six_wip_preserved": true,
+  "original_18_pack_scores_replaced": false,
+  "independent_sealed_packs": 0,
+  "native_browser_download_tested": false,
+  "restore_tested": false,
+  "ui_acceptance": "not rerun; browser login expired and user login pending",
+  "evidence_sha256": {
+    "offline-v15-01.json": "1b28d7f22eb59edc176e112a734acaf548d7757233508838072196e17e8db42e",
+    "source-after-v15-01.json": "0ba7aa34eaecab4b58fef47aee75c8cb0c6c56b06eb0077320e36798f424d09d",
+    "review-final-20261025-02.json": "4909237585c861e0f4a303af313a049842e84507eaabf423ab9da6b545e6fe21",
+    "live-acceptance-01.json": "28a2756cd4498ae5117cff5280ad622153ef769ce8a2736a86eae3c1bbd4dddb",
+    "live-model-ledger-01.json": "b6353912220bd89b127243ad509383f661f2c7242cf0b91c15d744357330a1cc",
+    "readonly-rule-probe-01.json": "ecd2048163b1dc42f8b79cef334a86af3160787a2a4398564075f8f6762dbe01",
+    "input-layout-repair-01.json": "2abd8f216ae635c5498d820e876611b1beb719f6b6800267078cd74be0f0ce2f",
+    "d01-exports-verified-01.json": "964f68da32a7dee646b71072847ed429265465f32fc5a15773204684f94ee49c"
+  },
+  "d01_export_verification": {
+    "latest": {
+      "checks": 6,
+      "sources": 17,
+      "xlsx_sha256": "c515d58c1a00da86943af590e2ee69aab59fead4639ea76cf09ea9369e8248d5"
+    },
+    "historical_v14": {
+      "checks": 6,
+      "sources": 19,
+      "xlsx_sha256": "ded31bb1deb633ba1fcb649b44db705e76f79c6289ac312cf7783112571e474b"
+    },
+    "passed": true,
+    "model_calls": 0,
+    "business_mutations": 0,
+    "historical_rule_version_unchanged": true
+  }
+}
