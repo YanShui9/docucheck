@@ -4,12 +4,14 @@
 
 两个历史 partial 只保留了 evidence_relationship。对同一冻结输入的两次单次抽取诊断均产生合法独立报价引用，未复现历史候选；新增2次请求、未知0，无业务写入。不得据此推断旧失败根因或宣布正式验收成功。
 
-- [ ] 在 `backend/tests/test_source_relationship_diagnostics.py` 添加结构分类、合法引用、Agent聚合、受限修复反馈、脱敏与预算反例；先确认红测。
-- [ ] 在 `backend/app/criteria/validation.py` 用保持原字符串错误码的 ValueError 子类携带有限结构原因，原接受/拒绝规则不变。
-- [ ] 在 `backend/app/agent/dynamic.py` 聚合初次及最终拒绝原因，仅向现有符合条件的修复反馈添加原因；候选与原文不写公开事件。
-- [ ] 在 `backend/app/agent/diagnostics.py` 白名单保存有限原因与整数计数，拒绝任意键、内容与非整数。
-- [ ] 相关检查、复审、冻结全量离线；主区六WIP与既有原件保持。
-- [ ] 固定源码提交后部署核验；针对原同价/不同价任务各一次新正式审查，记录实际结果、失败和独立诊断用量。登录页面验收保持待用户登录。
-- [ ] 更新交付与机器摘要、本地提交和GitHub同步，核对精确提交CI；不重算旧18包成绩。
+- [x] 在 `backend/tests/test_source_relationship_diagnostics.py` 添加结构分类、合法引用、Agent聚合、受限修复反馈、脱敏与预算反例；先确认红测。
+- [x] 在 `backend/app/criteria/validation.py` 用保持原字符串错误码的 ValueError 子类携带有限结构原因，原接受/拒绝规则不变。
+- [x] 在 `backend/app/agent/dynamic.py` 聚合初次及最终拒绝原因，仅向现有符合条件的修复反馈添加原因；候选与原文不写公开事件。
+- [x] 在 `backend/app/agent/diagnostics.py` 白名单保存有限原因与整数计数，拒绝任意键、内容与非整数。
+- [x] 相关检查、复审、冻结全量离线；主区六WIP与既有原件保持。
+- [x] 固定源码提交后部署核验；针对原同价/不同价任务各一次新正式审查，记录实际结果、失败和独立诊断用量。登录页面验收保持待用户登录。
+- [x] 更新交付与机器摘要、本地提交和GitHub同步，核对精确提交CI；不重算旧18包成绩。
 
 验收边界：可验证诊断分类与现有修复反馈改善；若真实新审查仍partial，按实际原因保留，不放宽守卫或循环重试。旧候选缺失不可补造。离Run诊断2次须计入预警轮，不能只统计数据库事件。
+
+执行收据：具体结果与边界见[交付记录](../../source-relationship-diagnostics-2026-10-25.md)。旧非法候选未保存，无法定因；本轮新Run记录2个different_row拒绝及一次既有受限修复，不等于历史定因。最终文档提交后的GitHub同步与精确CI终态单独在本机final-receipt-01.json核对。

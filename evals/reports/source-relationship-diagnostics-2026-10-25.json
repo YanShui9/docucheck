@@ -1,0 +1,177 @@
+{
+  "schema_version": 1,
+  "recorded_on": "2026-10-25",
+  "backend_commit": "2b6dd57671c4e32162c4f4668a7378ad7db207be",
+  "frontend_commit": "e1fb25c9c04f0776835b88153bb988966351cd57",
+  "rule_version": "dynamic-rules-v15",
+  "scope": "finite relationship diagnostics and existing bounded repair feedback; two specified formal service reruns",
+  "offline": {
+    "passed": 2673,
+    "skipped": 62,
+    "failed": 0
+  },
+  "offline_network_attempts": 0,
+  "source_unchanged": true,
+  "frozen_files": 777,
+  "targeted_tests": 138,
+  "diagnostic_test_cases": 18,
+  "review": {
+    "reviewer": "/root/relationship_diagnostics_review",
+    "final_p1_p2_findings": [],
+    "closed_p2": "Public reason counts absent if existing semantic repair stops on model_budget or unknown connection_error. Failed tool event now retains observed counts without inventing a final result.",
+    "reviewer_tests": {
+      "passed": 57,
+      "offline_network_attempts": 0
+    },
+    "source_span_differential_inputs": 20000,
+    "acceptance_text_order_and_error_strings_unchanged": true,
+    "additional_interrupted_later_part_probe": "One failed event, prior reason counts retained, two extraction calls, zero cache writes.",
+    "read_only_review": true,
+    "real_model_requests": 0,
+    "historical_candidate_root_cause_known": false
+  },
+  "source_acceptance_semantics_changed": false,
+  "repair_eligibility_expanded": false,
+  "live_acceptance_passed": true,
+  "live_results": {
+    "same": {
+      "case_id": "624f625a08c74134bb934b7d43f8fdef",
+      "original_run": "cc20509320a442ceae13645779975ff6",
+      "run_id": "c7f69f13144d456da9eaa891a21bc452",
+      "status": "completed",
+      "business_status": "满足",
+      "reason_code": "threshold_met",
+      "is_formal": true,
+      "planned_expectation_met": true,
+      "fact_count": 2,
+      "sources": 2,
+      "source_documents": [
+        "quote.xlsx",
+        "spec.xlsx"
+      ],
+      "tool_diagnostics": [
+        {
+          "tool": "review_checklist",
+          "error": "other",
+          "status": "completed",
+          "ordinal": 0,
+          "sequence": 4,
+          "request_parts": 1,
+          "rejected_count": 0,
+          "completed_parts": 1,
+          "rejection_codes": {},
+          "context_repack_count": 0,
+          "relationship_details": {},
+          "initial_rejection_codes": {
+            "evidence_relationship": 2
+          },
+          "initial_relationship_details": {
+            "different_row": 2
+          }
+        }
+      ],
+      "json_xlsx_persisted_match": true,
+      "criteria_binding_snapshot_unchanged": true,
+      "historical_readback_unchanged": true,
+      "xlsx_sha256": "b7d5278fbe526657956d1817bf0652937df5ac7b95e5fab05d6fe498c0fa4de5"
+    },
+    "different": {
+      "case_id": "284c9bc8d1c34ff8bcb4cd4ba0fcf903",
+      "original_run": "db150f912d19450abcd6adc5892d4149",
+      "run_id": "3ab918c61b4b4a7bae036b1babbca8bb",
+      "status": "completed",
+      "business_status": "待人工确认",
+      "reason_code": "money_price_scope_unclear",
+      "is_formal": true,
+      "planned_expectation_met": true,
+      "fact_count": 2,
+      "sources": 2,
+      "source_documents": [
+        "quote.xlsx",
+        "spec.xlsx"
+      ],
+      "tool_diagnostics": [
+        {
+          "tool": "review_checklist",
+          "error": "other",
+          "status": "completed",
+          "ordinal": 0,
+          "sequence": 3,
+          "request_parts": 1,
+          "rejected_count": 0,
+          "completed_parts": 1,
+          "rejection_codes": {},
+          "context_repack_count": 0,
+          "relationship_details": {},
+          "initial_rejection_codes": {},
+          "initial_relationship_details": {}
+        }
+      ],
+      "json_xlsx_persisted_match": true,
+      "criteria_binding_snapshot_unchanged": true,
+      "historical_readback_unchanged": true,
+      "xlsx_sha256": "e5915f6e517d854470e6bbfd6473208ca5fe79d588384dc09a893b94b0a57620"
+    }
+  },
+  "diagnostic_probes": {
+    "requests": 2,
+    "formal_runs": false,
+    "business_mutations": 0,
+    "historical_rejection_reproduced": false
+  },
+  "historical_candidate_root_cause_known": false,
+  "usage": {
+    "requests": 7,
+    "input_tokens": 22628,
+    "output_tokens": 1568,
+    "unknown_usage": 0
+  },
+  "formal_usage": {
+    "requests": 5,
+    "input_tokens": 15097,
+    "output_tokens": 968,
+    "unknown_usage": 0
+  },
+  "offrun_diagnostic_usage": {
+    "requests": 2,
+    "input_tokens": 7531,
+    "output_tokens": 600,
+    "unknown_usage": 0
+  },
+  "warning_anchor": 103,
+  "warning_round_known_including_offrun": 58,
+  "global_complete_model_total": null,
+  "embedding_independently_metered": false,
+  "manual_model_retries": 0,
+  "originals_preserved": 736,
+  "old_immutable_rows_preserved": {
+    "cases": 179,
+    "checklist_heads": 57,
+    "checklist_versions": 64,
+    "item_binding_heads": 51,
+    "item_binding_versions": 55,
+    "document_versions": 1637,
+    "evidence_blocks": 8273,
+    "input_snapshots": 647,
+    "dynamic_runs": 65,
+    "dynamic_batches": 99,
+    "agent_runs": 264,
+    "run_events": 2868,
+    "run_attempts": 300
+  },
+  "main_head_and_six_wip_preserved": true,
+  "original_18_pack_scores_replaced": false,
+  "protected_browser_ui_verified": false,
+  "native_browser_download_tested": false,
+  "restore_tested": false,
+  "independent_quality_verified": false,
+  "evidence_sha256": {
+    "offline-relationship-02.json": "a3e86cb8ae0003e654d75c56fd95aec2b81353387e371b15ea110ab0572180f0",
+    "source-after-relationship-02.json": "03c5650776103391c7ee6af5be771000cd18846309ce92fc18d49fbf3b8e574a",
+    "review-final-01.json": "50bf11197c9142cff9b77ae4bf284cf77778b72964d1bcc5d54cf3403465f1f5",
+    "live-acceptance-01.json": "4635a8567be80cd9b83e028cd19a625d9f95ac7b281c664f53d7b05e16cba6a4",
+    "live-model-ledger-01.json": "ea01bb9c8fbb5921b9baca67a3f7b6aedb3dd75dbf6a9d564adeb39176893832",
+    "probe-original-01.json": "38404972075d7456d25bf0160c2e5a6d208cc03db845f020de45a3a8a7010750",
+    "probe-original-02.json": "40d44325db3f850efbbe369ca4fa3f47ddcd97cf86bcdefbee6fa0e8583b90ba"
+  }
+}
