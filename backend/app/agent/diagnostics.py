@@ -2,6 +2,7 @@
 
 import re
 
+from ..criteria.validation import SOURCE_RELATIONSHIP_DETAILS
 from ..field_contract import FieldKey
 from ..providers.base import ProviderError
 from .context_usage import CONTEXT_PHASES, ESTIMATE_METHOD, safe_memory_counts
@@ -133,6 +134,10 @@ def safe_trace_events(events) -> list[dict]:
                 if isinstance(event.get(key), dict):
                     summary[key] = {code: event[key][code] for code in sorted(DYNAMIC_REJECTION_CODES)
                                     if code in event[key] and _integer(event[key][code])}
+            for key in ("initial_relationship_details", "relationship_details"):
+                if isinstance(event.get(key), dict):
+                    summary[key] = {detail: event[key][detail] for detail in sorted(SOURCE_RELATIONSHIP_DETAILS)
+                                    if detail in event[key] and _integer(event[key][detail])}
         else:
             summary["action"] = "submit_answer" if event.get("action") == "submit_answer" else "other"
             summary["reason"] = ("full_review_evaluated" if event.get("reason") == "full_review_evaluated"

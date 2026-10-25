@@ -39,6 +39,8 @@ from ..criteria.item_bindings import (
 )
 from ..criteria.models import ChecklistDefinition, Criterion
 from ..criteria.validation import (
+    SOURCE_RELATIONSHIP_DETAILS,
+    EvidenceRelationshipError,
     compact,
     rule_supported,
     source_span,
@@ -688,6 +690,8 @@ class DynamicAgent:
                             fields["material_sources"] = [{"evidence_refs": group["evidence_refs"]}
                                                           for group in fields["material_sources"]]
                         diagnostics.append({"candidate_index": index, "error_code": code, **fields})
+                        if isinstance(exc, EvidenceRelationshipError) and exc.relationship_detail in SOURCE_RELATIONSHIP_DETAILS:
+                            diagnostics[-1]["relationship_detail"] = exc.relationship_detail
             return validated, dict(rejections)
 
         def get_review_plan():
@@ -775,6 +779,9 @@ class DynamicAgent:
             diagnostics = []
             validated, rejections = checked_candidates(raw, batch, supplier, [c["criterion_id"] for c in data["criteria"]],
                                                        diagnostics=diagnostics)
+            initial_details = Counter(progress.get("initial_relationship_details", {}))
+            initial_details.update(d["relationship_detail"] for d in diagnostics if "relationship_detail" in d)
+            progress["initial_relationship_details"] = dict(initial_details)
             for fact in validated:
                 facts[fact["fact_id"]] = fact
             repairable = {"fact_criterion", "fact_value", "fact_unit", "fact_currency",
@@ -809,7 +816,9 @@ class DynamicAgent:
                 raw = model_call("extract", [messages[0], feedback, candidate_data, *messages[1:]], _facts_schema(supplier, material_sources=material_sources),
                                  lambda args, bound_supplier=supplier, material=material_sources: _bound_candidates(args, bound_supplier, material_sources=material),
                                  output_cap=output_cap, semantic_repair=True)
-                validated, rejections = checked_candidates(raw, batch, supplier, [c["criterion_id"] for c in data["criteria"]])
+                diagnostics = []
+                validated, rejections = checked_candidates(raw, batch, supplier, [c["criterion_id"] for c in data["criteria"]],
+                                                           diagnostics=diagnostics)
                 # Retain already verified conflicts, including in
                 # the cache. A correction cannot erase a source by
                 # keeping another fact for the same criterion.
@@ -825,6 +834,9 @@ class DynamicAgent:
                         rejections["candidate_invalid"] = 1
                 if not rejections:
                     raw = {"facts": [fact_candidate_data(f) for f in validated]}
+            final_details = Counter(progress.get("relationship_details", {}))
+            final_details.update(d["relationship_detail"] for d in diagnostics if "relationship_detail" in d)
+            progress["relationship_details"] = dict(final_details)
             return raw, validated, rejections
 
         def review():
@@ -912,7 +924,16 @@ class DynamicAgent:
                                         context_repack_count=len(parts) - 1)
                         combined, rejection_counts = {}, Counter()
                         for part in parts:
-                            raw, part_facts, part_rejections = extract_part(part["evidence"], part, supplier, progress)
+                            try:
+                                raw, part_facts, part_rejections = extract_part(part["evidence"], part, supplier, progress)
+                            except (RunStopped, ProviderError) as exc:
+                                # A failed repair has no final validation result.
+                                # Preserve only counts already observed before it stopped.
+                                event("tool", tool="review_checklist", status="failed", error=exc.code,
+                                      ordinal=ordinal, **{key: progress[key] for key in (
+                                          "initial_rejection_codes", "initial_relationship_details", "relationship_details",
+                                          "request_parts", "completed_parts", "context_repack_count") if key in progress})
+                                raise
                             for fact in part_facts:
                                 combined[fact["fact_id"]] = fact
                                 # A later failed child must not erase verified progress.
@@ -943,6 +964,8 @@ class DynamicAgent:
                           error="candidate_invalid" if rejected else None, rejected_count=rejected,
                           initial_rejection_codes=progress.get("initial_rejection_codes", {}),
                           rejection_codes=dict(rejections),
+                          initial_relationship_details=progress.get("initial_relationship_details", {}),
+                          relationship_details=progress.get("relationship_details", {}),
                           **{key: progress[key] for key in ("request_parts", "completed_parts", "context_repack_count")
                              if key in progress})
                     if self.cache_save and not cached and not rejected:

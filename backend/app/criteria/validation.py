@@ -13,6 +13,18 @@ COMPLEX = re.compile(r"(?:大约|约)\s*-?\d|左右|可选|任选|选配|可升�
                      r"可能|计划|预计|拟提供|拟提交|拟交付|拟交货|不完整|部分|混纺|混合|"
                      r"无需|不要求|无要求|不作要求|不适用|仅供|示例|参考|建议|"
                      r"depending|optional|approximately|another model", re.IGNORECASE)
+SOURCE_RELATIONSHIP_DETAILS = frozenset({
+    "mixed_document", "mixed_sheet", "mixed_role", "mixed_supplier", "mixed_model",
+    "non_tabular", "invalid_cell", "different_row", "non_adjacent_columns",
+})
+
+
+class EvidenceRelationshipError(ValueError):
+    """Keep the stable rejection code while carrying a finite structural reason."""
+
+    def __init__(self, detail):
+        super().__init__("evidence_relationship")
+        self.relationship_detail = detail
 
 
 def compact(text: str) -> str:
@@ -30,18 +42,23 @@ def source_span(repo: EvidenceRepository, refs: list[str], quote: str):
     selected = repo.read(refs)
     if len(selected) > 1:
         first = selected[0]
-        if any(b.document_id != first.document_id or b.sheet != first.sheet
-               or b.role != first.role or b.supplier != first.supplier or b.model != first.model
-               or not b.sheet or not b.cell for b in selected):
-            raise ValueError("evidence_relationship")
+        for attribute, detail in (("document_id", "mixed_document"), ("role", "mixed_role"),
+                                  ("supplier", "mixed_supplier"), ("model", "mixed_model")):
+            if any(getattr(b, attribute) != getattr(first, attribute) for b in selected):
+                raise EvidenceRelationshipError(detail)
+        if any(not b.sheet or not b.cell for b in selected):
+            raise EvidenceRelationshipError("non_tabular")
+        if any(b.sheet != first.sheet for b in selected):
+            raise EvidenceRelationshipError("mixed_sheet")
         try:
             selected = sorted(selected, key=lambda b: coordinate_to_tuple(b.cell))
             positions = [coordinate_to_tuple(b.cell) for b in selected]
         except ValueError as exc:
-            raise ValueError("evidence_relationship") from exc
-        if any(row != positions[0][0] or col != positions[0][1] + n
-               for n, (row, col) in enumerate(positions)):
-            raise ValueError("evidence_relationship")
+            raise EvidenceRelationshipError("invalid_cell") from exc
+        if any(row != positions[0][0] for row, _ in positions):
+            raise EvidenceRelationshipError("different_row")
+        if any(col != positions[0][1] + n for n, (_, col) in enumerate(positions)):
+            raise EvidenceRelationshipError("non_adjacent_columns")
     text = " ".join(block.text for block in selected)
     if not compact(quote) or compact(quote) not in compact(text):
         raise ValueError("evidence_quote")
