@@ -22,13 +22,16 @@ ingestion_case = test_document_ingestion.ingestion_case
 
 
 @pytest.fixture
-def money_case(ingestion_case):
+def money_case(ingestion_case, request):
     client, engine, storage, case_id = ingestion_case
     book = Workbook()
     sheet = book.active
     sheet.title = "报价"
-    for row in [("苹果",), ("不含税单价", 25, "元/箱"), ("税费口径", "含税"),
-                ("报价日期", "2026-10-19 00:00:00")]:
+    equivalent = getattr(request, "param", None) == "equivalent"
+    rows = ([("苹果",), ("不含税单价", 25, "元/箱"), ("不含税单价", "25.00", "元/箱")]
+            if equivalent else [("苹果",), ("不含税单价", 25, "元/箱"), ("税费口径", "含税"),
+                                ("报价日期", "2026-10-19 00:00:00")])
+    for row in rows:
         sheet.append(row)
     stream = BytesIO()
     book.save(stream)
@@ -82,7 +85,7 @@ def execute_money(case):
 def test_worker_persists_tax_conflict_and_api_exports_both_independent_sources(money_case):
     client, _, *_ = money_case
     run_id, payload, repo = execute_money(money_case)
-    assert payload["rule_version"] == "dynamic-rules-v14"
+    assert payload["rule_version"] == "dynamic-rules-v15"
     assert payload["checks"][0]["business_status"] == "资料冲突"
     tax_refs = {b.evidence_id for b in repo.blocks if b.cell in {"A3", "B3"}}
     fact = payload["facts"][0]
@@ -99,6 +102,29 @@ def test_worker_persists_tax_conflict_and_api_exports_both_independent_sources(m
     assert "税口径引用分组" in book.sheetnames
     texts = {row[6] for row in book["原文来源"].iter_rows(min_row=2, values_only=True)}
     assert {"不含税单价", "25", "元/箱", "税费口径", "含税"} <= texts
+
+
+@pytest.mark.parametrize("money_case", ["equivalent"], indirect=True)
+def test_worker_history_and_exports_preserve_all_equivalent_price_sources(money_case):
+    client, engine, *_ = money_case
+    run_id, payload, repo = execute_money(money_case)
+    check = payload["checks"][0]
+    assert check["business_status"] == "满足" and check["is_formal"]
+    assert check["processing_status"] == "complete"
+    fact = payload["facts"][0]
+    assert fact["price_scope_state"] == fact["tax_scope_state"] == "resolved"
+    assert fact["price_sources"] and fact["tax_sources"]
+    assert DynamicRepository(engine).verified(run_id)[1] == payload
+    exported = client.get(f"/api/v1/agent-runs/{run_id}/export").json()
+    expected_refs = {b.evidence_id for b in repo.blocks if b.cell and b.cell[1:] in {"2", "3"}}
+    assert {s["evidence_id"] for s in exported["sources"]} == expected_refs
+    exported_check = exported["result"]["checks"][0]
+    assert {key: exported_check[key] for key in check} == check
+    assert exported_check["checklist_version_id"]
+    xlsx = client.get(f"/api/v1/agent-runs/{run_id}/export?format=xlsx")
+    book = load_workbook(BytesIO(xlsx.content))
+    assert {"单价引用分组", "税口径引用分组"} <= set(book.sheetnames)
+    assert {row[0] for row in book["原文来源"].iter_rows(min_row=2, values_only=True)} == expected_refs
 
 
 @pytest.mark.parametrize("mutation", ["delete", "quote", "basis", "scope"])

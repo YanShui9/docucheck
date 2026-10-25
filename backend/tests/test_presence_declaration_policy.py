@@ -41,7 +41,7 @@ def result(sample, proposal):
 
 
 def test_new_bound_reviews_use_v13():
-    assert facts.BINDING_RULE_VERSION == "dynamic-rules-v14"
+    assert facts.BINDING_RULE_VERSION == "dynamic-rules-v15"
 
 
 @pytest.mark.parametrize("kind", ["declaration", "echo", "body"])

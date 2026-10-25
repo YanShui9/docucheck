@@ -71,7 +71,7 @@ def test_money_cache_and_history_rebuild_same_independent_tax_metadata():
     first = run_money(sample, MaterialProvider([money_candidate(sample[1])]),
         cache_save=lambda key, fingerprint, raw: cache.update({(key, fingerprint): deepcopy(raw)}))
     assert first["status"] == "completed", first
-    assert BINDING_RULE_VERSION == "dynamic-rules-v14"
+    assert BINDING_RULE_VERSION == "dynamic-rules-v15"
     assert cache and all("tax_sources" not in candidate
                          for raw in cache.values() for candidate in raw["facts"])
     provider = MaterialProvider([], failure=AssertionError("cached facts should be reused"))
