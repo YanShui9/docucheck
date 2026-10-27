@@ -94,6 +94,9 @@ def export_payload(engine: Engine, result: dict) -> dict:
                              "sheet": b.sheet, "cell": b.cell} for b in repo.read(sorted(anchor_ids))],
                 "notice": "品目对应锚点仅说明归属；数值结论以核验结果引用的原文为准。",
             }
+            if result.get("scope_exclusions"):
+                attribution["exclusions"] = result["scope_exclusions"]
+                attribution["notice"] += "排除页属于用户确认的范围决策，不作为已核验事实。"
         verified_sources = {
             b.evidence_id: {
                 "source_text": b.text,
@@ -202,6 +205,28 @@ def render_xlsx(payload: dict) -> bytes:
         for target in (sheet, anchor_sheet):
             target.column_dimensions["A"].width = 31
             target.column_dimensions["G"].width = 50
+        if attribution.get("exclusions"):
+            excluded = workbook.create_sheet("范围排除")
+            labels = ("文档ID", "文件名", "供应商", "页码", "其他型号", "排除原因", "型号锚点",
+                      "确认人", "确认时间", "对应版本", "说明", "来源ID", "完整原文")
+            for column, label in enumerate(labels, 1):
+                _text(excluded, 1, column, label)
+            row = 2
+            for entry in attribution["exclusions"]:
+                for source in entry["sources"]:
+                    values = tuple(entry[k] for k in ("document_id", "document_name", "supplier", "page",
+                                                     "other_sku", "reason")) + (
+                        entry["sku_anchor"]["quote"], entry["confirmed_by"], entry["confirmed_at"],
+                        entry["binding_version_id"], "用户确认范围排除；不作为已核验事实。",
+                        source["evidence_id"], source["source_text"],
+                    )
+                    for column, value in enumerate(values, 1):
+                        _text(excluded, row, column, value)
+                    row += 1
+            excluded.freeze_panes = "A2"
+            excluded.auto_filter.ref = excluded.dimensions
+            for column in ("A", "B", "F", "G", "M"):
+                excluded.column_dimensions[column].width = 45
 
     headers = (
         "供应商",

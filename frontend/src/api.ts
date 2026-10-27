@@ -211,6 +211,13 @@ export interface RunDynamicChecksResult {
   checklist_version_id: string
   payload_digest: string | null
   checks: DynamicCheckResult[]
+  scope_exclusions?: ScopeExclusionSummary[]
+}
+
+export interface ScopeExclusionSummary {
+  document_id: string; document_name: string; supplier: string; page: number; other_sku: string; reason: string
+  evidence_refs: string[]; sku_anchor: EvidenceContextRecord; binding_version_id: string
+  confirmed_by: string; confirmed_at: string; sources: { evidence_id: string; source_text: string }[]
 }
 
 export type AnyRunChecksResult = RunChecksResult | RunDynamicChecksResult

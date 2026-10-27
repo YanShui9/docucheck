@@ -394,6 +394,31 @@ class CheckOut(DynamicCompatibleOut):
     )
 
 
+class ExclusionAnchorOut(BaseModel):
+    evidence_refs: list[str]
+    quote: str
+
+
+class ExclusionSourceOut(BaseModel):
+    evidence_id: str
+    source_text: str
+
+
+class ScopeExclusionOut(BaseModel):
+    document_id: str
+    document_name: str
+    supplier: str
+    page: int
+    other_sku: str
+    reason: str
+    evidence_refs: list[str]
+    sku_anchor: ExclusionAnchorOut
+    confirmed_by: str
+    confirmed_at: str
+    binding_version_id: str
+    sources: list[ExclusionSourceOut]
+
+
 class RunChecksOut(DynamicCompatibleOut):
     run_id: str
     case_id: str
@@ -404,3 +429,6 @@ class RunChecksOut(DynamicCompatibleOut):
     checks: list[CheckOut]
     checklist_version_id: str | None = None
     payload_digest: str | None = None
+    scope_exclusions: list[ScopeExclusionOut] | None = Field(
+        default=None, exclude_if=lambda value: value is None,
+    )

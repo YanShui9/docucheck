@@ -85,7 +85,7 @@ def execute_money(case):
 def test_worker_persists_tax_conflict_and_api_exports_both_independent_sources(money_case):
     client, _, *_ = money_case
     run_id, payload, repo = execute_money(money_case)
-    assert payload["rule_version"] == "dynamic-rules-v15"
+    assert payload["rule_version"] == "dynamic-rules-v16"
     assert payload["checks"][0]["business_status"] == "资料冲突"
     tax_refs = {b.evidence_id for b in repo.blocks if b.cell in {"A3", "B3"}}
     fact = payload["facts"][0]

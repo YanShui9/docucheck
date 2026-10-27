@@ -3,8 +3,9 @@ import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, onMounted, o
 import { accessToken } from '../auth'
 import { fetchChecklist } from '../api'
 import type { ChecklistView, DocumentRecord, EvidenceRecord } from '../api'
-import { confirmItemBindings, fetchDocumentEvidence, fetchItemBindings } from '../itemBindings'
-import type { ConfirmItemBindings, ItemBindingView } from '../itemBindings'
+import { confirmItemBindings, exclusionRequestEntry, fetchDocumentEvidence, fetchItemBindings } from '../itemBindings'
+import type { ConfirmItemBindings, ItemBindingView, PdfPageExclusion } from '../itemBindings'
+import PdfPageExclusions from './PdfPageExclusions.vue'
 import { bindingRequestEntry, buildBindingEntry, draftFromEntry, draftSelector, evidenceInSelector,
   newBindingDraft, rangeLabel } from '../itemBindingForm'
 import { bindingRowState, bindingRowsPayload, createBindingRows } from '../itemBindingEdits'
@@ -25,6 +26,14 @@ const checklist = ref<ChecklistView | null>(null)
 const view = ref<ItemBindingView | null>(null)
 const rows = ref<BindingEditRow[]>([])
 const working = computed(() => bindingRowsPayload(rows.value))
+const exclusions = ref<PdfPageExclusion[]>([])
+const originalExclusions = ref<PdfPageExclusion[]>([])
+const exclusionDraft = ref(false)
+const exclusionSession = ref(0)
+const evidenceComplete = ref(false)
+const evidenceSourceComplete = ref(true)
+const coverageIssues = ref<string[]>([])
+const readingAll = ref(false)
 const evidence = ref<EvidenceRecord[]>([])
 const parser = ref<string | null>(null)
 const more = ref(false)
@@ -61,8 +70,19 @@ const changedRows = computed(() => documentRows.value.filter(({ state }) => stat
 const otherCount = computed(() => working.value.filter(entry => entry.document_id !== props.document.id).length)
 const historicalEntries = computed(() => view.value?.historical_version?.payload.entries
   .filter(entry => entry.document_id === props.document.id) ?? [])
-const dirty = computed(() => rows.value.some(row => bindingRowState(row) !== 'unchanged'))
-const formChanged = computed(() => editingIndex.value !== null || JSON.stringify(draft.value) !== pristineDraft.value)
+const historicalExclusions = computed(() => !currentMatches.value && originalExclusions.value.length
+  ? originalExclusions.value : view.value?.historical_version?.payload.exclusions ?? [])
+const editableExclusions = computed(() => view.value?.state === 'confirmed' && !currentMatches.value ? [] : exclusions.value)
+function orderedExclusions(entries: PdfPageExclusion[]) {
+  return [...entries].sort((left, right) => left.document_id.localeCompare(right.document_id) || left.page - right.page)
+}
+const exclusionChanged = computed(() => JSON.stringify(orderedExclusions(exclusions.value)) !== JSON.stringify(orderedExclusions(originalExclusions.value)))
+const exclusionInvolved = computed(() => originalExclusions.value.length > 0 || exclusions.value.length > 0
+  || view.value?.historical_version?.payload.schema_version === 2)
+const otherExclusionCount = computed(() => exclusions.value.filter(entry => entry.document_id !== props.document.id).length)
+const dirty = computed(() => rows.value.some(row => bindingRowState(row) !== 'unchanged') || exclusionChanged.value)
+const bindingFormChanged = computed(() => editingIndex.value !== null || JSON.stringify(draft.value) !== pristineDraft.value)
+const formChanged = computed(() => bindingFormChanged.value || exclusionDraft.value)
 const canSave = computed(() => !locked.value && dirty.value && confirmed.value && !!reason.value.trim() && !formChanged.value)
 const changeCounts = computed(() => ({ added: changedRows.value.filter(row => row.state === 'added').length,
   modified: changedRows.value.filter(row => row.state === 'modified').length,
@@ -75,9 +95,9 @@ const associationStatus = computed(() => {
   if (uncertain.value) return { tone: 'warning', title: '保存结果待核实', description: '请求可能已经保存，请读取服务器记录核对，或重试原保存请求。' }
   if (conflicted.value || (view.value?.state === 'confirmed' && !currentMatches.value))
     return { tone: 'warning', title: '需要刷新核对', description: '当前资料、审查要求或关联状态已变化。请刷新后继续。' }
-  if (currentMatches.value && currentRows.value.length) return { tone: 'success', title: '已关联',
+  if (currentMatches.value && (currentRows.value.length || originalExclusions.value.some(entry => entry.document_id === props.document.id))) return { tone: 'success', title: '已关联',
     description: dirty.value ? '下方原关联仍然生效；本次修改保存后生效。' : '无需重复关联。核对无误后，可返回对话开始审查。' }
-  if (historicalEntries.value.length) return { tone: 'warning', title: '需要重新确认', description: '旧关联不适用于当前资料或审查要求，请核对后重新填写并确认。' }
+  if (historicalEntries.value.length || historicalExclusions.value.some(entry => entry.document_id === props.document.id)) return { tone: 'warning', title: '需要重新确认', description: '旧关联和排除页不适用于当前资料或审查要求，请核对后重新填写并确认。' }
   return { tone: 'neutral', title: '尚未关联', description: '请选择这份资料用于哪个采购商品，并核对文件中的名称依据。' }
 })
 const feedback = computed(() => {
@@ -108,6 +128,15 @@ const errorTexts: Record<string, string> = {
   item_binding_source: '资料尚未解析完成或来源不一致，请刷新后核对。',
   item_binding_confirmation_required: '请明确确认对应关系及整份文件的单一品目声明。',
   item_binding_capacity: '对应清单超过处理上限，请减少范围或拆分采购任务。',
+  item_exclusion_confirmation_required: '请明确确认关联范围与排除页，确保排除页不含本次采购内容或共同条款。',
+  item_exclusion_invalid: '排除页未通过校验，请核对单页范围、型号依据和原因。',
+  item_exclusion_source: '排除页需要完整解析的 PDF 原文，来源或解析版本已变化时请刷新核对。',
+  item_exclusion_anchor: '型号依据必须是该页明确声明其他型号的独立原文，请重新选择。',
+  item_exclusion_buyer_scope: '请先在当前清单明确所有采购品目的具体型号，并确认该供应商资料的型号关联。',
+  item_exclusion_target: '本次采购的目标型号或已关联型号不能排除。',
+  item_exclusion_mixed_scope: '该页包含本次采购内容、共同条款或混合型号，不能整页排除。',
+  item_exclusion_overlap: '排除页与已关联范围、名称依据或其他排除页重叠，请重新核对。',
+  item_exclusion_capacity: '排除页或原文引用超过处理上限，请减少范围或拆分采购任务。',
   case_busy: '采购任务正在处理，请等待处理结束后再确认。',
   idempotency_conflict: '请求标识冲突，请刷新后重新核对。',
   not_found: '资料不存在或当前账号没有访问权限。',
@@ -115,6 +144,7 @@ const errorTexts: Record<string, string> = {
   session_expired: '登录已过期，请重新登录后刷新。',
   case_deleting: '采购任务正在删除，不能修改对应关系。',
   evidence_page_changed: '原文分页或解析版本不一致，请刷新后重新读取。',
+  evidence_capacity: '原文数量超过 25000 段，不能确认整页排除。',
 }
 function friendly(value: unknown): string { return errorTexts[value instanceof Error ? value.message : ''] ?? '暂时无法读取或保存资料对应关系，请稍后重试。' }
 function location(block: EvidenceRecord): string {
@@ -124,13 +154,22 @@ function itemName(id: string): string { return items.value.find(item => item.ite
 function resetDraft() { draft.value = newBindingDraft(); editingIndex.value = null; pristineDraft.value = JSON.stringify(draft.value); formOpen.value = false }
 function startAdding() { if (!locked.value && !formChanged.value) { clearFeedback(); resetDraft(); formOpen.value = true } }
 function clearFeedback() { error.value = ''; notice.value = ''; saveAcknowledged.value = false }
+function resetExclusions(entries: PdfPageExclusion[] = []) {
+  originalExclusions.value = entries.map(exclusionRequestEntry)
+  exclusions.value = entries.map(exclusionRequestEntry)
+  exclusionDraft.value = false; exclusionSession.value++
+}
+function stageExclusions(entries: PdfPageExclusion[]) {
+  if (locked.value || bindingFormChanged.value) return
+  clearFeedback(); exclusions.value = entries.map(exclusionRequestEntry); confirmed.value = false
+}
 function rejectAccess(value: unknown): boolean {
   const code = value instanceof Error ? value.message : ''
   if (!['forbidden', 'not_found', 'session_expired', 'case_deleting'].includes(code)) return false
   // A successful read alone cannot prove that cached editor permissions still apply.
   accessRejected.value = true; generation++
-  checklist.value = null; view.value = null; rows.value = []
-  evidence.value = []; parser.value = null; more.value = false; originalTarget.value = null
+  checklist.value = null; view.value = null; rows.value = []; resetExclusions()
+  evidence.value = []; parser.value = null; more.value = false; evidenceComplete.value = false; originalTarget.value = null
   loading.value = false; saving.value = false; paging.value = false
   pending.value = null; uncertain.value = false; confirmed.value = false; leaveAction.value = null; resetDraft()
   error.value = friendly(value); notice.value = ''
@@ -140,10 +179,13 @@ async function load(preserveUnknown = false) {
   const unresolved = preserveUnknown && uncertain.value && pending.value ? {
     pending: pending.value, checklist: checklist.value, view: view.value, rows: rows.value,
     evidence: evidence.value, parser: parser.value, more: more.value,
+    exclusions: exclusions.value, originalExclusions: originalExclusions.value, evidenceComplete: evidenceComplete.value,
+    coverageIssues: coverageIssues.value,
+    evidenceSourceComplete: evidenceSourceComplete.value,
   } : null
   const current = ++generation
-  checklist.value = null; view.value = null; rows.value = []; leaveAction.value = null
-  evidence.value = []; parser.value = null; more.value = false; originalTarget.value = null
+  checklist.value = null; view.value = null; rows.value = []; leaveAction.value = null; resetExclusions()
+  evidence.value = []; parser.value = null; more.value = false; evidenceComplete.value = false; evidenceSourceComplete.value = true; coverageIssues.value = []; readingAll.value = false; originalTarget.value = null
   clearFeedback(); conflicted.value = false; uncertain.value = false; pending.value = null
   saving.value = false; paging.value = false; confirmed.value = false; resetDraft(); loading.value = true
   const { caseId, snapshotId, document } = props
@@ -157,6 +199,7 @@ async function load(preserveUnknown = false) {
       throw new Error('evidence_page_changed')
     checklist.value = definition; view.value = bindings
     rows.value = createBindingRows(bindings.current_version?.payload.entries ?? [])
+    resetExclusions(bindings.current_version?.payload.exclusions ?? [])
     formOpen.value = !currentRows.value.length
     if (bindings.state === 'confirmed' && !currentMatches.value) conflicted.value = true
     acceptPage(page, -1)
@@ -165,6 +208,9 @@ async function load(preserveUnknown = false) {
       if (unresolved) {
         checklist.value = unresolved.checklist; view.value = unresolved.view; rows.value = unresolved.rows
         evidence.value = unresolved.evidence; parser.value = unresolved.parser; more.value = unresolved.more
+        exclusions.value = unresolved.exclusions; originalExclusions.value = unresolved.originalExclusions
+        evidenceComplete.value = unresolved.evidenceComplete; coverageIssues.value = unresolved.coverageIssues
+        evidenceSourceComplete.value = unresolved.evidenceSourceComplete
         pending.value = unresolved.pending; uncertain.value = true; conflicted.value = false
         error.value = '未能读取服务器记录，保存结果仍待核实。可再次刷新，或重试原保存请求。'
       } else error.value = friendly(value)
@@ -173,6 +219,7 @@ async function load(preserveUnknown = false) {
   finally { if (current === generation) loading.value = false }
 }
 function acceptPage(page: Awaited<ReturnType<typeof fetchDocumentEvidence>>, after: number) {
+  if (evidence.value.length + page.evidence.length > 25000) throw new Error('evidence_capacity')
   if (page.case_id !== props.caseId || page.snapshot_id !== props.snapshotId || page.document_id !== props.document.id
     || (parser.value && page.parser_version !== parser.value)
     || page.evidence.some((block, index) => block.document_id !== props.document.id
@@ -180,8 +227,12 @@ function acceptPage(page: Awaited<ReturnType<typeof fetchDocumentEvidence>>, aft
       || evidence.value.some(previous => previous.id === block.id))
     || (page.evidence.length && page.next_ordinal !== page.evidence.at(-1)!.ordinal)) throw new Error('evidence_page_changed')
   parser.value = page.parser_version
+  coverageIssues.value = [...new Set([...coverageIssues.value, ...page.coverage_issues])]
+  evidenceSourceComplete.value = evidenceSourceComplete.value && page.parse_status === 'complete' && !coverageIssues.value.length
   evidence.value = [...evidence.value, ...page.evidence]
-  more.value = page.evidence.length === 100 && evidence.value.length < 25000
+  evidenceComplete.value = page.evidence.length < 100 && evidenceSourceComplete.value
+  // A full last chunk needs one bounded terminal probe, including at capacity.
+  more.value = page.evidence.length === 100 && evidence.value.length <= 25000
 }
 async function loadMore() {
   if (accessRejected.value || paging.value || loading.value || !more.value) return
@@ -192,6 +243,19 @@ async function loadMore() {
     if (current === generation) acceptPage(page, after)
   } catch (value) { if (current === generation && !rejectAccess(value)) error.value = friendly(value) }
   finally { if (current === generation) paging.value = false }
+}
+async function loadAllEvidence() {
+  if (readingAll.value || locked.value || paging.value) return
+  const current = generation
+  readingAll.value = true
+  try {
+    while (current === generation && more.value && !accessRejected.value) {
+      const count = evidence.value.length
+      await loadMore()
+      if (current !== generation || evidence.value.length === count) break
+    }
+    if (current === generation && !evidenceComplete.value && !error.value) error.value = '完整原文尚未读完，不能暂存排除页。请核对分页或资料容量。'
+  } finally { if (current === generation) readingAll.value = false }
 }
 function chooseAnchor(sku = false) {
   const id = sku ? draft.value.skuAnchorId : draft.value.anchorId
@@ -252,7 +316,8 @@ async function save(retry = false) {
       checklist_version_id: checklist.value!.confirmed_version!.id, expected_revision: props.revision,
       expected_checklist_revision: checklist.value!.checklist_revision, expected_binding_revision: view.value!.binding_revision,
       reason: reason.value.trim() }
-    if (new TextEncoder().encode(JSON.stringify(body.entries)).length > 128000) { error.value = errorTexts.item_binding_capacity!; return }
+    if (exclusionInvolved.value) { body.exclusions = exclusions.value.map(exclusionRequestEntry); body.exclusions_confirmed = true }
+    if (new TextEncoder().encode(JSON.stringify([body.entries, body.exclusions ?? []])).length > 128000) { error.value = errorTexts.item_binding_capacity!; return }
     pending.value = { body, key: crypto.randomUUID() }
   }
   clearFeedback(); saving.value = true
@@ -276,13 +341,14 @@ async function save(retry = false) {
       if (current !== generation) return
       if (latest.case_id !== caseId || latest.snapshot_id !== snapshotId) throw new Error('binding_scope')
       view.value = latest; rows.value = createBindingRows(latest.current_version?.payload.entries ?? []); resetDraft()
+      resetExclusions(latest.current_version?.payload.exclusions ?? [])
       if (latest.state !== 'confirmed' || !currentMatches.value) {
         checklist.value = null; conflicted.value = true
         notice.value += ' 资料或清单已有后续变更，请刷新后继续。'
       }
     } catch (value) {
       if (current === generation && !rejectAccess(value)) {
-        view.value = null; rows.value = []; resetDraft(); conflicted.value = true
+        view.value = null; rows.value = []; resetDraft(); resetExclusions(); conflicted.value = true
         error.value = '已收到保存成功回执，但最新对应状态暂时无法读取。请刷新记录；无需重复保存。'
       }
     }
@@ -308,6 +374,7 @@ watch(draft, () => {
   if (saveAcknowledged.value && !saving.value && formChanged.value) clearFeedback()
 }, { deep: true })
 watch(reason, () => { confirmed.value = false })
+watch(exclusionDraft, () => { confirmed.value = false })
 watch(feedback, result => {
   if (result && result.tone !== 'pending') feedbackContainer.value?.focus({ preventScroll: true })
 }, { flush: 'post' })
@@ -422,6 +489,7 @@ onUnmounted(() => { generation++ })
           </ul>
         </section>
         <p v-if="otherCount && dirty" class="state-note">保存时会保留其他文件的 {{ otherCount }} 个当前对应范围。</p>
+        <p v-if="otherExclusionCount" class="state-note">保存时会保留其他文件的 {{ otherExclusionCount }} 个排除页。</p>
         <button v-if="writable && !formOpen" class="button button-secondary binding-add" type="button" data-test="binding-add" :disabled="locked" @click="startAdding">{{ currentRows.length || changedRows.length ? '再关联一个商品或范围' : '添加商品关联' }}</button>
 
         <form v-if="writable && formOpen" data-test="binding-entry-form" @submit.prevent="stage">
@@ -467,7 +535,14 @@ onUnmounted(() => { generation++ })
             <div class="binding-actions"><button class="button button-secondary" type="submit">{{ editingIndex === null ? '加入待保存修改' : '暂存本条修改' }}</button><button class="text-button" type="button" @click="resetDraft">取消本次填写</button></div>
           </fieldset>
         </form>
-        <button v-if="more" class="text-button" type="button" data-test="binding-load-more" :disabled="paging || saving || !!leaveAction" @click="loadMore">{{ paging ? '读取中…' : '加载后续原文（每次100段）' }}</button>
+        <PdfPageExclusions v-if="document.original_name.toLowerCase().endsWith('.pdf')" :key="exclusionSession"
+          :document="document" :items="items" :evidence="evidence" :parser="parser"
+          :complete="evidenceComplete && !coverageIssues.length && document.parse_status === 'complete'"
+          :loading="paging || readingAll" :writable="!!writable" :locked="!!locked || paging || readingAll"
+          :form-blocked="bindingFormChanged" :uncertain="uncertain" :current="currentMatches ? originalExclusions : []"
+          :exclusions="editableExclusions" :historical="historicalExclusions" :readonly-history="historical"
+          @update="stageExclusions" @draft-change="exclusionDraft = $event" @preview="preview" @load-all="loadAllEvidence" />
+        <button v-if="more" class="text-button" type="button" data-test="binding-load-more" :disabled="paging || readingAll || saving || !!leaveAction" @click="loadMore">{{ paging ? '读取中…' : '加载后续原文（每次100段）' }}</button>
         <p v-if="formChanged" class="state-note">请先暂存或取消当前填写，再修改其他关联。</p>
         <div v-if="writable && dirty && !uncertain" class="binding-confirmation">
           <label>修改说明<input v-model="reason" data-test="binding-reason" class="field-control" maxlength="1000" :disabled="locked" /></label>
@@ -494,7 +569,7 @@ onUnmounted(() => { generation++ })
           <strong>{{ feedback.title }}</strong><p>{{ feedback.message }}</p>
         </div>
         <template v-if="view && !loading && writable && dirty && !uncertain">
-          <label class="binding-checkbox"><input v-model="confirmed" data-test="binding-confirm" type="checkbox" :disabled="locked || formChanged" />我已核对商品名称和文件范围，确认保存以上修改</label>
+          <label class="binding-checkbox"><input v-model="confirmed" data-test="binding-confirm" type="checkbox" :disabled="locked || formChanged" />{{ exclusionInvolved ? '我已核对关联范围及排除页面；被排除页面不属于本次任何采购品目，也不含适用于本次采购的共同条款。' : '我已核对商品名称和文件范围，确认保存以上修改' }}</label>
           <p v-if="formChanged" class="state-note">还有未加入清单的填写，请先暂存或取消，再保存。</p>
         </template>
         <div class="binding-dialog-buttons">

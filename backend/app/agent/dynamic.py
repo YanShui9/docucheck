@@ -34,6 +34,7 @@ from ..criteria.facts import (
 )
 from ..criteria.item_bindings import (
     ReviewBindings,
+    assert_binding_rule,
     pure_identity_block,
     review_bindings,
 )
@@ -120,18 +121,18 @@ def _extraction_messages(data, *, bound, rule_version):
     extraction_system = EXTRACTION_SYSTEM
     if bound:
         extraction_system += "\n服务端已确认item_attribution所述品目对应。anchor只作归属依据，不是事实范围，不得引用或拼入数值quote。事实只能引用evidence中的原文格；型号冲突或不明仍须保留。"
-    material_sources = rule_version in {"dynamic-rules-v11", "dynamic-rules-v12", "dynamic-rules-v13", "dynamic-rules-v14", "dynamic-rules-v15"}
+    material_sources = rule_version in {"dynamic-rules-v11", "dynamic-rules-v12", "dynamic-rules-v13", "dynamic-rules-v14", "dynamic-rules-v15", "dynamic-rules-v16"}
     if material_sources:
         extraction_system += (
             "\n本版presence的肯定事实可带material_sources独立正文引用组；主quote仍必须精确支持完整rule.description。"
             "每个独立组均按原有同段或同排连续格合同保留完整quote和evidence_refs，不跨段拼接；"
             "不同组可属于同品目已授权的不同文档，但所有引用都必须在当前批evidence内，禁止跨批读取或猜测。"
             "合法定位不证明材料语义完整或真实；不得仅凭body标签、正文缺失、未来承诺或检索无命中确认已附。")
-    if rule_version in {"dynamic-rules-v12", "dynamic-rules-v13", "dynamic-rules-v14", "dynamic-rules-v15"}:
+    if rule_version in {"dynamic-rules-v12", "dynamic-rules-v13", "dynamic-rules-v14", "dynamic-rules-v15", "dynamic-rules-v16"}:
         extraction_system += (
             "\n本版presence肯定的true候选仍须如实提取并保留完整来源，不得改写为false或删除候选；"
             "未独立验证正文语义前不得自动判满足，由服务端保留待人工确认。")
-    if rule_version in {"dynamic-rules-v13", "dynamic-rules-v14", "dynamic-rules-v15"}:
+    if rule_version in {"dynamic-rules-v13", "dynamic-rules-v14", "dynamic-rules-v15", "dynamic-rules-v16"}:
         extraction_system += (
             "\n金额事实保留完整单价行，包括含税、不含税、未含税或税前等原文口径。"
             "独立税说明由服务端在已确认范围内核对，不将不同业务行拼成主quote，"
@@ -325,11 +326,17 @@ def _render_sources(repo, refs: list[str]) -> str:
 
 
 def render_review(checks: list[dict], *, complete: bool, needs_review: bool = False,
-                  repo=None, source_refs: list[str] | None = None) -> str:
+                  repo=None, source_refs: list[str] | None = None, exclusions=()) -> str:
     lines = ["本次已确认并启用的指标审查完成；未确认或停用项未参与本次审查。" if complete else
              "本次已确认并启用的指标审查部分完成，未覆盖项仍为处理未完成；未确认或停用项未参与本次审查。"]
     if needs_review:
         lines[0] += "本次存在人工修正，结论仍需人工复核。"
+    if exclusions:
+        lines[0] = ("本次在已确认范围内完成指标审查。" if complete else "本次在已确认范围内部分完成指标审查。") + lines[0]
+        lines.append("以下整页由用户确认排除，不作为已核验事实；确认记录和完整原文见报告及导出。")
+        for entry in exclusions:
+            name = repo.source_name(entry.document_id) if repo is not None else entry.document_id
+            lines.append(f"范围排除：{name} · 第{entry.page}页 · 其他型号 {entry.payload()['other_sku']}。")
     for check in checks:
         status = check["processing_status"]
         if status == "complete":
@@ -393,6 +400,9 @@ def _bound_review_plan(repo, definition: ChecklistDefinition, context: ReviewBin
             assigned.update(block.evidence_id for block in repo.read(list(anchor_refs))
                             if pure_identity_block(block.text, item_names[entry.item_id], entry.supplier_sku))
         # Unassigned tails and other unbound supplier files can hide conflicts.
+        if rule_version == "dynamic-rules-v16":
+            assigned.update(ref for exclusion in context.bindings.exclusions if exclusion.supplier == supplier
+                            for ref in exclusion.evidence_refs)
         inventory_complete = all(b.evidence_id in assigned for b in repo.blocks if b.supplier == supplier)
         documents = [d for d in repo.documents if d.role == "requirement" or d.supplier == supplier]
         parsed_complete = all(d.parsed.status == "complete" and not d.parsed.coverage_issues
@@ -436,6 +446,7 @@ def review_plan(repo, definition: ChecklistDefinition | dict, *, rule_version=RU
     triples. Coverage becomes true only after every triple is validated and the
     supplier's sources were completely parsed.
     """
+    assert_binding_rule(item_bindings, rule_version)
     if not isinstance(definition, ChecklistDefinition):
         definition = ChecklistDefinition.model_validate(definition)
     if rule_version in BINDING_RULE_VERSIONS:
@@ -652,12 +663,13 @@ class DynamicAgent:
             self._check(budget)
             answer = render_review(payload["checks"], complete=all(payload["coverage"].values()),
                                    needs_review=bool(payload.get("needs_review")), repo=self.repo,
-                                   source_refs=source_refs)
+                                   source_refs=source_refs,
+                                   exclusions=self.item_bindings.bindings.exclusions if self.item_bindings else ())
             self._check(budget)
             return answer
 
         def checked_candidates(raw, batch, supplier, criterion_ids, *, diagnostics=None):
-            model = DynamicMaterialFactCandidates if self.rule_version in {"dynamic-rules-v11", "dynamic-rules-v12", "dynamic-rules-v13", "dynamic-rules-v14", "dynamic-rules-v15"} else DynamicFactCandidates
+            model = DynamicMaterialFactCandidates if self.rule_version in {"dynamic-rules-v11", "dynamic-rules-v12", "dynamic-rules-v13", "dynamic-rules-v14", "dynamic-rules-v15", "dynamic-rules-v16"} else DynamicFactCandidates
             candidates = model.model_validate(raw).facts
             allowed = {b["evidence_id"] for b in batch}
             validated, rejections = [], Counter()
@@ -767,7 +779,7 @@ class DynamicAgent:
 
         def extract_part(batch, data, supplier, progress):
             messages = extraction_messages(data)
-            material_sources = self.rule_version in {"dynamic-rules-v11", "dynamic-rules-v12", "dynamic-rules-v13", "dynamic-rules-v14", "dynamic-rules-v15"}
+            material_sources = self.rule_version in {"dynamic-rules-v11", "dynamic-rules-v12", "dynamic-rules-v13", "dynamic-rules-v14", "dynamic-rules-v15", "dynamic-rules-v16"}
             # JSON fact candidates include long IDs, source refs and
             # basis fields. Larger criterion groups need more output
             # room; Budget.reserve still owns the shared hard limit.
@@ -898,7 +910,7 @@ class DynamicAgent:
                             nonlocal last_probe
                             self._check(budget)
                             messages = extraction_messages(part)
-                            material = self.rule_version in {"dynamic-rules-v11", "dynamic-rules-v12", "dynamic-rules-v13", "dynamic-rules-v14", "dynamic-rules-v15"}
+                            material = self.rule_version in {"dynamic-rules-v11", "dynamic-rules-v12", "dynamic-rules-v13", "dynamic-rules-v14", "dynamic-rules-v15", "dynamic-rules-v16"}
                             schema = _facts_schema(bound_supplier, material_sources=material)
                             cap = min(4096, max(1536, 384 * len(part["criteria"])))
                             # Keep ordinary quota/call failures ahead of fitting.

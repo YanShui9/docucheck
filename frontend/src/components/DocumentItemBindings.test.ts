@@ -84,6 +84,208 @@ test('opens a named modal before data arrives instead of expanding below the doc
   expect(modal.text()).toContain('正在读取清单、关联记录和原文')
 })
 
+const pdfDocument = { ...document, original_name: '手机规格.pdf', model_name: 'PHONE-A' }
+const pdfBlocks = [
+  { ...block, id: 'pdf-target', sheet: null, cell: null, page_idx: 0, parser_version: 'pdf-v1', source_text: '型号：PHONE-A' },
+  { ...block, id: 'pdf-other', ordinal: 1, sheet: null, cell: null, page_idx: 1, parser_version: 'pdf-v1', source_text: '型号：PHONE-B' },
+  { ...block, id: 'pdf-body', ordinal: 2, sheet: null, cell: null, page_idx: 1, parser_version: 'pdf-v1', source_text: '容量 128GB' },
+]
+const pdfExclusion = { document_id: 'doc-a', source_sha256: document.source_sha256, parser_version: 'pdf-v1', page: 2,
+  other_sku: 'PHONE-B', sku_anchor: { evidence_refs: ['pdf-other'], quote: '型号：PHONE-B' }, reason: '不属于本次采购型号' }
+const otherExclusion = { ...pdfExclusion, document_id: 'doc-other', page: 3,
+  sku_anchor: { evidence_refs: ['other-model'], quote: '型号：PHONE-B' }, supplier: 'vendor-b', evidence_refs: ['other-model'], source_fingerprint: 'fp', anchor_fingerprint: 'afp' }
+function pdfRead(exclusions: object[] = [], historical = false, source = pdfBlocks) {
+  return (path: string, token?: unknown, init?: RequestInit): Promise<unknown> => {
+    if (path.endsWith('/checklist')) return Promise.resolve({ ...checklist,
+      confirmed_version: { ...checklist.confirmed_version, definition: { items: [{ item_id: 'phone', name: '手机', specification: '型号：PHONE-A' }], criteria: [] } } })
+    if (path.endsWith('/item-bindings') && !init?.method) {
+      const current = { ...version(), payload: { ...version().payload, schema_version: exclusions.length ? 2 : 1, exclusions } }
+      return Promise.resolve({ case_id: 'case-a', snapshot_id: 'snap-a', state: historical ? 'stale' : 'confirmed', binding_revision: 1,
+        current_version: historical ? null : current, historical_version: historical ? current : null })
+    }
+    if (path.includes('/documents/doc-a/evidence?')) return Promise.resolve({ case_id: 'case-a', snapshot_id: 'snap-a', document_id: 'doc-a',
+      parse_status: 'complete', parser_version: 'pdf-v1', coverage_issues: [], evidence: source, next_ordinal: source.at(-1)?.ordinal ?? -1 })
+    return read(path, token, init)
+  }
+}
+async function fillExclusion(wrapper: ReturnType<typeof mount>) {
+  await wrapper.get('[data-test="exclusion-add"]').trigger('click')
+  await wrapper.get('[data-test="exclusion-page"]').setValue('2')
+  await wrapper.get('[data-test="exclusion-sku"]').setValue('PHONE-B')
+  await wrapper.get('[data-test="exclusion-anchor"]').setValue('pdf-other')
+  await wrapper.get('[data-test="exclusion-reason"]').setValue('不属于本次采购型号')
+}
+
+test('stages a whole PDF page explicitly and saves all documents with strengthened confirmation', async () => {
+  const wrapper = await editor({ document: pdfDocument }, pdfRead([otherExclusion]))
+  await fillExclusion(wrapper)
+  expect(wrapper.get('[data-test="exclusion-page-text"]').text()).toContain('容量 128GB')
+  await wrapper.get('[data-test="exclusion-form"]').trigger('submit')
+  expect(wrapper.get('[data-test="exclusion-pending"]').text()).toContain('待新增')
+  expect(wrapper.get('.binding-dialog-footer').text()).toContain('被排除页面不属于本次任何采购品目，也不含适用于本次采购的共同条款')
+  await wrapper.get('[data-test="binding-confirm"]').setValue(true)
+  await wrapper.get('[data-test="binding-save"]').trigger('click'); await flushPromises()
+  const body = JSON.parse(writes()[0]![2].body)
+  expect(body.exclusions_confirmed).toBe(true)
+  expect(body.exclusions).toEqual([expect.objectContaining({ document_id: 'doc-other' }), pdfExclusion])
+  expect(body.exclusions[0]).not.toHaveProperty('source_fingerprint')
+  expect(body.entries).toHaveLength(1)
+})
+
+test('cancelling the final current exclusion explicitly saves an empty exclusion array', async () => {
+  const wrapper = await editor({ document: pdfDocument }, pdfRead([pdfExclusion]))
+  await wrapper.get('[data-test="exclusion-remove"]').trigger('click')
+  expect(wrapper.get('[data-test="exclusion-current"]').text()).toContain('PHONE-B')
+  expect(wrapper.get('[data-test="exclusion-pending"]').text()).toContain('待取消')
+  await wrapper.get('[data-test="binding-confirm"]').setValue(true)
+  await wrapper.get('[data-test="binding-save"]').trigger('click'); await flushPromises()
+  expect(JSON.parse(writes()[0]![2].body)).toMatchObject({ exclusions: [], exclusions_confirmed: true })
+})
+
+test.each(['close', 'refresh'])('protects a child exclusion draft on parent %s', async action => {
+  const wrapper = await editor({ document: pdfDocument }, pdfRead())
+  await fillExclusion(wrapper)
+  await wrapper.get(`[data-test="binding-${action}"]`).trigger('click')
+  expect(wrapper.get('[data-test="binding-leave-warning"]').text()).toContain('有尚未保存的内容')
+  await wrapper.get('[data-test="binding-keep-editing"]').trigger('click')
+  expect((wrapper.get('[data-test="exclusion-sku"]').element as HTMLInputElement).value).toBe('PHONE-B')
+})
+
+test('unknown exclusion saves retain exact body and idempotency key and freeze editing', async () => {
+  const wrapper = await editor({ document: pdfDocument }, pdfRead())
+  await fillExclusion(wrapper); await wrapper.get('[data-test="exclusion-form"]').trigger('submit')
+  await wrapper.get('[data-test="binding-confirm"]').setValue(true)
+  const base = pdfRead()
+  apiRequest.mockImplementation((path, token, init) => init?.method === 'PUT' ? Promise.reject(new TypeError('offline')) : base(path, token, init))
+  await wrapper.get('[data-test="binding-save"]').trigger('click'); await flushPromises()
+  expect(wrapper.get('[data-test="exclusion-undo"]').attributes('disabled')).toBeDefined()
+  await wrapper.get('[data-test="binding-retry"]').trigger('click'); await flushPromises()
+  expect(writes()[1]![2]).toEqual(writes()[0]![2])
+})
+
+test('stale exclusions are reference only and are never silently staged', async () => {
+  const wrapper = await editor({ document: pdfDocument }, pdfRead([pdfExclusion], true))
+  expect(wrapper.get('[data-test="exclusion-history"]').text()).toContain('需要重新确认')
+  expect(wrapper.find('[data-test="exclusion-current"]').exists()).toBe(false)
+  expect(wrapper.find('[data-test="exclusion-pending"]').exists()).toBe(false)
+  expect(writes()).toHaveLength(0)
+})
+
+test('reconfirming ordinary bindings after schema 2 becomes stale explicitly clears old exclusions', async () => {
+  const wrapper = await editor({ document: pdfDocument }, pdfRead([pdfExclusion], true))
+  await wrapper.get('[data-test="binding-item"]').setValue('phone')
+  await wrapper.get('[data-test="binding-kind"]').setValue('pdf')
+  await wrapper.get('[data-test="binding-start-page"]').setValue('1')
+  await wrapper.get('[data-test="binding-end-page"]').setValue('1')
+  await wrapper.get('[data-test="binding-anchor"]').setValue('pdf-target')
+  await wrapper.get('[data-test="binding-identifier"]').setValue('sku')
+  await wrapper.get('[data-test="binding-sku"]').setValue('PHONE-A')
+  await wrapper.get('[data-test="binding-sku-anchor"]').setValue('pdf-target')
+  await wrapper.get('[data-test="binding-entry-form"]').trigger('submit')
+  expect(wrapper.get('[data-test="binding-confirm"]').element.parentElement?.textContent).toContain('排除页面')
+  await wrapper.get('[data-test="binding-confirm"]').setValue(true)
+  await wrapper.get('[data-test="binding-save"]').trigger('click'); await flushPromises()
+  const body = JSON.parse(writes()[0]![2]!.body as string)
+  expect(body.exclusions).toEqual([])
+  expect(body.exclusions_confirmed).toBe(true)
+})
+
+test('a mismatched current exclusion version is never labelled currently effective', async () => {
+  const base = pdfRead([pdfExclusion])
+  const wrapper = await editor({ document: pdfDocument }, async (path, token, init) => {
+    const response = await base(path, token, init)
+    if (!init?.method && path.endsWith('/item-bindings')) {
+      const view = response as { current_version: object }
+      return { ...view, current_version: { ...view.current_version, checklist_version_id: 'outdated' } }
+    }
+    return response
+  })
+  expect(wrapper.get('[data-test="binding-state"]').text()).toContain('需要刷新核对')
+  expect(wrapper.find('[data-test="exclusion-current"]').exists()).toBe(false)
+  expect(wrapper.get('[data-test="exclusion-history"]').text()).toContain('PHONE-B')
+})
+
+test('does not stage an exclusion before all evidence pagination has been exhausted', async () => {
+  const hundred = Array.from({ length: 100 }, (_, ordinal) => ({ ...pdfBlocks[1]!, id: `block-${ordinal}`, ordinal }))
+  const wrapper = await editor({ document: pdfDocument }, pdfRead([], false, hundred))
+  await wrapper.get('[data-test="exclusion-add"]').trigger('click')
+  expect(wrapper.text()).toContain('尚未读取完整原文')
+  expect(wrapper.get('[data-test="exclusion-stage"]').attributes('disabled')).toBeDefined()
+})
+
+test.each([25000, 25100])('probes the terminal page at capacity without accepting excess blocks (%i)', async total => {
+  const base = pdfRead()
+  let terminalRead = false
+  const wrapper = await editor({ document: pdfDocument }, async (path, token, init) => {
+    if (path.includes('/evidence?')) {
+      const after = Number(new URL(path, 'http://localhost').searchParams.get('after_ordinal') ?? -1)
+      if (after === 24999) terminalRead = true
+      const count = Math.min(100, Math.max(0, total - after - 1))
+      const source = Array.from({ length: count }, (_, index) => ({ ...pdfBlocks[1]!,
+        id: `capacity-${after + index + 1}`, ordinal: after + index + 1 }))
+      return { case_id: 'case-a', snapshot_id: 'snap-a', document_id: 'doc-a', parse_status: 'complete',
+        parser_version: 'pdf-v1', coverage_issues: [], evidence: source, next_ordinal: source.at(-1)?.ordinal ?? after }
+    }
+    return base(path, token, init)
+  })
+  // Start at the final chunk to exercise the capacity boundary without
+  // repeatedly rendering 250 growing pages in this component test.
+  const state = (wrapper.vm.$ as unknown as { setupState: { evidence: typeof pdfBlocks; formOpen: boolean } }).setupState
+  state.formOpen = false
+  state.evidence = Array.from({ length: 24900 }, (_, ordinal) => ({ ...pdfBlocks[1]!, id: `capacity-${ordinal}`, ordinal }))
+  await wrapper.get('[data-test="exclusion-add"]').trigger('click')
+  await wrapper.get('[data-test="exclusion-load-all"]').trigger('click'); await flushPromises()
+  expect(terminalRead).toBe(true)
+  expect(wrapper.find('[data-test="exclusion-load-all"]').exists()).toBe(total > 25000)
+  if (total > 25000) expect(wrapper.text()).toContain('原文数量超过 25000 段')
+}, 30000)
+
+test.each([{ canWrite: false }, { busy: true }])('keeps exclusions immutable for %j', async props => {
+  const wrapper = await editor({ document: pdfDocument, ...props }, pdfRead([pdfExclusion]))
+  expect(wrapper.get('[data-test="exclusion-current"]').text()).toContain('PHONE-B')
+  expect(wrapper.find('[data-test="exclusion-remove"]').exists() && wrapper.get('[data-test="exclusion-remove"]').attributes('disabled') === undefined).toBe(false)
+  if (props.busy) expect(wrapper.text()).not.toContain('当前为只读记录')
+})
+
+test('undoing one of several exclusions restores a clean state regardless of array order', async () => {
+  const wrapper = await editor({ document: pdfDocument }, pdfRead([pdfExclusion, otherExclusion]))
+  await wrapper.get('[data-test="exclusion-remove"]').trigger('click')
+  await wrapper.get('[data-test="exclusion-undo"]').trigger('click')
+  expect(wrapper.find('[data-test="exclusion-pending"]').exists()).toBe(false)
+  expect(wrapper.find('[data-test="binding-save"]').exists()).toBe(false)
+  await wrapper.get('[data-test="binding-close"]').trigger('click')
+  expect(wrapper.emitted('close')).toHaveLength(1)
+})
+test('states how many exclusions from other documents will be retained', async () => {
+  const wrapper = await editor({ document: pdfDocument }, pdfRead([otherExclusion]))
+  expect(wrapper.text()).toContain('保存时会保留其他文件的 1 个排除页')
+})
+
+test('partial evidence response never allows whole-page exclusion even if the document list is stale', async () => {
+  const base = pdfRead()
+  const wrapper = await editor({ document: pdfDocument }, async (path, token, init) => {
+    const response = await base(path, token, init)
+    return path.includes('/evidence?') ? { ...(response as object), parse_status: 'partial' } : response
+  })
+  await fillExclusion(wrapper)
+  expect(wrapper.get('[data-test="exclusion-stage"]').attributes('disabled')).toBeDefined()
+})
+
+test('reads all continuation pages before staging and displays tail text from the selected page', async () => {
+  const hundred = Array.from({ length: 100 }, (_, ordinal) => ({ ...pdfBlocks[1]!, id: `part-${ordinal}`, ordinal }))
+  const base = pdfRead([], false, hundred)
+  const wrapper = await editor({ document: pdfDocument }, async (path, token, init) => {
+    if (path.includes('/evidence?') && path.includes('after_ordinal=99')) return { case_id: 'case-a', snapshot_id: 'snap-a', document_id: 'doc-a',
+      parse_status: 'complete', parser_version: 'pdf-v1', coverage_issues: [], evidence: [{ ...pdfBlocks[2], ordinal: 100, source_text: '末尾共同条款，请人工核对' }], next_ordinal: 100 }
+    return base(path, token, init)
+  })
+  await wrapper.get('[data-test="exclusion-add"]').trigger('click')
+  await wrapper.get('[data-test="exclusion-load-all"]').trigger('click'); await flushPromises()
+  await wrapper.get('[data-test="exclusion-page"]').setValue('2')
+  expect(wrapper.get('[data-test="exclusion-page-text"]').text()).toContain('末尾共同条款，请人工核对')
+  expect(apiRequest.mock.calls.filter(([path]) => path.includes('after_ordinal=99'))).toHaveLength(1)
+})
+
 test('keeps final confirmation outside the scrolling form', async () => {
   const wrapper = await editor()
   await stage(wrapper)

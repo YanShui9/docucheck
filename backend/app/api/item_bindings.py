@@ -8,6 +8,7 @@ from sqlalchemy import Engine
 
 from ..criteria.item_bindings import ItemBindingEntry
 from ..criteria.models import Contract
+from ..criteria.page_exclusions import PdfPageExclusion
 from ..db.item_binding_repository import ItemBindingRepository
 from .auth import Principal
 from .route_auth import AuthorizedRoute
@@ -21,6 +22,8 @@ class ConfirmBindingsIn(Contract):
     expected_binding_revision: int = Field(ge=0)
     confirmed: StrictBool
     reason: str = Field(min_length=1, max_length=1000, pattern=r"\S")
+    exclusions: list[PdfPageExclusion] | None = Field(default=None, max_length=30)
+    exclusions_confirmed: StrictBool | None = None
 
     @field_validator("confirmed")
     @classmethod
@@ -37,19 +40,27 @@ class ExpandedItemBindingOut(ItemBindingEntry):
     anchor_fingerprint: str = Field(pattern=r"^[a-f0-9]{64}$")
 
 
+class ExpandedPdfPageExclusionOut(PdfPageExclusion):
+    supplier: str
+    evidence_refs: list[str]
+    source_fingerprint: str = Field(pattern=r"^[a-f0-9]{64}$")
+    anchor_fingerprint: str = Field(pattern=r"^[a-f0-9]{64}$")
+
+
 class ItemBindingContinuationOut(Contract):
     version_id: str = Field(pattern=r"^[a-f0-9]{32}$")
     digest: str = Field(pattern=r"^[a-f0-9]{64}$")
 
 
 class ItemBindingPayloadOut(Contract):
-    schema_version: Literal[1]
+    schema_version: Literal[1, 2]
     case_id: str
     snapshot_id: str
     checklist_version_id: str | None
     checklist_digest: str = Field(pattern=r"^[a-f0-9]{64}$")
     entries: list[ExpandedItemBindingOut]
     continuation: ItemBindingContinuationOut | None = None
+    exclusions: list[ExpandedPdfPageExclusionOut] | None = None
 
 
 class ItemBindingVersionOut(Contract):
@@ -104,7 +115,7 @@ def item_binding_router(engine: Engine) -> APIRouter:
             if request.app.state.authenticator.enabled
             else Principal("local", "local")
         )
-        data = body.model_dump(mode="json")
+        data = body.model_dump(mode="json", exclude_unset=True)
         return service.put(
             case_id,
             snapshot_id,

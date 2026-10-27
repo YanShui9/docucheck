@@ -270,6 +270,20 @@ onBeforeUnmount(() => { mounted = false; ++scope })
     <div v-if="error" class="chat-error" role="alert">{{ error }} <button class="text-button" @click="load()">重试读取</button></div>
     <div v-if="loading" class="chat-loading" role="status">正在读取审查报告…</div>
     <template v-else-if="checks">
+      <details v-if="checks.scope_exclusions?.length" class="binding-group" data-test="report-scope-exclusions">
+        <summary>{{ checks.run_status === 'completed' ? '在已确认范围内完成' : '本次已确认范围包含以下排除页' }} · {{ checks.scope_exclusions.length }} 个排除页</summary>
+        <p class="state-note">以下页面按本次审查冻结的人工确认范围排除。排除决定与原文保留供核对。</p>
+        <ul class="binding-entry-list"><li v-for="entry in checks.scope_exclusions" :key="`${entry.document_id}/${entry.page}`">
+          <strong>{{ entry.document_name }} · 第 {{ entry.page }} 页 · {{ entry.other_sku }}</strong>
+          <p class="state-note">{{ supplierLabel(entry.supplier) }} · 排除原因：{{ entry.reason }}</p>
+          <p class="state-note">确认人：{{ entry.confirmed_by }} · {{ new Date(entry.confirmed_at).toLocaleString('zh-CN') }} · 关联版本 {{ entry.binding_version_id }}</p>
+          <details class="binding-entry-evidence"><summary>查看型号依据与整页原文</summary>
+            <blockquote>{{ entry.sku_anchor.quote }}</blockquote>
+            <p v-for="source in entry.sources" :key="source.evidence_id" style="white-space: pre-wrap; overflow-wrap: anywhere">{{ source.source_text }}</p>
+          </details>
+          <button v-if="entry.sku_anchor.evidence_refs[0] || entry.evidence_refs[0]" data-test="exclusion-source-open" class="text-button" type="button" @click="openEvidence((entry.sku_anchor.evidence_refs[0] || entry.evidence_refs[0])!)">查看排除页原件</button>
+        </li></ul>
+      </details>
       <div class="review-toolbar">
         <label v-if="suppliers.length > 1" class="detail-toggle">供应商明细
           <select v-model="detailSupplier" class="field-control" aria-label="选择供应商明细">

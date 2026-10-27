@@ -81,6 +81,26 @@ test('renders the dynamic matrix grouped by item with supplier display names and
   expect(wrapper.text()).toContain('非正式')
 })
 
+const exclusionSummary = { document_id: 'spec-a', document_name: '手机规格.pdf', supplier: 'vendor-a', page: 2,
+  other_sku: 'PHONE-B', reason: '仅包含其他型号', evidence_refs: ['excluded-title', 'excluded-body'],
+  sku_anchor: { evidence_refs: ['excluded-title'], quote: '型号：PHONE-B' }, binding_version_id: 'binding-v2',
+  confirmed_by: 'user-confirmed', confirmed_at: '2026-10-25T10:00:00Z',
+  sources: [{ evidence_id: 'excluded-title', source_text: '型号：PHONE-B' }, { evidence_id: 'excluded-body', source_text: '该型号容量128GB' }] }
+test.each(['completed', 'partial'])('shows frozen exclusions with accurate %s scope and full source readback', async status => {
+  setupApi(checksPayload({ run_status: status, scope_exclusions: [exclusionSummary] }), factsPayload(), progressPayload({ run_status: status }))
+  const wrapper = setup(); await flushPromises()
+  const scope = wrapper.get('[data-test="report-scope-exclusions"]')
+  expect(scope.text()).toContain(status === 'completed' ? '在已确认范围内完成' : '本次已确认范围包含以下排除页')
+  if (status === 'partial') expect(scope.text()).not.toContain('在已确认范围内完成')
+  for (const text of ['手机规格.pdf', '第 2 页', 'PHONE-B', '仅包含其他型号', 'user-confirmed', 'binding-v2', '该型号容量128GB']) expect(scope.text()).toContain(text)
+  await scope.get('[data-test="exclusion-source-open"]').trigger('click')
+  expect(wrapper.emitted('openEvidence')?.[0]).toEqual([{ caseId: 'case-a', snapshotId: 'snap-1', evidenceId: 'excluded-title' }])
+})
+test('legacy reports do not acquire an exclusion scope claim', async () => {
+  setupApi(checksPayload()); const wrapper = setup(); await flushPromises()
+  expect(wrapper.find('[data-test="report-scope-exclusions"]').exists()).toBe(false)
+})
+
 test('historical runs are labelled and never presented as current conclusions', async () => {
   setupApi(checksPayload({ is_current: false }), factsPayload({ is_current: false }))
   const wrapper = setup()

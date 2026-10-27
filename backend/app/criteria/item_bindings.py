@@ -11,6 +11,7 @@ from pydantic import Field, model_validator
 from ..evidence.models import Document, ScopedEvidence
 from ..evidence.repository import EvidenceRepository, digest
 from .models import ChecklistDefinition, Contract, EvidenceContext, Identifier, Label
+from .page_exclusions import ValidatedExclusion
 from .validation import mentions, source_span
 
 MAX_ENTRIES = 140
@@ -157,6 +158,7 @@ class ValidatedEntry:
 @dataclass(frozen=True)
 class ValidatedBindings:
     entries: tuple[ValidatedEntry, ...]
+    exclusions: tuple[ValidatedExclusion, ...] = ()
 
     def payload(self) -> list[dict]:
         return [entry.payload() for entry in self.entries]
@@ -206,6 +208,7 @@ class ReviewBindings:
     snapshot_id: str
     checklist_digest: str
     bindings: ValidatedBindings
+    schema_version: int = 1
 
     def identity(self) -> dict:
         return {"item_binding_version_id": self.version_id, "item_binding_digest": self.digest}
@@ -225,7 +228,13 @@ def review_bindings(
         return value
     bound = validated_from_frozen(value, definition, repo)
     return ReviewBindings(value["version_id"], value["digest"], repo.case_id, repo.snapshot_id,
-                         value["payload"]["checklist_digest"], bound)
+                         value["payload"]["checklist_digest"], bound, value["payload"]["schema_version"])
+
+
+def assert_binding_rule(value: dict | ReviewBindings | None, rule_version: str) -> None:
+    schema = value.schema_version if isinstance(value, ReviewBindings) else (value or {}).get("payload", {}).get("schema_version", 1)
+    if schema == 2 and rule_version != "dynamic-rules-v16":
+        raise ValueError("item_exclusion_rule_version")
 
 
 def binding_identity(value: dict | ReviewBindings) -> dict:
@@ -427,11 +436,14 @@ def validated_from_frozen(
         digest(payload) != envelope["digest"]
         or payload["case_id"] != repo.case_id
         or payload["snapshot_id"] != repo.snapshot_id
-        or payload.get("schema_version") != 1
+        or payload.get("schema_version") not in {1, 2}
         or payload.get("checklist_digest") != digest(definition_payload)
     ):
         raise ValueError("item_binding_source_changed")
-    if not payload["entries"]:
+    if (payload["schema_version"] == 1 and "exclusions" in payload
+            or payload["schema_version"] == 2 and (not payload.get("exclusions") or "continuation" in payload)):
+        raise ValueError("item_binding_source_changed")
+    if not payload["entries"] and definition_payload is None and payload["schema_version"] == 1:
         return ValidatedBindings(())
     fields = set(ItemBindingEntry.model_fields)
     actual = validate_bindings(
@@ -444,4 +456,14 @@ def validated_from_frozen(
     )
     if actual.payload() != payload["entries"]:
         raise ValueError("item_binding_source_changed")
+    if payload["schema_version"] == 2:
+        from .page_exclusions import PdfPageExclusion, validate_exclusions
+
+        fields = set(PdfPageExclusion.model_fields)
+        exclusions = validate_exclusions([{k: v for k, v in e.items() if k in fields}
+                                          for e in payload["exclusions"]],
+                                         ChecklistDefinition.model_validate(definition_payload), repo, actual)
+        if [e.payload() for e in exclusions] != payload["exclusions"]:
+            raise ValueError("item_binding_source_changed")
+        actual = ValidatedBindings(actual.entries, exclusions)
     return actual

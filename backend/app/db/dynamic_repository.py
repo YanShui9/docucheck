@@ -667,7 +667,25 @@ class DynamicRepository:
                 _error("dynamic_source_changed")
 
     def checks(self, run_id):
-        row, payload, _ = self.verified(run_id)
+        row, payload, repo = self.verified(run_id)
+        exclusions = []
+        frozen = row.get("item_bindings")
+        if frozen and frozen["payload"].get("exclusions"):
+            from .item_binding_repository import ItemBindingRepository
+
+            # Confirmation metadata belongs to this Run's immutable version,
+            # never to the current head. Read before the live-state recheck.
+            version = ItemBindingRepository(self.engine).version(row["case_id"], frozen["version_id"])
+            for entry in frozen["payload"]["exclusions"]:
+                exclusions.append({
+                    **{key: entry[key] for key in ("document_id", "supplier", "page", "other_sku",
+                                                  "reason", "evidence_refs", "sku_anchor")},
+                    "document_name": repo.source_name(entry["document_id"]),
+                    "confirmed_by": version["confirmed_by"], "confirmed_at": version["confirmed_at"],
+                    "binding_version_id": version["id"],
+                    "sources": [{"evidence_id": b.evidence_id, "source_text": b.text}
+                                for b in repo.read(entry["evidence_refs"])],
+                })
         with self.engine.connect() as connection:
             live = (
                 connection.execute(
@@ -708,6 +726,8 @@ class DynamicRepository:
         }
         if row["item_binding_digest"] is not None:
             result.update(item_binding_version_id=row["item_binding_version_id"], item_binding_digest=row["item_binding_digest"])
+        if exclusions:
+            result["scope_exclusions"] = exclusions
         if (
             payload
             and row["workflow"] == "review"

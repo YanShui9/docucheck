@@ -8,8 +8,13 @@ from uuid import uuid4
 from sqlalchemy import Engine, insert, select, update
 from sqlalchemy.engine import Connection
 
-from ..criteria.item_bindings import ItemBindingEntry, validate_bindings
+from ..criteria.item_bindings import (
+    ItemBindingEntry,
+    validate_bindings,
+    validated_from_frozen,
+)
 from ..criteria.models import ChecklistDefinition
+from ..criteria.page_exclusions import PdfPageExclusion, validate_exclusions
 from ..evidence.models import Document, ScopedEvidence
 from ..evidence.repository import EvidenceRepository, digest
 from ..parsing import EvidenceBlock, ParseResult
@@ -255,17 +260,17 @@ def _validate_payload(
 ) -> None:
     if (
         payload.get("checklist_digest") != digest(definition)
-        or payload.get("schema_version") != 1
+        or payload.get("schema_version") not in {1, 2}
     ):
         raise ItemBindingError("item_binding_source_changed")
     if "continuation" in payload:
         _continuation_origin(connection, payload, definition, current_read=current_read)
-    if payload["entries"]:
-        fields = set(ItemBindingEntry.model_fields)
-        requests = [
-            {k: v for k, v in entry.items() if k in fields}
-            for entry in payload["entries"]
-        ]
+    if payload["schema_version"] == 1 and "exclusions" in payload:
+        raise ItemBindingError("item_binding_source_changed")
+    if payload["schema_version"] == 2 and (not payload.get("exclusions") or "continuation" in payload):
+        raise ItemBindingError("item_binding_source_changed")
+    if payload["entries"] or payload.get("exclusions"):
+        requests = [*payload["entries"], *payload.get("exclusions", [])]
         repo = _repository(
             connection,
             payload["case_id"],
@@ -273,11 +278,7 @@ def _validate_payload(
             requests,
             current_read=current_read,
         )
-        if (
-            validate_bindings(requests, definition, repo).payload()
-            != payload["entries"]
-        ):
-            raise ItemBindingError("item_binding_source_changed")
+        validated_from_frozen({"payload": payload, "digest": digest(payload)}, definition, repo)
 
 
 def _same_items(left: dict | None, right: dict | None) -> bool:
@@ -329,6 +330,8 @@ def _continuation_origin(
         or row["snapshot_id"] != payload["snapshot_id"]
         or row["content_digest"] != origin["digest"]
         or "continuation" in row["payload_json"]
+        or row["payload_json"].get("schema_version") != 1
+        or payload.get("schema_version") != 1
     ):
         raise ItemBindingError("item_binding_source_changed")
     original_definition = _version(connection, payload["case_id"], row["checklist_version_id"],
@@ -501,6 +504,8 @@ def continue_current(
         raise ItemBindingError("item_binding_source_changed")
     if row["snapshot_id"] != snapshot_id or row["checklist_version_id"] == checklist_version_id:
         return
+    if row["payload_json"].get("schema_version") == 2:
+        return
     previous = _version(connection, case_id, row["checklist_version_id"], current_read=True)
     if (not _same_items(previous["definition"], definition)
         or not _identity_continuous(connection, case_id, snapshot_id, previous,
@@ -665,6 +670,8 @@ class ItemBindingRepository:
         confirmed: bool,
         idempotency_key: str,
         reason: str,
+        exclusions: list[dict] | None = None,
+        exclusions_confirmed: bool | None = None,
     ) -> dict:
         if confirmed is not True:
             raise ItemBindingError("item_binding_confirmation_required")
@@ -681,17 +688,23 @@ class ItemBindingRepository:
                 ItemBindingEntry.model_validate(e).model_dump(mode="json")
                 for e in entries
             ]
+            exclusion_requests = ([PdfPageExclusion.model_validate(e).model_dump(mode="json") for e in exclusions]
+                                  if isinstance(exclusions, list) else [])
+            if exclusions is not None and not isinstance(exclusions, list):
+                raise ItemBindingError("item_exclusion_invalid")
+            if exclusion_requests and exclusions_confirmed is not True:
+                raise ItemBindingError("item_exclusion_confirmation_required")
             if (
                 len(requests) > 140
-                or len(json.dumps(requests, ensure_ascii=False).encode()) > 128_000
+                or len(exclusion_requests) > 30
+                or len(json.dumps([requests, exclusion_requests], ensure_ascii=False).encode()) > 128_000
             ):
                 raise ItemBindingError("item_binding_capacity")
         except ItemBindingError:
             raise
         except (ValueError, TypeError):
             raise ItemBindingError("item_binding_invalid") from None
-        request_digest = digest(
-            [
+        identity = [
                 case_id,
                 snapshot_id,
                 requests,
@@ -702,7 +715,10 @@ class ItemBindingRepository:
                 confirmed,
                 reason,
             ]
-        )
+        if exclusions is not None or exclusions_confirmed is not None:
+            identity.append({"exclusions": exclusion_requests if exclusions is not None else None,
+                             "exclusions_confirmed": exclusions_confirmed})
+        request_digest = digest(identity)
         with self.engine.begin() as connection:
             _check_access(connection, case_id, actor)
             receipt = _read(
@@ -768,18 +784,28 @@ class ItemBindingRepository:
             ).first()
             if (head["revision"] if head else 0) != expected_binding_revision:
                 raise ItemBindingError("item_binding_revision_conflict")
+            previous = (_read(connection, select(item_binding_versions.c.payload_json).where(
+                item_binding_versions.c.id == head["version_id"], item_binding_versions.c.case_id == case_id), True).first()
+                if head else None)
+            if previous and previous["payload_json"].get("schema_version") == 2 and (
+                    exclusions is None or exclusions_confirmed is not True):
+                raise ItemBindingError("item_exclusion_confirmation_required")
             payload = _empty(case_id, snapshot_id, checklist_version_id, definition)
-            if requests:
+            if requests or exclusion_requests:
                 try:
                     repo = _repository(
-                        connection, case_id, snapshot_id, requests, current_read=True
+                        connection, case_id, snapshot_id, [*requests, *exclusion_requests], current_read=True
                     )
-                    payload["entries"] = validate_bindings(
-                        requests, definition, repo
-                    ).payload()
+                    bound = validate_bindings(requests, definition, repo)
+                    payload["entries"] = bound.payload()
+                    if exclusion_requests:
+                        excluded = validate_exclusions(exclusion_requests, ChecklistDefinition.model_validate(definition), repo, bound)
+                        payload.update(schema_version=2, exclusions=[e.payload() for e in excluded])
                 except ItemBindingError:
                     raise
-                except (ValueError, KeyError, TypeError):
+                except (ValueError, KeyError, TypeError) as exc:
+                    if str(exc).startswith("item_exclusion_"):
+                        raise ItemBindingError(str(exc)) from None
                     raise ItemBindingError("item_binding_invalid") from None
             now, version_id = datetime.now(UTC).replace(tzinfo=None), uuid4().hex
             revision = expected_binding_revision + 1
