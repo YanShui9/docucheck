@@ -1,0 +1,311 @@
+{
+  "schema_version": 1,
+  "revision": 4,
+  "dataset_id": "docucheck-agent-interview-v1",
+  "dataset_sha256": "d3a0383a0fb6227ae968ba34b88bcbceadf13870487e1efb0946babf3063d3cd",
+  "files": [
+    {
+      "path": "gold/dataset.json",
+      "sha256": "d3a0383a0fb6227ae968ba34b88bcbceadf13870487e1efb0946babf3063d3cd",
+      "size": 431652,
+      "role": "gold"
+    },
+    {
+      "path": "gold/scenario_map.json",
+      "sha256": "38e38d6ec005945b43fad1a0a3efa952191f8d1ba86b7fff5244ad0db0a67a15",
+      "size": 1766,
+      "role": "gold"
+    },
+    {
+      "path": "inputs/dcloth/comparison.xlsx",
+      "sha256": "8f8632f817db74d2d05d80d80e6e7b545ca487125fe81a4fc1f20db1898e1063",
+      "size": 5427,
+      "role": "input"
+    },
+    {
+      "path": "inputs/dcloth/supplier_a.pdf",
+      "sha256": "9f16b685efb97108340d39596203ee30013c89fa4663390b674229a0b2a70175",
+      "size": 19034,
+      "role": "input"
+    },
+    {
+      "path": "inputs/dcloth/supplier_b.pdf",
+      "sha256": "4eca902372c328db7aa4013eea104b411a8683b6bb81076ac544f3b9a0e2cbf7",
+      "size": 17839,
+      "role": "input"
+    },
+    {
+      "path": "inputs/dcloth/supplier_b_comparison.xlsx",
+      "sha256": "edf58f59f56a1be137166c96d16c30da12ef033431940255bd33787ce15d6324",
+      "size": 5431,
+      "role": "input"
+    },
+    {
+      "path": "inputs/dfruit/comparison.xlsx",
+      "sha256": "711340381442ea8b64784bf8803fdff047bf871187ef45b4eed02f54e170be62",
+      "size": 5431,
+      "role": "input"
+    },
+    {
+      "path": "inputs/dfruit/supplier_a.pdf",
+      "sha256": "a19d21a30a17812dc380c363cae339d7c9e8859cbac446a666d04b921abeb361",
+      "size": 19142,
+      "role": "input"
+    },
+    {
+      "path": "inputs/dfruit/supplier_b.pdf",
+      "sha256": "7c81cb5396f5a9c7dc47d148554e4db3fb97ae2b52aa2f80d5d9d48d8d28a605",
+      "size": 17120,
+      "role": "input"
+    },
+    {
+      "path": "inputs/dfruit/supplier_b_comparison.xlsx",
+      "sha256": "312c724ee30727d85e55276a1664cbfb6865da4e3ea979c6ba57479e3eb2a1eb",
+      "size": 5403,
+      "role": "input"
+    },
+    {
+      "path": "inputs/doffice/comparison.xlsx",
+      "sha256": "11af95364ecaaa243581a5b1cc90e02109ac28e06d8c07fb1caaf1c2c8d8be60",
+      "size": 5430,
+      "role": "input"
+    },
+    {
+      "path": "inputs/doffice/supplier_a.pdf",
+      "sha256": "ad7d08ad5ee8415d501fb87da855cb745cace2cc337d386884ff99bea0f4f390",
+      "size": 19774,
+      "role": "input"
+    },
+    {
+      "path": "inputs/doffice/supplier_b.pdf",
+      "sha256": "cab3685cb4dfc5487018ba16fdcb6b4d6acddbfdb05513d4ff7192c9390513d4",
+      "size": 16211,
+      "role": "input"
+    },
+    {
+      "path": "inputs/doffice/supplier_b_comparison.xlsx",
+      "sha256": "62867aa94fc1e381aea03106f342fed79092ad2b21403301d1c2f9e13129fb72",
+      "size": 5427,
+      "role": "input"
+    },
+    {
+      "path": "inputs/dphone/comparison.xlsx",
+      "sha256": "07bcaeb90bbf16fa49f4dcd52b6c82c363a53f12fa7c019e6150d70696d78cd1",
+      "size": 5410,
+      "role": "input"
+    },
+    {
+      "path": "inputs/dphone/supplier_a.pdf",
+      "sha256": "635f911a8799096141780db6a4a6cc5db584696b78b1fb0de614afe6c6afaa5b",
+      "size": 18952,
+      "role": "input"
+    },
+    {
+      "path": "inputs/dphone/supplier_b.pdf",
+      "sha256": "2f3ca710b2db9cdf6a9305d5e689bf177bdf3f9eec4d3c63d66beb98a7ce5fc9",
+      "size": 16720,
+      "role": "input"
+    },
+    {
+      "path": "inputs/dphone/supplier_b_comparison.xlsx",
+      "sha256": "7799912dfc13f063b7255b79a1ea88a5de6e97b146c80844820289debb1b087a",
+      "size": 5407,
+      "role": "input"
+    },
+    {
+      "path": "inputs/mcloth/comparison.xlsx",
+      "sha256": "c5288168e7498fb6379f2bd3cead79ea968641387ccc389db8dcecd5dee264d1",
+      "size": 5453,
+      "role": "input"
+    },
+    {
+      "path": "inputs/mcloth/supplier_a.pdf",
+      "sha256": "428c42d641d3bbc560a75b42176a75d67345c649925087567fe2f5045711fa05",
+      "size": 23228,
+      "role": "input"
+    },
+    {
+      "path": "inputs/mcloth/supplier_b.pdf",
+      "sha256": "b0fb3924c2e7ea4dc9de82e0a0c90ab6277b0740a59c46c8b60e5d85ecfe5390",
+      "size": 20008,
+      "role": "input"
+    },
+    {
+      "path": "inputs/mcloth/supplier_b_comparison.xlsx",
+      "sha256": "b8b3c9e91cbc78d04b01984eff74a17c311563030a6a733ef64ec776fe6ccf4d",
+      "size": 5415,
+      "role": "input"
+    },
+    {
+      "path": "inputs/mfruit/comparison.xlsx",
+      "sha256": "2d0d032551b15a1844e7d2e03bedebd1014b2709fd6baaa3873f80f40cec44ec",
+      "size": 5430,
+      "role": "input"
+    },
+    {
+      "path": "inputs/mfruit/supplier_a.pdf",
+      "sha256": "369c3f15f647554b2e3d6d6fb6ab62f6f92a99ea433aa07b6bedb48aa8257f20",
+      "size": 18534,
+      "role": "input"
+    },
+    {
+      "path": "inputs/mfruit/supplier_b.pdf",
+      "sha256": "8fd0a29929c358cfb28ecd68a409931598e8ba6ac293148789e7ebcfd978d5cd",
+      "size": 17167,
+      "role": "input"
+    },
+    {
+      "path": "inputs/mfruit/supplier_b_comparison.xlsx",
+      "sha256": "f2fb42ffc94c49762a4e4a0c5c7bb618322a48202027dd99ecea3ffa0d95c658",
+      "size": 5403,
+      "role": "input"
+    },
+    {
+      "path": "inputs/mmixed/comparison.xlsx",
+      "sha256": "43db3733c43d127dfe54c05d476abf7271d72a89551d0e5ea6b7f320f512d382",
+      "size": 6817,
+      "role": "input"
+    },
+    {
+      "path": "inputs/mmixed/supplier_a.pdf",
+      "sha256": "e707603f86a00d241469f5eb4c159c8c8d7db6a9c8dcacd7b1d700dd7ea57b79",
+      "size": 19636,
+      "role": "input"
+    },
+    {
+      "path": "inputs/mmixed/supplier_b.pdf",
+      "sha256": "bd4c9857262fe68761f74bde37f9d5b8ccdd62e0236936acc9066d21b41592ef",
+      "size": 16224,
+      "role": "input"
+    },
+    {
+      "path": "inputs/mmixed/supplier_b_comparison.xlsx",
+      "sha256": "fe058022c55e8ba16fb3d36699df4fe52f9dc590fb408c161088f8facd0a0a2c",
+      "size": 5416,
+      "role": "input"
+    },
+    {
+      "path": "inputs/moffice/comparison.xlsx",
+      "sha256": "f2106d72a9f63a4c7170a691c685067f0203baa166896e23aedf7701bc1b581e",
+      "size": 5401,
+      "role": "input"
+    },
+    {
+      "path": "inputs/moffice/supplier_a.pdf",
+      "sha256": "92ffab757f6a85bcc0f88a666005081cc7c1e8d032a4e9ee6c685aeabd02ecdf",
+      "size": 17900,
+      "role": "input"
+    },
+    {
+      "path": "inputs/moffice/supplier_b.pdf",
+      "sha256": "a237c0f2fdd399056eeb646abb239afa25712533f1728250d8f65fb9038bf834",
+      "size": 16651,
+      "role": "input"
+    },
+    {
+      "path": "inputs/moffice/supplier_b_comparison.xlsx",
+      "sha256": "33896f7bd9732423f2ea9cade65c89cf8bf6327a3f6d06bd132edfc8f62d4312",
+      "size": 5400,
+      "role": "input"
+    },
+    {
+      "path": "inputs/mphone/comparison.xlsx",
+      "sha256": "4842fac662b619b4ebd94347d9be0473474729d73da6659fb449d68e2f10db2f",
+      "size": 5401,
+      "role": "input"
+    },
+    {
+      "path": "inputs/mphone/supplier_a.pdf",
+      "sha256": "54933bae0e3fa8804ea36662b990ad24ff517d6fcc4f91bbc0b520497d6ad92d",
+      "size": 23889,
+      "role": "input"
+    },
+    {
+      "path": "inputs/mphone/supplier_b.pdf",
+      "sha256": "9e1b6f7a360d1b21d58e4277ddc2edb792c612d75ced0a1deee3070ab6735225",
+      "size": 16881,
+      "role": "input"
+    },
+    {
+      "path": "inputs/mphone/supplier_b_comparison.xlsx",
+      "sha256": "fd7524d86b92fefdafce29b86a1b8fbc81da6a08d5cea1f7795a96af87a7a0b7",
+      "size": 5397,
+      "role": "input"
+    },
+    {
+      "path": "inputs/mphonealt/comparison.xlsx",
+      "sha256": "7a31a18ae483f4540788525e0eb9d094bd4adfb82bc1f1fab3c6ece95e84a83d",
+      "size": 5403,
+      "role": "input"
+    },
+    {
+      "path": "inputs/mphonealt/supplier_a.pdf",
+      "sha256": "e72436640ad00ffe7182c55a7ef14081918ff614c4d3f00db0453d10bcb3bb5d",
+      "size": 21608,
+      "role": "input"
+    },
+    {
+      "path": "inputs/mphonealt/supplier_b.pdf",
+      "sha256": "bdf8a2817fdcd264c62a226858bfb071e10308d96f486a1498dcacebbcfe892c",
+      "size": 18456,
+      "role": "input"
+    },
+    {
+      "path": "inputs/mphonealt/supplier_b_comparison.xlsx",
+      "sha256": "b7a06adbfb8254b77226d31b391ee80912a27d1f6b0237b94ff7c184e05fc1a6",
+      "size": 5426,
+      "role": "input"
+    },
+    {
+      "path": "inputs/scenarios.json",
+      "sha256": "3586d653787c2436e03d77a4d273fc363aad91171e853247b2d537ccb6a90e50",
+      "size": 185730,
+      "role": "input"
+    }
+  ],
+  "task_ids": [
+    "dev_intent_scope",
+    "dev_intent_upload",
+    "dev_rag_storage",
+    "dev_rag_tax",
+    "dev_rag_missing",
+    "dev_review_quantity",
+    "dev_review_negative",
+    "dev_review_presence",
+    "dev_memory_first",
+    "dev_safety_pdf",
+    "measure_intent_ambiguous",
+    "measure_intent_draft",
+    "measure_intent_review",
+    "measure_intent_retry",
+    "measure_intent_export",
+    "measure_intent_plan",
+    "measure_rag_terminal",
+    "measure_rag_delivery",
+    "measure_rag_negation",
+    "measure_rag_two_prices",
+    "measure_rag_mixed_page",
+    "measure_rag_table_scope",
+    "measure_rag_battery_missing",
+    "measure_rag_origin_missing",
+    "measure_rag_warranty_missing",
+    "measure_review_tax_conflict",
+    "measure_review_units",
+    "measure_review_pure_cotton",
+    "measure_review_coverage",
+    "measure_review_same_price",
+    "measure_review_price_ambiguous",
+    "measure_review_report_presence",
+    "measure_memory_cross_chat",
+    "measure_memory_current_rule",
+    "measure_memory_pending",
+    "measure_safety_injection",
+    "measure_safety_other_case",
+    "measure_safety_unknown_retry",
+    "measure_safety_fabricated_quantity",
+    "measure_safety_readonly"
+  ],
+  "synthetic": true,
+  "author_visible": true,
+  "independent_holdout": false
+}

@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "track": "offline_engineering_controls",
+  "business_denominator_inclusion": false,
+  "real_model_requests": 0,
+  "scenarios": [
+    {"id": "duplicate_submit", "pytest_node": "backend/tests/test_api_entry.py::test_submit_replay_conflict_run_events_and_cancel", "assertion": "Same idempotency key and body returns the same message/run/attempt receipt."},
+    {"id": "idempotency_conflict", "pytest_node": "backend/tests/test_api_entry.py::test_submit_replay_conflict_run_events_and_cancel", "assertion": "Same key with changed body is rejected with 409 idempotency_conflict."},
+    {"id": "retry_preserves_attempt", "pytest_node": "backend/tests/test_api_entry.py::test_retry_replays_one_attempt_and_stale_revision_cannot_create_new_run", "assertion": "Retry replay returns one attempt receipt; stale revision cannot create a fresh run."},
+    {"id": "queued_cancel", "pytest_node": "backend/tests/test_api_entry.py::test_submit_replay_conflict_run_events_and_cancel", "assertion": "Queued run is cancelled and cancellation is observable in events."},
+    {"id": "unknown_no_resend", "pytest_node": "backend/tests/test_dynamic_agent.py::test_provider_unknown_outcome_is_not_replayed_and_usage_survives", "assertion": "Unknown provider outcome is retained without automatic replay, including usage."},
+    {"id": "vector_failure_scoped_fallback", "pytest_node": "backend/tests/test_item_binding_retrieval.py::test_over_budget_and_vector_failure_stay_within_lexical_item_range", "assertion": "Injected vector failure falls back within the same item boundary."}
+  ],
+  "limitations": ["Uses isolated test fixtures and controlled providers, not the live service.", "Six scenarios share four distinct pytest nodes; these are not six independent live trials."]
+}
