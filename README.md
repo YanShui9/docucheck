@@ -1,5 +1,7 @@
 # DocuCheck · 采购文档审查 Agent
 
+2026-10-28圆环已应用本机日常页面：前端ca62dda、后端f4506ed；已登录Chrome实看圆环并展开详情，当前旧对话无用量记录时显示空环。见[部署与验收](docs/context-ring-2026-10-28.md#本机日常服务更新与真实页面验收)。
+
 2026-10-28前端补修：上下文入口移入输入框，圆环显示最近请求的估算占用，点击查看详情；关闭状态更新、未知空环及范围隔离已验证。前端360项与类型/构建通过，尚未更新运行服务，见[交付记录](docs/context-ring-2026-10-28.md)。
 
 [![Offline verification](https://github.com/YanShui9/docucheck/actions/workflows/offline-ci.yml/badge.svg?branch=main)](https://github.com/YanShui9/docucheck/actions/workflows/offline-ci.yml)
