@@ -1,0 +1,102 @@
+{
+  "date": "2026-10-27",
+  "readback_date": "2026-10-28",
+  "scope": "explicit other-SKU full PDF page exclusions",
+  "implementation_verified": true,
+  "formal_review_acceptance_passed": false,
+  "runtime_commit": "f4506edd0e3a0307d4c650d10f00eb18c181b0f1",
+  "rule_version": "dynamic-rules-v16",
+  "offline": {
+    "passed": 2729,
+    "skipped": 63,
+    "network_attempts": 0,
+    "source_unchanged": true,
+    "tested_files": 789
+  },
+  "frontend": {
+    "tests_passed": 352,
+    "files": 21,
+    "typecheck_and_build_passed": true,
+    "synthetic_component_browser_passed": true,
+    "protected_business_ui_verified": false
+  },
+  "isolated_mysql": {
+    "passed": 21,
+    "cleaned_up": true,
+    "production_queue_connected": false
+  },
+  "runtime": {
+    "worker_files": 143,
+    "api_modules": 18,
+    "http_dist_files": 12,
+    "health_live": 200,
+    "health_ready": 200,
+    "anonymous_me": 401
+  },
+  "original_case_retest": {
+    "run_id": "953fac3c562140ecb16a983a6b92da1b",
+    "original_run": "f639cc12e159461a98eee9ebd34a1708",
+    "status": "partial",
+    "checks": 8,
+    "formal_checks": 0,
+    "locally_complete_checks": 4,
+    "processing_status_counts": {
+      "partial": 4,
+      "complete": 4
+    },
+    "business_status_counts": {
+      "null": 4,
+      "待人工确认": 2,
+      "不满足": 1,
+      "证据不足": 1
+    },
+    "reason_counts": {
+      "coverage_incomplete": 4,
+      "item_model_unclear": 1,
+      "threshold_failed": 1,
+      "money_price_scope_unclear": 1,
+      "supplier_fact_missing": 1
+    },
+    "excluded_pages": 2,
+    "excluded_blocks": 10,
+    "json_xlsx_persisted_match": true
+  },
+  "frozen_scope_readback": {
+    "scope_checks_passed": true,
+    "current_frozen_scope_inventory_complete": {
+      "vendor-a": {
+        "phone": true
+      },
+      "vendor-b": {
+        "phone": true
+      }
+    },
+    "selected_blocks": 35,
+    "extraction_refs_unchanged": true,
+    "excluded_refs_absent_from_facts_and_ordinary_sources": true,
+    "rejected_candidate_codes": {
+      "material_sources_overlap": 2
+    },
+    "root_cause_limit": "Raw rejected candidate JSON was not persisted; exact candidate structure cannot be recovered from the code count."
+  },
+  "preservation": {
+    "original_files": 736,
+    "old_rows_preserved": true,
+    "old_18_pack_scores_unchanged": true,
+    "main_head_and_six_wip_preserved": true
+  },
+  "model_usage_added": {
+    "requests": 3,
+    "input_tokens": 12688,
+    "output_tokens": 1290,
+    "unknown_usage": 0
+  },
+  "warning_round_known": 61,
+  "boundaries": [
+    "Known synthetic d03 only; original 18-pack scores are unchanged.",
+    "Explicit user scope decision with finite source guards, not unrestricted semantic irrelevance proof.",
+    "Protected business browser UI and native downloads not reverified.",
+    "Formal review remains partial: two material_sources_overlap rejections; raw rejected candidates were not persisted.",
+    "No independent quality, production capacity or backup restore claim."
+  ]
+}

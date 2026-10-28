@@ -1,6 +1,6 @@
 # DocuCheck 技术文档
 
-从业务流程、核心设计到验证记录，按需选择阅读入口。最新整理：2026-10-25。
+从业务流程、核心设计到验证记录，按需选择阅读入口。最新整理：2026-10-28。
 
 ## 推荐阅读
 
@@ -17,6 +17,7 @@
 
 | 日期与范围 | 记录 |
 | --- | --- |
+| 2026-10-27：PDF 整页显式排除、冻结验证与 d03 后台复测 | [交付记录](pdf-page-exclusions-2026-10-27.md)、[机器摘要](../evals/reports/pdf-page-exclusions-2026-10-27.json) |
 | 2026-10-25：引用关系诊断、冻结验证与原任务各一次正式复测 | [本步记录](source-relationship-diagnostics-2026-10-25.md)、[机器摘要](../evals/reports/source-relationship-diagnostics-2026-10-25.json) |
 | 2026-10-25：一致报价规则、部署及未通过的实连验收 | [本步记录](consistent-money-sources-2026-10-25.md)、[机器摘要](../evals/reports/consistent-money-sources-2026-10-25.json) |
 | 2026-10-24：旧12包＋新6包首轮，完整分母、失败与用量 | [业务复测与问题定位](current-quality-retest-2026-10-24.md)、[机器摘要](../evals/reports/current-quality-retest-2026-10-24.json) |
