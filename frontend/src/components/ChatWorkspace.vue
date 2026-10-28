@@ -572,9 +572,12 @@ onUnmounted(() => { disposed = true; ++generation; if (timer) clearTimeout(timer
       <div v-if="error" class="chat-error" role="alert">{{ error }} <button v-if="uncertain" class="text-button" @click="send(true)">重试原请求</button><button v-else class="text-button" @click="refresh">刷新对话</button></div>
       <button v-else-if="Object.keys(resultErrors).length" class="text-button" :disabled="loading || sending || olderLoading" @click="refresh">刷新对话</button>
       <div v-if="activeRun?.status === 'waiting_user'" class="state-note">请补充信息后发送，或<button class="text-button" :disabled="sending || !canWrite || busy" @click="stop">结束本次处理</button>。</div>
-      <ChatComposer v-model="draft" :disabled="!canWrite || busy || loading || sending || olderLoading || uncertain || !historyReady" :running="running && canWrite && !busy" @send="send()" @upload="emit('upload')" @stop="stop" />
-      <ContextUsage :case-id="caseId" :conversation-id="conversationId" :run-id="latestRun?.id ?? null"
-                    :attempt-id="latestRun?.active_attempt_id" :run-status="latestRun?.status" />
+      <ChatComposer v-model="draft" :disabled="!canWrite || busy || loading || sending || olderLoading || uncertain || !historyReady" :running="running && canWrite && !busy" @send="send()" @upload="emit('upload')" @stop="stop">
+        <template #context-usage>
+          <ContextUsage :case-id="caseId" :conversation-id="conversationId" :run-id="latestRun?.id ?? null"
+                        :attempt-id="latestRun?.active_attempt_id" :run-status="latestRun?.status" />
+        </template>
+      </ChatComposer>
       <p class="composer-disclaimer">{{ !canWrite ? '当前为只读权限，可查看对话和资料。' : busy ? '正在更新采购任务，完成后可继续发送消息。' : '助手结论供采购审查参考，请结合原文确认。' }}</p>
     </div>
   </section>

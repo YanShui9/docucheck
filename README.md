@@ -1,5 +1,7 @@
 # DocuCheck · 采购文档审查 Agent
 
+2026-10-28前端补修：上下文入口移入输入框，圆环显示最近请求的估算占用，点击查看详情；关闭状态更新、未知空环及范围隔离已验证。前端360项与类型/构建通过，尚未更新运行服务，见[交付记录](docs/context-ring-2026-10-28.md)。
+
 [![Offline verification](https://github.com/YanShui9/docucheck/actions/workflows/offline-ci.yml/badge.svg?branch=main)](https://github.com/YanShui9/docucheck/actions/workflows/offline-ci.yml)
 ![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)

@@ -22,12 +22,15 @@ function keydown(event: KeyboardEvent) {
         <span>上传资料</span>
       </button>
       <span class="composer-key-hint">Enter 发送 · Shift + Enter 换行</span>
+      <div class="composer-actions">
+      <slot name="context-usage" />
       <button v-if="running" class="composer-send" type="button" aria-label="停止处理" @click="emit('stop')">
         <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="1" /></svg>
       </button>
       <button v-else class="composer-send" type="button" aria-label="发送消息" :disabled="disabled || !modelValue.trim()" @click="send">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 19V5m-6 6 6-6 6 6" /></svg>
       </button>
+      </div>
     </div>
   </div>
 </template>

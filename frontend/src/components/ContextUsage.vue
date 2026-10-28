@@ -16,6 +16,7 @@ const root = ref<HTMLElement | null>(null)
 const trigger = ref<HTMLButtonElement | null>(null)
 const panel = ref<HTMLElement | null>(null)
 const panelId = `context-usage-${useId()}`
+const tooltipId = `${panelId}-hint`
 const hasScope = computed(() => !!props.caseId && !!props.conversationId && !!props.runId)
 const record = computed(() => response.value?.record)
 const processing = computed(() => ['queued', 'running'].includes(props.runStatus ?? response.value?.run_status ?? ''))
@@ -24,6 +25,7 @@ let generation = 0
 let disposed = false
 let controller: AbortController | null = null
 let timeout: ReturnType<typeof setTimeout> | undefined
+let poll: ReturnType<typeof setTimeout> | undefined
 
 function finite(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value) && value >= 0
@@ -31,11 +33,19 @@ function finite(value: unknown): value is number {
 function kb(value: unknown) { return finite(value) ? `${numberFormat.format(value / 1024)} KB` : '未记录' }
 function tokens(value: unknown) { return finite(value) ? `${numberFormat.format(value)} token` : '未记录' }
 function count(value: unknown, unit: string) { return finite(value) ? `${numberFormat.format(value)}${unit}` : '未记录' }
+function pageVisible() { return document.visibilityState !== 'hidden' }
 const percent = computed(() => {
   const estimate = record.value?.estimate
   if (!finite(estimate?.input_bytes) || !finite(estimate?.limit_bytes) || estimate.limit_bytes === 0) return null
   const value = estimate.input_bytes / estimate.limit_bytes * 100
   return Number.isFinite(value) ? value : null
+})
+const ringHint = computed(() => {
+  if (!hasScope.value) return '上下文：发送消息后可查看'
+  if (error.value) return `上下文：${error.value}`
+  const state = percent.value === null ? (loading.value ? '正在读取' : '未记录')
+    : `估算已用${numberFormat.format(percent.value)}%（最近一次记录）`
+  return `上下文${state}${processing.value ? '；处理中，等待记录更新' : ''}，点击查看详情`
 })
 const summaryStatus = computed(() => ({ completed: '已完成', failed: '未完成', not_recorded: '未记录' })[record.value?.summary_status ?? 'not_recorded'] ?? '未记录')
 const requestStatus = computed(() => ({ completed: '已记录', rejected: '未获准发送', failed: '请求失败',
@@ -47,6 +57,8 @@ function cancel() {
   ++generation
   if (timeout !== undefined) clearTimeout(timeout)
   timeout = undefined
+  if (poll !== undefined) clearTimeout(poll)
+  poll = undefined
   controller?.abort()
   controller = null
   loading.value = false
@@ -55,7 +67,6 @@ function clear() { response.value = null; error.value = '' }
 function close() {
   if (!opened.value) return
   opened.value = false
-  cancel(); clear()
   void nextTick(() => trigger.value?.focus())
 }
 function outside(event: Event) {
@@ -65,14 +76,14 @@ function keyboard(event: KeyboardEvent) {
   if (opened.value && event.key === 'Escape') { event.preventDefault(); close() }
 }
 async function read() {
-  cancel(); clear()
-  if (!opened.value || !hasScope.value || disposed) return
+  if (loading.value || !hasScope.value || disposed || !pageVisible()) return
+  cancel(); error.value = ''
   const scope = { caseId: props.caseId, conversationId: props.conversationId, runId: props.runId, attemptId: props.attemptId }
   const version = generation
   const abort = new AbortController()
   controller = abort
   loading.value = true
-  const current = () => !disposed && opened.value && version === generation && !abort.signal.aborted
+  const current = () => !disposed && version === generation && !abort.signal.aborted
   let timedOut = false
   // The same abort promise also bounds authentication, so a late token cannot start a cancelled fetch.
   const cancelled = new Promise<never>((_resolve, reject) => {
@@ -90,7 +101,7 @@ async function read() {
       || (scope.attemptId && result.attempt_id !== scope.attemptId)) throw new Error('context_usage_scope')
     response.value = result
   } catch (reason) {
-    if (disposed || !opened.value || version !== generation) return
+    if (disposed || version !== generation) return
     const code = reason instanceof Error ? reason.message : ''
     error.value = timedOut ? '读取超时，请重试。'
       : code === 'context_usage_scope' ? '记录归属已变化，请重试。'
@@ -102,37 +113,58 @@ async function read() {
     if (version === generation) {
       if (timeout !== undefined) clearTimeout(timeout)
       timeout = undefined; loading.value = false
+      controller = null
+      if (processing.value && !error.value && pageVisible() && !disposed) {
+        poll = setTimeout(() => { poll = undefined; void read() }, 3000)
+      }
     }
   }
 }
 async function toggle() {
   if (opened.value) { close(); return }
   opened.value = true
-  void read()
+  if (!response.value || error.value) void read()
   await nextTick()
   if (opened.value) panel.value?.focus()
 }
 watch(() => [props.caseId, props.conversationId, props.runId, props.attemptId, props.runStatus], () => {
   cancel(); clear()
-  if (opened.value) void read()
-}, { flush: 'sync' })
+  void read()
+}, { flush: 'pre' })
+function visibility() {
+  if (document.visibilityState === 'hidden') cancel()
+  else if (!error.value) void read()
+}
 // Close after the pointer target's default focus action, then restore the entry focus.
-onMounted(() => { document.addEventListener('click', outside); document.addEventListener('keydown', keyboard) })
+onMounted(() => {
+  document.addEventListener('click', outside); document.addEventListener('keydown', keyboard)
+  document.addEventListener('visibilitychange', visibility)
+  void read()
+})
 onUnmounted(() => {
   disposed = true; cancel()
   document.removeEventListener('click', outside); document.removeEventListener('keydown', keyboard)
+  document.removeEventListener('visibilitychange', visibility)
 })
 </script>
 <template>
   <div ref="root" class="context-usage">
     <button ref="trigger" type="button" class="context-usage-trigger" :aria-expanded="opened"
-            :aria-controls="panelId" aria-haspopup="dialog" @click="toggle">上下文 · 估算 <span aria-hidden="true">⌃</span></button>
+            :aria-label="ringHint" :aria-describedby="opened ? undefined : tooltipId"
+            :aria-controls="panelId" aria-haspopup="dialog" @click="toggle">
+      <svg class="context-usage-ring" viewBox="0 0 20 20" aria-hidden="true">
+        <circle class="context-usage-ring-track" cx="10" cy="10" r="7.5" />
+        <circle v-if="percent !== null" class="context-usage-ring-fill" cx="10" cy="10" r="7.5"
+                pathLength="100" :stroke-dasharray="`${Math.min(100, percent)} 100`" />
+      </svg>
+    </button>
+    <span v-if="!opened" :id="tooltipId" class="context-usage-tooltip" role="tooltip">{{ ringHint }}</span>
     <section v-if="opened" :id="panelId" ref="panel" class="context-usage-card" role="dialog" aria-label="上下文用量" tabindex="-1">
       <div class="context-usage-heading"><h2>上下文用量</h2><button type="button" aria-label="关闭上下文用量" @click="close">×</button></div>
       <p class="context-usage-caption">当前对话最近一次已记录请求</p>
       <p v-if="processing" class="context-usage-note">处理中，记录可能尚未更新。</p>
       <p v-if="!hasScope" class="context-usage-empty">发送消息后可查看</p>
-      <p v-else-if="loading" class="context-usage-empty" role="status">正在读取…</p>
+      <p v-else-if="loading && !response" class="context-usage-empty" role="status">正在读取…</p>
       <div v-else-if="error" class="context-usage-error" role="alert">
         <p>{{ error }}</p><button type="button" class="text-button" data-test="context-usage-retry" @click="read">重新读取</button>
       </div>

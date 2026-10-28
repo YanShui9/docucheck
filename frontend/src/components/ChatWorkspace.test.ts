@@ -24,10 +24,12 @@ function reads(path: string) {
 }
 afterEach(() => { wrappers.splice(0).forEach(w => w.unmount()); apiRequest.mockReset(); vi.useRealTimers() })
 
-test('context usage is below the composer and does not read diagnostics until opened', async () => {
+test('context ring sits inside the composer immediately before send and missing Run does not fetch', async () => {
   apiRequest.mockImplementation(reads)
   const wrapper = setup(); await flushPromises()
-  expect(wrapper.find('.composer-dock .context-usage-trigger').exists()).toBe(true)
+  expect(wrapper.find('.chat-composer .composer-actions .context-usage-trigger').exists()).toBe(true)
+  const actions = wrapper.get('.composer-actions').element
+  expect(actions.lastElementChild?.getAttribute('aria-label')).toBe('发送消息')
   expect(apiRequest.mock.calls.some(([path]) => path.endsWith('/context-usage'))).toBe(false)
   await wrapper.get('.context-usage-trigger').trigger('click')
   expect(wrapper.text()).toContain('发送消息后可查看')

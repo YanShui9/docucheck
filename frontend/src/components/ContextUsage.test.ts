@@ -29,12 +29,109 @@ async function open(wrapper: ReturnType<typeof setup>) {
 beforeEach(() => { accessToken.mockResolvedValue('token'); apiRequest.mockResolvedValue(view()) })
 afterEach(() => {
   wrappers.splice(0).forEach(wrapper => wrapper.unmount())
-  apiRequest.mockReset(); accessToken.mockReset(); vi.unstubAllGlobals(); vi.useRealTimers()
+  apiRequest.mockReset(); accessToken.mockReset(); vi.unstubAllGlobals(); vi.restoreAllMocks(); vi.useRealTimers()
 })
 
-test('opens lazily and shows bytes against the same input allowance with a separate configured token window', async () => {
+test('closed ring reads on mount and describes the last recorded estimate without opening details', async () => {
+  const wrapper = setup(); await flushPromises()
+  expect(apiRequest).toHaveBeenCalledTimes(1)
+  expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
+  const trigger = wrapper.get('.context-usage-trigger')
+  expect(trigger.attributes('aria-label')).toContain('估算已用25%')
+  expect(trigger.find('svg circle.context-usage-ring-fill').exists()).toBe(true)
+  expect(trigger.find('.context-usage-ring-fill').attributes('stroke-dasharray')).toBe('25 100')
+  await open(wrapper)
+  expect(apiRequest).toHaveBeenCalledTimes(1)
+})
+
+test('closed running ring polls serially and final status refresh stops the timer', async () => {
+  vi.useFakeTimers()
+  const wrapper = setup({ runStatus: 'running' }); await flushPromises()
+  const next = view(); next.record.estimate.input_bytes = 4096
+  apiRequest.mockResolvedValue(next)
+  await vi.advanceTimersByTimeAsync(3000)
+  expect(apiRequest).toHaveBeenCalledTimes(2)
+  expect(wrapper.get('.context-usage-trigger').attributes('aria-label')).toContain('估算已用50%')
+  await wrapper.setProps({ runStatus: 'completed' }); await flushPromises()
+  expect(apiRequest).toHaveBeenCalledTimes(3)
+  await vi.advanceTimersByTimeAsync(9000)
+  expect(apiRequest).toHaveBeenCalledTimes(3)
+})
+
+test('unknown and failed reads show an empty ring without a fabricated zero percent', async () => {
+  apiRequest.mockResolvedValue({ ...view(), record: null })
+  const wrapper = setup(); await flushPromises()
+  expect(wrapper.get('.context-usage-trigger').attributes('aria-label')).toContain('未记录')
+  expect(wrapper.find('.context-usage-ring-fill').exists()).toBe(false)
+  apiRequest.mockRejectedValue(new Error('forbidden'))
+  await wrapper.setProps({ runStatus: 'failed' }); await flushPromises()
+  expect(wrapper.find('.context-usage-ring-fill').exists()).toBe(false)
+  expect(wrapper.get('.context-usage-trigger').attributes('aria-label')).not.toContain('0%')
+})
+
+test('closing details keeps the last recorded ring and closed scope changes clear stale data', async () => {
+  const wrapper = setup(); await flushPromises(); await open(wrapper)
+  await wrapper.get('.context-usage-trigger').trigger('click')
+  expect(wrapper.get('.context-usage-trigger').attributes('aria-label')).toContain('25%')
+  apiRequest.mockReturnValue(new Promise(() => {}))
+  await wrapper.setProps({ conversationId: 'conv-b', runId: 'run-b' })
+  expect(wrapper.find('.context-usage-ring-fill').exists()).toBe(false)
+  expect(wrapper.get('.context-usage-trigger').attributes('aria-label')).not.toContain('25%')
+})
+
+test('background polling pauses while hidden and resumes with a fresh read when visible', async () => {
+  vi.useFakeTimers()
+  let state = 'visible'
+  vi.spyOn(document, 'visibilityState', 'get').mockImplementation(() => state as DocumentVisibilityState)
+  const wrapper = setup({ runStatus: 'running' }); await flushPromises()
+  state = 'hidden'; document.dispatchEvent(new Event('visibilitychange'))
+  await vi.advanceTimersByTimeAsync(9000)
+  expect(apiRequest).toHaveBeenCalledTimes(1)
+  state = 'visible'; document.dispatchEvent(new Event('visibilitychange')); await flushPromises()
+  expect(apiRequest).toHaveBeenCalledTimes(2)
+  wrapper.unmount(); wrappers.splice(wrappers.indexOf(wrapper), 1)
+  await vi.advanceTimersByTimeAsync(9000)
+  expect(apiRequest).toHaveBeenCalledTimes(2)
+})
+
+test('returning to the page refreshes a Run that completed while hidden', async () => {
+  let state = 'visible'
+  vi.spyOn(document, 'visibilityState', 'get').mockImplementation(() => state as DocumentVisibilityState)
+  const wrapper = setup({ runStatus: 'running' }); await flushPromises()
+  state = 'hidden'; document.dispatchEvent(new Event('visibilitychange'))
+  await wrapper.setProps({ runStatus: 'completed' }); await flushPromises()
+  expect(apiRequest).toHaveBeenCalledTimes(1)
+  state = 'visible'; document.dispatchEvent(new Event('visibilitychange')); await flushPromises()
+  expect(apiRequest).toHaveBeenCalledTimes(2)
+  expect(wrapper.get('.context-usage-trigger').attributes('aria-label')).toContain('25%')
+})
+
+test('a pending read does not overlap polling and failures stop automatic retries', async () => {
+  vi.useFakeTimers()
+  let reject!: (reason: Error) => void
+  apiRequest.mockReturnValue(new Promise((_resolve, fail) => { reject = fail }))
+  const wrapper = setup({ runStatus: 'running' }); await flushPromises()
+  await vi.advanceTimersByTimeAsync(6000)
+  expect(apiRequest).toHaveBeenCalledTimes(1)
+  reject(new Error('forbidden')); await flushPromises()
+  await vi.advanceTimersByTimeAsync(9000)
+  expect(apiRequest).toHaveBeenCalledTimes(1)
+  expect(wrapper.get('.context-usage-trigger').attributes('aria-label')).toContain('暂无权限')
+})
+
+test('background refresh keeps open details readable until the next result arrives', async () => {
+  vi.useFakeTimers()
+  const wrapper = setup({ runStatus: 'running' }); await flushPromises(); await open(wrapper)
+  apiRequest.mockReturnValue(new Promise(() => {}))
+  await vi.advanceTimersByTimeAsync(3000)
+  expect(apiRequest).toHaveBeenCalledTimes(2)
+  expect(wrapper.get('[role="dialog"]').text()).toContain('2 KB / 8 KB')
+  expect(wrapper.get('[role="dialog"]').text()).not.toContain('正在读取…')
+})
+
+test('shows bytes against the same input allowance with a separate configured token window', async () => {
   const wrapper = setup()
-  expect(apiRequest).not.toHaveBeenCalled()
+  expect(apiRequest).toHaveBeenCalledTimes(1)
   expect(wrapper.get('.context-usage-trigger').attributes('aria-expanded')).toBe('false')
   await open(wrapper)
   expect(apiRequest.mock.calls[0]?.[0]).toBe('/agent-runs/run-a/context-usage')
@@ -142,7 +239,7 @@ test('request failures offer a local retry', async () => {
   expect(apiRequest).toHaveBeenCalledTimes(2)
 })
 
-test('Escape closes the keyboard-accessible card, aborts reading, and returns focus', async () => {
+test('Escape closes the keyboard-accessible card without stopping ring updates and returns focus', async () => {
   apiRequest.mockReturnValue(new Promise(() => {}))
   const wrapper = setup(); await open(wrapper)
   const trigger = wrapper.get('.context-usage-trigger')
@@ -152,7 +249,7 @@ test('Escape closes the keyboard-accessible card, aborts reading, and returns fo
   await flushPromises()
   expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
   expect(trigger.attributes('aria-expanded')).toBe('false')
-  expect(signal.aborted).toBe(true)
+  expect(signal.aborted).toBe(false)
   expect(document.activeElement).toBe(trigger.element)
 })
 
@@ -223,17 +320,18 @@ test('changing scope aborts and clears a read before a late response can replace
   expect(wrapper.text()).not.toContain('2 KB / 8 KB')
 })
 
-test('attempt and status changes refresh only while the card is open', async () => {
-  const wrapper = setup(); await wrapper.setProps({ runStatus: 'running' })
-  expect(apiRequest).not.toHaveBeenCalled()
+test('attempt and status changes refresh both the open card and the closed ring', async () => {
+  const wrapper = setup(); await flushPromises(); await wrapper.setProps({ runStatus: 'running' }); await flushPromises()
+  expect(apiRequest).toHaveBeenCalledTimes(2)
   await open(wrapper)
   apiRequest.mockResolvedValue({ ...view(), attempt_id: 'attempt-b' })
   await wrapper.setProps({ attemptId: 'attempt-b' }); await flushPromises()
   await wrapper.setProps({ runStatus: 'completed' }); await flushPromises()
-  expect(apiRequest).toHaveBeenCalledTimes(3)
+  expect(apiRequest).toHaveBeenCalledTimes(4)
   await wrapper.get('.context-usage-trigger').trigger('click')
   await wrapper.setProps({ runStatus: 'failed' })
-  expect(apiRequest).toHaveBeenCalledTimes(3)
+  await flushPromises()
+  expect(apiRequest).toHaveBeenCalledTimes(5)
 })
 
 test('permission loss during a refresh clears previously displayed data', async () => {
@@ -244,7 +342,7 @@ test('permission loss during a refresh clears previously displayed data', async 
   expect(wrapper.text()).toContain('暂无权限')
 })
 
-test('close and reopen ignore a cancelled late read, and unmount cancels the active read', async () => {
+test('close and reopen share the ring read, and unmount cancels the active read', async () => {
   let release!: (value: unknown) => void
   apiRequest.mockReturnValueOnce(new Promise(resolve => { release = resolve }))
   const wrapper = setup(); await open(wrapper)
@@ -252,8 +350,9 @@ test('close and reopen ignore a cancelled late read, and unmount cancels the act
   await wrapper.get('.context-usage-trigger').trigger('click')
   apiRequest.mockResolvedValue({ ...view(), record: null })
   await open(wrapper); release(view()); await flushPromises()
-  expect(firstSignal.aborted).toBe(true)
-  expect(wrapper.text()).not.toContain('2 KB')
+  expect(firstSignal.aborted).toBe(false)
+  expect(apiRequest).toHaveBeenCalledTimes(1)
+  expect(wrapper.text()).toContain('2 KB')
   apiRequest.mockReturnValue(new Promise(() => {}))
   await wrapper.setProps({ runStatus: 'running' }); await flushPromises()
   const activeSignal = apiRequest.mock.calls.at(-1)![2].signal as AbortSignal

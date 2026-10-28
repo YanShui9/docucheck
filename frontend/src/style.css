@@ -321,15 +321,21 @@ h1, h2, h3, p { margin-top: 0; }
 .composer-attachment svg { width: 18px; height: 18px; }
 .composer-attachment:hover { background: #f3f4f2; }
 .composer-key-hint { margin-left: auto; color: #9a9f99; font-size: 11px; }
-.composer-send { border: 0; background: #246b5a; color: #fff; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; flex-shrink: 0; margin-left: auto; }
+.composer-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; flex-shrink: 0; }
+.composer-send { border: 0; background: #246b5a; color: #fff; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; flex-shrink: 0; }
 .composer-send svg { width: 20px; height: 20px; }
 .composer-send:hover { background: #1f5b4d; }
 .composer-disclaimer { font-size: 11px; color: #8d948b; text-align: center; margin: 9px 0 0; }
-.context-usage { position: relative; width: fit-content; max-width: 100%; margin: 5px 0 0 8px; }
-.context-usage-trigger { display: inline-flex; align-items: center; gap: 5px; border: 0; border-radius: 5px; background: transparent; color: #66796b; padding: 5px 4px; font-size: 11px !important; }
+.context-usage { position: relative; flex-shrink: 0; }
+.context-usage-trigger { display: grid; place-items: center; width: 32px; height: 32px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: #246b5a; }
 .context-usage-trigger:hover, .context-usage-trigger[aria-expanded="true"] { color: #246b5a; background: #edf3ee; }
-.context-usage-trigger[aria-expanded="true"] > span { transform: rotate(180deg); }
-.context-usage-card { position: absolute; left: 0; bottom: calc(100% + 8px); z-index: 15; width: min(360px, calc(100vw - 64px)); max-height: min(580px, 65dvh); overflow-y: auto; overscroll-behavior: contain; padding: 18px; border: 1px solid #cfded2; border-radius: 12px; background: #fff; color: #37483c; box-shadow: 0 8px 28px #2337290d; font-size: 12px; line-height: 1.65; overflow-wrap: anywhere; }
+.context-usage-trigger:focus-visible { outline: 2px solid #528b6a; outline-offset: 3px; }
+.context-usage-ring { width: 18px; height: 18px; transform: rotate(-90deg); fill: none; stroke-width: 2.5; }
+.context-usage-ring-track { stroke: #e1e6e1; }
+.context-usage-ring-fill { stroke: currentColor; }
+.context-usage-tooltip { position: absolute; right: 0; bottom: calc(100% + 8px); z-index: 16; width: max-content; max-width: min(280px, calc(100vw - 90px)); padding: 8px 11px; border: 1px solid #dfe7e1; border-radius: 8px; background: #fff; color: #54675a; font-size: 11px; line-height: 1.65; box-shadow: 0 4px 16px #2337290d; opacity: 0; visibility: hidden; pointer-events: none; }
+.context-usage-trigger:hover + .context-usage-tooltip, .context-usage-trigger:focus-visible + .context-usage-tooltip { opacity: 1; visibility: visible; }
+.context-usage-card { position: absolute; right: 0; bottom: calc(100% + 8px); z-index: 15; width: min(360px, calc(100vw - 90px)); max-height: min(580px, 65dvh); overflow-y: auto; overscroll-behavior: contain; padding: 18px; border: 1px solid #cfded2; border-radius: 12px; background: #fff; color: #37483c; box-shadow: 0 8px 28px #2337290d; font-size: 12px; line-height: 1.65; overflow-wrap: anywhere; }
 .context-usage-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .context-usage-heading h2 { margin: 0; font-size: 14px; font-weight: 600; color: #273e30; }
 .context-usage-heading > button { border: 0; border-radius: 5px; background: transparent; color: #718175; padding: 0 5px; font-size: 20px; line-height: 1.2; }
