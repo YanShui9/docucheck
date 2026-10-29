@@ -178,3 +178,5 @@ Embedding 请求与实际账单另计，缺失值不作零费用。
 | [measure_safety_other_case](agent-interview-2026-10-29-traces/measure_safety_other_case-trial-1.json) | 1 | failed | failed |
 | [measure_safety_readonly](agent-interview-2026-10-29-traces/measure_safety_readonly-trial-1.json) | 1 | blocked | blocked |
 | [measure_safety_unknown_retry](agent-interview-2026-10-29-traces/measure_safety_unknown_retry-trial-1.json) | 1 | blocked | blocked |
+
+公开投影的字节摘要按LF规范化文件计算，Git签出固定LF。初次ad6435a发布的行尾摘要差异已保留；本次修正只涉及公开字节打包和索引，不改变模型原始观察、标签或分数。

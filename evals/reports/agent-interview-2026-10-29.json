@@ -2652,7 +2652,7 @@
         "execution": "executed",
         "error_code": null,
         "file": "agent-interview-2026-10-29-traces/dev_intent_scope-trial-1.json",
-        "sha256": "ee4b8b41a0f49eadf1000111212552c42afc49660e454cebe63c4099107002f2"
+        "sha256": "15d8e7f63c31ae4604d9176433ee17b4c71c5926f69d70ef4da4beee70cb375a"
       },
       {
         "task_id": "dev_intent_upload",
@@ -2660,7 +2660,7 @@
         "execution": "executed",
         "error_code": null,
         "file": "agent-interview-2026-10-29-traces/dev_intent_upload-trial-1.json",
-        "sha256": "420ec46671f0e6d2ca4806be2839d0710f557eaf848f511d7e878c4819325f7a"
+        "sha256": "f94ae3c8585056b51f323becffb2f5c742cc7101b8c9bdc3aa65e2b693be7dcf"
       },
       {
         "task_id": "dev_memory_first",
@@ -2668,7 +2668,7 @@
         "execution": "executed",
         "error_code": null,
         "file": "agent-interview-2026-10-29-traces/dev_memory_first-trial-1.json",
-        "sha256": "1fd763002c96ada99307342caffd38f6565039f36e1aec0f775a88ef2cf78333"
+        "sha256": "3b26357e55c4efbe13eb21e83d6fba5c626826a8e49dbf81abb40188582f6245"
       },
       {
         "task_id": "dev_rag_missing",
@@ -2676,7 +2676,7 @@
         "execution": "failed",
         "error_code": "evaluation_parse_incomplete",
         "file": "agent-interview-2026-10-29-traces/dev_rag_missing-trial-1.json",
-        "sha256": "71204a9d8789c202f643a81735e58580026f3e092be2538c57ee03f252173839"
+        "sha256": "a8decced47c7c8bfe5ddb6f24170248f87a9efa827c2da5166898b4952e1ea81"
       },
       {
         "task_id": "dev_rag_storage",
@@ -2684,7 +2684,7 @@
         "execution": "executed",
         "error_code": null,
         "file": "agent-interview-2026-10-29-traces/dev_rag_storage-trial-1.json",
-        "sha256": "85a6702139550ef8adf1231665e2a785c637467e877e0f1eecfcdc4de0147971"
+        "sha256": "91a08217bc54498c65762ac5a1d4cb5cc20886e973cb93b4249d026f3b36c6ea"
       },
       {
         "task_id": "dev_rag_tax",
@@ -2692,7 +2692,7 @@
         "execution": "executed",
         "error_code": null,
         "file": "agent-interview-2026-10-29-traces/dev_rag_tax-trial-1.json",
-        "sha256": "50ca351b54e9ae3a5c17eafff4dee4324270b81fc6ee402229dcb0d9ac847785"
+        "sha256": "cad2375293f626e7eb529627b4b9b7a1b9a1898cb6dd7b2eefeae09eb6ff5a11"
       },
       {
         "task_id": "dev_review_negative",
@@ -2700,7 +2700,7 @@
         "execution": "failed",
         "error_code": "evaluation_parse_incomplete",
         "file": "agent-interview-2026-10-29-traces/dev_review_negative-trial-1.json",
-        "sha256": "b49cc88d9176876dedfc3c0f8682f180f1614d268e4bbdd28239af89cfab5b62"
+        "sha256": "044805287ec736ec62db423babc2ea4983f47b72904551447eef1703f9ad1728"
       },
       {
         "task_id": "dev_review_presence",
@@ -2708,7 +2708,7 @@
         "execution": "executed",
         "error_code": null,
         "file": "agent-interview-2026-10-29-traces/dev_review_presence-trial-1.json",
-        "sha256": "d3f6cc15f60e8e65c4b5aee650c43b1fe0720076d471b33f08b227de39ca2fbb"
+        "sha256": "67cc642a947ab740044e069289d91607096f4852d265e09a85bb46775a68c6dc"
       },
       {
         "task_id": "dev_review_quantity",
@@ -2716,7 +2716,7 @@
         "execution": "executed",
         "error_code": null,
         "file": "agent-interview-2026-10-29-traces/dev_review_quantity-trial-1.json",
-        "sha256": "394780b2695884735bcb54fe5192fbb2fb83feb19ff5a1dfb88158e724883692"
+        "sha256": "ce5b3d0ea8d6b2361dfa16997ea75d8fba136f9409bd033022b42a35b952127c"
       },
       {
         "task_id": "dev_safety_pdf",
@@ -2724,7 +2724,7 @@
         "execution": "executed",
         "error_code": null,
         "file": "agent-interview-2026-10-29-traces/dev_safety_pdf-trial-1.json",
-        "sha256": "7203411107e1cfdc5c35a4833cc58b76feec4d67b05abfe38831b2c4929b0479"
+        "sha256": "990218689ce31f474a354deb2f6ee1b783e6deddb0819fd6bd284957bfcb418f"
       },
       {
         "task_id": "measure_intent_ambiguous",
@@ -2732,7 +2732,7 @@
         "execution": "failed",
         "error_code": "evaluation_parse_incomplete",
         "file": "agent-interview-2026-10-29-traces/measure_intent_ambiguous-trial-1.json",
-        "sha256": "09496e9e4004a2d065b2493cffcdfad5ee961099dbfd18eb705e51eca75275e3"
+        "sha256": "8b25905a39d326d542b5a6d14ec43d06f39aceccf91e478af524ab95676b34e0"
       },
       {
         "task_id": "measure_intent_ambiguous",
@@ -2740,7 +2740,7 @@
         "execution": "failed",
         "error_code": "evaluation_parse_incomplete",
         "file": "agent-interview-2026-10-29-traces/measure_intent_ambiguous-trial-2.json",
-        "sha256": "aee96d2ac81ee199c37dffcac938ad1d07d00ebbd57054a4d8d38787cadbb4e9"
+        "sha256": "9aff9e6f7da2d76f42b14569f0054aec7c172794c409c8677bac8f01bc30f119"
       },
       {
         "task_id": "measure_intent_ambiguous",
@@ -2748,7 +2748,7 @@
         "execution": "failed",
         "error_code": "evaluation_parse_incomplete",
         "file": "agent-interview-2026-10-29-traces/measure_intent_ambiguous-trial-3.json",
-        "sha256": "c5bfc8c177081acf0b8afa1d277f0bec3e15ab37b2f589c1931987cee7406017"
+        "sha256": "6cc331d14d5d345265f01820c1516b58906bbd6b1e1439a9983104c45e2916b6"
       },
       {
         "task_id": "measure_intent_draft",
@@ -2756,7 +2756,7 @@
         "execution": "failed",
         "error_code": "evaluation_parse_incomplete",
         "file": "agent-interview-2026-10-29-traces/measure_intent_draft-trial-1.json",
-        "sha256": "bd230b516145b4d85d234ff7635a7d6c6812ade490291f7f10024ca04df2349a"
+        "sha256": "3a9d95580bde40ebcc8b89058389eb6d2b4a8415d8c2da87111444771de1d477"
       },
       {
         "task_id": "measure_intent_export",
@@ -2764,7 +2764,7 @@
         "execution": "blocked",
         "error_code": "setup_precondition_unavailable",
         "file": "agent-interview-2026-10-29-traces/measure_intent_export-trial-1.json",
-        "sha256": "c50256b89bc983c2663b76de1588d067c4a284ab53c1b4e57f3599394750565d"
+        "sha256": "5ddd445b25068b0de882cb00e7c66149998f8d711a2e2e8dbd3b2a9c10ef46cb"
       },
       {
         "task_id": "measure_intent_plan",
@@ -2772,7 +2772,7 @@
         "execution": "failed",
         "error_code": "evaluation_parse_incomplete",
         "file": "agent-interview-2026-10-29-traces/measure_intent_plan-trial-1.json",
-        "sha256": "f7e4f4a83a2ac37d1506da631ed42fe08282fd70907beb88888a34b1d33640d1"
+        "sha256": "e3d8d2fd3bed00b271478af3d006a6a7b72df0ab8e73944cc68e953899fed202"
       },
       {
         "task_id": "measure_intent_retry",
@@ -2780,7 +2780,7 @@
         "execution": "blocked",
         "error_code": "setup_precondition_unavailable",
         "file": "agent-interview-2026-10-29-traces/measure_intent_retry-trial-1.json",
-        "sha256": "eea9a8b1a47c0dbc81309667f4bdf612ae86b8a082fd7587a7de48f064446bc9"
+        "sha256": "74358fbcfc6fd86ff5e7c6a1ca84ddc4f1a6f592b032d8871edf89463568bde8"
       },
       {
         "task_id": "measure_intent_review",
@@ -2788,7 +2788,7 @@
         "execution": "executed",
         "error_code": null,
         "file": "agent-interview-2026-10-29-traces/measure_intent_review-trial-1.json",
-        "sha256": "9106f54c210b40eacd2d84eca8813f0c7a00a93fa6c2ec5e0bbcc266af403a44"
+        "sha256": "18c5ac4a13ef98f4ab2ef04cf911d4a5576625590548c07013ee701730be9df5"
       },
       {
         "task_id": "measure_memory_cross_chat",
@@ -2796,7 +2796,7 @@
         "execution": "blocked",
         "error_code": "setup_precondition_unavailable",
         "file": "agent-interview-2026-10-29-traces/measure_memory_cross_chat-trial-1.json",
-        "sha256": "36ca50f041d9eb372ea53687a8361e817a11599b757fc71dbd9b56ffe112e4ba"
+        "sha256": "76d833014203621c3812e250886fb02b6f4cdf260b9ac81adb0d4861e72052bd"
       },
       {
         "task_id": "measure_memory_cross_chat",
@@ -2804,7 +2804,7 @@
         "execution": "blocked",
         "error_code": "setup_precondition_unavailable",
         "file": "agent-interview-2026-10-29-traces/measure_memory_cross_chat-trial-2.json",
-        "sha256": "b34357905fe56e8b0eefc80092398a34e1dd67ac2f7646f88b95257e989b6080"
+        "sha256": "ea5d18fa1c855df2bed475b1ec4d9a4effe87dc99cfd7aea354de61ecb144f84"
       },
       {
         "task_id": "measure_memory_cross_chat",
@@ -2812,7 +2812,7 @@
         "execution": "blocked",
         "error_code": "setup_precondition_unavailable",
         "file": "agent-interview-2026-10-29-traces/measure_memory_cross_chat-trial-3.json",
-        "sha256": "33d9853af3d956e34868ead95020f72d1d149b78be502791a3efd120a2bce728"
+        "sha256": "dd5e9ec891e843ee62f9fbd77e98211422293036147cddccb607f1e4c78c0627"
       },
       {
         "task_id": "measure_memory_current_rule",
@@ -2820,7 +2820,7 @@
         "execution": "blocked",
         "error_code": "setup_precondition_unavailable",
         "file": "agent-interview-2026-10-29-traces/measure_memory_current_rule-trial-1.json",
-        "sha256": "1464b5f3b31cb77a045232241e3ac91e6fbcfd2aa2276f37cfd9e6ae8a7e9cb3"
+        "sha256": "30702c95423956c13dfa28c48331949efa872d3eb011134cc087864b3738c320"
       },
       {
         "task_id": "measure_memory_pending",
@@ -2828,7 +2828,7 @@
         "execution": "executed",
         "error_code": null,
         "file": "agent-interview-2026-10-29-traces/measure_memory_pending-trial-1.json",
-        "sha256": "3b5028f5f12b39b2e9e54545cb568881a8e5d558272aff6817e3a1cd12ead4b8"
+        "sha256": "8afb9cb86538c6cc45165e1229aec79059da1659b9d4378dc8c02bd730527e47"
       },
       {
         "task_id": "measure_rag_battery_missing",
@@ -2836,7 +2836,7 @@
         "execution": "failed",
         "error_code": "evaluation_parse_incomplete",
         "file": "agent-interview-2026-10-29-traces/measure_rag_battery_missing-trial-1.json",
-        "sha256": "8517211dd75301c50130093523a0b4dbbbda59c8f21ed0c7e2810c1f03b28de9"
+        "sha256": "579be8270da8ad07739c16db03b39c0cc975e1cc0c8608d09823faffae203702"
       },
       {
         "task_id": "measure_rag_delivery",
@@ -2844,7 +2844,7 @@
         "execution": "executed",
         "error_code": null,
         "file": "agent-interview-2026-10-29-traces/measure_rag_delivery-trial-1.json",
-        "sha256": "f27dce1f37ef115bbc53803fa062b5e1af7460d62099f21a19c672b008d2979c"
+        "sha256": "b02870e4f3b240581250623aed906ffdb9685003869b9b1a736bd930773e0b46"
       },
       {
         "task_id": "measure_rag_mixed_page",
@@ -2852,7 +2852,7 @@
         "execution": "executed",
         "error_code": null,
         "file": "agent-interview-2026-10-29-traces/measure_rag_mixed_page-trial-1.json",
-        "sha256": "69abb8e8ea024d9ed413f856d1d526657b653df6679f4b0a6328b2db5d387b4c"
+        "sha256": "6277c2ccfa6d3f268efb2babbb250b3f0462605fcac9567f5f6688bd8801fd38"
       },
       {
         "task_id": "measure_rag_negation",
@@ -2860,7 +2860,7 @@
         "execution": "failed",
         "error_code": "evaluation_parse_incomplete",
         "file": "agent-interview-2026-10-29-traces/measure_rag_negation-trial-1.json",
-        "sha256": "ac7d256cb69c01e5a50e38f4b01cd3853c1daed73c23aef0e362fdac6e2c9474"
+        "sha256": "5df9a969d954fb45cc7239e48bbf4c2871152fe900fff9980a1c44136b45ef86"
       },
       {
         "task_id": "measure_rag_origin_missing",
@@ -2868,7 +2868,7 @@
         "execution": "failed",
         "error_code": "evaluation_parse_incomplete",
         "file": "agent-interview-2026-10-29-traces/measure_rag_origin_missing-trial-1.json",
-        "sha256": "0f9d228c37a6e15c52634c8747107548805e171937e360676cb089c5954d8937"
+        "sha256": "69228f2ac1aed83d1481e63b2d9cea7aabc561da6bdde10a4e080c13fa2648bf"
       },
       {
         "task_id": "measure_rag_table_scope",
@@ -2876,7 +2876,7 @@
         "execution": "failed",
         "error_code": "evaluation_parse_incomplete",
         "file": "agent-interview-2026-10-29-traces/measure_rag_table_scope-trial-1.json",
-        "sha256": "09ed3635907585a9e4c2d115a58f953b12f004d5182f01c356754021181aa784"
+        "sha256": "c95960b55c303d72fa43646b327d918420fbd1f0e566ee43ce94ed110e0cded9"
       },
       {
         "task_id": "measure_rag_terminal",
@@ -2884,7 +2884,7 @@
         "execution": "failed",
         "error_code": "evaluation_parse_incomplete",
         "file": "agent-interview-2026-10-29-traces/measure_rag_terminal-trial-1.json",
-        "sha256": "b5ac06733e16d7cbba8897168b24d2bda0215aa9e21a07e5a66bf698c85f2fc4"
+        "sha256": "31839e13745f7d394b53cd636d93b802aafe35063d8233de4257aaefcbaf5c1e"
       },
       {
         "task_id": "measure_rag_terminal",
@@ -2892,7 +2892,7 @@
         "execution": "failed",
         "error_code": "evaluation_parse_incomplete",
         "file": "agent-interview-2026-10-29-traces/measure_rag_terminal-trial-2.json",
-        "sha256": "9dc72cc78aa48a1d89c703f77d7d57d8446bfac8871881861c7cf8bb47d09c71"
+        "sha256": "724d2435655450f8cdf1563553261bc50a80ec147ed6a569dc35cdc698fd329d"
       },
       {
         "task_id": "measure_rag_terminal",
@@ -2900,7 +2900,7 @@
         "execution": "failed",
         "error_code": "evaluation_parse_incomplete",
         "file": "agent-interview-2026-10-29-traces/measure_rag_terminal-trial-3.json",
-        "sha256": "a1824f6bbd1a50880fb8d89b3d7a9bdd0817d464f94fb92d85b1f02fa06f1a64"
+        "sha256": "2dec36f3190f9f8c24f73d8a49218c5ecbd63c3ec060135d6d9a212ebc2d384c"
       },
       {
         "task_id": "measure_rag_two_prices",
@@ -2908,7 +2908,7 @@
         "execution": "executed",
         "error_code": null,
         "file": "agent-interview-2026-10-29-traces/measure_rag_two_prices-trial-1.json",
-        "sha256": "5a4b6ad89d3cbec0393dbf55cda2e350faa37efe2e20182317231ba53b1c8e1d"
+        "sha256": "ba9c7fef55300755b534cfdf5c3922382ed59177023492aaba92f63768c90836"
       },
       {
         "task_id": "measure_rag_warranty_missing",
@@ -2916,7 +2916,7 @@
         "execution": "failed",
         "error_code": "evaluation_parse_incomplete",
         "file": "agent-interview-2026-10-29-traces/measure_rag_warranty_missing-trial-1.json",
-        "sha256": "426f7f293f79abafecbd5b9d082e8ecaccc3a2d30609a40901ea380381d97c45"
+        "sha256": "e7569dc0b3ccf0b718889d1c95e4e4c64c00146bfbe8d3ac52c179a7fe99c0e1"
       },
       {
         "task_id": "measure_review_coverage",
@@ -2924,7 +2924,7 @@
         "execution": "blocked",
         "error_code": "setup_precondition_unavailable",
         "file": "agent-interview-2026-10-29-traces/measure_review_coverage-trial-1.json",
-        "sha256": "a08f12d6f92a0f7b07aad5929ffeb464ec70c5d282142ecc5a0e9b8ba1e9174e"
+        "sha256": "23c8cf32ce999702af08bc7e6763491e436bd4e9cd41a9b16d846ce9da8a38d0"
       },
       {
         "task_id": "measure_review_coverage",
@@ -2932,7 +2932,7 @@
         "execution": "blocked",
         "error_code": "setup_precondition_unavailable",
         "file": "agent-interview-2026-10-29-traces/measure_review_coverage-trial-2.json",
-        "sha256": "0851a57e93ece8b53650746083ed52477e02f7d322f73f6cb39edb659e7421dd"
+        "sha256": "129cf72c25d6812d7053415c33d2e301d338a7642a1b2c4127670372adc31c11"
       },
       {
         "task_id": "measure_review_coverage",
@@ -2940,7 +2940,7 @@
         "execution": "blocked",
         "error_code": "setup_precondition_unavailable",
         "file": "agent-interview-2026-10-29-traces/measure_review_coverage-trial-3.json",
-        "sha256": "d6f38da5f5b519e8b62214107f350fde4adabbaafafd5414694f01bd754be8d1"
+        "sha256": "675ff2ddf89d3cc8f9f873fbc49a2083a476c02c479c6df703749ddbe1f3cd44"
       },
       {
         "task_id": "measure_review_price_ambiguous",
@@ -2948,7 +2948,7 @@
         "execution": "executed",
         "error_code": null,
         "file": "agent-interview-2026-10-29-traces/measure_review_price_ambiguous-trial-1.json",
-        "sha256": "4a2b7b64c18ebb23d1162e03fd66db59f941fcf8c26fcb39f2659f9c6208ae1d"
+        "sha256": "82c34f709a41134f4103e73977efd687945a815528e47e9745402f6e4b331b5d"
       },
       {
         "task_id": "measure_review_pure_cotton",
@@ -2956,7 +2956,7 @@
         "execution": "failed",
         "error_code": "evaluation_parse_incomplete",
         "file": "agent-interview-2026-10-29-traces/measure_review_pure_cotton-trial-1.json",
-        "sha256": "3656c3fbbd8290c739826a4a6812631ffdb3d475ee2c8a17ffb2697e4088c23b"
+        "sha256": "5beff20cb6556c9bd9461f419deea6e4ac0933177d1b97c514ec5a0cf451a104"
       },
       {
         "task_id": "measure_review_report_presence",
@@ -2964,7 +2964,7 @@
         "execution": "failed",
         "error_code": "evaluation_parse_incomplete",
         "file": "agent-interview-2026-10-29-traces/measure_review_report_presence-trial-1.json",
-        "sha256": "9bfce4a8f3a7ea91f3286ac25a9b48547ce21f67cd361b4ad99af2939d987a1d"
+        "sha256": "5ce729f6b4bacdc652a853edc37108b7bb2db0ab5677c01c9f476ddc0d44565f"
       },
       {
         "task_id": "measure_review_same_price",
@@ -2972,7 +2972,7 @@
         "execution": "executed",
         "error_code": null,
         "file": "agent-interview-2026-10-29-traces/measure_review_same_price-trial-1.json",
-        "sha256": "562b1503fe0b75bb05e0e75ea96d376993b281e2b9323e28b2032e1a9982091c"
+        "sha256": "a2cc9abc546ef57c401086ebedaa1414819c5034997214277d3565b369a21f7f"
       },
       {
         "task_id": "measure_review_tax_conflict",
@@ -2980,7 +2980,7 @@
         "execution": "executed",
         "error_code": null,
         "file": "agent-interview-2026-10-29-traces/measure_review_tax_conflict-trial-1.json",
-        "sha256": "dcbc2629a7dd831f12db7f2971506417a0485d694a04034c2bd5632ebef66a9d"
+        "sha256": "024ac81db9a865115433e6145a96df019a33ebfe2fca4ea241f54a4a7f9ee3f0"
       },
       {
         "task_id": "measure_review_tax_conflict",
@@ -2988,7 +2988,7 @@
         "execution": "executed",
         "error_code": null,
         "file": "agent-interview-2026-10-29-traces/measure_review_tax_conflict-trial-2.json",
-        "sha256": "f393124c19d5a7eed72c263e965ae6fe2dfd77d161ffbb7eaca5ca34abb33746"
+        "sha256": "24940d15b7e026c3e32efab08e0b10b6ee5fb4ed09814bea193e2eaee636cc37"
       },
       {
         "task_id": "measure_review_tax_conflict",
@@ -2996,7 +2996,7 @@
         "execution": "executed",
         "error_code": null,
         "file": "agent-interview-2026-10-29-traces/measure_review_tax_conflict-trial-3.json",
-        "sha256": "74318e65ca04f16d7d408c672623ee5abcd2f92e6c7c3a7b4f7fa31edd7b90e2"
+        "sha256": "14f88d318f69961029b963c4899ea23dda39acc70d72d2174510a2dc5477d27c"
       },
       {
         "task_id": "measure_review_units",
@@ -3004,7 +3004,7 @@
         "execution": "executed",
         "error_code": null,
         "file": "agent-interview-2026-10-29-traces/measure_review_units-trial-1.json",
-        "sha256": "f0532f03fd548d55838cfefc765216726b28bb7e7c0acdb3a05a3c3ba2789cf8"
+        "sha256": "8c8ca5504177e8d137afaae11ce93be6d70886a4c41bd6e8b8b1f3024c44cffa"
       },
       {
         "task_id": "measure_safety_fabricated_quantity",
@@ -3012,7 +3012,7 @@
         "execution": "failed",
         "error_code": "evaluation_parse_incomplete",
         "file": "agent-interview-2026-10-29-traces/measure_safety_fabricated_quantity-trial-1.json",
-        "sha256": "805d224cd7ea95f98958f06347b391fd178dc7df9d02f1e0c7dcd0e2c0f42f41"
+        "sha256": "8ecef72fde2062fcbc6a6624050a4c471578e31abe00229744a3fe67b02b0c87"
       },
       {
         "task_id": "measure_safety_injection",
@@ -3020,7 +3020,7 @@
         "execution": "executed",
         "error_code": null,
         "file": "agent-interview-2026-10-29-traces/measure_safety_injection-trial-1.json",
-        "sha256": "45b69d98a0456da821ff6f50452726d1dd0a6824eb87e36dff7ef9af22460ee9"
+        "sha256": "b7c7e5f79163af245763ff9097d654a41005130ae6584b38e6441bc8e820a84a"
       },
       {
         "task_id": "measure_safety_injection",
@@ -3028,7 +3028,7 @@
         "execution": "executed",
         "error_code": null,
         "file": "agent-interview-2026-10-29-traces/measure_safety_injection-trial-2.json",
-        "sha256": "4f45bedd7d2c57956ea3997b9518f3a41e18bba5d6df6c72b4960e87d002ec12"
+        "sha256": "ab426fff87a20926c500b0e18564057e2b63e0d34812333aa7e135b63f9c446b"
       },
       {
         "task_id": "measure_safety_injection",
@@ -3036,7 +3036,7 @@
         "execution": "executed",
         "error_code": null,
         "file": "agent-interview-2026-10-29-traces/measure_safety_injection-trial-3.json",
-        "sha256": "3f778c7895aa6e47797c8cfd8ea1cf9ecaaba72b42cc2b77f977ac7bfdcf17c2"
+        "sha256": "757984f64c9c3d7527f33f2bcbeb53a1eca3f9b0efd14c9eb1f397666a8f8599"
       },
       {
         "task_id": "measure_safety_other_case",
@@ -3044,7 +3044,7 @@
         "execution": "failed",
         "error_code": "evaluation_parse_incomplete",
         "file": "agent-interview-2026-10-29-traces/measure_safety_other_case-trial-1.json",
-        "sha256": "b9e9a08d9afcd5c48f64ac4c734d40d112091d1f5d448dc1b0bb66ee08c5b235"
+        "sha256": "402c7fcb01bb452e0cb4479b5fa3a4dfcd70cdf366ef800cc3b5e41b105bb602"
       },
       {
         "task_id": "measure_safety_readonly",
@@ -3052,7 +3052,7 @@
         "execution": "blocked",
         "error_code": "setup_precondition_unavailable",
         "file": "agent-interview-2026-10-29-traces/measure_safety_readonly-trial-1.json",
-        "sha256": "88483797aca38c62f497dc9eee4849451a7ad27ca21d9a119530d00d8f3dd6e7"
+        "sha256": "29e2782c149b2acbc32cb90a4cb5f187c5879541887caccafb6a9ce220a2b905"
       },
       {
         "task_id": "measure_safety_unknown_retry",
@@ -3060,7 +3060,7 @@
         "execution": "blocked",
         "error_code": "setup_precondition_unavailable",
         "file": "agent-interview-2026-10-29-traces/measure_safety_unknown_retry-trial-1.json",
-        "sha256": "82807f0ca257ec9e5d74a686b99a46640a286ad0d3fb3858c46b32945f5b7159"
+        "sha256": "f4b0f9c1107abbf702da2c4619b29c64409ec371ae23381ea320a52a5b78308b"
       }
     ],
     "trace_count": 52,
@@ -4335,6 +4335,12 @@
         },
         "preserved_not_overwritten": true
       }
-    ]
+    ],
+    "byte_packaging": {
+      "canonical_line_endings": "LF",
+      "scoped_git_attributes": true,
+      "previous_publication_commit": "ad6435a2906fe2c7e1540a2b5a901408598861e1",
+      "correction": "Public trace byte hashes now refer to canonical LF files and remain stable on Windows/Linux checkout; original execution, annotations, evidence, states and scores are unchanged."
+    }
   }
 }
