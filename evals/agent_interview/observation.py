@@ -17,7 +17,8 @@ def digest(value):
 
 
 def _text(value):
-    return re.sub(r'\s+', '', value)
+    # The actual PDF parser folds this punctuation; semantic characters stay exact.
+    return re.sub(r'\s+', '', value.replace('：', ':'))
 
 
 def verify_raw(observation):

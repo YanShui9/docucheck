@@ -38,6 +38,27 @@ def test_citation_needs_matching_source_location_and_quote():
     assert module().normalize(data, raw)['cited_anchor_ids'] == []
 
 
+@pytest.mark.parametrize('original,parsed,matched', [
+    ('运行内存：8GB', '运行内存:8GB', True),
+    ('运行内存:8GB', '运行内存：8GB', True),
+    ('运行内存：8GB', '运行内存:16GB', False),
+    ('运行内存：8GB', '运行内存:8MB', False),
+    ('税口径：含税', '税口径:不含税', False),
+    ('型号：DEMO-I', '型号:DEMO-Ⅰ', False),
+    ('运行内存：８GB', '运行内存:8GB', False),
+])
+def test_source_colon_compatibility_preserves_values_units_negation_and_sku(original, parsed, matched):
+    data, raw = fixture()
+    data['anchors'][0]['text'] = original
+    raw['answer'] = parsed
+    raw['evidence']['s'][0]['source_text'] = parsed
+    raw['assistant_result']['result'].update(
+        answer=parsed, citations=[{'evidence_id': 'ref', 'quote': parsed}])
+    normalized = module().normalize(data, raw)
+    assert normalized['cited_anchor_ids'] == (['a'] if matched else [])
+    assert normalized['claims'] == []
+
+
 def test_annotation_binds_to_exact_observation_and_resolvable_evidence():
     data, raw = fixture()
     normalized = module().normalize(data, raw)
