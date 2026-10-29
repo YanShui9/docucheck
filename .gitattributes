@@ -1,0 +1,3 @@
+/evals/agent_interview/dataset.json text eol=lf
+/evals/agent_interview/fixtures/** -text
+/evals/agent_interview/reference_observations*.json text eol=lf

@@ -36,7 +36,7 @@ class Turn(Contract):
 class Source(Contract):
     source_id: Identifier
     group_id: Identifier
-    supplier_id: Identifier
+    supplier_id: Identifier | None
     role: Literal["quote", "spec", "requirement"]
     path: str
     format: Literal["pdf", "xlsx"]
@@ -45,6 +45,8 @@ class Source(Contract):
 
     @model_validator(mode="after")
     def content_and_path(self):
+        if (self.role == "requirement") != (self.supplier_id is None):
+            raise ValueError("source_role_supplier_mismatch")
         safe_relative(self.path)
         if not self.path.startswith(f"inputs/{self.group_id}/"):
             raise ValueError("source_path_group_mismatch")
@@ -141,6 +143,9 @@ class ExpectedOutcome(Contract):
             raise ValueError("presence_true_requires_manual")
         if "coverage_incomplete" in self.required_behaviors and self.outcome != "partial":
             raise ValueError("incomplete_coverage_not_formal")
+        if ((self.outcome == "partial" or any(c.processing_status == "partial" for c in self.business_checks))
+                and any(c.is_formal for c in self.business_checks)):
+            raise ValueError("partial_run_not_formal")
         for check in self.business_checks:
             if check.processing_status == "partial" and check.is_formal:
                 raise ValueError("partial_check_not_formal")
@@ -227,12 +232,16 @@ class Setup(Contract):
                     or criterion["item_id"] not in {i.item_id for i in self.items}
                     or criterion["source"].get("kind") != "user_defined"):
                 raise ValueError("invalid_prepared_criterion")
+        if (self.state.get("confirmed") is True
+                and {i.item_id for i in self.items}
+                != {c["item_id"] for c in self.confirmed_rules}):
+            raise ValueError("confirmed_setup_has_unreferenced_items")
         return self
 
 
 class Dataset(Contract):
     schema_version: Literal[1]
-    revision: Literal[1, 2, 3, 4] = 1
+    revision: Literal[1, 2, 3, 4, 5, 6] = 1
     dataset_id: Literal["docucheck-agent-interview-v1"]
     synthetic: Literal[True]
     author_visible: Literal[True]
@@ -300,9 +309,16 @@ class Dataset(Contract):
                                     or sources[anchors[key].source_id].supplier_id != check.supplier_id):
                                 raise ValueError("business_anchor_scope_mismatch")
         for setup in self.setups:
+            document_slots = set()
             for key in setup.source_ids:
                 if key not in sources or sources[key].group_id != setup.group_id:
                     raise ValueError("setup_source_scope_mismatch")
+                # Product uploads replace the same supplier/role slot across formats.
+                # Requirements use the single case-wide (None, requirement) slot.
+                slot = (sources[key].supplier_id, sources[key].role)
+                if slot in document_slots:
+                    raise ValueError("duplicate_setup_document_slot")
+                document_slots.add(slot)
             for binding in setup.bindings:
                 if (binding.source_id not in setup.source_ids
                         or binding.item_id not in {i.item_id for i in setup.items}
@@ -384,7 +400,7 @@ class FileRecord(Contract):
 
 class CorpusManifest(Contract):
     schema_version: Literal[1]
-    revision: Literal[1, 2, 3, 4] = 1
+    revision: Literal[1, 2, 3, 4, 5, 6] = 1
     dataset_id: Literal["docucheck-agent-interview-v1"]
     dataset_sha256: Annotated[str, Field(pattern=r"^[0-9a-f]{64}$")]
     files: list[FileRecord]

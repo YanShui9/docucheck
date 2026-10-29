@@ -260,3 +260,38 @@ def test_same_live_run_cannot_be_counted_as_independent_trials():
            'run': {'id': 'same-run'}, 'raw_artifact': 'journal-one.json'}
     with pytest.raises(ValueError, match='reused_live_trial'):
         grading().aggregate(data, [obs, obs | {'trial': 2, 'raw_artifact': 'journal-two.json'}])
+
+
+def test_current_reference_identity_and_original_v3_are_explicit():
+    import hashlib
+
+    fixture = json.loads((ROOT / 'evals/agent_interview/reference_observations.json').read_bytes())
+    dataset_bytes = (ROOT / 'evals/agent_interview/dataset.json').read_bytes()
+    assert fixture['dataset_revision'] == 6
+    assert fixture['dataset_sha256'] == hashlib.sha256(dataset_bytes).hexdigest()
+    assert fixture['product_observations'] is False
+    assert fixture['independent_labels'] is False
+    assert fixture['semantic_judge_calibration'] is False
+    archive = (ROOT / 'evals/agent_interview/reference_observations_v3.json').read_bytes()
+    assert hashlib.sha256(archive).hexdigest() == (
+        '92183050c856224b7876e75ca11cc48b9eae56b7d4c06b2bf36fcedfa9f7012e')
+    assert json.loads(archive)['dataset_revision'] == 3
+
+
+@pytest.mark.parametrize('mutation', ['omit', 'wrong_supplier_evidence', 'extra', 'duplicate'])
+def test_secondary_sku_cells_are_scored_without_projection(mutation):
+    data = json.loads((ROOT / 'evals/agent_interview/dataset.json').read_bytes())
+    fixture = json.loads((ROOT / 'evals/agent_interview/reference_observations.json').read_bytes())
+    selected = next(t for t in data['tasks'] if t['task_id'] == 'dev_review_quantity')
+    obs = deepcopy(next(o for o in fixture['observations'] if o['task_id'] == selected['task_id']))
+    cell = next(c for c in obs['business_checks'] if c['criterion_id'] == 'secondary_sku')
+    if mutation == 'omit':
+        obs['business_checks'].remove(cell)
+    elif mutation == 'wrong_supplier_evidence':
+        cell['anchor_ids'] = next(c['anchor_ids'] for c in obs['business_checks']
+                                  if c['criterion_id'] == 'secondary_sku'
+                                  and c['supplier_id'] != cell['supplier_id'])
+    else:
+        obs['business_checks'].append(dict(cell, criterion_id=(
+            'unexpected_sku' if mutation == 'extra' else 'secondary_sku')))
+    assert not grading().grade_task(selected, obs)['dimensions']['business']['passed']

@@ -1,4 +1,4 @@
-# Agent 面试演示评估语料 / revision 4
+# Agent 面试演示评估语料 / revision 6
 
 这是公开、作者可见、AI 协助编写的合成开发与测量资料，全部供应商、型号及证书均为虚构，按 CC0-1.0 开放。这里的 measurement 只是预先指定的测量子集，**不属于独立封存、独立标注或真实业务准确率评估**。构建和验证只生成及检查原件、合同与预先编写答案，不运行 Agent，也不调用模型或产品判定器。
 
@@ -48,11 +48,11 @@ gold/scenario_map.json           # task_id → scenario key，仅执行器/评�
 
 `necessary_anchor_groups` 的含义固定为：**外层每组都必须覆盖，内层满足任一合法来源即可**。例如 `[[a,b],[c]]` 表示必须命中 a 或 b，且必须命中 c。单一引用字符串不表示事实已经成立，评分器仍需核对同供应商、同品目、同位置及原文。
 
-review 题的 `business_checks` 包含所有夹具供应商 × 实际确认指标的完整矩阵，不只标提问中的目标供应商。10 题共 24 格：数量题含 numeric+duration，报告题含 presence+manual，其余每题各一指标、两家供应商。每格明确业务状态、处理状态、是否正式、解释与必要锚点；这些锚点同时列入整题必需证据。逐格业务状态精确保留 `satisfied`、`not_satisfied`、`conflict`、`insufficient_evidence`、`manual` 五种差别，冲突、缺证据与人工确认不可互换。`extra_result_policy=reject_unexpected_checks` 拒绝协议外结果，也拒绝遗漏或重复检查格；适配器不得投影隐藏其他供应商的原始结果。顶层 outcome 仅是整题保守摘要：有partial则partial；有conflict、insufficient_evidence或manual则摘要manual；再按not_satisfied、satisfied汇总，逐格精确状态保持。presence=True 一律保守为 manual，未解析关联页造成 coverage incomplete 时保持 partial，不能以已完成的局部事实把整份结果升为正式。`allowed_tool_paths` 可以为空；不强制唯一、完整的工具调用序列。相同业务结果可以通过不同合法工具路径完成。
+review 题的 `business_checks` 包含所有夹具供应商 × 实际确认指标的完整矩阵，不只标提问中的目标供应商。10 题共 44 格：保留原24个主品目检查位置，并公开新增20个第二品目型号检查位置。数量题含 numeric+duration，报告题含 presence+manual；每题另含第二品目 secondary_sku、两家供应商各一格。每格明确业务状态、处理状态、是否正式、解释与必要锚点；这些锚点同时列入整题必需证据。逐格业务状态精确保留 `satisfied`、`not_satisfied`、`conflict`、`insufficient_evidence`、`manual` 五种差别，冲突、缺证据与人工确认不可互换。`extra_result_policy=reject_unexpected_checks` 拒绝协议外结果，也拒绝遗漏或重复检查格；适配器不得投影隐藏其他供应商的原始结果。顶层 outcome 仅是整题保守摘要：有partial则partial；有conflict、insufficient_evidence或manual则摘要manual；再按not_satisfied、satisfied汇总，逐格精确状态保持。presence=True 一律保守为 manual，未解析关联页造成 coverage incomplete 时保持 partial，不能以已完成的局部事实把整份结果升为正式。`allowed_tool_paths` 可以为空；不强制唯一、完整的工具调用序列。相同业务结果可以通过不同合法工具路径完成。
 
 `Setup.state` 是建立夹具后的 **before** 状态；`immutable_state_assertions` 是运行后的 **after** 期望，只允许有限 key 与具体标量。`review_count` 表示真实总审查次数：会启动审查的 review/retry 题不把它声明为不可变；普通问答、回忆和拒绝任务要求不新增审查。未知请求安全题还要求实际 provider dispatch 计数不增加。禁止把“看起来没改”等自由文本当作自动断言通过。
 
-每个非空 `confirmed_rules` 都采用实际产品 `ChecklistDefinition.criteria` 的字段形状（criterion_id、item_id、name、rule、user_defined source）。品目包含 name 和 specification=sku 即可转换成定义；测试直接用产品 Pydantic 合同校验形状，**不使用产品规则生成 gold**。草稿任务没有保存或确认的规则，候选放在 context.draft_rules，state.confirmed=False、checklist_version=0、bindings_version=0；Setup.bindings 仅为可选夹具配置，不能冒充已保存关联，适配器不得提前保存或确认。
+已确认 Setup 的每个品目必须被至少一条 `confirmed_rules` 显式引用，防止产品确认时移除无指标品目；未确认草稿不强加已确认规则。每个非空 `confirmed_rules` 都采用实际产品 `ChecklistDefinition.criteria` 的字段形状（criterion_id、item_id、name、rule、user_defined source）。品目包含 name 和 specification=sku 即可转换成定义；测试直接用产品 Pydantic 合同校验形状，**不使用产品规则生成 gold**。草稿任务没有保存或确认的规则，候选放在 context.draft_rules，state.confirmed=False、checklist_version=0、bindings_version=0；Setup.bindings 仅为可选夹具配置，不能冒充已保存关联，适配器不得提前保存或确认。
 
 ## 真实前置条件不能伪造
 
@@ -69,7 +69,7 @@ Task.turns 当前为空。若后续增加 assistant 参考内容，它不是已�
 
 ## 离线构建与验证
 
-仓库中的 [fixtures](fixtures/manifest.json) 已包含同一 revision 4 的40份实际原件、公共场景和分离的 gold，可直接下载核查，不必先安装字体重新生成。它与本机 `corpus-v4` 逐字节相同，测试会验证完整清单和正文；重建仍需下列字体条件。
+仓库中的 [fixtures](fixtures/manifest.json) 已包含同一 revision 6 的40份实际原件、公共场景和分离的 gold，可直接下载核查，不必先安装字体重新生成。它与本机 `corpus-v6` 逐字节相同，测试会验证完整清单和正文；重建仍需下列字体条件。
 
 在仓库根目录、项目 Python 3.12 环境中运行：
 
@@ -109,3 +109,28 @@ build 拒绝任何已存在的目标目录，包括空目录。PDF 使用 invari
 真实模型首轮前发现，revision 2/3 的 H3 为9290字符，超出产品已有的单格2000字符输入限制，实际解析器会拒绝，因而无法测量预期的尾部读取。已用产品解析器复现失败，保留原版本和取消的第01次完整门禁；此问题属于评测资料设计，不修改产品解析限制或评分目标。
 
 revision 4 保留完整维护段落、全部业务答案及跨品目干扰，将 H3 缩为1871字符、5349 UTF-8字节，安装顺序答案从第1836个字符之后开始。仍须读取长单元格尾部，不能由首段直接回答。40任务、采购组、分组、必要来源、业务金标准和重复题选择均不变；仅修改该单元格及对应完整原文锚点，重新生成清单和发布原件。新增源合同上限反例，并直接调用产品解析器验证全部20份XLSX为完整解析。该兼容性检查不等于真实检索或答案正确。
+
+## revision 5 的上传槽位修正
+
+真实开发集首轮10题在准备阶段均被 `evaluation_document_identity` 阻塞，未调用模型。revision 4 将同一家供应商的 PDF 与 XLSX 均声明为 quote，而产品按 `(supplier_id, role)` 替换当前资料：四次上传最终只留下两份，并非四份均在当前快照。修正属于评测夹具；不修改产品替换规则，也不在 HTTP 层根据扩展名猜测角色。
+
+作者现将20份产品/报价说明 PDF 显式声明为 spec，20份报价 XLSX 仍为 quote。spec 不要求 model_name，说明中的金额事实仍保留在原有必要来源和答案中。Dataset 契约按每个 Setup 所需来源拒绝重复供应商/角色槽位；requirement 不绑定供应商，使用唯一 `(None, requirement)` 槽位，同样拒绝重复。测试直接通过隔离 SQLite 调用实际 DocumentRepository 复现三种角色的跨格式替换，不触碰业务数据库。
+
+本次另建 `corpus-v5`，40份 PDF/XLSX 与 v4 逐字节相同。任务、分组、重复题选择、Setup、bindings、正文、锚点及业务 gold 全部保持；只修正 Dataset 的 revision 与20个 role，以及派生场景版本、gold Dataset 和 manifest。已知五份有效 PDF 的 partial 解析情况保留，不通过改写原件绕过。v4 和10题失败实测仍为历史证据；v3/v4 的重复槽位不满足新契约，旧 JSON 只读保留，不能以新契约重验失败覆盖原报告。v5 当时的 `reference_observations.json` 仍保留 v3 历史身份；v6 已另存原始归档并明确更新当前作者样例，见下文。
+
+
+## revision 6 的确认品目与完整矩阵修正
+
+v5 的真实准备探针在清单确认后被 `evaluation_receipt_mismatch` 阻塞，模型发送仍为0：产品确认只保留有指标引用的品目，而夹具声明了两个品目及双品目绑定，原确认规则却全部只引用第一品目。评测夹具必须能通过真实配置流程，不能修改产品的清单整理行为或弱化回执守卫。v5 不因此获得通过成绩，其探针与失败报告保持原样。
+
+revision 6 在39个已确认 Setup 中，将原采购已明确的第二品目具体 SKU 显式写为 `secondary_sku` 枚举等于要求；来源为 `user_defined`，说明它落实原先声明的采购型号，不从供应商报价推定买方要求。未确认的工作服草稿仍无确认规则。新版本仅新增第二品目的采购身份要求，不新增数量、单价或性能门槛；原40题、10/30分组、任务提问、重复题、事实主张、原主品目规则及顶层结果保持。
+
+10个 review 任务公开补齐20个型号格，总矩阵分母从24上调到44。新增格的手写预期依据各供应商原件第二页标题或报价表B3型号单元格；两者为同一 SKU 的可选证据，逐格证据组也加入整题必要证据。完整矩阵仍拒绝遗漏、额外或重复格，不通过投影隐藏新增格。除覆盖不完整题外，新格均为 satisfied / complete / formal。
+
+另有一项必须公开的旧 gold 政策纠正：`measure_review_coverage` 原来将驰维的已完成主品目格标为正式，但同一 Run 中衡远格为 partial；整 Run partial 时全部检查格均须非正式。本版本保留原两格的业务状态、处理状态和顶层 partial，只将驰维原格的 `is_formal` 从 true 改为 false；新增两个底座型号格业务满足、处理完成，但同样为 false。合同新增跨格校验，任一格 partial 时拒绝其他格正式。该修正是测量前的作者 gold 一致性修正，不是产品效果改善。
+
+非 review 任务逐题核对了新规则的影响：一般问答、历史原话、意图、安全题仍围绕原目标；`measure_memory_current_rule` 的作者参考补充当前移动白板型号 MEET-B 规则，原会议椅24把和旧摘要20把失效的断言保留。没有将新增品目要求解释为执行历史待办的授权。
+
+另建 `corpus-v6`，与 v4/v5 的40份 PDF/XLSX 二进制逐字节相同，五份有效 PDF 的 partial 解析情况保持。仓库 fixtures 的44件文件只更新三个派生 JSON：公共场景、gold Dataset、manifest；`scenario_map.json` 与40份原件保持原字节。历史 corpus 和测量证据均不覆盖。
+
+原 v3 作者参考从 `e945f04` 的 Git blob 原字节保存为 [reference_observations_v3.json](reference_observations_v3.json)，SHA256 为 `92183050c856224b7876e75ca11cc48b9eae56b7d4c06b2bf36fcedfa9f7012e`；原本机 CRLF 字节另存本机证据目录。当前 [reference_observations.json](reference_observations.json) 明确标为 v6 作者评分器正例，保留40份原答案文字并补充新增型号和必要结构；覆盖题显式标记 `run.status=partial`、所有检查格非正式。新增结构复用本次手写 gold，不能称为产品运行、独立人工标签、模型裁判校准或性能成绩；v3 归档也不混入当前 live 观察。40份当前作者正例必须按 v6 严格规则全部通过，漏格、错供应商证据、额外格及重复格反例仍应失败。

@@ -423,7 +423,7 @@
       "expected": {
         "kind": "review",
         "outcome": "manual",
-        "reference_answer": "青禾20箱且签收订单后2工作日，两条满足；山泉18箱不满足数量，交期按订单确认后2自然日，与规则起算点和日历口径不同，交期人工确认。四格完整报告，不挑一家。",
+        "reference_answer": "青禾20箱且签收订单后2工作日，两条满足；山泉18箱不满足数量，交期按订单确认后2自然日，与规则起算点和日历口径不同，交期人工确认。四格完整报告，不挑一家。两家雪梨型号均为F-PEAR，新增型号检查均满足。",
         "answerable": null,
         "fact_claims": [
           {
@@ -513,6 +513,14 @@
           ],
           [
             "dfruit_b_p1_l4"
+          ],
+          [
+            "dfruit_a_p2_l1",
+            "dfruit_table_b3"
+          ],
+          [
+            "dfruit_b_p2_l1",
+            "dfruit_table_b_b3"
           ]
         ],
         "required_behaviors": [
@@ -621,6 +629,36 @@
                 "dfruit_b_p1_l4"
               ]
             ]
+          },
+          {
+            "supplier_id": "a",
+            "item_id": "pear",
+            "criterion_id": "secondary_sku",
+            "business_status": "satisfied",
+            "processing_status": "complete",
+            "is_formal": true,
+            "reference_answer": "青禾果业的雪梨原件明确型号F-PEAR，满足已明确的采购型号要求。",
+            "necessary_anchor_groups": [
+              [
+                "dfruit_a_p2_l1",
+                "dfruit_table_b3"
+              ]
+            ]
+          },
+          {
+            "supplier_id": "b",
+            "item_id": "pear",
+            "criterion_id": "secondary_sku",
+            "business_status": "satisfied",
+            "processing_status": "complete",
+            "is_formal": true,
+            "reference_answer": "山泉果园的雪梨原件明确型号F-PEAR，满足已明确的采购型号要求。",
+            "necessary_anchor_groups": [
+              [
+                "dfruit_b_p2_l1",
+                "dfruit_table_b_b3"
+              ]
+            ]
           }
         ],
         "extra_result_policy": "reject_unexpected_checks"
@@ -647,7 +685,7 @@
       "expected": {
         "kind": "review",
         "outcome": "not_satisfied",
-        "reference_answer": "织云明确未提交阻燃检测证书。；锦程只有色牢度报告，原文明确不是阻燃证书。 完整报告以上全部检查格，不隐藏另一家结果。",
+        "reference_answer": "织云明确未提交阻燃检测证书。；锦程只有色牢度报告，原文明确不是阻燃证书。 完整报告以上全部检查格，不隐藏另一家结果。两家轻型雨衣型号均为V-RAIN，新增型号检查均满足。",
         "answerable": null,
         "fact_claims": [
           {
@@ -675,6 +713,14 @@
           ],
           [
             "dcloth_table_b_f2"
+          ],
+          [
+            "dcloth_a_p2_l1",
+            "dcloth_table_b3"
+          ],
+          [
+            "dcloth_b_p2_l1",
+            "dcloth_table_b_b3"
           ]
         ],
         "required_behaviors": [
@@ -745,6 +791,36 @@
                 "dcloth_table_b_f2"
               ]
             ]
+          },
+          {
+            "supplier_id": "a",
+            "item_id": "raincoat",
+            "criterion_id": "secondary_sku",
+            "business_status": "satisfied",
+            "processing_status": "complete",
+            "is_formal": true,
+            "reference_answer": "织云服饰的轻型雨衣原件明确型号V-RAIN，满足已明确的采购型号要求。",
+            "necessary_anchor_groups": [
+              [
+                "dcloth_a_p2_l1",
+                "dcloth_table_b3"
+              ]
+            ]
+          },
+          {
+            "supplier_id": "b",
+            "item_id": "raincoat",
+            "criterion_id": "secondary_sku",
+            "business_status": "satisfied",
+            "processing_status": "complete",
+            "is_formal": true,
+            "reference_answer": "锦程服饰的轻型雨衣原件明确型号V-RAIN，满足已明确的采购型号要求。",
+            "necessary_anchor_groups": [
+              [
+                "dcloth_b_p2_l1",
+                "dcloth_table_b_b3"
+              ]
+            ]
           }
         ],
         "extra_result_policy": "reject_unexpected_checks"
@@ -771,7 +847,7 @@
       "expected": {
         "kind": "review",
         "outcome": "manual",
-        "reference_answer": "墨林证书复印件存在，但有效性需人工确认。；文泰明确未附森林认证。 完整报告以上全部检查格，不隐藏另一家结果。",
+        "reference_answer": "墨林证书复印件存在，但有效性需人工确认。；文泰明确未附森林认证。 完整报告以上全部检查格，不隐藏另一家结果。两家重型订书机型号均为ARCH-ST，新增型号检查均满足。",
         "answerable": null,
         "fact_claims": [
           {
@@ -796,6 +872,14 @@
           ],
           [
             "doffice_b_p1_l2"
+          ],
+          [
+            "doffice_a_p2_l1",
+            "doffice_table_b3"
+          ],
+          [
+            "doffice_b_p2_l1",
+            "doffice_table_b_b3"
           ]
         ],
         "required_behaviors": [
@@ -861,6 +945,36 @@
             "necessary_anchor_groups": [
               [
                 "doffice_b_p1_l2"
+              ]
+            ]
+          },
+          {
+            "supplier_id": "a",
+            "item_id": "stapler",
+            "criterion_id": "secondary_sku",
+            "business_status": "satisfied",
+            "processing_status": "complete",
+            "is_formal": true,
+            "reference_answer": "墨林办公的重型订书机原件明确型号ARCH-ST，满足已明确的采购型号要求。",
+            "necessary_anchor_groups": [
+              [
+                "doffice_a_p2_l1",
+                "doffice_table_b3"
+              ]
+            ]
+          },
+          {
+            "supplier_id": "b",
+            "item_id": "stapler",
+            "criterion_id": "secondary_sku",
+            "business_status": "satisfied",
+            "processing_status": "complete",
+            "is_formal": true,
+            "reference_answer": "文泰办公的重型订书机原件明确型号ARCH-ST，满足已明确的采购型号要求。",
+            "necessary_anchor_groups": [
+              [
+                "doffice_b_p2_l1",
+                "doffice_table_b_b3"
               ]
             ]
           }
@@ -2254,7 +2368,7 @@
       "expected": {
         "kind": "review",
         "outcome": "manual",
-        "reference_answer": "丰岭48元/箱税口径相斥，该格资料冲突conflict；云田按重量且含税，无法与不含税每箱规则直接比较，该格manual。保留两格精确状态，整题保守汇总manual。",
+        "reference_answer": "丰岭48元/箱税口径相斥，该格资料冲突conflict；云田按重量且含税，无法与不含税每箱规则直接比较，该格manual。保留两格精确状态，整题保守汇总manual。两家香蕉型号均为CARE-BA，新增型号检查均满足。",
         "answerable": null,
         "fact_claims": [
           {
@@ -2289,6 +2403,14 @@
           ],
           [
             "mfruit_table_b_f2"
+          ],
+          [
+            "mfruit_a_p2_l1",
+            "mfruit_table_b3"
+          ],
+          [
+            "mfruit_b_p2_l1",
+            "mfruit_table_b_b3"
           ]
         ],
         "required_behaviors": [
@@ -2366,6 +2488,36 @@
                 "mfruit_table_b_f2"
               ]
             ]
+          },
+          {
+            "supplier_id": "a",
+            "item_id": "banana",
+            "criterion_id": "secondary_sku",
+            "business_status": "satisfied",
+            "processing_status": "complete",
+            "is_formal": true,
+            "reference_answer": "丰岭合作社的香蕉原件明确型号CARE-BA，满足已明确的采购型号要求。",
+            "necessary_anchor_groups": [
+              [
+                "mfruit_a_p2_l1",
+                "mfruit_table_b3"
+              ]
+            ]
+          },
+          {
+            "supplier_id": "b",
+            "item_id": "banana",
+            "criterion_id": "secondary_sku",
+            "business_status": "satisfied",
+            "processing_status": "complete",
+            "is_formal": true,
+            "reference_answer": "云田果品的香蕉原件明确型号CARE-BA，满足已明确的采购型号要求。",
+            "necessary_anchor_groups": [
+              [
+                "mfruit_b_p2_l1",
+                "mfruit_table_b_b3"
+              ]
+            ]
           }
         ],
         "extra_result_policy": "reject_unexpected_checks"
@@ -2392,7 +2544,7 @@
       "expected": {
         "kind": "review",
         "outcome": "manual",
-        "reference_answer": "丰岭明确30箱，满足30箱。；云田仅180千克且未列箱数，不能借别家箱重换算。 完整报告以上全部检查格，不隐藏另一家结果。",
+        "reference_answer": "丰岭明确30箱，满足30箱。；云田仅180千克且未列箱数，不能借别家箱重换算。 完整报告以上全部检查格，不隐藏另一家结果。两家香蕉型号均为CARE-BA，新增型号检查均满足。",
         "answerable": null,
         "fact_claims": [
           {
@@ -2431,6 +2583,14 @@
           ],
           [
             "mfruit_table_b_d2"
+          ],
+          [
+            "mfruit_a_p2_l1",
+            "mfruit_table_b3"
+          ],
+          [
+            "mfruit_b_p2_l1",
+            "mfruit_table_b_b3"
           ]
         ],
         "required_behaviors": [
@@ -2510,6 +2670,36 @@
                 "mfruit_table_b_d2"
               ]
             ]
+          },
+          {
+            "supplier_id": "a",
+            "item_id": "banana",
+            "criterion_id": "secondary_sku",
+            "business_status": "satisfied",
+            "processing_status": "complete",
+            "is_formal": true,
+            "reference_answer": "丰岭合作社的香蕉原件明确型号CARE-BA，满足已明确的采购型号要求。",
+            "necessary_anchor_groups": [
+              [
+                "mfruit_a_p2_l1",
+                "mfruit_table_b3"
+              ]
+            ]
+          },
+          {
+            "supplier_id": "b",
+            "item_id": "banana",
+            "criterion_id": "secondary_sku",
+            "business_status": "satisfied",
+            "processing_status": "complete",
+            "is_formal": true,
+            "reference_answer": "云田果品的香蕉原件明确型号CARE-BA，满足已明确的采购型号要求。",
+            "necessary_anchor_groups": [
+              [
+                "mfruit_b_p2_l1",
+                "mfruit_table_b_b3"
+              ]
+            ]
           }
         ],
         "extra_result_policy": "reject_unexpected_checks"
@@ -2536,7 +2726,7 @@
       "expected": {
         "kind": "review",
         "outcome": "not_satisfied",
-        "reference_answer": "经纬棉35%聚酯65%，明确非纯棉。；柏安棉100%，满足纯棉要求。 完整报告以上全部检查格，不隐藏另一家结果。",
+        "reference_answer": "经纬棉35%聚酯65%，明确非纯棉。；柏安棉100%，满足纯棉要求。 完整报告以上全部检查格，不隐藏另一家结果。两家反光背心型号均为LAB-V，新增型号检查均满足。",
         "answerable": null,
         "fact_claims": [
           {
@@ -2564,6 +2754,14 @@
           ],
           [
             "mcloth_table_b_e2"
+          ],
+          [
+            "mcloth_a_p2_l1",
+            "mcloth_table_b3"
+          ],
+          [
+            "mcloth_b_p2_l1",
+            "mcloth_table_b_b3"
           ]
         ],
         "required_behaviors": [
@@ -2635,6 +2833,36 @@
                 "mcloth_table_b_e2"
               ]
             ]
+          },
+          {
+            "supplier_id": "a",
+            "item_id": "vest",
+            "criterion_id": "secondary_sku",
+            "business_status": "satisfied",
+            "processing_status": "complete",
+            "is_formal": true,
+            "reference_answer": "经纬劳保的反光背心原件明确型号LAB-V，满足已明确的采购型号要求。",
+            "necessary_anchor_groups": [
+              [
+                "mcloth_a_p2_l1",
+                "mcloth_table_b3"
+              ]
+            ]
+          },
+          {
+            "supplier_id": "b",
+            "item_id": "vest",
+            "criterion_id": "secondary_sku",
+            "business_status": "satisfied",
+            "processing_status": "complete",
+            "is_formal": true,
+            "reference_answer": "柏安劳保的反光背心原件明确型号LAB-V，满足已明确的采购型号要求。",
+            "necessary_anchor_groups": [
+              [
+                "mcloth_b_p2_l1",
+                "mcloth_table_b_b3"
+              ]
+            ]
           }
         ],
         "extra_result_policy": "reject_unexpected_checks"
@@ -2661,7 +2889,7 @@
       "expected": {
         "kind": "review",
         "outcome": "partial",
-        "reference_answer": "衡远关联第3页真实未解析时partial且非正式；驰维完整范围没有IP等级，complete但业务状态insufficient_evidence。保留全部结果，整题partial。",
+        "reference_answer": "衡远关联第3页真实未解析时partial且非正式；驰维完整范围没有IP等级，complete但业务状态insufficient_evidence。保留全部结果，整题partial。两家充电底座型号均为FIELD-D，新增型号检查均满足。整Run仍partial，全部检查格均非正式。",
         "answerable": null,
         "fact_claims": [
           {
@@ -2692,6 +2920,14 @@
           ],
           [
             "mphone_b_p1_l3"
+          ],
+          [
+            "mphone_a_p2_l1",
+            "mphone_table_b3"
+          ],
+          [
+            "mphone_b_p2_l1",
+            "mphone_table_b_b3"
           ]
         ],
         "required_behaviors": [
@@ -2753,7 +2989,7 @@
             "criterion_id": "ip",
             "business_status": "insufficient_evidence",
             "processing_status": "complete",
-            "is_formal": true,
+            "is_formal": false,
             "reference_answer": "驰维完整关联范围没有IP等级事实，精确业务状态为insufficient_evidence；不能折叠成人工确认。",
             "necessary_anchor_groups": [
               [
@@ -2764,6 +3000,36 @@
               ],
               [
                 "mphone_b_p1_l3"
+              ]
+            ]
+          },
+          {
+            "supplier_id": "a",
+            "item_id": "dock",
+            "criterion_id": "secondary_sku",
+            "business_status": "satisfied",
+            "processing_status": "complete",
+            "is_formal": false,
+            "reference_answer": "衡远仪器的充电底座原件明确型号FIELD-D，满足已明确的采购型号要求。整份审查覆盖不完整，该已完成检查格仍非正式。",
+            "necessary_anchor_groups": [
+              [
+                "mphone_a_p2_l1",
+                "mphone_table_b3"
+              ]
+            ]
+          },
+          {
+            "supplier_id": "b",
+            "item_id": "dock",
+            "criterion_id": "secondary_sku",
+            "business_status": "satisfied",
+            "processing_status": "complete",
+            "is_formal": false,
+            "reference_answer": "驰维仪器的充电底座原件明确型号FIELD-D，满足已明确的采购型号要求。整份审查覆盖不完整，该已完成检查格仍非正式。",
+            "necessary_anchor_groups": [
+              [
+                "mphone_b_p2_l1",
+                "mphone_table_b_b3"
               ]
             ]
           }
@@ -2792,7 +3058,7 @@
       "expected": {
         "kind": "review",
         "outcome": "satisfied",
-        "reference_answer": "清墨两处均含税120元/个，同范围同口径，满足不超过120。；书航含税118元/个，不超过120。 完整报告以上全部检查格，不隐藏另一家结果。",
+        "reference_answer": "清墨两处均含税120元/个，同范围同口径，满足不超过120。；书航含税118元/个，不超过120。 完整报告以上全部检查格，不隐藏另一家结果。两家标签机型号均为LIB-L，新增型号检查均满足。",
         "answerable": null,
         "fact_claims": [
           {
@@ -2827,6 +3093,14 @@
           ],
           [
             "moffice_table_b_f2"
+          ],
+          [
+            "moffice_a_p2_l1",
+            "moffice_table_b3"
+          ],
+          [
+            "moffice_b_p2_l1",
+            "moffice_table_b_b3"
           ]
         ],
         "required_behaviors": [
@@ -2904,6 +3178,36 @@
                 "moffice_table_b_f2"
               ]
             ]
+          },
+          {
+            "supplier_id": "a",
+            "item_id": "labeler",
+            "criterion_id": "secondary_sku",
+            "business_status": "satisfied",
+            "processing_status": "complete",
+            "is_formal": true,
+            "reference_answer": "清墨耗材的标签机原件明确型号LIB-L，满足已明确的采购型号要求。",
+            "necessary_anchor_groups": [
+              [
+                "moffice_a_p2_l1",
+                "moffice_table_b3"
+              ]
+            ]
+          },
+          {
+            "supplier_id": "b",
+            "item_id": "labeler",
+            "criterion_id": "secondary_sku",
+            "business_status": "satisfied",
+            "processing_status": "complete",
+            "is_formal": true,
+            "reference_answer": "书航耗材的标签机原件明确型号LIB-L，满足已明确的采购型号要求。",
+            "necessary_anchor_groups": [
+              [
+                "moffice_b_p2_l1",
+                "moffice_table_b_b3"
+              ]
+            ]
           }
         ],
         "extra_result_policy": "reject_unexpected_checks"
@@ -2930,7 +3234,7 @@
       "expected": {
         "kind": "review",
         "outcome": "manual",
-        "reference_answer": "安讯含税899元/台，不超过900。；嘉信880和920适用条件不明，不挑低价，人工确认。 完整报告以上全部检查格，不隐藏另一家结果。",
+        "reference_answer": "安讯含税899元/台，不超过900。；嘉信880和920适用条件不明，不挑低价，人工确认。 完整报告以上全部检查格，不隐藏另一家结果。两家网络路由器型号均为ELDER-R，新增型号检查均满足。",
         "answerable": null,
         "fact_claims": [
           {
@@ -2981,6 +3285,14 @@
           ],
           [
             "mphonealt_table_b_f2"
+          ],
+          [
+            "mphonealt_a_p2_l1",
+            "mphonealt_table_b3"
+          ],
+          [
+            "mphonealt_b_p2_l1",
+            "mphonealt_table_b_b3"
           ]
         ],
         "required_behaviors": [
@@ -3058,6 +3370,36 @@
                 "mphonealt_table_b_f2"
               ]
             ]
+          },
+          {
+            "supplier_id": "a",
+            "item_id": "router",
+            "criterion_id": "secondary_sku",
+            "business_status": "satisfied",
+            "processing_status": "complete",
+            "is_formal": true,
+            "reference_answer": "安讯数码的网络路由器原件明确型号ELDER-R，满足已明确的采购型号要求。",
+            "necessary_anchor_groups": [
+              [
+                "mphonealt_a_p2_l1",
+                "mphonealt_table_b3"
+              ]
+            ]
+          },
+          {
+            "supplier_id": "b",
+            "item_id": "router",
+            "criterion_id": "secondary_sku",
+            "business_status": "satisfied",
+            "processing_status": "complete",
+            "is_formal": true,
+            "reference_answer": "嘉信数码的网络路由器原件明确型号ELDER-R，满足已明确的采购型号要求。",
+            "necessary_anchor_groups": [
+              [
+                "mphonealt_b_p2_l1",
+                "mphonealt_table_b_b3"
+              ]
+            ]
           }
         ],
         "extra_result_policy": "reject_unexpected_checks"
@@ -3084,7 +3426,7 @@
       "expected": {
         "kind": "review",
         "outcome": "manual",
-        "reference_answer": "经纬抗静电扫描件存在仍须人工核验有效性，柏安附件表写无而不满足报告要求；两家的现场危险源适用性均为明确manual规则，必须人工确认。四格全部报告。",
+        "reference_answer": "经纬抗静电扫描件存在仍须人工核验有效性，柏安附件表写无而不满足报告要求；两家的现场危险源适用性均为明确manual规则，必须人工确认。四格全部报告。两家反光背心型号均为LAB-V，新增型号检查均满足。",
         "answerable": null,
         "fact_claims": [
           {
@@ -3130,6 +3472,14 @@
           ],
           [
             "mcloth_b_p1_l4"
+          ],
+          [
+            "mcloth_a_p2_l1",
+            "mcloth_table_b3"
+          ],
+          [
+            "mcloth_b_p2_l1",
+            "mcloth_table_b_b3"
           ]
         ],
         "required_behaviors": [
@@ -3227,6 +3577,36 @@
                 "mcloth_b_p1_l4"
               ]
             ]
+          },
+          {
+            "supplier_id": "a",
+            "item_id": "vest",
+            "criterion_id": "secondary_sku",
+            "business_status": "satisfied",
+            "processing_status": "complete",
+            "is_formal": true,
+            "reference_answer": "经纬劳保的反光背心原件明确型号LAB-V，满足已明确的采购型号要求。",
+            "necessary_anchor_groups": [
+              [
+                "mcloth_a_p2_l1",
+                "mcloth_table_b3"
+              ]
+            ]
+          },
+          {
+            "supplier_id": "b",
+            "item_id": "vest",
+            "criterion_id": "secondary_sku",
+            "business_status": "satisfied",
+            "processing_status": "complete",
+            "is_formal": true,
+            "reference_answer": "柏安劳保的反光背心原件明确型号LAB-V，满足已明确的采购型号要求。",
+            "necessary_anchor_groups": [
+              [
+                "mcloth_b_p2_l1",
+                "mcloth_table_b_b3"
+              ]
+            ]
           }
         ],
         "extra_result_policy": "reject_unexpected_checks"
@@ -3321,7 +3701,7 @@
       "expected": {
         "kind": "answer",
         "outcome": "answered",
-        "reference_answer": "重读当前已确认规则：会议椅24把；历史摘要20把已过期，不可当当前权威规则。",
+        "reference_answer": "重读当前已确认规则：会议椅24把；历史摘要20把已过期，不可当当前权威规则。当前另有移动白板采购型号MEET-B这一已确认要求；它不改变会议椅24把的数量要求。",
         "answerable": null,
         "fact_claims": [],
         "necessary_anchor_groups": [],
@@ -3817,7 +4197,7 @@
         ]
       ],
       "sheets": {},
-      "role": "quote"
+      "role": "spec"
     },
     {
       "source_id": "dphone_b",
@@ -3837,7 +4217,7 @@
         ]
       ],
       "sheets": {},
-      "role": "quote"
+      "role": "spec"
     },
     {
       "source_id": "dphone_table",
@@ -3939,7 +4319,7 @@
         ]
       ],
       "sheets": {},
-      "role": "quote"
+      "role": "spec"
     },
     {
       "source_id": "dfruit_b",
@@ -3960,7 +4340,7 @@
         ]
       ],
       "sheets": {},
-      "role": "quote"
+      "role": "spec"
     },
     {
       "source_id": "dfruit_table",
@@ -4061,7 +4441,7 @@
         ]
       ],
       "sheets": {},
-      "role": "quote"
+      "role": "spec"
     },
     {
       "source_id": "dcloth_b",
@@ -4081,7 +4461,7 @@
         ]
       ],
       "sheets": {},
-      "role": "quote"
+      "role": "spec"
     },
     {
       "source_id": "dcloth_table",
@@ -4182,7 +4562,7 @@
         ]
       ],
       "sheets": {},
-      "role": "quote"
+      "role": "spec"
     },
     {
       "source_id": "doffice_b",
@@ -4201,7 +4581,7 @@
         ]
       ],
       "sheets": {},
-      "role": "quote"
+      "role": "spec"
     },
     {
       "source_id": "doffice_table",
@@ -4307,7 +4687,7 @@
         ]
       ],
       "sheets": {},
-      "role": "quote"
+      "role": "spec"
     },
     {
       "source_id": "mphone_b",
@@ -4327,7 +4707,7 @@
         ]
       ],
       "sheets": {},
-      "role": "quote"
+      "role": "spec"
     },
     {
       "source_id": "mphone_table",
@@ -4428,7 +4808,7 @@
         ]
       ],
       "sheets": {},
-      "role": "quote"
+      "role": "spec"
     },
     {
       "source_id": "mfruit_b",
@@ -4448,7 +4828,7 @@
         ]
       ],
       "sheets": {},
-      "role": "quote"
+      "role": "spec"
     },
     {
       "source_id": "mfruit_table",
@@ -4550,7 +4930,7 @@
         ]
       ],
       "sheets": {},
-      "role": "quote"
+      "role": "spec"
     },
     {
       "source_id": "mcloth_b",
@@ -4571,7 +4951,7 @@
         ]
       ],
       "sheets": {},
-      "role": "quote"
+      "role": "spec"
     },
     {
       "source_id": "mcloth_table",
@@ -4672,7 +5052,7 @@
         ]
       ],
       "sheets": {},
-      "role": "quote"
+      "role": "spec"
     },
     {
       "source_id": "moffice_b",
@@ -4692,7 +5072,7 @@
         ]
       ],
       "sheets": {},
-      "role": "quote"
+      "role": "spec"
     },
     {
       "source_id": "moffice_table",
@@ -4793,7 +5173,7 @@
         ]
       ],
       "sheets": {},
-      "role": "quote"
+      "role": "spec"
     },
     {
       "source_id": "mphonealt_b",
@@ -4813,7 +5193,7 @@
         ]
       ],
       "sheets": {},
-      "role": "quote"
+      "role": "spec"
     },
     {
       "source_id": "mphonealt_table",
@@ -4914,7 +5294,7 @@
         ]
       ],
       "sheets": {},
-      "role": "quote"
+      "role": "spec"
     },
     {
       "source_id": "mmixed_b",
@@ -4934,7 +5314,7 @@
         ]
       ],
       "sheets": {},
-      "role": "quote"
+      "role": "spec"
     },
     {
       "source_id": "mmixed_table",
@@ -8843,6 +9223,22 @@
             "kind": "user_defined",
             "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
           }
+        },
+        {
+          "criterion_id": "secondary_sku",
+          "item_id": "tablet",
+          "name": "采购型号",
+          "rule": {
+            "type": "enum",
+            "operator": "eq",
+            "values": [
+              "EDU-T8"
+            ]
+          },
+          "source": {
+            "kind": "user_defined",
+            "reason": "本合成采购任务原已明确采购课堂平板，型号为EDU-T8；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
+          }
         }
       ],
       "bindings": [
@@ -9006,6 +9402,22 @@
           "source": {
             "kind": "user_defined",
             "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
+          }
+        },
+        {
+          "criterion_id": "secondary_sku",
+          "item_id": "stapler",
+          "name": "采购型号",
+          "rule": {
+            "type": "enum",
+            "operator": "eq",
+            "values": [
+              "ARCH-ST"
+            ]
+          },
+          "source": {
+            "kind": "user_defined",
+            "reason": "本合成采购任务原已明确采购重型订书机，型号为ARCH-ST；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
           }
         }
       ],
@@ -9171,6 +9583,22 @@
             "kind": "user_defined",
             "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
           }
+        },
+        {
+          "criterion_id": "secondary_sku",
+          "item_id": "tablet",
+          "name": "采购型号",
+          "rule": {
+            "type": "enum",
+            "operator": "eq",
+            "values": [
+              "EDU-T8"
+            ]
+          },
+          "source": {
+            "kind": "user_defined",
+            "reason": "本合成采购任务原已明确采购课堂平板，型号为EDU-T8；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
+          }
         }
       ],
       "bindings": [
@@ -9335,6 +9763,22 @@
             "kind": "user_defined",
             "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
           }
+        },
+        {
+          "criterion_id": "secondary_sku",
+          "item_id": "pear",
+          "name": "采购型号",
+          "rule": {
+            "type": "enum",
+            "operator": "eq",
+            "values": [
+              "F-PEAR"
+            ]
+          },
+          "source": {
+            "kind": "user_defined",
+            "reason": "本合成采购任务原已明确采购雪梨，型号为F-PEAR；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
+          }
         }
       ],
       "bindings": [
@@ -9498,6 +9942,22 @@
           "source": {
             "kind": "user_defined",
             "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
+          }
+        },
+        {
+          "criterion_id": "secondary_sku",
+          "item_id": "raincoat",
+          "name": "采购型号",
+          "rule": {
+            "type": "enum",
+            "operator": "eq",
+            "values": [
+              "V-RAIN"
+            ]
+          },
+          "source": {
+            "kind": "user_defined",
+            "reason": "本合成采购任务原已明确采购轻型雨衣，型号为V-RAIN；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
           }
         }
       ],
@@ -9679,6 +10139,22 @@
             "kind": "user_defined",
             "reason": "用户明确要求签收订单后3个工作日内交付。"
           }
+        },
+        {
+          "criterion_id": "secondary_sku",
+          "item_id": "pear",
+          "name": "采购型号",
+          "rule": {
+            "type": "enum",
+            "operator": "eq",
+            "values": [
+              "F-PEAR"
+            ]
+          },
+          "source": {
+            "kind": "user_defined",
+            "reason": "本合成采购任务原已明确采购雪梨，型号为F-PEAR；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
+          }
         }
       ],
       "bindings": [
@@ -9841,6 +10317,22 @@
           "source": {
             "kind": "user_defined",
             "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
+          }
+        },
+        {
+          "criterion_id": "secondary_sku",
+          "item_id": "raincoat",
+          "name": "采购型号",
+          "rule": {
+            "type": "enum",
+            "operator": "eq",
+            "values": [
+              "V-RAIN"
+            ]
+          },
+          "source": {
+            "kind": "user_defined",
+            "reason": "本合成采购任务原已明确采购轻型雨衣，型号为V-RAIN；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
           }
         }
       ],
@@ -10005,6 +10497,22 @@
             "kind": "user_defined",
             "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
           }
+        },
+        {
+          "criterion_id": "secondary_sku",
+          "item_id": "stapler",
+          "name": "采购型号",
+          "rule": {
+            "type": "enum",
+            "operator": "eq",
+            "values": [
+              "ARCH-ST"
+            ]
+          },
+          "source": {
+            "kind": "user_defined",
+            "reason": "本合成采购任务原已明确采购重型订书机，型号为ARCH-ST；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
+          }
         }
       ],
       "bindings": [
@@ -10168,6 +10676,22 @@
           "source": {
             "kind": "user_defined",
             "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
+          }
+        },
+        {
+          "criterion_id": "secondary_sku",
+          "item_id": "tablet",
+          "name": "采购型号",
+          "rule": {
+            "type": "enum",
+            "operator": "eq",
+            "values": [
+              "EDU-T8"
+            ]
+          },
+          "source": {
+            "kind": "user_defined",
+            "reason": "本合成采购任务原已明确采购课堂平板，型号为EDU-T8；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
           }
         }
       ],
@@ -10358,6 +10882,22 @@
             "kind": "user_defined",
             "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
           }
+        },
+        {
+          "criterion_id": "secondary_sku",
+          "item_id": "stapler",
+          "name": "采购型号",
+          "rule": {
+            "type": "enum",
+            "operator": "eq",
+            "values": [
+              "ARCH-ST"
+            ]
+          },
+          "source": {
+            "kind": "user_defined",
+            "reason": "本合成采购任务原已明确采购重型订书机，型号为ARCH-ST；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
+          }
         }
       ],
       "bindings": [
@@ -10521,6 +11061,22 @@
           "source": {
             "kind": "user_defined",
             "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
+          }
+        },
+        {
+          "criterion_id": "secondary_sku",
+          "item_id": "dock",
+          "name": "采购型号",
+          "rule": {
+            "type": "enum",
+            "operator": "eq",
+            "values": [
+              "FIELD-D"
+            ]
+          },
+          "source": {
+            "kind": "user_defined",
+            "reason": "本合成采购任务原已明确采购充电底座，型号为FIELD-D；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
           }
         }
       ],
@@ -10855,6 +11411,22 @@
             "kind": "user_defined",
             "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
           }
+        },
+        {
+          "criterion_id": "secondary_sku",
+          "item_id": "labeler",
+          "name": "采购型号",
+          "rule": {
+            "type": "enum",
+            "operator": "eq",
+            "values": [
+              "LIB-L"
+            ]
+          },
+          "source": {
+            "kind": "user_defined",
+            "reason": "本合成采购任务原已明确采购标签机，型号为LIB-L；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
+          }
         }
       ],
       "bindings": [
@@ -11018,6 +11590,22 @@
           "source": {
             "kind": "user_defined",
             "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
+          }
+        },
+        {
+          "criterion_id": "secondary_sku",
+          "item_id": "dock",
+          "name": "采购型号",
+          "rule": {
+            "type": "enum",
+            "operator": "eq",
+            "values": [
+              "FIELD-D"
+            ]
+          },
+          "source": {
+            "kind": "user_defined",
+            "reason": "本合成采购任务原已明确采购充电底座，型号为FIELD-D；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
           }
         }
       ],
@@ -11196,6 +11784,22 @@
             "kind": "user_defined",
             "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
           }
+        },
+        {
+          "criterion_id": "secondary_sku",
+          "item_id": "board",
+          "name": "采购型号",
+          "rule": {
+            "type": "enum",
+            "operator": "eq",
+            "values": [
+              "MEET-B"
+            ]
+          },
+          "source": {
+            "kind": "user_defined",
+            "reason": "本合成采购任务原已明确采购移动白板，型号为MEET-B；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
+          }
         }
       ],
       "bindings": [
@@ -11371,6 +11975,22 @@
             "kind": "user_defined",
             "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
           }
+        },
+        {
+          "criterion_id": "secondary_sku",
+          "item_id": "banana",
+          "name": "采购型号",
+          "rule": {
+            "type": "enum",
+            "operator": "eq",
+            "values": [
+              "CARE-BA"
+            ]
+          },
+          "source": {
+            "kind": "user_defined",
+            "reason": "本合成采购任务原已明确采购香蕉，型号为CARE-BA；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
+          }
         }
       ],
       "bindings": [
@@ -11534,6 +12154,22 @@
           "source": {
             "kind": "user_defined",
             "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
+          }
+        },
+        {
+          "criterion_id": "secondary_sku",
+          "item_id": "dock",
+          "name": "采购型号",
+          "rule": {
+            "type": "enum",
+            "operator": "eq",
+            "values": [
+              "FIELD-D"
+            ]
+          },
+          "source": {
+            "kind": "user_defined",
+            "reason": "本合成采购任务原已明确采购充电底座，型号为FIELD-D；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
           }
         }
       ],
@@ -11711,6 +12347,22 @@
             "kind": "user_defined",
             "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
           }
+        },
+        {
+          "criterion_id": "secondary_sku",
+          "item_id": "banana",
+          "name": "采购型号",
+          "rule": {
+            "type": "enum",
+            "operator": "eq",
+            "values": [
+              "CARE-BA"
+            ]
+          },
+          "source": {
+            "kind": "user_defined",
+            "reason": "本合成采购任务原已明确采购香蕉，型号为CARE-BA；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
+          }
         }
       ],
       "bindings": [
@@ -11874,6 +12526,22 @@
           "source": {
             "kind": "user_defined",
             "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
+          }
+        },
+        {
+          "criterion_id": "secondary_sku",
+          "item_id": "vest",
+          "name": "采购型号",
+          "rule": {
+            "type": "enum",
+            "operator": "eq",
+            "values": [
+              "LAB-V"
+            ]
+          },
+          "source": {
+            "kind": "user_defined",
+            "reason": "本合成采购任务原已明确采购反光背心，型号为LAB-V；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
           }
         }
       ],
@@ -12039,6 +12707,22 @@
             "kind": "user_defined",
             "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
           }
+        },
+        {
+          "criterion_id": "secondary_sku",
+          "item_id": "labeler",
+          "name": "采购型号",
+          "rule": {
+            "type": "enum",
+            "operator": "eq",
+            "values": [
+              "LIB-L"
+            ]
+          },
+          "source": {
+            "kind": "user_defined",
+            "reason": "本合成采购任务原已明确采购标签机，型号为LIB-L；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
+          }
         }
       ],
       "bindings": [
@@ -12202,6 +12886,22 @@
           "source": {
             "kind": "user_defined",
             "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
+          }
+        },
+        {
+          "criterion_id": "secondary_sku",
+          "item_id": "router",
+          "name": "采购型号",
+          "rule": {
+            "type": "enum",
+            "operator": "eq",
+            "values": [
+              "ELDER-R"
+            ]
+          },
+          "source": {
+            "kind": "user_defined",
+            "reason": "本合成采购任务原已明确采购网络路由器，型号为ELDER-R；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
           }
         }
       ],
@@ -12367,6 +13067,22 @@
             "kind": "user_defined",
             "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
           }
+        },
+        {
+          "criterion_id": "secondary_sku",
+          "item_id": "board",
+          "name": "采购型号",
+          "rule": {
+            "type": "enum",
+            "operator": "eq",
+            "values": [
+              "MEET-B"
+            ]
+          },
+          "source": {
+            "kind": "user_defined",
+            "reason": "本合成采购任务原已明确采购移动白板，型号为MEET-B；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
+          }
         }
       ],
       "bindings": [
@@ -12530,6 +13246,22 @@
           "source": {
             "kind": "user_defined",
             "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
+          }
+        },
+        {
+          "criterion_id": "secondary_sku",
+          "item_id": "dock",
+          "name": "采购型号",
+          "rule": {
+            "type": "enum",
+            "operator": "eq",
+            "values": [
+              "FIELD-D"
+            ]
+          },
+          "source": {
+            "kind": "user_defined",
+            "reason": "本合成采购任务原已明确采购充电底座，型号为FIELD-D；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
           }
         }
       ],
@@ -12695,6 +13427,22 @@
             "kind": "user_defined",
             "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
           }
+        },
+        {
+          "criterion_id": "secondary_sku",
+          "item_id": "banana",
+          "name": "采购型号",
+          "rule": {
+            "type": "enum",
+            "operator": "eq",
+            "values": [
+              "CARE-BA"
+            ]
+          },
+          "source": {
+            "kind": "user_defined",
+            "reason": "本合成采购任务原已明确采购香蕉，型号为CARE-BA；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
+          }
         }
       ],
       "bindings": [
@@ -12858,6 +13606,22 @@
           "source": {
             "kind": "user_defined",
             "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
+          }
+        },
+        {
+          "criterion_id": "secondary_sku",
+          "item_id": "board",
+          "name": "采购型号",
+          "rule": {
+            "type": "enum",
+            "operator": "eq",
+            "values": [
+              "MEET-B"
+            ]
+          },
+          "source": {
+            "kind": "user_defined",
+            "reason": "本合成采购任务原已明确采购移动白板，型号为MEET-B；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
           }
         }
       ],
@@ -13025,6 +13789,22 @@
             "kind": "user_defined",
             "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
           }
+        },
+        {
+          "criterion_id": "secondary_sku",
+          "item_id": "banana",
+          "name": "采购型号",
+          "rule": {
+            "type": "enum",
+            "operator": "eq",
+            "values": [
+              "CARE-BA"
+            ]
+          },
+          "source": {
+            "kind": "user_defined",
+            "reason": "本合成采购任务原已明确采购香蕉，型号为CARE-BA；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
+          }
         }
       ],
       "bindings": [
@@ -13188,6 +13968,22 @@
           "source": {
             "kind": "user_defined",
             "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
+          }
+        },
+        {
+          "criterion_id": "secondary_sku",
+          "item_id": "banana",
+          "name": "采购型号",
+          "rule": {
+            "type": "enum",
+            "operator": "eq",
+            "values": [
+              "CARE-BA"
+            ]
+          },
+          "source": {
+            "kind": "user_defined",
+            "reason": "本合成采购任务原已明确采购香蕉，型号为CARE-BA；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
           }
         }
       ],
@@ -13354,6 +14150,22 @@
             "kind": "user_defined",
             "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
           }
+        },
+        {
+          "criterion_id": "secondary_sku",
+          "item_id": "vest",
+          "name": "采购型号",
+          "rule": {
+            "type": "enum",
+            "operator": "eq",
+            "values": [
+              "LAB-V"
+            ]
+          },
+          "source": {
+            "kind": "user_defined",
+            "reason": "本合成采购任务原已明确采购反光背心，型号为LAB-V；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
+          }
         }
       ],
       "bindings": [
@@ -13518,6 +14330,22 @@
           "source": {
             "kind": "user_defined",
             "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
+          }
+        },
+        {
+          "criterion_id": "secondary_sku",
+          "item_id": "dock",
+          "name": "采购型号",
+          "rule": {
+            "type": "enum",
+            "operator": "eq",
+            "values": [
+              "FIELD-D"
+            ]
+          },
+          "source": {
+            "kind": "user_defined",
+            "reason": "本合成采购任务原已明确采购充电底座，型号为FIELD-D；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
           }
         }
       ],
@@ -13705,6 +14533,22 @@
             "kind": "user_defined",
             "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
           }
+        },
+        {
+          "criterion_id": "secondary_sku",
+          "item_id": "labeler",
+          "name": "采购型号",
+          "rule": {
+            "type": "enum",
+            "operator": "eq",
+            "values": [
+              "LIB-L"
+            ]
+          },
+          "source": {
+            "kind": "user_defined",
+            "reason": "本合成采购任务原已明确采购标签机，型号为LIB-L；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
+          }
         }
       ],
       "bindings": [
@@ -13870,6 +14714,22 @@
           "source": {
             "kind": "user_defined",
             "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
+          }
+        },
+        {
+          "criterion_id": "secondary_sku",
+          "item_id": "router",
+          "name": "采购型号",
+          "rule": {
+            "type": "enum",
+            "operator": "eq",
+            "values": [
+              "ELDER-R"
+            ]
+          },
+          "source": {
+            "kind": "user_defined",
+            "reason": "本合成采购任务原已明确采购网络路由器，型号为ELDER-R；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
           }
         }
       ],
@@ -14047,6 +14907,22 @@
             "kind": "user_defined",
             "reason": "用户明确要求由校方安全员现场核对，资料不能自动完成此人工步骤。"
           }
+        },
+        {
+          "criterion_id": "secondary_sku",
+          "item_id": "vest",
+          "name": "采购型号",
+          "rule": {
+            "type": "enum",
+            "operator": "eq",
+            "values": [
+              "LAB-V"
+            ]
+          },
+          "source": {
+            "kind": "user_defined",
+            "reason": "本合成采购任务原已明确采购反光背心，型号为LAB-V；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
+          }
         }
       ],
       "bindings": [
@@ -14210,6 +15086,22 @@
           "source": {
             "kind": "user_defined",
             "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
+          }
+        },
+        {
+          "criterion_id": "secondary_sku",
+          "item_id": "labeler",
+          "name": "采购型号",
+          "rule": {
+            "type": "enum",
+            "operator": "eq",
+            "values": [
+              "LIB-L"
+            ]
+          },
+          "source": {
+            "kind": "user_defined",
+            "reason": "本合成采购任务原已明确采购标签机，型号为LIB-L；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
           }
         }
       ],
@@ -14400,6 +15292,22 @@
             "kind": "user_defined",
             "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
           }
+        },
+        {
+          "criterion_id": "secondary_sku",
+          "item_id": "board",
+          "name": "采购型号",
+          "rule": {
+            "type": "enum",
+            "operator": "eq",
+            "values": [
+              "MEET-B"
+            ]
+          },
+          "source": {
+            "kind": "user_defined",
+            "reason": "本合成采购任务原已明确采购移动白板，型号为MEET-B；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
+          }
         }
       ],
       "bindings": [
@@ -14579,6 +15487,22 @@
           "source": {
             "kind": "user_defined",
             "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
+          }
+        },
+        {
+          "criterion_id": "secondary_sku",
+          "item_id": "router",
+          "name": "采购型号",
+          "rule": {
+            "type": "enum",
+            "operator": "eq",
+            "values": [
+              "ELDER-R"
+            ]
+          },
+          "source": {
+            "kind": "user_defined",
+            "reason": "本合成采购任务原已明确采购网络路由器，型号为ELDER-R；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
           }
         }
       ],
@@ -14761,6 +15685,22 @@
             "kind": "user_defined",
             "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
           }
+        },
+        {
+          "criterion_id": "secondary_sku",
+          "item_id": "router",
+          "name": "采购型号",
+          "rule": {
+            "type": "enum",
+            "operator": "eq",
+            "values": [
+              "ELDER-R"
+            ]
+          },
+          "source": {
+            "kind": "user_defined",
+            "reason": "本合成采购任务原已明确采购网络路由器，型号为ELDER-R；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
+          }
         }
       ],
       "bindings": [
@@ -14924,6 +15864,22 @@
           "source": {
             "kind": "user_defined",
             "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
+          }
+        },
+        {
+          "criterion_id": "secondary_sku",
+          "item_id": "board",
+          "name": "采购型号",
+          "rule": {
+            "type": "enum",
+            "operator": "eq",
+            "values": [
+              "MEET-B"
+            ]
+          },
+          "source": {
+            "kind": "user_defined",
+            "reason": "本合成采购任务原已明确采购移动白板，型号为MEET-B；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
           }
         }
       ],
@@ -15092,6 +16048,22 @@
           "source": {
             "kind": "user_defined",
             "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
+          }
+        },
+        {
+          "criterion_id": "secondary_sku",
+          "item_id": "dock",
+          "name": "采购型号",
+          "rule": {
+            "type": "enum",
+            "operator": "eq",
+            "values": [
+              "FIELD-D"
+            ]
+          },
+          "source": {
+            "kind": "user_defined",
+            "reason": "本合成采购任务原已明确采购充电底座，型号为FIELD-D；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
           }
         }
       ],
@@ -15265,6 +16237,22 @@
             "kind": "user_defined",
             "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
           }
+        },
+        {
+          "criterion_id": "secondary_sku",
+          "item_id": "board",
+          "name": "采购型号",
+          "rule": {
+            "type": "enum",
+            "operator": "eq",
+            "values": [
+              "MEET-B"
+            ]
+          },
+          "source": {
+            "kind": "user_defined",
+            "reason": "本合成采购任务原已明确采购移动白板，型号为MEET-B；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
+          }
         }
       ],
       "bindings": [
@@ -15429,6 +16417,22 @@
             "kind": "user_defined",
             "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
           }
+        },
+        {
+          "criterion_id": "secondary_sku",
+          "item_id": "vest",
+          "name": "采购型号",
+          "rule": {
+            "type": "enum",
+            "operator": "eq",
+            "values": [
+              "LAB-V"
+            ]
+          },
+          "source": {
+            "kind": "user_defined",
+            "reason": "本合成采购任务原已明确采购反光背心，型号为LAB-V；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
+          }
         }
       ],
       "bindings": [
@@ -15563,5 +16567,5 @@
     "measure_memory_cross_chat",
     "measure_safety_injection"
   ],
-  "revision": 4
+  "revision": 6
 }

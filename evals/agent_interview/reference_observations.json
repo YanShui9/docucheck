@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "dataset_id": "docucheck-agent-interview-v1",
-  "dataset_revision": 3,
-  "dataset_sha256": "052f5f88e9a797c1f690b51e324f1538887677574c2cdae1f8c5c1cb4cd570e2",
+  "dataset_revision": 6,
+  "dataset_sha256": "d6ac755c1476f32699175d28978cac0c829bf1cba2cd33594996ee9ebf0b421d",
   "product_observations": false,
   "independent_labels": false,
   "semantic_judge_calibration": false,
-  "authoring_method": "AI-authored rubric examples. Structural rubric fields reused as explicit positive fixtures; answer prose authored separately. No product execution or rule evaluator.",
+  "authoring_method": "AI-authored v6 rubric examples. Original v3 answer prose retained and amended for explicit secondary SKU requirements. New structural evidence/business fields reuse handwritten v6 gold as positive grader fixtures. No product execution, rule evaluator, independent human labels, or judge calibration.",
   "limitations": [
     "not_product_performance",
     "not_independent_human_labels",
@@ -421,7 +421,7 @@
       "execution": "executed",
       "kind": "review",
       "outcome": "manual",
-      "answer": "青禾数量20箱满足、签收订单后2工作日满足；山泉18箱不满足数量，交期为订单确认后2自然日，起算点和日历口径不同，交期待人工确认。四格均完整正式。",
+      "answer": "青禾数量20箱满足、签收订单后2工作日满足；山泉18箱不满足数量，交期为订单确认后2自然日，起算点和日历口径不同，交期待人工确认。四格均完整正式。两家雪梨型号均为F-PEAR，型号检查均满足。",
       "state": {
         "case_id": "dfruit",
         "checklist_version": 2,
@@ -504,7 +504,9 @@
         "dfruit_table_b_c2",
         "dfruit_table_b_d2",
         "dfruit_table_c2",
-        "dfruit_table_d2"
+        "dfruit_table_d2",
+        "dfruit_a_p2_l1",
+        "dfruit_b_p2_l1"
       ],
       "verified_anchor_ids": [
         "dfruit_a_p1_l2",
@@ -514,7 +516,9 @@
         "dfruit_table_b_c2",
         "dfruit_table_b_d2",
         "dfruit_table_c2",
-        "dfruit_table_d2"
+        "dfruit_table_d2",
+        "dfruit_a_p2_l1",
+        "dfruit_b_p2_l1"
       ],
       "business_checks": [
         {
@@ -563,6 +567,28 @@
           "is_formal": true,
           "anchor_ids": [
             "dfruit_b_p1_l4"
+          ]
+        },
+        {
+          "supplier_id": "a",
+          "item_id": "pear",
+          "criterion_id": "secondary_sku",
+          "business_status": "satisfied",
+          "processing_status": "complete",
+          "is_formal": true,
+          "anchor_ids": [
+            "dfruit_a_p2_l1"
+          ]
+        },
+        {
+          "supplier_id": "b",
+          "item_id": "pear",
+          "criterion_id": "secondary_sku",
+          "business_status": "satisfied",
+          "processing_status": "complete",
+          "is_formal": true,
+          "anchor_ids": [
+            "dfruit_b_p2_l1"
           ]
         }
       ],
@@ -641,7 +667,7 @@
       "execution": "executed",
       "kind": "review",
       "outcome": "not_satisfied",
-      "answer": "织云明确未提交阻燃证书，不满足；锦程提供的是色牢度报告且明确非阻燃证书，也不满足。两格完整正式。",
+      "answer": "织云明确未提交阻燃证书，不满足；锦程提供的是色牢度报告且明确非阻燃证书，也不满足。两格完整正式。两家轻型雨衣型号均为V-RAIN，型号检查均满足。",
       "state": {
         "case_id": "dcloth",
         "checklist_version": 2,
@@ -672,12 +698,16 @@
       "cited_anchor_ids": [
         "dcloth_a_p1_l3",
         "dcloth_b_p1_l3",
-        "dcloth_table_b_f2"
+        "dcloth_table_b_f2",
+        "dcloth_a_p2_l1",
+        "dcloth_b_p2_l1"
       ],
       "verified_anchor_ids": [
         "dcloth_a_p1_l3",
         "dcloth_b_p1_l3",
-        "dcloth_table_b_f2"
+        "dcloth_table_b_f2",
+        "dcloth_a_p2_l1",
+        "dcloth_b_p2_l1"
       ],
       "business_checks": [
         {
@@ -701,6 +731,28 @@
           "anchor_ids": [
             "dcloth_b_p1_l3",
             "dcloth_table_b_f2"
+          ]
+        },
+        {
+          "supplier_id": "a",
+          "item_id": "raincoat",
+          "criterion_id": "secondary_sku",
+          "business_status": "satisfied",
+          "processing_status": "complete",
+          "is_formal": true,
+          "anchor_ids": [
+            "dcloth_a_p2_l1"
+          ]
+        },
+        {
+          "supplier_id": "b",
+          "item_id": "raincoat",
+          "criterion_id": "secondary_sku",
+          "business_status": "satisfied",
+          "processing_status": "complete",
+          "is_formal": true,
+          "anchor_ids": [
+            "dcloth_b_p2_l1"
           ]
         }
       ],
@@ -772,7 +824,7 @@
       "execution": "executed",
       "kind": "review",
       "outcome": "manual",
-      "answer": "墨林已有森林认证复印件，但有效性仍待人工核验；文泰未附森林认证，不满足。存在复印件不能代替有效性确认。",
+      "answer": "墨林已有森林认证复印件，但有效性仍待人工核验；文泰未附森林认证，不满足。存在复印件不能代替有效性确认。两家重型订书机型号均为ARCH-ST，型号检查均满足。",
       "state": {
         "case_id": "doffice",
         "checklist_version": 2,
@@ -802,11 +854,15 @@
       ],
       "cited_anchor_ids": [
         "doffice_a_p1_l3",
-        "doffice_b_p1_l2"
+        "doffice_b_p1_l2",
+        "doffice_a_p2_l1",
+        "doffice_b_p2_l1"
       ],
       "verified_anchor_ids": [
         "doffice_a_p1_l3",
-        "doffice_b_p1_l2"
+        "doffice_b_p1_l2",
+        "doffice_a_p2_l1",
+        "doffice_b_p2_l1"
       ],
       "business_checks": [
         {
@@ -829,6 +885,28 @@
           "is_formal": true,
           "anchor_ids": [
             "doffice_b_p1_l2"
+          ]
+        },
+        {
+          "supplier_id": "a",
+          "item_id": "stapler",
+          "criterion_id": "secondary_sku",
+          "business_status": "satisfied",
+          "processing_status": "complete",
+          "is_formal": true,
+          "anchor_ids": [
+            "doffice_a_p2_l1"
+          ]
+        },
+        {
+          "supplier_id": "b",
+          "item_id": "stapler",
+          "criterion_id": "secondary_sku",
+          "business_status": "satisfied",
+          "processing_status": "complete",
+          "is_formal": true,
+          "anchor_ids": [
+            "doffice_b_p2_l1"
           ]
         }
       ],
@@ -2278,7 +2356,7 @@
       "execution": "executed",
       "kind": "review",
       "outcome": "manual",
-      "answer": "丰岭48 CNY/箱存在含税与不含税冲突，资料冲突；云田8 CNY按总重量报价且含税，与不含税每箱限价不一致，待人工确认。不能挑选口径判满足。",
+      "answer": "丰岭48 CNY/箱存在含税与不含税冲突，资料冲突；云田8 CNY按总重量报价且含税，与不含税每箱限价不一致，待人工确认。不能挑选口径判满足。两家香蕉型号均为CARE-BA，型号检查均满足。",
       "state": {
         "case_id": "mfruit",
         "checklist_version": 2,
@@ -2312,14 +2390,18 @@
         "mfruit_b_p1_l2",
         "mfruit_table_b_e2",
         "mfruit_table_b_f2",
-        "mfruit_table_f2"
+        "mfruit_table_f2",
+        "mfruit_a_p2_l1",
+        "mfruit_b_p2_l1"
       ],
       "verified_anchor_ids": [
         "mfruit_a_p1_l4",
         "mfruit_b_p1_l2",
         "mfruit_table_b_e2",
         "mfruit_table_b_f2",
-        "mfruit_table_f2"
+        "mfruit_table_f2",
+        "mfruit_a_p2_l1",
+        "mfruit_b_p2_l1"
       ],
       "business_checks": [
         {
@@ -2345,6 +2427,28 @@
             "mfruit_b_p1_l2",
             "mfruit_table_b_e2",
             "mfruit_table_b_f2"
+          ]
+        },
+        {
+          "supplier_id": "a",
+          "item_id": "banana",
+          "criterion_id": "secondary_sku",
+          "business_status": "satisfied",
+          "processing_status": "complete",
+          "is_formal": true,
+          "anchor_ids": [
+            "mfruit_a_p2_l1"
+          ]
+        },
+        {
+          "supplier_id": "b",
+          "item_id": "banana",
+          "criterion_id": "secondary_sku",
+          "business_status": "satisfied",
+          "processing_status": "complete",
+          "is_formal": true,
+          "anchor_ids": [
+            "mfruit_b_p2_l1"
           ]
         }
       ],
@@ -2423,7 +2527,7 @@
       "execution": "executed",
       "kind": "review",
       "outcome": "manual",
-      "answer": "丰岭30箱满足；云田180千克缺箱数、不能借别家的包装换算，待人工确认。两家均保留完整报告。",
+      "answer": "丰岭30箱满足；云田180千克缺箱数、不能借别家的包装换算，待人工确认。两家均保留完整报告。两家香蕉型号均为CARE-BA，型号检查均满足。",
       "state": {
         "case_id": "mfruit",
         "checklist_version": 2,
@@ -2459,7 +2563,9 @@
         "mfruit_table_b_c2",
         "mfruit_table_b_d2",
         "mfruit_table_c2",
-        "mfruit_table_d2"
+        "mfruit_table_d2",
+        "mfruit_a_p2_l1",
+        "mfruit_b_p2_l1"
       ],
       "verified_anchor_ids": [
         "mfruit_a_p1_l2",
@@ -2467,7 +2573,9 @@
         "mfruit_table_b_c2",
         "mfruit_table_b_d2",
         "mfruit_table_c2",
-        "mfruit_table_d2"
+        "mfruit_table_d2",
+        "mfruit_a_p2_l1",
+        "mfruit_b_p2_l1"
       ],
       "business_checks": [
         {
@@ -2494,6 +2602,28 @@
             "mfruit_b_p1_l2",
             "mfruit_table_b_c2",
             "mfruit_table_b_d2"
+          ]
+        },
+        {
+          "supplier_id": "a",
+          "item_id": "banana",
+          "criterion_id": "secondary_sku",
+          "business_status": "satisfied",
+          "processing_status": "complete",
+          "is_formal": true,
+          "anchor_ids": [
+            "mfruit_a_p2_l1"
+          ]
+        },
+        {
+          "supplier_id": "b",
+          "item_id": "banana",
+          "criterion_id": "secondary_sku",
+          "business_status": "satisfied",
+          "processing_status": "complete",
+          "is_formal": true,
+          "anchor_ids": [
+            "mfruit_b_p2_l1"
           ]
         }
       ],
@@ -2565,7 +2695,7 @@
       "execution": "executed",
       "kind": "review",
       "outcome": "not_satisfied",
-      "answer": "经纬棉35%且明确非纯棉，不满足；柏安棉100%满足。各用本家同品目原文。",
+      "answer": "经纬棉35%且明确非纯棉，不满足；柏安棉100%满足。各用本家同品目原文。两家反光背心型号均为LAB-V，型号检查均满足。",
       "state": {
         "case_id": "mcloth",
         "checklist_version": 2,
@@ -2596,12 +2726,16 @@
       "cited_anchor_ids": [
         "mcloth_a_p1_l2",
         "mcloth_b_p1_l2",
-        "mcloth_table_b_e2"
+        "mcloth_table_b_e2",
+        "mcloth_a_p2_l1",
+        "mcloth_b_p2_l1"
       ],
       "verified_anchor_ids": [
         "mcloth_a_p1_l2",
         "mcloth_b_p1_l2",
-        "mcloth_table_b_e2"
+        "mcloth_table_b_e2",
+        "mcloth_a_p2_l1",
+        "mcloth_b_p2_l1"
       ],
       "business_checks": [
         {
@@ -2625,6 +2759,28 @@
           "anchor_ids": [
             "mcloth_b_p1_l2",
             "mcloth_table_b_e2"
+          ]
+        },
+        {
+          "supplier_id": "a",
+          "item_id": "vest",
+          "criterion_id": "secondary_sku",
+          "business_status": "satisfied",
+          "processing_status": "complete",
+          "is_formal": true,
+          "anchor_ids": [
+            "mcloth_a_p2_l1"
+          ]
+        },
+        {
+          "supplier_id": "b",
+          "item_id": "vest",
+          "criterion_id": "secondary_sku",
+          "business_status": "satisfied",
+          "processing_status": "complete",
+          "is_formal": true,
+          "anchor_ids": [
+            "mcloth_b_p2_l1"
           ]
         }
       ],
@@ -2703,7 +2859,7 @@
       "execution": "executed",
       "kind": "review",
       "outcome": "partial",
-      "answer": "衡远保留第1页IP67已知事实，但真实绑定第3页尚未解析，所以partial且非正式；驰维完整页缺IP等级，证据不足。不得出正式满足。",
+      "answer": "衡远保留第1页IP67已知事实，但真实绑定第3页尚未解析，所以partial且非正式；驰维完整页缺IP等级，证据不足。不得出正式满足。两家充电底座型号均为FIELD-D，型号检查均满足。整份审查仍partial，全部检查格非正式。",
       "state": {
         "case_id": "mphone",
         "checklist_version": 2,
@@ -2735,13 +2891,17 @@
         "mphone_a_p1_l3",
         "mphone_b_p1_l1",
         "mphone_b_p1_l2",
-        "mphone_b_p1_l3"
+        "mphone_b_p1_l3",
+        "mphone_a_p2_l1",
+        "mphone_b_p2_l1"
       ],
       "verified_anchor_ids": [
         "mphone_a_p1_l3",
         "mphone_b_p1_l1",
         "mphone_b_p1_l2",
-        "mphone_b_p1_l3"
+        "mphone_b_p1_l3",
+        "mphone_a_p2_l1",
+        "mphone_b_p2_l1"
       ],
       "business_checks": [
         {
@@ -2761,11 +2921,33 @@
           "criterion_id": "ip",
           "business_status": "insufficient_evidence",
           "processing_status": "complete",
-          "is_formal": true,
+          "is_formal": false,
           "anchor_ids": [
             "mphone_b_p1_l1",
             "mphone_b_p1_l2",
             "mphone_b_p1_l3"
+          ]
+        },
+        {
+          "supplier_id": "a",
+          "item_id": "dock",
+          "criterion_id": "secondary_sku",
+          "business_status": "satisfied",
+          "processing_status": "complete",
+          "is_formal": false,
+          "anchor_ids": [
+            "mphone_a_p2_l1"
+          ]
+        },
+        {
+          "supplier_id": "b",
+          "item_id": "dock",
+          "criterion_id": "secondary_sku",
+          "business_status": "satisfied",
+          "processing_status": "complete",
+          "is_formal": false,
+          "anchor_ids": [
+            "mphone_b_p2_l1"
           ]
         }
       ],
@@ -2835,6 +3017,9 @@
         "input_tokens": 0,
         "output_tokens": 0,
         "unknown_requests": 0
+      },
+      "run": {
+        "status": "partial"
       }
     },
     {
@@ -2844,7 +3029,7 @@
       "execution": "executed",
       "kind": "review",
       "outcome": "satisfied",
-      "answer": "清墨LIB-T正文与补充单均含税120 CNY/个，同范围同口径，满足不超过120；书航含税118 CNY/个也满足。",
+      "answer": "清墨LIB-T正文与补充单均含税120 CNY/个，同范围同口径，满足不超过120；书航含税118 CNY/个也满足。两家标签机型号均为LIB-L，型号检查均满足。",
       "state": {
         "case_id": "moffice",
         "checklist_version": 2,
@@ -2878,14 +3063,18 @@
         "moffice_a_p1_l4",
         "moffice_b_p1_l3",
         "moffice_table_b_e2",
-        "moffice_table_b_f2"
+        "moffice_table_b_f2",
+        "moffice_a_p2_l1",
+        "moffice_b_p2_l1"
       ],
       "verified_anchor_ids": [
         "moffice_a_p1_l3",
         "moffice_a_p1_l4",
         "moffice_b_p1_l3",
         "moffice_table_b_e2",
-        "moffice_table_b_f2"
+        "moffice_table_b_f2",
+        "moffice_a_p2_l1",
+        "moffice_b_p2_l1"
       ],
       "business_checks": [
         {
@@ -2911,6 +3100,28 @@
             "moffice_b_p1_l3",
             "moffice_table_b_e2",
             "moffice_table_b_f2"
+          ]
+        },
+        {
+          "supplier_id": "a",
+          "item_id": "labeler",
+          "criterion_id": "secondary_sku",
+          "business_status": "satisfied",
+          "processing_status": "complete",
+          "is_formal": true,
+          "anchor_ids": [
+            "moffice_a_p2_l1"
+          ]
+        },
+        {
+          "supplier_id": "b",
+          "item_id": "labeler",
+          "criterion_id": "secondary_sku",
+          "business_status": "satisfied",
+          "processing_status": "complete",
+          "is_formal": true,
+          "anchor_ids": [
+            "moffice_b_p2_l1"
           ]
         }
       ],
@@ -2989,7 +3200,7 @@
       "execution": "executed",
       "kind": "review",
       "outcome": "manual",
-      "answer": "安讯含税899 CNY/台满足900限价；嘉信880与920适用条件不清楚，待人工确认，不能只取880。",
+      "answer": "安讯含税899 CNY/台满足900限价；嘉信880与920适用条件不清楚，待人工确认，不能只取880。两家网络路由器型号均为ELDER-R，型号检查均满足。",
       "state": {
         "case_id": "mphonealt",
         "checklist_version": 2,
@@ -3039,14 +3250,18 @@
         "mphonealt_b_p1_l3",
         "mphonealt_table_b_e2",
         "mphonealt_table_b_f2",
-        "mphonealt_table_e2"
+        "mphonealt_table_e2",
+        "mphonealt_a_p2_l1",
+        "mphonealt_b_p2_l1"
       ],
       "verified_anchor_ids": [
         "mphonealt_a_p1_l3",
         "mphonealt_b_p1_l3",
         "mphonealt_table_b_e2",
         "mphonealt_table_b_f2",
-        "mphonealt_table_e2"
+        "mphonealt_table_e2",
+        "mphonealt_a_p2_l1",
+        "mphonealt_b_p2_l1"
       ],
       "business_checks": [
         {
@@ -3072,6 +3287,28 @@
             "mphonealt_b_p1_l3",
             "mphonealt_table_b_e2",
             "mphonealt_table_b_f2"
+          ]
+        },
+        {
+          "supplier_id": "a",
+          "item_id": "router",
+          "criterion_id": "secondary_sku",
+          "business_status": "satisfied",
+          "processing_status": "complete",
+          "is_formal": true,
+          "anchor_ids": [
+            "mphonealt_a_p2_l1"
+          ]
+        },
+        {
+          "supplier_id": "b",
+          "item_id": "router",
+          "criterion_id": "secondary_sku",
+          "business_status": "satisfied",
+          "processing_status": "complete",
+          "is_formal": true,
+          "anchor_ids": [
+            "mphonealt_b_p2_l1"
           ]
         }
       ],
@@ -3150,7 +3387,7 @@
       "execution": "executed",
       "kind": "review",
       "outcome": "manual",
-      "answer": "经纬扫描件存在但有效性待人工；柏安明示无报告不满足；两家危险源适用性均由安全员现场人工核对。四格均保留，不以报告代替人工规则。",
+      "answer": "经纬扫描件存在但有效性待人工；柏安明示无报告不满足；两家危险源适用性均由安全员现场人工核对。四格均保留，不以报告代替人工规则。两家反光背心型号均为LAB-V，型号检查均满足。",
       "state": {
         "case_id": "mcloth",
         "checklist_version": 2,
@@ -3197,13 +3434,17 @@
         "mcloth_a_p1_l4",
         "mcloth_a_p1_l5",
         "mcloth_b_p1_l4",
-        "mcloth_table_b_f2"
+        "mcloth_table_b_f2",
+        "mcloth_a_p2_l1",
+        "mcloth_b_p2_l1"
       ],
       "verified_anchor_ids": [
         "mcloth_a_p1_l4",
         "mcloth_a_p1_l5",
         "mcloth_b_p1_l4",
-        "mcloth_table_b_f2"
+        "mcloth_table_b_f2",
+        "mcloth_a_p2_l1",
+        "mcloth_b_p2_l1"
       ],
       "business_checks": [
         {
@@ -3248,6 +3489,28 @@
           "is_formal": true,
           "anchor_ids": [
             "mcloth_b_p1_l4"
+          ]
+        },
+        {
+          "supplier_id": "a",
+          "item_id": "vest",
+          "criterion_id": "secondary_sku",
+          "business_status": "satisfied",
+          "processing_status": "complete",
+          "is_formal": true,
+          "anchor_ids": [
+            "mcloth_a_p2_l1"
+          ]
+        },
+        {
+          "supplier_id": "b",
+          "item_id": "vest",
+          "criterion_id": "secondary_sku",
+          "business_status": "satisfied",
+          "processing_status": "complete",
+          "is_formal": true,
+          "anchor_ids": [
+            "mcloth_b_p2_l1"
           ]
         }
       ],
@@ -3409,7 +3672,7 @@
       "execution": "executed",
       "kind": "answer",
       "outcome": "answered",
-      "answer": "当前已确认会议椅24把；历史摘要20把已过期，审查应重读当前规则，不能据旧摘要修改权威数量。",
+      "answer": "当前已确认会议椅24把；历史摘要20把已过期，审查应重读当前规则，不能据旧摘要修改权威数量。当前另有移动白板采购型号MEET-B这一已确认要求，会议椅仍按24把审。",
       "state": {
         "case_id": "mmixed",
         "checklist_version": 2,

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "revision": 4,
+  "revision": 6,
   "synthetic": true,
   "scenarios": [
     {
@@ -52,6 +52,22 @@
             "source": {
               "kind": "user_defined",
               "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
+            }
+          },
+          {
+            "criterion_id": "secondary_sku",
+            "item_id": "tablet",
+            "name": "采购型号",
+            "rule": {
+              "type": "enum",
+              "operator": "eq",
+              "values": [
+                "EDU-T8"
+              ]
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "本合成采购任务原已明确采购课堂平板，型号为EDU-T8；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
             }
           }
         ],
@@ -217,6 +233,22 @@
               "kind": "user_defined",
               "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
             }
+          },
+          {
+            "criterion_id": "secondary_sku",
+            "item_id": "stapler",
+            "name": "采购型号",
+            "rule": {
+              "type": "enum",
+              "operator": "eq",
+              "values": [
+                "ARCH-ST"
+              ]
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "本合成采购任务原已明确采购重型订书机，型号为ARCH-ST；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
+            }
           }
         ],
         "bindings": [
@@ -380,6 +412,22 @@
             "source": {
               "kind": "user_defined",
               "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
+            }
+          },
+          {
+            "criterion_id": "secondary_sku",
+            "item_id": "tablet",
+            "name": "采购型号",
+            "rule": {
+              "type": "enum",
+              "operator": "eq",
+              "values": [
+                "EDU-T8"
+              ]
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "本合成采购任务原已明确采购课堂平板，型号为EDU-T8；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
             }
           }
         ],
@@ -545,6 +593,22 @@
               "kind": "user_defined",
               "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
             }
+          },
+          {
+            "criterion_id": "secondary_sku",
+            "item_id": "pear",
+            "name": "采购型号",
+            "rule": {
+              "type": "enum",
+              "operator": "eq",
+              "values": [
+                "F-PEAR"
+              ]
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "本合成采购任务原已明确采购雪梨，型号为F-PEAR；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
+            }
           }
         ],
         "bindings": [
@@ -708,6 +772,22 @@
             "source": {
               "kind": "user_defined",
               "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
+            }
+          },
+          {
+            "criterion_id": "secondary_sku",
+            "item_id": "raincoat",
+            "name": "采购型号",
+            "rule": {
+              "type": "enum",
+              "operator": "eq",
+              "values": [
+                "V-RAIN"
+              ]
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "本合成采购任务原已明确采购轻型雨衣，型号为V-RAIN；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
             }
           }
         ],
@@ -889,6 +969,22 @@
               "kind": "user_defined",
               "reason": "用户明确要求签收订单后3个工作日内交付。"
             }
+          },
+          {
+            "criterion_id": "secondary_sku",
+            "item_id": "pear",
+            "name": "采购型号",
+            "rule": {
+              "type": "enum",
+              "operator": "eq",
+              "values": [
+                "F-PEAR"
+              ]
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "本合成采购任务原已明确采购雪梨，型号为F-PEAR；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
+            }
           }
         ],
         "bindings": [
@@ -1051,6 +1147,22 @@
             "source": {
               "kind": "user_defined",
               "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
+            }
+          },
+          {
+            "criterion_id": "secondary_sku",
+            "item_id": "raincoat",
+            "name": "采购型号",
+            "rule": {
+              "type": "enum",
+              "operator": "eq",
+              "values": [
+                "V-RAIN"
+              ]
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "本合成采购任务原已明确采购轻型雨衣，型号为V-RAIN；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
             }
           }
         ],
@@ -1215,6 +1327,22 @@
               "kind": "user_defined",
               "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
             }
+          },
+          {
+            "criterion_id": "secondary_sku",
+            "item_id": "stapler",
+            "name": "采购型号",
+            "rule": {
+              "type": "enum",
+              "operator": "eq",
+              "values": [
+                "ARCH-ST"
+              ]
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "本合成采购任务原已明确采购重型订书机，型号为ARCH-ST；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
+            }
           }
         ],
         "bindings": [
@@ -1378,6 +1506,22 @@
             "source": {
               "kind": "user_defined",
               "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
+            }
+          },
+          {
+            "criterion_id": "secondary_sku",
+            "item_id": "tablet",
+            "name": "采购型号",
+            "rule": {
+              "type": "enum",
+              "operator": "eq",
+              "values": [
+                "EDU-T8"
+              ]
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "本合成采购任务原已明确采购课堂平板，型号为EDU-T8；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
             }
           }
         ],
@@ -1560,6 +1704,22 @@
               "kind": "user_defined",
               "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
             }
+          },
+          {
+            "criterion_id": "secondary_sku",
+            "item_id": "stapler",
+            "name": "采购型号",
+            "rule": {
+              "type": "enum",
+              "operator": "eq",
+              "values": [
+                "ARCH-ST"
+              ]
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "本合成采购任务原已明确采购重型订书机，型号为ARCH-ST；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
+            }
           }
         ],
         "bindings": [
@@ -1723,6 +1883,22 @@
             "source": {
               "kind": "user_defined",
               "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
+            }
+          },
+          {
+            "criterion_id": "secondary_sku",
+            "item_id": "dock",
+            "name": "采购型号",
+            "rule": {
+              "type": "enum",
+              "operator": "eq",
+              "values": [
+                "FIELD-D"
+              ]
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "本合成采购任务原已明确采购充电底座，型号为FIELD-D；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
             }
           }
         ],
@@ -2059,6 +2235,22 @@
               "kind": "user_defined",
               "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
             }
+          },
+          {
+            "criterion_id": "secondary_sku",
+            "item_id": "labeler",
+            "name": "采购型号",
+            "rule": {
+              "type": "enum",
+              "operator": "eq",
+              "values": [
+                "LIB-L"
+              ]
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "本合成采购任务原已明确采购标签机，型号为LIB-L；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
+            }
           }
         ],
         "bindings": [
@@ -2222,6 +2414,22 @@
             "source": {
               "kind": "user_defined",
               "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
+            }
+          },
+          {
+            "criterion_id": "secondary_sku",
+            "item_id": "dock",
+            "name": "采购型号",
+            "rule": {
+              "type": "enum",
+              "operator": "eq",
+              "values": [
+                "FIELD-D"
+              ]
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "本合成采购任务原已明确采购充电底座，型号为FIELD-D；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
             }
           }
         ],
@@ -2395,6 +2603,22 @@
               "kind": "user_defined",
               "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
             }
+          },
+          {
+            "criterion_id": "secondary_sku",
+            "item_id": "board",
+            "name": "采购型号",
+            "rule": {
+              "type": "enum",
+              "operator": "eq",
+              "values": [
+                "MEET-B"
+              ]
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "本合成采购任务原已明确采购移动白板，型号为MEET-B；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
+            }
           }
         ],
         "bindings": [
@@ -2565,6 +2789,22 @@
               "kind": "user_defined",
               "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
             }
+          },
+          {
+            "criterion_id": "secondary_sku",
+            "item_id": "banana",
+            "name": "采购型号",
+            "rule": {
+              "type": "enum",
+              "operator": "eq",
+              "values": [
+                "CARE-BA"
+              ]
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "本合成采购任务原已明确采购香蕉，型号为CARE-BA；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
+            }
           }
         ],
         "bindings": [
@@ -2728,6 +2968,22 @@
             "source": {
               "kind": "user_defined",
               "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
+            }
+          },
+          {
+            "criterion_id": "secondary_sku",
+            "item_id": "dock",
+            "name": "采购型号",
+            "rule": {
+              "type": "enum",
+              "operator": "eq",
+              "values": [
+                "FIELD-D"
+              ]
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "本合成采购任务原已明确采购充电底座，型号为FIELD-D；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
             }
           }
         ],
@@ -2905,6 +3161,22 @@
               "kind": "user_defined",
               "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
             }
+          },
+          {
+            "criterion_id": "secondary_sku",
+            "item_id": "banana",
+            "name": "采购型号",
+            "rule": {
+              "type": "enum",
+              "operator": "eq",
+              "values": [
+                "CARE-BA"
+              ]
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "本合成采购任务原已明确采购香蕉，型号为CARE-BA；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
+            }
           }
         ],
         "bindings": [
@@ -3068,6 +3340,22 @@
             "source": {
               "kind": "user_defined",
               "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
+            }
+          },
+          {
+            "criterion_id": "secondary_sku",
+            "item_id": "vest",
+            "name": "采购型号",
+            "rule": {
+              "type": "enum",
+              "operator": "eq",
+              "values": [
+                "LAB-V"
+              ]
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "本合成采购任务原已明确采购反光背心，型号为LAB-V；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
             }
           }
         ],
@@ -3233,6 +3521,22 @@
               "kind": "user_defined",
               "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
             }
+          },
+          {
+            "criterion_id": "secondary_sku",
+            "item_id": "labeler",
+            "name": "采购型号",
+            "rule": {
+              "type": "enum",
+              "operator": "eq",
+              "values": [
+                "LIB-L"
+              ]
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "本合成采购任务原已明确采购标签机，型号为LIB-L；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
+            }
           }
         ],
         "bindings": [
@@ -3396,6 +3700,22 @@
             "source": {
               "kind": "user_defined",
               "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
+            }
+          },
+          {
+            "criterion_id": "secondary_sku",
+            "item_id": "router",
+            "name": "采购型号",
+            "rule": {
+              "type": "enum",
+              "operator": "eq",
+              "values": [
+                "ELDER-R"
+              ]
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "本合成采购任务原已明确采购网络路由器，型号为ELDER-R；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
             }
           }
         ],
@@ -3561,6 +3881,22 @@
               "kind": "user_defined",
               "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
             }
+          },
+          {
+            "criterion_id": "secondary_sku",
+            "item_id": "board",
+            "name": "采购型号",
+            "rule": {
+              "type": "enum",
+              "operator": "eq",
+              "values": [
+                "MEET-B"
+              ]
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "本合成采购任务原已明确采购移动白板，型号为MEET-B；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
+            }
           }
         ],
         "bindings": [
@@ -3724,6 +4060,22 @@
             "source": {
               "kind": "user_defined",
               "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
+            }
+          },
+          {
+            "criterion_id": "secondary_sku",
+            "item_id": "dock",
+            "name": "采购型号",
+            "rule": {
+              "type": "enum",
+              "operator": "eq",
+              "values": [
+                "FIELD-D"
+              ]
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "本合成采购任务原已明确采购充电底座，型号为FIELD-D；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
             }
           }
         ],
@@ -3889,6 +4241,22 @@
               "kind": "user_defined",
               "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
             }
+          },
+          {
+            "criterion_id": "secondary_sku",
+            "item_id": "banana",
+            "name": "采购型号",
+            "rule": {
+              "type": "enum",
+              "operator": "eq",
+              "values": [
+                "CARE-BA"
+              ]
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "本合成采购任务原已明确采购香蕉，型号为CARE-BA；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
+            }
           }
         ],
         "bindings": [
@@ -4052,6 +4420,22 @@
             "source": {
               "kind": "user_defined",
               "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
+            }
+          },
+          {
+            "criterion_id": "secondary_sku",
+            "item_id": "board",
+            "name": "采购型号",
+            "rule": {
+              "type": "enum",
+              "operator": "eq",
+              "values": [
+                "MEET-B"
+              ]
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "本合成采购任务原已明确采购移动白板，型号为MEET-B；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
             }
           }
         ],
@@ -4219,6 +4603,22 @@
               "kind": "user_defined",
               "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
             }
+          },
+          {
+            "criterion_id": "secondary_sku",
+            "item_id": "banana",
+            "name": "采购型号",
+            "rule": {
+              "type": "enum",
+              "operator": "eq",
+              "values": [
+                "CARE-BA"
+              ]
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "本合成采购任务原已明确采购香蕉，型号为CARE-BA；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
+            }
           }
         ],
         "bindings": [
@@ -4382,6 +4782,22 @@
             "source": {
               "kind": "user_defined",
               "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
+            }
+          },
+          {
+            "criterion_id": "secondary_sku",
+            "item_id": "banana",
+            "name": "采购型号",
+            "rule": {
+              "type": "enum",
+              "operator": "eq",
+              "values": [
+                "CARE-BA"
+              ]
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "本合成采购任务原已明确采购香蕉，型号为CARE-BA；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
             }
           }
         ],
@@ -4548,6 +4964,22 @@
               "kind": "user_defined",
               "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
             }
+          },
+          {
+            "criterion_id": "secondary_sku",
+            "item_id": "vest",
+            "name": "采购型号",
+            "rule": {
+              "type": "enum",
+              "operator": "eq",
+              "values": [
+                "LAB-V"
+              ]
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "本合成采购任务原已明确采购反光背心，型号为LAB-V；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
+            }
           }
         ],
         "bindings": [
@@ -4712,6 +5144,22 @@
             "source": {
               "kind": "user_defined",
               "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
+            }
+          },
+          {
+            "criterion_id": "secondary_sku",
+            "item_id": "dock",
+            "name": "采购型号",
+            "rule": {
+              "type": "enum",
+              "operator": "eq",
+              "values": [
+                "FIELD-D"
+              ]
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "本合成采购任务原已明确采购充电底座，型号为FIELD-D；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
             }
           }
         ],
@@ -4894,6 +5342,22 @@
               "kind": "user_defined",
               "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
             }
+          },
+          {
+            "criterion_id": "secondary_sku",
+            "item_id": "labeler",
+            "name": "采购型号",
+            "rule": {
+              "type": "enum",
+              "operator": "eq",
+              "values": [
+                "LIB-L"
+              ]
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "本合成采购任务原已明确采购标签机，型号为LIB-L；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
+            }
           }
         ],
         "bindings": [
@@ -5059,6 +5523,22 @@
             "source": {
               "kind": "user_defined",
               "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
+            }
+          },
+          {
+            "criterion_id": "secondary_sku",
+            "item_id": "router",
+            "name": "采购型号",
+            "rule": {
+              "type": "enum",
+              "operator": "eq",
+              "values": [
+                "ELDER-R"
+              ]
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "本合成采购任务原已明确采购网络路由器，型号为ELDER-R；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
             }
           }
         ],
@@ -5236,6 +5716,22 @@
               "kind": "user_defined",
               "reason": "用户明确要求由校方安全员现场核对，资料不能自动完成此人工步骤。"
             }
+          },
+          {
+            "criterion_id": "secondary_sku",
+            "item_id": "vest",
+            "name": "采购型号",
+            "rule": {
+              "type": "enum",
+              "operator": "eq",
+              "values": [
+                "LAB-V"
+              ]
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "本合成采购任务原已明确采购反光背心，型号为LAB-V；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
+            }
           }
         ],
         "bindings": [
@@ -5399,6 +5895,22 @@
             "source": {
               "kind": "user_defined",
               "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
+            }
+          },
+          {
+            "criterion_id": "secondary_sku",
+            "item_id": "labeler",
+            "name": "采购型号",
+            "rule": {
+              "type": "enum",
+              "operator": "eq",
+              "values": [
+                "LIB-L"
+              ]
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "本合成采购任务原已明确采购标签机，型号为LIB-L；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
             }
           }
         ],
@@ -5581,6 +6093,22 @@
               "kind": "user_defined",
               "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
             }
+          },
+          {
+            "criterion_id": "secondary_sku",
+            "item_id": "board",
+            "name": "采购型号",
+            "rule": {
+              "type": "enum",
+              "operator": "eq",
+              "values": [
+                "MEET-B"
+              ]
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "本合成采购任务原已明确采购移动白板，型号为MEET-B；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
+            }
           }
         ],
         "bindings": [
@@ -5754,6 +6282,22 @@
             "source": {
               "kind": "user_defined",
               "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
+            }
+          },
+          {
+            "criterion_id": "secondary_sku",
+            "item_id": "router",
+            "name": "采购型号",
+            "rule": {
+              "type": "enum",
+              "operator": "eq",
+              "values": [
+                "ELDER-R"
+              ]
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "本合成采购任务原已明确采购网络路由器，型号为ELDER-R；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
             }
           }
         ],
@@ -5929,6 +6473,22 @@
               "kind": "user_defined",
               "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
             }
+          },
+          {
+            "criterion_id": "secondary_sku",
+            "item_id": "router",
+            "name": "采购型号",
+            "rule": {
+              "type": "enum",
+              "operator": "eq",
+              "values": [
+                "ELDER-R"
+              ]
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "本合成采购任务原已明确采购网络路由器，型号为ELDER-R；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
+            }
           }
         ],
         "bindings": [
@@ -6092,6 +6652,22 @@
             "source": {
               "kind": "user_defined",
               "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
+            }
+          },
+          {
+            "criterion_id": "secondary_sku",
+            "item_id": "board",
+            "name": "采购型号",
+            "rule": {
+              "type": "enum",
+              "operator": "eq",
+              "values": [
+                "MEET-B"
+              ]
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "本合成采购任务原已明确采购移动白板，型号为MEET-B；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
             }
           }
         ],
@@ -6262,6 +6838,22 @@
               "kind": "user_defined",
               "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
             }
+          },
+          {
+            "criterion_id": "secondary_sku",
+            "item_id": "dock",
+            "name": "采购型号",
+            "rule": {
+              "type": "enum",
+              "operator": "eq",
+              "values": [
+                "FIELD-D"
+              ]
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "本合成采购任务原已明确采购充电底座，型号为FIELD-D；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
+            }
           }
         ],
         "bindings": [
@@ -6428,6 +7020,22 @@
               "kind": "user_defined",
               "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
             }
+          },
+          {
+            "criterion_id": "secondary_sku",
+            "item_id": "board",
+            "name": "采购型号",
+            "rule": {
+              "type": "enum",
+              "operator": "eq",
+              "values": [
+                "MEET-B"
+              ]
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "本合成采购任务原已明确采购移动白板，型号为MEET-B；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
+            }
           }
         ],
         "bindings": [
@@ -6591,6 +7199,22 @@
             "source": {
               "kind": "user_defined",
               "reason": "本合成任务中用户明确提出的检查要求；不从供应商资料推定采购要求。"
+            }
+          },
+          {
+            "criterion_id": "secondary_sku",
+            "item_id": "vest",
+            "name": "采购型号",
+            "rule": {
+              "type": "enum",
+              "operator": "eq",
+              "values": [
+                "LAB-V"
+              ]
+            },
+            "source": {
+              "kind": "user_defined",
+              "reason": "本合成采购任务原已明确采购反光背心，型号为LAB-V；现将该采购型号显式列为确认要求，不从供应商资料推定买方要求。"
             }
           }
         ],
