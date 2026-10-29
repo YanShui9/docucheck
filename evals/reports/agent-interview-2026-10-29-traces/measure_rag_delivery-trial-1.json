@@ -1,0 +1,767 @@
+{
+  "task_id": "measure_rag_delivery",
+  "trial": 1,
+  "execution": "executed",
+  "origin": "live_http",
+  "kind": "clarification",
+  "outcome": "clarify",
+  "answer": "本次未匹配到已确认清单中的指标。请提供清单里的品目或指标名称，或在审查清单中查看完整要求。",
+  "tool_names": [],
+  "business_checks": [],
+  "claims": [],
+  "assessments": {
+    "retain_start_event": {
+      "verdict": "fail",
+      "evidence": [
+        "/answer"
+      ]
+    },
+    "retain_working_days": {
+      "verdict": "fail",
+      "evidence": [
+        "/answer"
+      ]
+    },
+    "use_natural_days": {
+      "verdict": "absent",
+      "evidence": [
+        "/state"
+      ]
+    },
+    "use_other_supplier": {
+      "verdict": "absent",
+      "evidence": [
+        "/state"
+      ]
+    }
+  },
+  "semantic_review": {
+    "verdict": "fail",
+    "evidence": [
+      "/answer",
+      "/state"
+    ],
+    "reviewer": "Codex preliminary review; not independent human labeling",
+    "method": "agent_review"
+  },
+  "cited_anchor_ids": [],
+  "verified_anchor_ids": [
+    "mfruit_a_p1_l1",
+    "mfruit_a_p1_l2",
+    "mfruit_a_p1_l3",
+    "mfruit_a_p1_l4",
+    "mfruit_a_p2_l1",
+    "mfruit_a_p2_l2",
+    "mfruit_b_p1_l1",
+    "mfruit_b_p1_l2",
+    "mfruit_b_p1_l3",
+    "mfruit_b_p2_l1",
+    "mfruit_b_p2_l2",
+    "mfruit_table_a1",
+    "mfruit_table_a2",
+    "mfruit_table_a3",
+    "mfruit_table_b1",
+    "mfruit_table_b2",
+    "mfruit_table_b3",
+    "mfruit_table_b_a1",
+    "mfruit_table_b_a2",
+    "mfruit_table_b_a3",
+    "mfruit_table_b_b1",
+    "mfruit_table_b_b2",
+    "mfruit_table_b_b3",
+    "mfruit_table_b_c1",
+    "mfruit_table_b_c2",
+    "mfruit_table_b_c3",
+    "mfruit_table_b_d1",
+    "mfruit_table_b_d2",
+    "mfruit_table_b_d3",
+    "mfruit_table_b_e1",
+    "mfruit_table_b_e2",
+    "mfruit_table_b_e3",
+    "mfruit_table_b_f1",
+    "mfruit_table_b_f2",
+    "mfruit_table_b_f3",
+    "mfruit_table_b_g1",
+    "mfruit_table_b_g2",
+    "mfruit_table_b_g3",
+    "mfruit_table_c1",
+    "mfruit_table_c2",
+    "mfruit_table_c3",
+    "mfruit_table_d1",
+    "mfruit_table_d2",
+    "mfruit_table_d3",
+    "mfruit_table_e1",
+    "mfruit_table_e2",
+    "mfruit_table_e3",
+    "mfruit_table_f1",
+    "mfruit_table_f2",
+    "mfruit_table_f3",
+    "mfruit_table_g1",
+    "mfruit_table_g2",
+    "mfruit_table_g3"
+  ],
+  "violations": [],
+  "usage": {
+    "requests": 1,
+    "input_tokens": 2832,
+    "output_tokens": 44,
+    "unknown_requests": 0
+  },
+  "usage_complete": true,
+  "timing": {
+    "started_at": "2026-10-29T08:37:45.267416+00:00",
+    "finished_at": "2026-10-29T08:38:23.555700+00:00",
+    "total_seconds": 38.29599999999846,
+    "preparation_seconds": 30.25,
+    "task_seconds": 8.045999999998457,
+    "includes_failures_and_queueing": true
+  },
+  "annotation_sha256": "71803b3d5beb87cc215b53337c1f96dcba6fbd5530bc327bb25710ad69221381",
+  "reviewed_observation_sha256": "520c25cd1932c66fcdf7492a74731c8700876a2b9287cc2c0682683ab7b5f220",
+  "raw_sha256": "7dddbd2e5fbbb07596d40058e1d5dc69b13c22bf76b0c40b9d43571957b3c36b",
+  "state": {
+    "case_id": "mfruit",
+    "snapshot_version": 1,
+    "checklist_version": 2,
+    "bindings_version": 1,
+    "confirmed": true,
+    "review_count": 0,
+    "export_count": 0
+  },
+  "publication_kind": "synthetic_result_projection_not_full_http_replay",
+  "prompt": "丰岭橙子什么时候送到？起算点和工作日口径一起说。",
+  "run": {
+    "id": "21f9f8c5fdff4cbeae032250133a4c11",
+    "case_id": "263068fe70ad46c298e716c7933dc02a",
+    "snapshot_id": "dfac82e044ce445fac9e9c747cc4d65e",
+    "revision": 4,
+    "status": "completed",
+    "answer_text": "本次未匹配到已确认清单中的指标。请提供清单里的品目或指标名称，或在审查清单中查看完整要求。",
+    "error_code": null
+  },
+  "sources": {
+    "mfruit_a": {
+      "id": "6b384f4bf69745399a643a5e79a77b4e",
+      "path": "inputs/mfruit/supplier_a.pdf",
+      "sha256": "369c3f15f647554b2e3d6d6fb6ab62f6f92a99ea433aa07b6bedb48aa8257f20",
+      "parser_version": "mineru:4.0.7/middle:2.0/plain-blocks:2/config:a71895503c8d00e6/source-text:1/embedded-image:1/vector-graphics:1/annotations:1/layout-columns:2",
+      "supplier_id": "a",
+      "role": "spec"
+    },
+    "mfruit_b": {
+      "id": "7ed88b97351547039a2ad42001da0c8f",
+      "path": "inputs/mfruit/supplier_b.pdf",
+      "sha256": "8fd0a29929c358cfb28ecd68a409931598e8ba6ac293148789e7ebcfd978d5cd",
+      "parser_version": "mineru:4.0.7/middle:2.0/plain-blocks:2/config:a71895503c8d00e6/source-text:1/embedded-image:1/vector-graphics:1/annotations:1/layout-columns:2",
+      "supplier_id": "b",
+      "role": "spec"
+    },
+    "mfruit_table": {
+      "id": "1a92773a81f1485eb1b415e332a27c9a",
+      "path": "inputs/mfruit/comparison.xlsx",
+      "sha256": "2d0d032551b15a1844e7d2e03bedebd1014b2709fd6baaa3873f80f40cec44ec",
+      "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1",
+      "supplier_id": "a",
+      "role": "quote"
+    },
+    "mfruit_table_b": {
+      "id": "48e9947bd99442bd87fa4513045fae4d",
+      "path": "inputs/mfruit/supplier_b_comparison.xlsx",
+      "sha256": "f2fb42ffc94c49762a4e4a0c5c7bb618322a48202027dd99ecea3ffa0d95c658",
+      "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1",
+      "supplier_id": "b",
+      "role": "quote"
+    }
+  },
+  "evidence": {
+    "mfruit_a": [
+      {
+        "id": "ed59809ae05dbb15f016f16e241365d9c344a343413aa4fea64a227358e3958f",
+        "document_id": "6b384f4bf69745399a643a5e79a77b4e",
+        "source_text": "丰岭合作社 / 脐橙礼箱 CARE-OR",
+        "page_idx": 0,
+        "sheet": null,
+        "cell": null,
+        "parser_version": "mineru:4.0.7/middle:2.0/plain-blocks:2/config:a71895503c8d00e6/source-text:1/embedded-image:1/vector-graphics:1/annotations:1/layout-columns:2"
+      },
+      {
+        "id": "2cd7ff3abfbeb7456c43a039e3b18373de3915f943a63405f64522d37a8fc67c",
+        "document_id": "6b384f4bf69745399a643a5e79a77b4e",
+        "source_text": "橙子 30 箱，每箱 6 千克。",
+        "page_idx": 0,
+        "sheet": null,
+        "cell": null,
+        "parser_version": "mineru:4.0.7/middle:2.0/plain-blocks:2/config:a71895503c8d00e6/source-text:1/embedded-image:1/vector-graphics:1/annotations:1/layout-columns:2"
+      },
+      {
+        "id": "7d3cb169e7b95936983e041fe42daedd190fef4de0d8d3eff6d471450d407c87",
+        "document_id": "6b384f4bf69745399a643a5e79a77b4e",
+        "source_text": "签收订单后 3 个工作日送达。",
+        "page_idx": 0,
+        "sheet": null,
+        "cell": null,
+        "parser_version": "mineru:4.0.7/middle:2.0/plain-blocks:2/config:a71895503c8d00e6/source-text:1/embedded-image:1/vector-graphics:1/annotations:1/layout-columns:2"
+      },
+      {
+        "id": "f34f87e695306c05a88458f5aca0afffefab7a1995935efd80df0d15b60676d3",
+        "document_id": "6b384f4bf69745399a643a5e79a77b4e",
+        "source_text": "橙子单价 48 元/箱，不含税；随附发票说明却写单价含税。",
+        "page_idx": 0,
+        "sheet": null,
+        "cell": null,
+        "parser_version": "mineru:4.0.7/middle:2.0/plain-blocks:2/config:a71895503c8d00e6/source-text:1/embedded-image:1/vector-graphics:1/annotations:1/layout-columns:2"
+      },
+      {
+        "id": "fb8955b2567d1d33f2f7436419825e51d3c26babb385b3dd28b216bc506c00ca",
+        "document_id": "6b384f4bf69745399a643a5e79a77b4e",
+        "source_text": "合成评估资料 / 虚构供应商和产品 / CC0 | 第 1 页",
+        "page_idx": 0,
+        "sheet": null,
+        "cell": null,
+        "parser_version": "mineru:4.0.7/middle:2.0/plain-blocks:2/config:a71895503c8d00e6/source-text:1/embedded-image:1/vector-graphics:1/annotations:1/layout-columns:2"
+      },
+      {
+        "id": "a2dcefb07b8dc813f83364a0a1e390c13b166f32ad3ad435f4aac5733165773a",
+        "document_id": "6b384f4bf69745399a643a5e79a77b4e",
+        "source_text": "丰岭 / 香蕉 CARE-BA",
+        "page_idx": 1,
+        "sheet": null,
+        "cell": null,
+        "parser_version": "mineru:4.0.7/middle:2.0/plain-blocks:2/config:a71895503c8d00e6/source-text:1/embedded-image:1/vector-graphics:1/annotations:1/layout-columns:2"
+      },
+      {
+        "id": "a0a4292682d4037573bbea4a8f2a67e87008fccb80cf49bacc4bfef994d2e168",
+        "document_id": "6b384f4bf69745399a643a5e79a77b4e",
+        "source_text": "香蕉 90 千克；发货地河北，非产地证明。",
+        "page_idx": 1,
+        "sheet": null,
+        "cell": null,
+        "parser_version": "mineru:4.0.7/middle:2.0/plain-blocks:2/config:a71895503c8d00e6/source-text:1/embedded-image:1/vector-graphics:1/annotations:1/layout-columns:2"
+      },
+      {
+        "id": "ab61788a483e36c923b9ad695469e76edf0869292c519dc9530b633d53953a03",
+        "document_id": "6b384f4bf69745399a643a5e79a77b4e",
+        "source_text": "合成评估资料 / 虚构供应商和产品 / CC0 | 第 2 页",
+        "page_idx": 1,
+        "sheet": null,
+        "cell": null,
+        "parser_version": "mineru:4.0.7/middle:2.0/plain-blocks:2/config:a71895503c8d00e6/source-text:1/embedded-image:1/vector-graphics:1/annotations:1/layout-columns:2"
+      }
+    ],
+    "mfruit_b": [
+      {
+        "id": "af510b72255f977e76d598900497c74b8875181e8303fd72e2656d7d22cfa44a",
+        "document_id": "7ed88b97351547039a2ad42001da0c8f",
+        "source_text": "云田果品 / 脐橙礼箱 CARE-OR",
+        "page_idx": 0,
+        "sheet": null,
+        "cell": null,
+        "parser_version": "mineru:4.0.7/middle:2.0/plain-blocks:2/config:a71895503c8d00e6/source-text:1/embedded-image:1/vector-graphics:1/annotations:1/layout-columns:2"
+      },
+      {
+        "id": "9cce7b21b3bb7950c85f650fddcd3980a4f99285edf581ce8c204669323c5c81",
+        "document_id": "7ed88b97351547039a2ad42001da0c8f",
+        "source_text": "橙子 180 千克，按总重量交付；未列箱数。",
+        "page_idx": 0,
+        "sheet": null,
+        "cell": null,
+        "parser_version": "mineru:4.0.7/middle:2.0/plain-blocks:2/config:a71895503c8d00e6/source-text:1/embedded-image:1/vector-graphics:1/annotations:1/layout-columns:2"
+      },
+      {
+        "id": "e8f965f559624dd08383c532398f0e3a5b36c32f05fa750dc4a764296692d965",
+        "document_id": "7ed88b97351547039a2ad42001da0c8f",
+        "source_text": "送达:订单确认后 3 个自然日。",
+        "page_idx": 0,
+        "sheet": null,
+        "cell": null,
+        "parser_version": "mineru:4.0.7/middle:2.0/plain-blocks:2/config:a71895503c8d00e6/source-text:1/embedded-image:1/vector-graphics:1/annotations:1/layout-columns:2"
+      },
+      {
+        "id": "66b3d540a55465af4f76a082cde9b73963e227e9b35834bd7840ab58fbeea366",
+        "document_id": "7ed88b97351547039a2ad42001da0c8f",
+        "source_text": "合成评估资料 / 虚构供应商和产品 / CC0 | 第 1 页",
+        "page_idx": 0,
+        "sheet": null,
+        "cell": null,
+        "parser_version": "mineru:4.0.7/middle:2.0/plain-blocks:2/config:a71895503c8d00e6/source-text:1/embedded-image:1/vector-graphics:1/annotations:1/layout-columns:2"
+      },
+      {
+        "id": "3e574dc932d9286e28e7f5cd97c68aa03ec81877c86c181926091de7e5324521",
+        "document_id": "7ed88b97351547039a2ad42001da0c8f",
+        "source_text": "云田 / 香蕉 CARE-BA",
+        "page_idx": 1,
+        "sheet": null,
+        "cell": null,
+        "parser_version": "mineru:4.0.7/middle:2.0/plain-blocks:2/config:a71895503c8d00e6/source-text:1/embedded-image:1/vector-graphics:1/annotations:1/layout-columns:2"
+      },
+      {
+        "id": "ef8ea8f7bfa1b2dee9396c7a59dd15a509583e1ec0ba805bf56844c5dbe53519",
+        "document_id": "7ed88b97351547039a2ad42001da0c8f",
+        "source_text": "香蕉 15 箱，每箱 6 千克。",
+        "page_idx": 1,
+        "sheet": null,
+        "cell": null,
+        "parser_version": "mineru:4.0.7/middle:2.0/plain-blocks:2/config:a71895503c8d00e6/source-text:1/embedded-image:1/vector-graphics:1/annotations:1/layout-columns:2"
+      },
+      {
+        "id": "08cf9f038dbf8780a4a36e6867923b91b2e6413402877a8f959a48e43f308b44",
+        "document_id": "7ed88b97351547039a2ad42001da0c8f",
+        "source_text": "合成评估资料 / 虚构供应商和产品 / CC0 | 第 2 页",
+        "page_idx": 1,
+        "sheet": null,
+        "cell": null,
+        "parser_version": "mineru:4.0.7/middle:2.0/plain-blocks:2/config:a71895503c8d00e6/source-text:1/embedded-image:1/vector-graphics:1/annotations:1/layout-columns:2"
+      }
+    ],
+    "mfruit_table": [
+      {
+        "id": "c8abd58b692713b61ab7d7ad9156ea49d3342a4a1b6b35312c584298df087ccb",
+        "document_id": "1a92773a81f1485eb1b415e332a27c9a",
+        "source_text": "供应商",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "A1",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "a875b615e2b7d6fc49d536a406f2d38521f5cba7a919c1c9816508218ddf8017",
+        "document_id": "1a92773a81f1485eb1b415e332a27c9a",
+        "source_text": "品目",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "B1",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "b07468396065b393e082e9f69c84fb4ad6dd6516e5451f051461fe08bfbf050a",
+        "document_id": "1a92773a81f1485eb1b415e332a27c9a",
+        "source_text": "数量",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "C1",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "a2d7809e287d0110df762ca01b4ea36955ab2736a7434e02ed1655b7684b2a06",
+        "document_id": "1a92773a81f1485eb1b415e332a27c9a",
+        "source_text": "单位",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "D1",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "c7d1c8685bdf04b3bb3f1cfd1ca60494384a64c3c64ff5ee6e63442c366b898c",
+        "document_id": "1a92773a81f1485eb1b415e332a27c9a",
+        "source_text": "单价",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "E1",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "b2116730112fcdd4c054cf41db5228458c1984dc4af75b0952b36a986b5804b1",
+        "document_id": "1a92773a81f1485eb1b415e332a27c9a",
+        "source_text": "备注",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "F1",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "e04dbdece0d922e2b2dbde164de098d2440844b2d98a0b0fbfaabc047f30cc83",
+        "document_id": "1a92773a81f1485eb1b415e332a27c9a",
+        "source_text": "品目名称",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "G1",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "001980baae5f9b140f1d48a93dca69a2c905c6d11f45c8581f8b8f76aacdf59d",
+        "document_id": "1a92773a81f1485eb1b415e332a27c9a",
+        "source_text": "丰岭",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "A2",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "218216dd16b79979fa7e5aafbeed1854221bd271c532ffd74fd2c7eccb5578f1",
+        "document_id": "1a92773a81f1485eb1b415e332a27c9a",
+        "source_text": "CARE-OR",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "B2",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "9b12c2477ee8698ab5b0e515006103c0908a7852f2ac0e2af7c1f158d0fcfecc",
+        "document_id": "1a92773a81f1485eb1b415e332a27c9a",
+        "source_text": "30",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "C2",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "85368a1e7d857945854d5b36f2626c73ca3ce9f7d76b73e049b037fa31e09c34",
+        "document_id": "1a92773a81f1485eb1b415e332a27c9a",
+        "source_text": "箱",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "D2",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "b22486c946de2e30ad5ece7eb289e228f98e84885f468b0fcb68bc5840bc52be",
+        "document_id": "1a92773a81f1485eb1b415e332a27c9a",
+        "source_text": "48",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "E2",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "381141765e401c9fcee89e28060dcadb3f6bda0283d635cb0d4c4310f976609c",
+        "document_id": "1a92773a81f1485eb1b415e332a27c9a",
+        "source_text": "不含税；发票说明含税",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "F2",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "f0874e16f2d8bf4b2035bd99fda86be67a496e4e6318164c70804c1b28fec191",
+        "document_id": "1a92773a81f1485eb1b415e332a27c9a",
+        "source_text": "脐橙礼箱",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "G2",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "a6078a7c45085d997557555a12871cce68b3677d72c0fc24f7e26462c62c4a58",
+        "document_id": "1a92773a81f1485eb1b415e332a27c9a",
+        "source_text": "丰岭",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "A3",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "129b233206ef3449d07915a31e78948ed92124d72fa10b53fcaaf3fefff96721",
+        "document_id": "1a92773a81f1485eb1b415e332a27c9a",
+        "source_text": "CARE-BA",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "B3",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "60c02df2df307ddd7086cfa84cb666454c64381f32051d8b04e7379d76c37f96",
+        "document_id": "1a92773a81f1485eb1b415e332a27c9a",
+        "source_text": "90",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "C3",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "38809ab047ce7d48d505bd17a84ff910ae50062902da4e3ec5295868e3d2cdad",
+        "document_id": "1a92773a81f1485eb1b415e332a27c9a",
+        "source_text": "千克",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "D3",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "d29db7eda6fbe3c1cf2c2905830ea5cb06c8c244d8b2ee13e5db2154e8001dfe",
+        "document_id": "1a92773a81f1485eb1b415e332a27c9a",
+        "source_text": "5",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "E3",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "f95c5c6656633859938ff7276f432db63bc73ff6270ae8be2d5f7c925ff6d381",
+        "document_id": "1a92773a81f1485eb1b415e332a27c9a",
+        "source_text": "发货地河北",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "F3",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "6f034f532200e6d5ff3d3631933b5904ec6fdffc37e645a9e8ab8e81d71e5517",
+        "document_id": "1a92773a81f1485eb1b415e332a27c9a",
+        "source_text": "香蕉",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "G3",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      }
+    ],
+    "mfruit_table_b": [
+      {
+        "id": "a69a4eeea1322ce312c0ffcb79aa58661b98b0d65956cad7b608ab872a53b29e",
+        "document_id": "48e9947bd99442bd87fa4513045fae4d",
+        "source_text": "供应商",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "A1",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "e5abf44510150da320c37c6add1d10e5154be246ce1a98c79ef4789009129e68",
+        "document_id": "48e9947bd99442bd87fa4513045fae4d",
+        "source_text": "品目",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "B1",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "6e27e386f47c6f26be34aca423afc882156b6e3c72738164756ec55cbfea6f9c",
+        "document_id": "48e9947bd99442bd87fa4513045fae4d",
+        "source_text": "数量",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "C1",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "4ca3d6658fe54f360c9aea45cffdff04f29068d2725ca3e1e734364ec120b5e0",
+        "document_id": "48e9947bd99442bd87fa4513045fae4d",
+        "source_text": "单位",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "D1",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "105b0fd38d381f6d82fbd2d3bf4dbf0eac2020b8a4679f7780689bc76309e7e8",
+        "document_id": "48e9947bd99442bd87fa4513045fae4d",
+        "source_text": "单价",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "E1",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "33fa06cb6ae86c995b7dc75f2cbee21e1968ce0019ef1ed4d7808a0ff3a3e48b",
+        "document_id": "48e9947bd99442bd87fa4513045fae4d",
+        "source_text": "备注",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "F1",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "002cc69c80f704170899d5528fd0d2e4485c5c2e741476d8f69da58bfe4c2ac5",
+        "document_id": "48e9947bd99442bd87fa4513045fae4d",
+        "source_text": "品目名称",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "G1",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "3e1d083e30afdba36cd82843675f380d1f739830e5753136a2615a6237da4e6d",
+        "document_id": "48e9947bd99442bd87fa4513045fae4d",
+        "source_text": "云田",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "A2",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "961e4fd22c390c0d1478c1f3f9ff0cc831d78ca74aed32f2c54077afe8b98556",
+        "document_id": "48e9947bd99442bd87fa4513045fae4d",
+        "source_text": "CARE-OR",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "B2",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "9ce510b3d82f8a16884a54f7ad3a8e241b436e98b79dee6d8827f45516773264",
+        "document_id": "48e9947bd99442bd87fa4513045fae4d",
+        "source_text": "180",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "C2",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "749f61c14be2e00f0638303fe8a9dc9ef78e129ad15d2c8a71a0ba9d02f7f458",
+        "document_id": "48e9947bd99442bd87fa4513045fae4d",
+        "source_text": "千克",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "D2",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "289d5d5e6f3d52f5721bb128325a27b4bb833d53d47ce9f97a845ce3d2d227cc",
+        "document_id": "48e9947bd99442bd87fa4513045fae4d",
+        "source_text": "8",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "E2",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "f6c17b67253cdb442bf250822191397786bfbd31d1bb7d2997fee4a04df7c775",
+        "document_id": "48e9947bd99442bd87fa4513045fae4d",
+        "source_text": "含税",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "F2",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "bd42f2a0e7d64b58496f13771676e09e24b3076ee1599b2bf7f80a6566826b66",
+        "document_id": "48e9947bd99442bd87fa4513045fae4d",
+        "source_text": "脐橙礼箱",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "G2",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "e5e75211b462be0355b827fcbc2d72d2b238658c8ee151f40d41f11e6093d946",
+        "document_id": "48e9947bd99442bd87fa4513045fae4d",
+        "source_text": "云田",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "A3",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "fad7a01f11d9ab0a0baaa4645c30bfa35927431eeccf939b32ce568ad0d6bd60",
+        "document_id": "48e9947bd99442bd87fa4513045fae4d",
+        "source_text": "CARE-BA",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "B3",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "36d50852931e771cc9adac3b73e8ccb78e09b18e5626626aaf82b505f7cd9867",
+        "document_id": "48e9947bd99442bd87fa4513045fae4d",
+        "source_text": "15",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "C3",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "11ea3705d7881ec184a8dfb3b8366a70fedab831187f1c8b5f4d79c570c3f10b",
+        "document_id": "48e9947bd99442bd87fa4513045fae4d",
+        "source_text": "箱",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "D3",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "8b44c7f3c8ceb593473967a1aa0353a5c7e176e8a4b566ed3aa218d856e0a02a",
+        "document_id": "48e9947bd99442bd87fa4513045fae4d",
+        "source_text": "30",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "E3",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "67c3386b6e1df62a13801b0628715691722cde31f3e24086ed30146e42d7f6b7",
+        "document_id": "48e9947bd99442bd87fa4513045fae4d",
+        "source_text": "每箱6千克",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "F3",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "f5cda70a88a65751c4fffea623be46b58e2904e2bfc237dbdc9265f65de8422f",
+        "document_id": "48e9947bd99442bd87fa4513045fae4d",
+        "source_text": "香蕉",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "G3",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      }
+    ]
+  },
+  "annotation": {
+    "observation_sha256": "520c25cd1932c66fcdf7492a74731c8700876a2b9287cc2c0682683ab7b5f220",
+    "reviewer": "Codex preliminary review; not independent human labeling",
+    "method": "agent_review",
+    "kind": "clarification",
+    "outcome": "clarify",
+    "claims": [],
+    "assessments": {
+      "retain_start_event": {
+        "verdict": "fail",
+        "evidence": [
+          "/answer"
+        ]
+      },
+      "retain_working_days": {
+        "verdict": "fail",
+        "evidence": [
+          "/answer"
+        ]
+      },
+      "use_natural_days": {
+        "verdict": "absent",
+        "evidence": [
+          "/state"
+        ]
+      },
+      "use_other_supplier": {
+        "verdict": "absent",
+        "evidence": [
+          "/state"
+        ]
+      }
+    },
+    "semantic_review": {
+      "verdict": "fail",
+      "evidence": [
+        "/answer",
+        "/state"
+      ]
+    }
+  },
+  "diagnostics": [],
+  "last_document_statuses": [
+    {
+      "id": "1a92773a81f1485eb1b415e332a27c9a",
+      "original_name": "comparison.xlsx",
+      "source_sha256": "2d0d032551b15a1844e7d2e03bedebd1014b2709fd6baaa3873f80f40cec44ec",
+      "parse_status": "complete"
+    },
+    {
+      "id": "48e9947bd99442bd87fa4513045fae4d",
+      "original_name": "supplier_b_comparison.xlsx",
+      "source_sha256": "f2fb42ffc94c49762a4e4a0c5c7bb618322a48202027dd99ecea3ffa0d95c658",
+      "parse_status": "complete"
+    },
+    {
+      "id": "6b384f4bf69745399a643a5e79a77b4e",
+      "original_name": "supplier_a.pdf",
+      "source_sha256": "369c3f15f647554b2e3d6d6fb6ab62f6f92a99ea433aa07b6bedb48aa8257f20",
+      "parse_status": "complete"
+    },
+    {
+      "id": "7ed88b97351547039a2ad42001da0c8f",
+      "original_name": "supplier_b.pdf",
+      "source_sha256": "8fd0a29929c358cfb28ecd68a409931598e8ba6ac293148789e7ebcfd978d5cd",
+      "parse_status": "complete"
+    }
+  ]
+}

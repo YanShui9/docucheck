@@ -1,0 +1,65 @@
+{
+  "task_id": "measure_rag_warranty_missing",
+  "trial": 1,
+  "execution": "failed",
+  "origin": "live_http",
+  "error_code": "evaluation_parse_incomplete",
+  "tool_names": [],
+  "business_checks": [],
+  "claims": [],
+  "assessments": {},
+  "semantic_review": null,
+  "cited_anchor_ids": [],
+  "verified_anchor_ids": [],
+  "violations": [],
+  "usage": {
+    "requests": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "unknown_requests": 0
+  },
+  "usage_complete": true,
+  "timing": {
+    "started_at": "2026-10-29T08:40:53.995031+00:00",
+    "finished_at": "2026-10-29T08:41:08.944195+00:00",
+    "total_seconds": 14.93699999999808,
+    "preparation_seconds": null,
+    "task_seconds": null,
+    "includes_failures_and_queueing": true
+  },
+  "halt_execution": false,
+  "outcome_unknown": false,
+  "raw_sha256": "42585e702b1ac14efe81177eed4767b237607522a1dc4533b712d66248fbb6db",
+  "publication_kind": "synthetic_result_projection_not_full_http_replay",
+  "prompt": "木语会议椅保修几年？不要引用手机的质保。",
+  "run": {},
+  "sources": {},
+  "evidence": {},
+  "diagnostics": [],
+  "last_document_statuses": [
+    {
+      "id": "5068744e013844d2bd23b4f94fa74960",
+      "original_name": "comparison.xlsx",
+      "source_sha256": "43db3733c43d127dfe54c05d476abf7271d72a89551d0e5ea6b7f320f512d382",
+      "parse_status": "complete"
+    },
+    {
+      "id": "b47f344d588744c2823daaf3c5df1f40",
+      "original_name": "supplier_b_comparison.xlsx",
+      "source_sha256": "fe058022c55e8ba16fb3d36699df4fe52f9dc590fb408c161088f8facd0a0a2c",
+      "parse_status": "pending"
+    },
+    {
+      "id": "eb22381b4f58475282e1913764025a42",
+      "original_name": "supplier_a.pdf",
+      "source_sha256": "e707603f86a00d241469f5eb4c159c8c8d7db6a9c8dcacd7b1d700dd7ea57b79",
+      "parse_status": "pending"
+    },
+    {
+      "id": "5e6710ccfe974bc4a097b03701c6f724",
+      "original_name": "supplier_b.pdf",
+      "source_sha256": "bd4c9857262fe68761f74bde37f9d5b8ccdd62e0236936acc9066d21b41592ef",
+      "parse_status": "failed"
+    }
+  ]
+}

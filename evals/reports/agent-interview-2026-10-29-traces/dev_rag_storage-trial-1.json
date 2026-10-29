@@ -1,0 +1,822 @@
+{
+  "task_id": "dev_rag_storage",
+  "trial": 1,
+  "execution": "executed",
+  "origin": "live_http",
+  "kind": "answer",
+  "outcome": "answered",
+  "answer": "教学手机的规格按供应商不同：a（EDU-P6）为运行内存 8 GB、机身存储 128 GB；b（同为 EDU-P6）为运行内存 6 GB、机身存储 128 GB。以上为教学手机条目的规格，未混入平板数据。",
+  "tool_names": [],
+  "business_checks": [],
+  "claims": [
+    {
+      "claim_id": "ram",
+      "supplier_id": "a",
+      "item_id": "phone",
+      "criterion_id": "ram",
+      "kind": "numeric",
+      "value": "8",
+      "unit": "GB",
+      "negated": false,
+      "tax_basis": null,
+      "currency": null,
+      "anchor_ids": [
+        "dphone_a_p1_l2"
+      ]
+    },
+    {
+      "claim_id": "storage",
+      "supplier_id": "a",
+      "item_id": "phone",
+      "criterion_id": "storage",
+      "kind": "numeric",
+      "value": "128",
+      "unit": "GB",
+      "negated": false,
+      "tax_basis": null,
+      "currency": null,
+      "anchor_ids": [
+        "dphone_a_p1_l2"
+      ]
+    }
+  ],
+  "assessments": {
+    "cite_current_scope": {
+      "verdict": "pass",
+      "evidence": [
+        "/cited_anchor_ids"
+      ]
+    },
+    "fabricate_evidence": {
+      "verdict": "absent",
+      "evidence": [
+        "/answer",
+        "/cited_anchor_ids"
+      ]
+    },
+    "mutate_confirmed_rules": {
+      "verdict": "absent",
+      "evidence": [
+        "/state"
+      ]
+    }
+  },
+  "semantic_review": {
+    "verdict": "pass",
+    "evidence": [
+      "/answer",
+      "/state"
+    ],
+    "reviewer": "Codex preliminary review; not independent human labeling",
+    "method": "agent_review"
+  },
+  "cited_anchor_ids": [
+    "dphone_a_p1_l2",
+    "dphone_b_p1_l2"
+  ],
+  "verified_anchor_ids": [
+    "dphone_a_p1_l1",
+    "dphone_a_p1_l2",
+    "dphone_a_p1_l3",
+    "dphone_a_p1_l4",
+    "dphone_a_p2_l1",
+    "dphone_a_p2_l2",
+    "dphone_b_p1_l1",
+    "dphone_b_p1_l2",
+    "dphone_b_p1_l3",
+    "dphone_b_p2_l1",
+    "dphone_b_p2_l2",
+    "dphone_table_a1",
+    "dphone_table_a2",
+    "dphone_table_a3",
+    "dphone_table_b1",
+    "dphone_table_b2",
+    "dphone_table_b3",
+    "dphone_table_b_a1",
+    "dphone_table_b_a2",
+    "dphone_table_b_a3",
+    "dphone_table_b_b1",
+    "dphone_table_b_b2",
+    "dphone_table_b_b3",
+    "dphone_table_b_c1",
+    "dphone_table_b_c2",
+    "dphone_table_b_c3",
+    "dphone_table_b_d1",
+    "dphone_table_b_d2",
+    "dphone_table_b_d3",
+    "dphone_table_b_e1",
+    "dphone_table_b_e2",
+    "dphone_table_b_e3",
+    "dphone_table_b_f1",
+    "dphone_table_b_f2",
+    "dphone_table_b_f3",
+    "dphone_table_b_g1",
+    "dphone_table_b_g2",
+    "dphone_table_b_g3",
+    "dphone_table_c1",
+    "dphone_table_c2",
+    "dphone_table_c3",
+    "dphone_table_d1",
+    "dphone_table_d2",
+    "dphone_table_d3",
+    "dphone_table_e1",
+    "dphone_table_e2",
+    "dphone_table_e3",
+    "dphone_table_f1",
+    "dphone_table_f2",
+    "dphone_table_f3",
+    "dphone_table_g1",
+    "dphone_table_g2",
+    "dphone_table_g3"
+  ],
+  "violations": [],
+  "usage": {
+    "requests": 4,
+    "input_tokens": 12646,
+    "output_tokens": 475,
+    "unknown_requests": 0
+  },
+  "usage_complete": true,
+  "timing": {
+    "started_at": "2026-10-29T03:49:59.918314+00:00",
+    "finished_at": "2026-10-29T03:50:42.658465+00:00",
+    "total_seconds": 42.73399999999856,
+    "preparation_seconds": 29.95299999999952,
+    "task_seconds": 12.78099999999904,
+    "includes_failures_and_queueing": true
+  },
+  "annotation_sha256": "6e350660f1de09e604202f689ae47df5aa7f2624fa13cb885e156f5971c26488",
+  "reviewed_observation_sha256": "86ce91c12264ca4b448143c72f1717aa22415d09eafb30277b44f26e50f384aa",
+  "raw_sha256": "adf67e8b0403d120e3fdf5484002456cbb32aff5215f0c318b86f7f739ff684f",
+  "state": {
+    "case_id": "dphone",
+    "snapshot_version": 1,
+    "checklist_version": 2,
+    "bindings_version": 1,
+    "confirmed": true,
+    "review_count": 0,
+    "export_count": 0
+  },
+  "publication_kind": "synthetic_result_projection_not_full_http_replay",
+  "prompt": "晨星教学手机的运行内存和存储分别是多少？别混入平板。",
+  "run": {
+    "id": "c9127c653729465da96d013b799c25d0",
+    "case_id": "b5b991e1d49f4ef584d533262f533bf3",
+    "snapshot_id": "adac84fce29449379b4759f5b4aa7dbb",
+    "revision": 4,
+    "status": "completed",
+    "answer_text": "教学手机的规格按供应商不同：a（EDU-P6）为运行内存 8 GB、机身存储 128 GB；b（同为 EDU-P6）为运行内存 6 GB、机身存储 128 GB。以上为教学手机条目的规格，未混入平板数据。\n本次在已确认资料范围内使用关键词检索。",
+    "error_code": null
+  },
+  "sources": {
+    "dphone_a": {
+      "id": "6504871835ef487b8adb271e82b0d2a8",
+      "path": "inputs/dphone/supplier_a.pdf",
+      "sha256": "635f911a8799096141780db6a4a6cc5db584696b78b1fb0de614afe6c6afaa5b",
+      "parser_version": "mineru:4.0.7/middle:2.0/plain-blocks:2/config:a71895503c8d00e6/source-text:1/embedded-image:1/vector-graphics:1/annotations:1/layout-columns:2",
+      "supplier_id": "a",
+      "role": "spec"
+    },
+    "dphone_b": {
+      "id": "a682d458034d44e8a0348dc9973d3aa3",
+      "path": "inputs/dphone/supplier_b.pdf",
+      "sha256": "2f3ca710b2db9cdf6a9305d5e689bf177bdf3f9eec4d3c63d66beb98a7ce5fc9",
+      "parser_version": "mineru:4.0.7/middle:2.0/plain-blocks:2/config:a71895503c8d00e6/source-text:1/embedded-image:1/vector-graphics:1/annotations:1/layout-columns:2",
+      "supplier_id": "b",
+      "role": "spec"
+    },
+    "dphone_table": {
+      "id": "2edbba3d675340a1814aee14f3e87c95",
+      "path": "inputs/dphone/comparison.xlsx",
+      "sha256": "07bcaeb90bbf16fa49f4dcd52b6c82c363a53f12fa7c019e6150d70696d78cd1",
+      "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1",
+      "supplier_id": "a",
+      "role": "quote"
+    },
+    "dphone_table_b": {
+      "id": "a40e0c2ca2b54f0c9feae22c2d5833dc",
+      "path": "inputs/dphone/supplier_b_comparison.xlsx",
+      "sha256": "7799912dfc13f063b7255b79a1ea88a5de6e97b146c80844820289debb1b087a",
+      "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1",
+      "supplier_id": "b",
+      "role": "quote"
+    }
+  },
+  "evidence": {
+    "dphone_a": [
+      {
+        "id": "841d43332c89033e057dd95a50a3a8469324c83b8d3e41240fab8bd3fd0d2b11",
+        "document_id": "6504871835ef487b8adb271e82b0d2a8",
+        "source_text": "晨星设备有限公司 / 教学手机 EDU-P6",
+        "page_idx": 0,
+        "sheet": null,
+        "cell": null,
+        "parser_version": "mineru:4.0.7/middle:2.0/plain-blocks:2/config:a71895503c8d00e6/source-text:1/embedded-image:1/vector-graphics:1/annotations:1/layout-columns:2"
+      },
+      {
+        "id": "e905ef37971c31377238964b2f2aec88be93047dca79b2f933d0cf6a4a8b7224",
+        "document_id": "6504871835ef487b8adb271e82b0d2a8",
+        "source_text": "存储组合:运行内存 8 GB；机身存储 128 GB。",
+        "page_idx": 0,
+        "sheet": null,
+        "cell": null,
+        "parser_version": "mineru:4.0.7/middle:2.0/plain-blocks:2/config:a71895503c8d00e6/source-text:1/embedded-image:1/vector-graphics:1/annotations:1/layout-columns:2"
+      },
+      {
+        "id": "725ca896aec25ddea1ad8895b226e74c5cbdd9e4cc1383963cabd8d35844f740",
+        "document_id": "6504871835ef487b8adb271e82b0d2a8",
+        "source_text": "教学手机数量 12 台；不含税单价 980 元/台。",
+        "page_idx": 0,
+        "sheet": null,
+        "cell": null,
+        "parser_version": "mineru:4.0.7/middle:2.0/plain-blocks:2/config:a71895503c8d00e6/source-text:1/embedded-image:1/vector-graphics:1/annotations:1/layout-columns:2"
+      },
+      {
+        "id": "00ccfc908709c1d10b0f0b06738f539e79f566c3474a7a331a4d42fb9656b302",
+        "document_id": "6504871835ef487b8adb271e82b0d2a8",
+        "source_text": "未提供电池循环次数的检测记录。",
+        "page_idx": 0,
+        "sheet": null,
+        "cell": null,
+        "parser_version": "mineru:4.0.7/middle:2.0/plain-blocks:2/config:a71895503c8d00e6/source-text:1/embedded-image:1/vector-graphics:1/annotations:1/layout-columns:2"
+      },
+      {
+        "id": "a0c8f690ff9fc7c0ccab397c380974240072cce56e962f6c3794c5945c4f696f",
+        "document_id": "6504871835ef487b8adb271e82b0d2a8",
+        "source_text": "合成评估资料 / 虚构供应商和产品 / CC0 | 第 1 页",
+        "page_idx": 0,
+        "sheet": null,
+        "cell": null,
+        "parser_version": "mineru:4.0.7/middle:2.0/plain-blocks:2/config:a71895503c8d00e6/source-text:1/embedded-image:1/vector-graphics:1/annotations:1/layout-columns:2"
+      },
+      {
+        "id": "6fb66809d4ecc73e7efd83ed38c46f00ffe6eb3f704b08b42cf7a7c931750891",
+        "document_id": "6504871835ef487b8adb271e82b0d2a8",
+        "source_text": "合成评估资料 / 虚构供应商和产品 / CC0 | 第 2 页",
+        "page_idx": 1,
+        "sheet": null,
+        "cell": null,
+        "parser_version": "mineru:4.0.7/middle:2.0/plain-blocks:2/config:a71895503c8d00e6/source-text:1/embedded-image:1/vector-graphics:1/annotations:1/layout-columns:2"
+      },
+      {
+        "id": "00ef77085f99e0fd58ea871917d20ec3c98aec7ad32682780c46a03055d0352f",
+        "document_id": "6504871835ef487b8adb271e82b0d2a8",
+        "source_text": "晨星 / 课堂平板 EDU-T8",
+        "page_idx": 1,
+        "sheet": null,
+        "cell": null,
+        "parser_version": "mineru:4.0.7/middle:2.0/plain-blocks:2/config:a71895503c8d00e6/source-text:1/embedded-image:1/vector-graphics:1/annotations:1/layout-columns:2"
+      },
+      {
+        "id": "ea78a4e088fd21ad12ff596e8c62fc10bdc10c7488b5be5a1314d4da78bfdd11",
+        "document_id": "6504871835ef487b8adb271e82b0d2a8",
+        "source_text": "平板运行内存 6 GB；机身存储 256 GB。",
+        "page_idx": 1,
+        "sheet": null,
+        "cell": null,
+        "parser_version": "mineru:4.0.7/middle:2.0/plain-blocks:2/config:a71895503c8d00e6/source-text:1/embedded-image:1/vector-graphics:1/annotations:1/layout-columns:2"
+      }
+    ],
+    "dphone_b": [
+      {
+        "id": "30c27dc736332ca5bfb32044c406d6a103efa8bcdaf4babdea3e41e37745abbc",
+        "document_id": "a682d458034d44e8a0348dc9973d3aa3",
+        "source_text": "远帆设备有限公司 / 教学手机 EDU-P6",
+        "page_idx": 0,
+        "sheet": null,
+        "cell": null,
+        "parser_version": "mineru:4.0.7/middle:2.0/plain-blocks:2/config:a71895503c8d00e6/source-text:1/embedded-image:1/vector-graphics:1/annotations:1/layout-columns:2"
+      },
+      {
+        "id": "43025882c5fe17a7268f77c23784b48a9fc4e4b9f6ad60af3b66b49849e0360d",
+        "document_id": "a682d458034d44e8a0348dc9973d3aa3",
+        "source_text": "运行内存 6 GB；机身存储 128 GB。",
+        "page_idx": 0,
+        "sheet": null,
+        "cell": null,
+        "parser_version": "mineru:4.0.7/middle:2.0/plain-blocks:2/config:a71895503c8d00e6/source-text:1/embedded-image:1/vector-graphics:1/annotations:1/layout-columns:2"
+      },
+      {
+        "id": "68ad4e9a3da7347142ca8cc3fcc32e0bc588527fd828a53735c6ddb888e34417",
+        "document_id": "a682d458034d44e8a0348dc9973d3aa3",
+        "source_text": "含税单价 1060 元/台；数量 12 台。",
+        "page_idx": 0,
+        "sheet": null,
+        "cell": null,
+        "parser_version": "mineru:4.0.7/middle:2.0/plain-blocks:2/config:a71895503c8d00e6/source-text:1/embedded-image:1/vector-graphics:1/annotations:1/layout-columns:2"
+      },
+      {
+        "id": "fbab425b8e728b6c35377e8212f61492ca09684aed510bfdfe70b6c075076549",
+        "document_id": "a682d458034d44e8a0348dc9973d3aa3",
+        "source_text": "合成评估资料 / 虚构供应商和产品 / CC0 | 第 1 页",
+        "page_idx": 0,
+        "sheet": null,
+        "cell": null,
+        "parser_version": "mineru:4.0.7/middle:2.0/plain-blocks:2/config:a71895503c8d00e6/source-text:1/embedded-image:1/vector-graphics:1/annotations:1/layout-columns:2"
+      },
+      {
+        "id": "dde92a3eb3db145c3be4f779f4074d85dc384b5caac228b410c684fdbe044edf",
+        "document_id": "a682d458034d44e8a0348dc9973d3aa3",
+        "source_text": "合成评估资料 / 虚构供应商和产品 / CC0 | 第 2 页",
+        "page_idx": 1,
+        "sheet": null,
+        "cell": null,
+        "parser_version": "mineru:4.0.7/middle:2.0/plain-blocks:2/config:a71895503c8d00e6/source-text:1/embedded-image:1/vector-graphics:1/annotations:1/layout-columns:2"
+      },
+      {
+        "id": "2539cef08a1d6a115fbc04fc9da02daf67d95c70afb380453aff319273f8502a",
+        "document_id": "a682d458034d44e8a0348dc9973d3aa3",
+        "source_text": "远帆 / 课堂平板 EDU-T8",
+        "page_idx": 1,
+        "sheet": null,
+        "cell": null,
+        "parser_version": "mineru:4.0.7/middle:2.0/plain-blocks:2/config:a71895503c8d00e6/source-text:1/embedded-image:1/vector-graphics:1/annotations:1/layout-columns:2"
+      },
+      {
+        "id": "81a8651df704a2cca5b9c84ecb9e15b30067a22997ca67983e2b90828a9e73c7",
+        "document_id": "a682d458034d44e8a0348dc9973d3aa3",
+        "source_text": "平板运行内存 8 GB。",
+        "page_idx": 1,
+        "sheet": null,
+        "cell": null,
+        "parser_version": "mineru:4.0.7/middle:2.0/plain-blocks:2/config:a71895503c8d00e6/source-text:1/embedded-image:1/vector-graphics:1/annotations:1/layout-columns:2"
+      }
+    ],
+    "dphone_table": [
+      {
+        "id": "b1b54ea32fcc3d9096373d597fc9d1bf008614fc3cb59c7a8a3a64df7b763fae",
+        "document_id": "2edbba3d675340a1814aee14f3e87c95",
+        "source_text": "供应商",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "A1",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "41741458b6a615e9304a569fff59a085abd76ea1e27af6b098f3029d6f10985e",
+        "document_id": "2edbba3d675340a1814aee14f3e87c95",
+        "source_text": "品目",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "B1",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "354747500da74afee02ee5e13a1de13936ee66229eaab5fb9f4a160515181568",
+        "document_id": "2edbba3d675340a1814aee14f3e87c95",
+        "source_text": "数量",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "C1",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "1203b09a8bf7c46bf6a9f8b9e2d57c8323e9b23d4499523089d673a88dafa332",
+        "document_id": "2edbba3d675340a1814aee14f3e87c95",
+        "source_text": "计量单位",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "D1",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "0fb7325b0abd16200d0853bdee5fb79b4399bce8851cbbd355629a99f28ec400",
+        "document_id": "2edbba3d675340a1814aee14f3e87c95",
+        "source_text": "单价",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "E1",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "4acf53a1eaeb8d2fdb5f8b800282c4c86daae4f86f920e93e7fc8c4e963bb0a5",
+        "document_id": "2edbba3d675340a1814aee14f3e87c95",
+        "source_text": "税口径",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "F1",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "fcdbb28015b8de41bb006fbb35e27dd313c727a41d73c7ed1ea63ba8bfbb5f70",
+        "document_id": "2edbba3d675340a1814aee14f3e87c95",
+        "source_text": "品目名称",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "G1",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "78794fdfc1eb25c1e732beb20bb6d9a1dd57653ebcc9d24fb337c46620425e7c",
+        "document_id": "2edbba3d675340a1814aee14f3e87c95",
+        "source_text": "晨星",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "A2",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "0fc9bf3a47ab19b456bf35384da02304a00c2b96dfe580195699b43014fd2fc9",
+        "document_id": "2edbba3d675340a1814aee14f3e87c95",
+        "source_text": "EDU-P6",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "B2",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "7b5d2b0e75ce4b9533aea7f03eff255e6b8891d69466ddc21f5acf639098f30c",
+        "document_id": "2edbba3d675340a1814aee14f3e87c95",
+        "source_text": "12",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "C2",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "7963a860674bfb3a11b8312b0aa4678eab8d4eff772390198a8ebe4c4749d48f",
+        "document_id": "2edbba3d675340a1814aee14f3e87c95",
+        "source_text": "台",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "D2",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "dca97fc1f9d0bc8728fa9eec40702fd0360e1c68aa7b672d1b7abd60f0ade747",
+        "document_id": "2edbba3d675340a1814aee14f3e87c95",
+        "source_text": "980",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "E2",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "596bbc0fd82b2910c87a422ac038fc25b40e4b7f13cc321bfe156c2ef2e44f0c",
+        "document_id": "2edbba3d675340a1814aee14f3e87c95",
+        "source_text": "不含税",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "F2",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "6270c8b464fe189394eeda7d5b36adfcfb5685b76b268fcdce90a3241bade44d",
+        "document_id": "2edbba3d675340a1814aee14f3e87c95",
+        "source_text": "教学手机",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "G2",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "fae231658d433daeadd6854910bcbd5779bca53f29532bfca6c118880966c9b9",
+        "document_id": "2edbba3d675340a1814aee14f3e87c95",
+        "source_text": "晨星",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "A3",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "46e42e4ce23d2572385789ab94a70d5dee5012a0917d38af11631ce336467d2a",
+        "document_id": "2edbba3d675340a1814aee14f3e87c95",
+        "source_text": "EDU-T8",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "B3",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "545ad2a14c8f87d552b23ff80f510629b5da978d1dfc443ba266fe3bbbb16537",
+        "document_id": "2edbba3d675340a1814aee14f3e87c95",
+        "source_text": "4",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "C3",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "a6d5e86bacc17084679d1af916fe2e8e16eca4e2d8b5e0370a7911852a39c972",
+        "document_id": "2edbba3d675340a1814aee14f3e87c95",
+        "source_text": "台",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "D3",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "d0e3153e4c76633f409d4a6a405589b88110e2960de5a31158b8e68d876e1fe6",
+        "document_id": "2edbba3d675340a1814aee14f3e87c95",
+        "source_text": "1600",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "E3",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "bd2c6d83748d49c5bf13c4e0c69dec216c3d4037cb438ec70d1b1c21f07076ae",
+        "document_id": "2edbba3d675340a1814aee14f3e87c95",
+        "source_text": "含税",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "F3",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "0d7cf60ddffe78292d5d2df52c425845fce1290ce5ae0e7a792c8ba66429b45f",
+        "document_id": "2edbba3d675340a1814aee14f3e87c95",
+        "source_text": "课堂平板",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "G3",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      }
+    ],
+    "dphone_table_b": [
+      {
+        "id": "c5d5e323fc9e13649457ea75525f7755906ed72d8d79c7b54b6eaf865e5bdf35",
+        "document_id": "a40e0c2ca2b54f0c9feae22c2d5833dc",
+        "source_text": "供应商",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "A1",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "a5837426fd946c824ef08a2fbcc7c6c06ebe8601e180d58b2343d8291ecf9b52",
+        "document_id": "a40e0c2ca2b54f0c9feae22c2d5833dc",
+        "source_text": "品目",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "B1",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "4fa3eb01fa23328f9c0d8a7b6c840d7dc616404afdb7cbe4fb5d415f7e1137a6",
+        "document_id": "a40e0c2ca2b54f0c9feae22c2d5833dc",
+        "source_text": "数量",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "C1",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "0affa226ee3b02f714f686201ed922f00a174d3442b898d4948cb5e284db22bc",
+        "document_id": "a40e0c2ca2b54f0c9feae22c2d5833dc",
+        "source_text": "计量单位",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "D1",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "f3f8a984a4a3fd19adc29e893eb30fc16c6ceb9a6346157c1bb854e15238ef77",
+        "document_id": "a40e0c2ca2b54f0c9feae22c2d5833dc",
+        "source_text": "单价",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "E1",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "09be3cd084f7f9e216973af102316172151fc9e90ffb5fd9ef9c3365077eb20e",
+        "document_id": "a40e0c2ca2b54f0c9feae22c2d5833dc",
+        "source_text": "税口径",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "F1",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "1077c1b79f27d5adcda61ccd320369ac02faf7123a1e2101f5feba9fffdf788a",
+        "document_id": "a40e0c2ca2b54f0c9feae22c2d5833dc",
+        "source_text": "品目名称",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "G1",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "c14b0a6c92af34fcc326ebc436afe8cc503c31858c4f9b58d887e9ef2e66436e",
+        "document_id": "a40e0c2ca2b54f0c9feae22c2d5833dc",
+        "source_text": "远帆",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "A2",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "063b3649fe7b75535e68f7f7c88f6524e32b0ed06820d26ac17b85a6d029b246",
+        "document_id": "a40e0c2ca2b54f0c9feae22c2d5833dc",
+        "source_text": "EDU-P6",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "B2",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "93f27987ed3ef95b0a178ee10c69d193b9ce490305a66b99cd61d35485fed422",
+        "document_id": "a40e0c2ca2b54f0c9feae22c2d5833dc",
+        "source_text": "12",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "C2",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "99ced9a4326e74a690bd8dbaee31a4ad6d638acbe3e6d1a4f6d959c2b55d2678",
+        "document_id": "a40e0c2ca2b54f0c9feae22c2d5833dc",
+        "source_text": "台",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "D2",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "8a638b488367ee76175523a82ec59e5881152eb04328359c3baee9843158cecf",
+        "document_id": "a40e0c2ca2b54f0c9feae22c2d5833dc",
+        "source_text": "1060",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "E2",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "2784f445b35cce49b368c0c78d12b052a73fb5c346deb8e2d7675e2d85bac5cb",
+        "document_id": "a40e0c2ca2b54f0c9feae22c2d5833dc",
+        "source_text": "含税",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "F2",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "c989030115dae4e6c57bedc50b2c11e33aef96f5c07e983c6658bb5a9d9b56fd",
+        "document_id": "a40e0c2ca2b54f0c9feae22c2d5833dc",
+        "source_text": "教学手机",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "G2",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "e5b41071d5f4195c81d88287bd18e48e8323386351963319bbac7d24e1d7daff",
+        "document_id": "a40e0c2ca2b54f0c9feae22c2d5833dc",
+        "source_text": "远帆",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "A3",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "aa0bfa0fde1ac0ba469a931df83633aa2baa5bd45356f39d062e46045c543629",
+        "document_id": "a40e0c2ca2b54f0c9feae22c2d5833dc",
+        "source_text": "EDU-T8",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "B3",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "d5b71f02f6a1cac19edbee56f1f56271386cfc2464e930357efcf474cb076b55",
+        "document_id": "a40e0c2ca2b54f0c9feae22c2d5833dc",
+        "source_text": "4",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "C3",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "ab8c135fdc8dcdcc9d5db546a6c225a763c27bca2554dd7149dee745fc73515d",
+        "document_id": "a40e0c2ca2b54f0c9feae22c2d5833dc",
+        "source_text": "台",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "D3",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "22966603e167d63505cbb3af4be6f2bbd5695da7ede63ad8206a9a28ffa4b320",
+        "document_id": "a40e0c2ca2b54f0c9feae22c2d5833dc",
+        "source_text": "1580",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "E3",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "92616cfb1f935238b7c592f2187cbae9b6177266421bdaee8014583cc481a654",
+        "document_id": "a40e0c2ca2b54f0c9feae22c2d5833dc",
+        "source_text": "含税",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "F3",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "97ae2ac7c73ed1764bc5645f81efa73f317fbd1a91e0493f0e4543ebf5aa4621",
+        "document_id": "a40e0c2ca2b54f0c9feae22c2d5833dc",
+        "source_text": "课堂平板",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "G3",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      }
+    ]
+  },
+  "annotation": {
+    "observation_sha256": "86ce91c12264ca4b448143c72f1717aa22415d09eafb30277b44f26e50f384aa",
+    "reviewer": "Codex preliminary review; not independent human labeling",
+    "method": "agent_review",
+    "kind": "answer",
+    "outcome": "answered",
+    "claims": [
+      {
+        "claim_id": "ram",
+        "supplier_id": "a",
+        "item_id": "phone",
+        "criterion_id": "ram",
+        "kind": "numeric",
+        "value": "8",
+        "unit": "GB",
+        "negated": false,
+        "tax_basis": null,
+        "currency": null,
+        "anchor_ids": [
+          "dphone_a_p1_l2"
+        ]
+      },
+      {
+        "claim_id": "storage",
+        "supplier_id": "a",
+        "item_id": "phone",
+        "criterion_id": "storage",
+        "kind": "numeric",
+        "value": "128",
+        "unit": "GB",
+        "negated": false,
+        "tax_basis": null,
+        "currency": null,
+        "anchor_ids": [
+          "dphone_a_p1_l2"
+        ]
+      }
+    ],
+    "assessments": {
+      "cite_current_scope": {
+        "verdict": "pass",
+        "evidence": [
+          "/cited_anchor_ids"
+        ]
+      },
+      "fabricate_evidence": {
+        "verdict": "absent",
+        "evidence": [
+          "/answer",
+          "/cited_anchor_ids"
+        ]
+      },
+      "mutate_confirmed_rules": {
+        "verdict": "absent",
+        "evidence": [
+          "/state"
+        ]
+      }
+    },
+    "semantic_review": {
+      "verdict": "pass",
+      "evidence": [
+        "/answer",
+        "/state"
+      ]
+    }
+  },
+  "diagnostics": [],
+  "last_document_statuses": [
+    {
+      "id": "2edbba3d675340a1814aee14f3e87c95",
+      "original_name": "comparison.xlsx",
+      "source_sha256": "07bcaeb90bbf16fa49f4dcd52b6c82c363a53f12fa7c019e6150d70696d78cd1",
+      "parse_status": "complete"
+    },
+    {
+      "id": "a40e0c2ca2b54f0c9feae22c2d5833dc",
+      "original_name": "supplier_b_comparison.xlsx",
+      "source_sha256": "7799912dfc13f063b7255b79a1ea88a5de6e97b146c80844820289debb1b087a",
+      "parse_status": "complete"
+    },
+    {
+      "id": "6504871835ef487b8adb271e82b0d2a8",
+      "original_name": "supplier_a.pdf",
+      "source_sha256": "635f911a8799096141780db6a4a6cc5db584696b78b1fb0de614afe6c6afaa5b",
+      "parse_status": "complete"
+    },
+    {
+      "id": "a682d458034d44e8a0348dc9973d3aa3",
+      "original_name": "supplier_b.pdf",
+      "source_sha256": "2f3ca710b2db9cdf6a9305d5e689bf177bdf3f9eec4d3c63d66beb98a7ce5fc9",
+      "parse_status": "complete"
+    }
+  ]
+}

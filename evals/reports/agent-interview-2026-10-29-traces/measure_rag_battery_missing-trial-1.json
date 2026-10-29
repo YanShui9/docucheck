@@ -1,0 +1,65 @@
+{
+  "task_id": "measure_rag_battery_missing",
+  "trial": 1,
+  "execution": "failed",
+  "origin": "live_http",
+  "error_code": "evaluation_parse_incomplete",
+  "tool_names": [],
+  "business_checks": [],
+  "claims": [],
+  "assessments": {},
+  "semantic_review": null,
+  "cited_anchor_ids": [],
+  "verified_anchor_ids": [],
+  "violations": [],
+  "usage": {
+    "requests": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "unknown_requests": 0
+  },
+  "usage_complete": true,
+  "timing": {
+    "started_at": "2026-10-29T08:40:25.027607+00:00",
+    "finished_at": "2026-10-29T08:40:38.624714+00:00",
+    "total_seconds": 13.59400000000096,
+    "preparation_seconds": null,
+    "task_seconds": null,
+    "includes_failures_and_queueing": true
+  },
+  "halt_execution": false,
+  "outcome_unknown": false,
+  "raw_sha256": "b471cfdf99185fe6d394c9bb73c32cd375f4946436d838048db527d179fecfa4",
+  "publication_kind": "synthetic_result_projection_not_full_http_replay",
+  "prompt": "衡远巡检终端电池额定容量是多少mAh？",
+  "run": {},
+  "sources": {},
+  "evidence": {},
+  "diagnostics": [],
+  "last_document_statuses": [
+    {
+      "id": "e9c8d86c1b95445b9b0350b1f4ce0bce",
+      "original_name": "comparison.xlsx",
+      "source_sha256": "4842fac662b619b4ebd94347d9be0473474729d73da6659fb449d68e2f10db2f",
+      "parse_status": "pending"
+    },
+    {
+      "id": "0b26cf49c8c349708f3f914d80eff9d2",
+      "original_name": "supplier_b_comparison.xlsx",
+      "source_sha256": "fd7524d86b92fefdafce29b86a1b8fbc81da6a08d5cea1f7795a96af87a7a0b7",
+      "parse_status": "complete"
+    },
+    {
+      "id": "0d4e2d9362dc453da33e5d9da1662f76",
+      "original_name": "supplier_a.pdf",
+      "source_sha256": "54933bae0e3fa8804ea36662b990ad24ff517d6fcc4f91bbc0b520497d6ad92d",
+      "parse_status": "failed"
+    },
+    {
+      "id": "5eba0cc099db433f9b0d35cb1add0d88",
+      "original_name": "supplier_b.pdf",
+      "source_sha256": "9e1b6f7a360d1b21d58e4277ddc2edb792c612d75ced0a1deee3070ab6735225",
+      "parse_status": "pending"
+    }
+  ]
+}

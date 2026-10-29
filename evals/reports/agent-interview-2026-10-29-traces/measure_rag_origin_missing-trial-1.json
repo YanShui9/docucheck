@@ -1,0 +1,65 @@
+{
+  "task_id": "measure_rag_origin_missing",
+  "trial": 1,
+  "execution": "failed",
+  "origin": "live_http",
+  "error_code": "evaluation_parse_incomplete",
+  "tool_names": [],
+  "business_checks": [],
+  "claims": [],
+  "assessments": {},
+  "semantic_review": null,
+  "cited_anchor_ids": [],
+  "verified_anchor_ids": [],
+  "violations": [],
+  "usage": {
+    "requests": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "unknown_requests": 0
+  },
+  "usage_complete": true,
+  "timing": {
+    "started_at": "2026-10-29T08:40:38.625713+00:00",
+    "finished_at": "2026-10-29T08:40:53.993813+00:00",
+    "total_seconds": 15.375,
+    "preparation_seconds": null,
+    "task_seconds": null,
+    "includes_failures_and_queueing": true
+  },
+  "halt_execution": false,
+  "outcome_unknown": false,
+  "raw_sha256": "8630f5c1b0ba4973e02a066ee5ddb8214aaa6c268bf10e4b66f0730e7f89ae78",
+  "publication_kind": "synthetic_result_projection_not_full_http_replay",
+  "prompt": "丰岭香蕉的种植产地是河北吗？",
+  "run": {},
+  "sources": {},
+  "evidence": {},
+  "diagnostics": [],
+  "last_document_statuses": [
+    {
+      "id": "f688540ec33847b393f48fe61edd8a95",
+      "original_name": "comparison.xlsx",
+      "source_sha256": "2d0d032551b15a1844e7d2e03bedebd1014b2709fd6baaa3873f80f40cec44ec",
+      "parse_status": "pending"
+    },
+    {
+      "id": "5761f168dbf1489eb8b26378512798e0",
+      "original_name": "supplier_b_comparison.xlsx",
+      "source_sha256": "f2fb42ffc94c49762a4e4a0c5c7bb618322a48202027dd99ecea3ffa0d95c658",
+      "parse_status": "complete"
+    },
+    {
+      "id": "cd61d0bb7f324ddc9ef3c97976a8e616",
+      "original_name": "supplier_a.pdf",
+      "source_sha256": "369c3f15f647554b2e3d6d6fb6ab62f6f92a99ea433aa07b6bedb48aa8257f20",
+      "parse_status": "failed"
+    },
+    {
+      "id": "cf211b8d65b048bf895f250eabcebbc1",
+      "original_name": "supplier_b.pdf",
+      "source_sha256": "8fd0a29929c358cfb28ecd68a409931598e8ba6ac293148789e7ebcfd978d5cd",
+      "parse_status": "pending"
+    }
+  ]
+}

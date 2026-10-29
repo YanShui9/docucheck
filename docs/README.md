@@ -21,6 +21,7 @@
 
 | 日期与范围 | 记录 |
 | --- | --- |
+| 2026-10-29：40任务Agent评测、真实结果与完整分母 | [交付与失败分析](agent-interview-evaluation-2026-10-29.md)、[逐题报告](../evals/reports/agent-interview-2026-10-29.md)、[源码与原件](../evals/agent_interview/README.md) |
 | 2026-10-27：PDF 整页显式排除、冻结验证与 d03 后台复测 | [交付记录](pdf-page-exclusions-2026-10-27.md)、[机器摘要](../evals/reports/pdf-page-exclusions-2026-10-27.json) |
 | 2026-10-25：引用关系诊断、冻结验证与原任务各一次正式复测 | [本步记录](source-relationship-diagnostics-2026-10-25.md)、[机器摘要](../evals/reports/source-relationship-diagnostics-2026-10-25.json) |
 | 2026-10-25：一致报价规则、部署及未通过的实连验收 | [本步记录](consistent-money-sources-2026-10-25.md)、[机器摘要](../evals/reports/consistent-money-sources-2026-10-25.json) |

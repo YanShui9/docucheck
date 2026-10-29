@@ -1,0 +1,26 @@
+{
+  "task_id": "measure_memory_current_rule",
+  "trial": 1,
+  "execution": "blocked",
+  "origin": "live_http",
+  "error_code": "setup_precondition_unavailable",
+  "missing_preconditions": [
+    "real_assistant_history_required"
+  ],
+  "usage": {
+    "requests": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "unknown_requests": 0
+  },
+  "timing": {
+    "started_at": "2026-10-29T08:45:55.884899+00:00",
+    "total_seconds": 0.0
+  },
+  "publication_kind": "synthetic_result_projection_not_full_http_replay",
+  "prompt": "你以前总结过椅子要20把，现在到底按多少把审？",
+  "run": {},
+  "sources": {},
+  "evidence": {},
+  "diagnostics": []
+}

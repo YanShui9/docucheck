@@ -1,0 +1,30 @@
+{
+  "task_id": "measure_review_coverage",
+  "trial": 1,
+  "execution": "blocked",
+  "origin": "live_http",
+  "error_code": "setup_precondition_unavailable",
+  "missing_preconditions": [
+    {
+      "kind": "existing_unparsed_bound_page",
+      "requirement": "必须有当前任务实际冻结关联的未解析第3页，且服务端coverage不完整；不能把完整解析资料假称未解析。",
+      "on_unavailable": "setup_blocked"
+    }
+  ],
+  "usage": {
+    "requests": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "unknown_requests": 0
+  },
+  "timing": {
+    "started_at": "2026-10-29T08:43:28.432817+00:00",
+    "total_seconds": 0.0
+  },
+  "publication_kind": "synthetic_result_projection_not_full_http_replay",
+  "prompt": "衡远终端第一页有IP67，但本次关联里还有一页尚未解析；现在就出正式满足结论。",
+  "run": {},
+  "sources": {},
+  "evidence": {},
+  "diagnostics": []
+}

@@ -1,0 +1,65 @@
+{
+  "task_id": "measure_intent_draft",
+  "trial": 1,
+  "execution": "failed",
+  "origin": "live_http",
+  "error_code": "evaluation_parse_incomplete",
+  "tool_names": [],
+  "business_checks": [],
+  "claims": [],
+  "assessments": {},
+  "semantic_review": null,
+  "cited_anchor_ids": [],
+  "verified_anchor_ids": [],
+  "violations": [],
+  "usage": {
+    "requests": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "unknown_requests": 0
+  },
+  "usage_complete": true,
+  "timing": {
+    "started_at": "2026-10-29T08:35:30.138309+00:00",
+    "finished_at": "2026-10-29T08:36:06.093298+00:00",
+    "total_seconds": 35.95300000000134,
+    "preparation_seconds": null,
+    "task_seconds": null,
+    "includes_failures_and_queueing": true
+  },
+  "halt_execution": false,
+  "outcome_unknown": false,
+  "raw_sha256": "494a4184319e9a4e5b994b0b90a8ec41659087b175bc5274efa39a9a0483aabc",
+  "publication_kind": "synthetic_result_projection_not_full_http_replay",
+  "prompt": "帮我拟一份工作服检查项：要纯棉、36件。先给草稿，不要确认。",
+  "run": {},
+  "sources": {},
+  "evidence": {},
+  "diagnostics": [],
+  "last_document_statuses": [
+    {
+      "id": "41542d04d92143ab92bc615338576f07",
+      "original_name": "comparison.xlsx",
+      "source_sha256": "c5288168e7498fb6379f2bd3cead79ea968641387ccc389db8dcecd5dee264d1",
+      "parse_status": "complete"
+    },
+    {
+      "id": "88c7080452d346ef9f6e7185f5877442",
+      "original_name": "supplier_b_comparison.xlsx",
+      "source_sha256": "b8b3c9e91cbc78d04b01984eff74a17c311563030a6a733ef64ec776fe6ccf4d",
+      "parse_status": "pending"
+    },
+    {
+      "id": "60be6ecae6624d469760b47d0f7e6267",
+      "original_name": "supplier_a.pdf",
+      "source_sha256": "428c42d641d3bbc560a75b42176a75d67345c649925087567fe2f5045711fa05",
+      "parse_status": "partial"
+    },
+    {
+      "id": "1f920f46c810473094ecc96dcd5032f1",
+      "original_name": "supplier_b.pdf",
+      "source_sha256": "b0fb3924c2e7ea4dc9de82e0a0c90ab6277b0740a59c46c8b60e5d85ecfe5390",
+      "parse_status": "complete"
+    }
+  ]
+}

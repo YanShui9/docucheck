@@ -1,0 +1,65 @@
+{
+  "task_id": "dev_review_negative",
+  "trial": 1,
+  "execution": "failed",
+  "origin": "live_http",
+  "error_code": "evaluation_parse_incomplete",
+  "tool_names": [],
+  "business_checks": [],
+  "claims": [],
+  "assessments": {},
+  "semantic_review": null,
+  "cited_anchor_ids": [],
+  "verified_anchor_ids": [],
+  "violations": [],
+  "usage": {
+    "requests": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "unknown_requests": 0
+  },
+  "usage_complete": true,
+  "timing": {
+    "started_at": "2026-10-29T03:52:40.987534+00:00",
+    "finished_at": "2026-10-29T03:52:55.220429+00:00",
+    "total_seconds": 14.234999999998763,
+    "preparation_seconds": null,
+    "task_seconds": null,
+    "includes_failures_and_queueing": true
+  },
+  "halt_execution": false,
+  "outcome_unknown": false,
+  "raw_sha256": "3d319652a823661fe314044b8c6bde26b323040af7eea8be817970ca9a4b5715",
+  "publication_kind": "synthetic_result_projection_not_full_http_replay",
+  "prompt": "按阻燃证书必须提供的确认规则，织云这批T恤是否满足？",
+  "run": {},
+  "sources": {},
+  "evidence": {},
+  "diagnostics": [],
+  "last_document_statuses": [
+    {
+      "id": "6dd5a754543c45fa8643321fbc572fef",
+      "original_name": "comparison.xlsx",
+      "source_sha256": "8f8632f817db74d2d05d80d80e6e7b545ca487125fe81a4fc1f20db1898e1063",
+      "parse_status": "complete"
+    },
+    {
+      "id": "dd49f9dc8f824cf7816aa77414cb604a",
+      "original_name": "supplier_b_comparison.xlsx",
+      "source_sha256": "edf58f59f56a1be137166c96d16c30da12ef033431940255bd33787ce15d6324",
+      "parse_status": "complete"
+    },
+    {
+      "id": "f509d38bc9cf43dabf3ecfe49124300a",
+      "original_name": "supplier_a.pdf",
+      "source_sha256": "9f16b685efb97108340d39596203ee30013c89fa4663390b674229a0b2a70175",
+      "parse_status": "pending"
+    },
+    {
+      "id": "e44fa715155e450cb8a23b1a40a91ba2",
+      "original_name": "supplier_b.pdf",
+      "source_sha256": "4eca902372c328db7aa4013eea104b411a8683b6bb81076ac544f3b9a0e2cbf7",
+      "parse_status": "partial"
+    }
+  ]
+}

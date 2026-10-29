@@ -1,9 +1,5 @@
 # DocuCheck · 采购文档审查 Agent
 
-2026-10-28圆环已应用本机日常页面：前端ca62dda、后端f4506ed；已登录Chrome实看圆环并展开详情，当前旧对话无用量记录时显示空环。见[部署与验收](docs/context-ring-2026-10-28.md#本机日常服务更新与真实页面验收)。
-
-2026-10-28前端补修：上下文入口移入输入框，圆环显示最近请求的估算占用，点击查看详情；关闭状态更新、未知空环及范围隔离已验证。前端360项与类型/构建通过，尚未更新运行服务，见[交付记录](docs/context-ring-2026-10-28.md)。
-
 [![Offline verification](https://github.com/YanShui9/docucheck/actions/workflows/offline-ci.yml/badge.svg?branch=main)](https://github.com/YanShui9/docucheck/actions/workflows/offline-ci.yml)
 ![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)
@@ -15,7 +11,7 @@ DocuCheck 面向多品类采购的资料核对：用户用中文提出要求，�
 
 例如“采购苹果 20 箱，每箱不含税单价不超过 25 元”：系统分别核对数量、金额、单位和税口径。即使报价数值为 25，若“不含税单价”与另一行“含税”相互冲突，报告仍保留为“资料冲突”，并提供两处原文。
 
-[架构与设计取舍](docs/architecture-and-interview.md) · [演示指南](docs/interview-demo.md) · [安装与运行](docs/reproduction.md) · [验证记录](docs/evaluation.md) · [文档导航](docs/README.md)
+[架构与设计取舍](docs/architecture-and-interview.md) · [演示指南](docs/interview-demo.md) · [安装与运行](docs/reproduction.md) · [验证记录](docs/evaluation.md) · [文档导航](docs/README.md) · [Agent评测：40任务、原件与真实结果](docs/agent-interview-evaluation-2026-10-29.md)
 
 ## 从需求到报告
 
@@ -85,6 +81,8 @@ flowchart TB
 
 | 验证对象 | 结果 | 记录 |
 | --- | --- | --- |
+| 全仓离线验证（含Agent评测），2026-10-29 | **3195 passed / 63 skipped**，网络0；固定40任务、40份原件及实际逐次记录 | [评测方法、真实结果与失败](docs/agent-interview-evaluation-2026-10-29.md)；代码验证与业务分数分别报告。 |
+| 输入框上下文圆环，2026-10-28 | 前端360项、类型/构建与组件验证；固定ca62dda已应用本机，登录页面已确认圆环与详情 | [既有交付与页面记录](docs/context-ring-2026-10-28.md)；本轮评测不把该页面验证算作新业务试验。 |
 | 后端冻结源码，2026-10-27 | **2729 passed / 63 skipped**，网络尝试 0；依赖检查、Ruff 通过；隔离 MySQL 21 项 | [PDF 范围排除与验证](docs/pdf-page-exclusions-2026-10-27.md)，对应可执行源码 `f4506ed`；外部集成跳过项单列。 |
 | PDF 整页范围排除，2026-10-27 | 前端 **352 项**、类型 / 构建与合成组件浏览器通过；原 d03 两页排除生效，但后台新审查因材料候选被拒仍为 **partial，0/8 正式** | [实现与指定复测](docs/pdf-page-exclusions-2026-10-27.md)；正式出口未过，受保护业务页面未重验，原 18 包评分保持。 |
 | 答复与来源展示，2026-10-24 | **324 项测试**，类型检查与构建通过；桌面、窄屏、原文入口及刷新历史核对 | [展示交付](docs/answer-source-readability-2026-10-24.md)，前端 `e1fb25c`；CI 状态见顶部徽章。 |
@@ -94,6 +92,12 @@ flowchart TB
 | 数量与税口径案例，2026-10-24 | 数量 20 箱为“满足”；单价 25 元存在税说明矛盾，判为“资料冲突”；来源、JSON、Excel 与刷新历史一致 | [数量条件与正式复审](docs/quantity-condition-live-2026-10-24.md)、[税口径处理](docs/money-tax-live-2026-10-24.md)。 |
 
 上述业务案例使用已见合成资料，测试通过数与指定流程验收分别记录。独立多品类准确率、生产容量和异机灾备不在这些结果的证明范围内；完整测量、失败样例与版本边界见[评估说明](docs/evaluation.md)。资料存在性规则的肯定候选保留人工确认，复杂条件和不明确的来源适用关系也交由人工复核。
+
+## Agent 评测
+
+40个采购场景任务覆盖路由、RAG、正式审查、记忆与安全，按完整资料组分为10题开发与30题测量，预选六题各三次。公开[原件、gold与评分器](evals/agent_interview/README.md)、[实际逐题结果](evals/reports/agent-interview-2026-10-29.md)和[方法与失败分析](docs/agent-interview-evaluation-2026-10-29.md)。未执行、阻塞、解析失败及未完成语义复核保留在分母；作者可见合成资料不代表独立生产准确率。
+
+最新冻结后端验证 **3195通过 / 63跳过、网络0**；这属于源码验证，与上述业务成绩分别报告。
 
 ## 快速验证
 

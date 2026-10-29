@@ -12,11 +12,11 @@
 
 Files: create `evals/agent_interview/__init__.py`, `contracts.py`, `dataset.json`, `corpus.py`, `README.md`; test `backend/tests/test_agent_interview_corpus.py`。
 
-- [ ] 写失败测试：40个不同task_id；各类及split数量与设计一致；12问8有答案4无答案；开发/测量无共享采购资料组；必要锚点实际存在；参考答案不从产品规则生成；路径不能逃逸输出目录。
-- [ ] 运行targeted profile保存红测，然后实现严格合同和资料构建器。
-- [ ] 每题包含prompt、fixture/group、category/split、预期kind、关键事实/禁止断言、必要证据组、预期状态/不可变状态、出处与风险；分别保存输入和gold，运行器不得传gold给产品。
-- [ ] 实际生成全新PDF/XLSX，核对中文、全文、页码/单元格和SHA。所有输入与gold可公开。
-- [ ] 规格复审通过后质量复审，修复后定向绿色并本地提交。
+- [x] 写失败测试：40个不同task_id；各类及split数量与设计一致；12问8有答案4无答案；开发/测量无共享采购资料组；必要锚点实际存在；参考答案不从产品规则生成；路径不能逃逸输出目录。
+- [x] 运行targeted profile保存红测，然后实现严格合同和资料构建器。
+- [x] 每题包含prompt、fixture/group、category/split、预期kind、关键事实/禁止断言、必要证据组、预期状态/不可变状态、出处与风险；分别保存输入和gold，运行器不得传gold给产品。
+- [x] 实际生成全新PDF/XLSX，核对中文、全文、页码/单元格和SHA。所有输入与gold可公开。
+- [x] 规格复审通过后质量复审，修复后定向绿色并本地提交。
 
 固定数量断言示例：
 
@@ -30,11 +30,11 @@ assert not development_groups & measurement_groups
 
 Files: create `evals/agent_interview/grading.py`, `report.py`, `reference_observations.json`; test `backend/tests/test_agent_interview_grading.py`。
 
-- [ ] 用独立参考observation写正例与变异反例。变异包括错单位/否定/税口径、串供应商、丢必要组、无依据写入、partial假正式、重复引用、漏任务和重复trial。
-- [ ] 保存红测，实现 `grade_task(task, observation)` 和 `aggregate(dataset, observations)`，不使用产品规则生成答案。
-- [ ] strict success必须全部硬断言和必要语义项通过；pending_review/blocked/未执行保留主分母；逐维诊断独立，不能用较高局部分替代任务通过。
-- [ ] 30题主表与10题开发表、工程6场景和6题重复各自分开；报告首轮Wilson区间及小样本限制、错误分类和用量未知。
-- [ ] 验证每题参考解能够通过；反例确实被拒。规格→质量复审，绿色后本地提交。
+- [x] 用独立参考observation写正例与变异反例。变异包括错单位/否定/税口径、串供应商、丢必要组、无依据写入、partial假正式、重复引用、漏任务和重复trial。
+- [x] 保存红测，实现 `grade_task(task, observation)` 和 `aggregate(dataset, observations)`，不使用产品规则生成答案。
+- [x] strict success必须全部硬断言和必要语义项通过；pending_review/blocked/未执行保留主分母；逐维诊断独立，不能用较高局部分替代任务通过。
+- [x] 30题主表与10题开发表、工程6场景和6题重复各自分开；报告首轮Wilson区间及小样本限制、错误分类和用量未知。
+- [x] 验证每题参考解能够通过；反例确实被拒。规格→质量复审，绿色后本地提交。
 
 计分约束示例：
 
@@ -48,21 +48,21 @@ assert "scope" in result.failed_dimensions
 
 Files: create `evals/agent_interview/run.py`, `http_adapter.py`, `journal.py`; test `backend/tests/test_agent_interview_run.py`；按实际接口复用 `evals/dynamic/run.py`已验证的上传/确认/原文方法，不更改旧评测行为。
 
-- [ ] 写无send不会联网、凭据不落盘、请求前写journal、未知写不重发、错误回执不当成功、超时仍在运行则停止后续发送的红测。
-- [ ] 默认preview仅列任务/前置/估算，无模型；显式send按新case、实际上传/解析/绑定、对话消息、Run轮询、checks/来源/导出收集执行。
-- [ ] 每个提交携带稳定幂等身份；journal独占新文件。结果未知先只读核对；只有明确未发送或已有回执恢复，不静默重发。
+- [x] 写无send不会联网、凭据不落盘、请求前写journal、未知写不重发、错误回执不当成功、超时仍在运行则停止后续发送的红测。
+- [x] 默认preview仅列任务/前置/估算，无模型；显式send按新case、实际上传/解析/绑定、对话消息、Run轮询、checks/来源/导出收集执行。
+- [x] 每个提交携带稳定幂等身份；journal独占新文件。结果未知先只读核对；只有明确未发送或已有回执恢复，不静默重发。
 - [ ] 多轮按固定脚本，配置准备与Agent任务区分；第二合法用户权限场景及故障控制场景独立适配，不影响原业务索引/队列。
-- [ ] 冻结数据/gold/评测/应用版本；运行前对账预警轮，按既有100次预警约定执行。
-- [ ] 规格→质量复审，执行targeted与完整离线门禁，身份冻结不变后本地提交。
+- [x] 冻结数据/gold/评测/应用版本；运行前对账预警轮，按既有100次预警约定执行。
+- [x] 规格→质量复审，执行targeted与完整离线门禁，身份冻结不变后本地提交。
 
 ## Task 4：真实测量和展示收尾
 
-Files: create `docs/agent-interview-evaluation-2026-10-28.md`, `evals/reports/agent-interview-2026-10-28.json`；update `README.md`, `docs/README.md`, `docs/development-roadmap.md`, `CLAUDE.md`。
+Files: create `docs/agent-interview-evaluation-2026-10-29.md`, `evals/reports/agent-interview-2026-10-29.json`；update `README.md`, `docs/README.md`, `docs/development-roadmap.md`, `CLAUDE.md`。
 
-- [ ] 核对实际运行提交/健康/鉴权/解析/检索；通过合法Owned OIDC客户端运行新合成工作区，不绕过受保护页面登录。
-- [ ] 先开发10题查评测器，再测量30题首轮和预定6题额外12trial；首轮记录不可被重试覆盖。6工程场景单列。
-- [ ] 保存每题输入/原始响应/来源/最终状态/导出/用量；评分器错误只读重算保留旧观察；产品缺陷先保留，不以无限修复拖延或涂改成绩。
-- [ ] 审核原业务库/原件/旧报告和主WIP保持；报告所有未执行/blocked，全部真实完成前不称完整实测完成。
+- [x] 核对实际运行提交/健康/鉴权/解析/检索；通过合法Owned OIDC客户端运行新合成工作区，不绕过受保护页面登录。
+- [x] 先开发10题查评测器，再测量30题首轮和预定6题额外12trial；首轮记录不可被重试覆盖。6工程场景单列。
+- [x] 保存每题输入/原始响应/来源/最终状态/导出/用量；评分器错误只读重算保留旧观察；产品缺陷先保留，不以无限修复拖延或涂改成绩。
+- [x] 审核原业务库/原件/旧报告和主WIP保持；报告所有未执行/blocked，全部真实完成前不称完整实测完成。
 - [ ] docs profile、链接/diff/凭据检查；本地提交、按既有授权正常推送两分支，检查精确SHA CI和GitHub实际展示。
 - [ ] 最终交付真实成绩、失败与边界及学习入口。用户未开始教学前不提前展开课程。
 
@@ -76,3 +76,11 @@ python.exe -X utf8 -m scripts.verify_offline --report data/verification/agent-in
 ```
 
 先实际红测再实现；计划中的命令和文件不是已运行证据。超时、未完成与测试失败都保留，不覆盖旧报告。
+
+## 2026-10-29 执行回执与剩余边界
+
+实现与冻结门禁已完成，3195通过/63跳过、网络0；完整结果及证据入口见[交付记录](../../agent-interview-evaluation-2026-10-29.md)。40题首轮和12次追加均有保存记录，其中22条进入Agent执行、19条解析前置失败、11条当前适配器前置未实现而blocked。这里“运行完成”指协议已遍历并保存全部计划位置，不能说52条均完成真实模型评测。开发7失败/3待复核；测量21失败/2待复核/7阻塞；独立人工标签0。
+
+Task3第二身份/真实既有失败或未知Run/特定助手历史的合法前置尚未全部适配，未勾选，不能以工程四节点的6场景替代真实业务题；这些题保留分母。其余绿色复审、原件和历史保留、逐次账本已完成。模型103请求跨两轮：旧轮新增29后107安全暂停，新轮获得用户明确授权后新增74；未知用量1，没有盲目重发。
+
+文档与GitHub收尾在本次材料提交后核对精确SHA，最终结果由交付回执及GitHub Actions记录确认；本计划保留提交时状态。受保护业务UI未在本轮重新登录验收。

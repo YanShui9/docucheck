@@ -1,0 +1,1278 @@
+{
+  "task_id": "measure_review_same_price",
+  "trial": 1,
+  "execution": "executed",
+  "origin": "live_http",
+  "kind": "review",
+  "outcome": "partial",
+  "answer": "本次已确认并启用的指标审查部分完成，未覆盖项仍为处理未完成；未确认或停用项未参与本次审查。\na · 激光碳粉盒 · 含税单价：处理未完成。\na · 标签机 · 采购型号：处理未完成。\nb · 激光碳粉盒 · 含税单价：处理未完成。\nb · 标签机 · 采购型号：处理未完成。\n核验来源：\n来源 [63e234bf663938740b287dc6981b12c7abed784efe8cfe915d71aa6f22fad96b]：supplier_a.pdf · 第 1 页\n原文：单价 120 元/个，含税。\n来源 [648f4c26d31bb604e2b38119ea78955e09cc4d4efe4837ccdf774f0a2d2d29ee]：supplier_a.pdf · 第 1 页\n原文：同价补充单:本供应商本次 LIB-T 仍为含税 120 元/个。\n来源 [0bc7202e16170395b164cf53f3e5496dcfcb2f4a350ff1f041ba44573f24b5d0]：comparison.xlsx · 报价对照!A2\n原文：清墨\n来源 [4f0e4122b51ae5cb8b01846b52cb5929ab69b5e9e6fba92b119dc6ac2a1553d5]：comparison.xlsx · 报价对照!B2\n原文：LIB-T\n来源 [fd06eb833cf26caf4845a0d9bb9c09b88e3a4e34c19d90ad2935b23fdabf6fbb]：comparison.xlsx · 报价对照!C2\n原文：25\n来源 [45df32aa8c1c173c9bccab2461a2aa3b1d12a97dcc8e0fd88118a5453caa8931]：comparison.xlsx · 报价对照!D2\n原文：个\n来源 [36ff48fa4e7ab7fd6c58fe426cd3b9474df4562a119ddce29f7edd0bf6179d2b]：comparison.xlsx · 报价对照!E2\n原文：120\n来源 [bde82747ddfcbf4cec0a71e339e1fa71b040a00974df42c6f67a7e07402928a1]：comparison.xlsx · 报价对照!F2\n原文：含税\n来源 [71b7c670f78a73041a7c1ed46d4ce9ac213fea96f7c4561c54a742f765f15c99]：comparison.xlsx · 报价对照!G2\n原文：激光碳粉盒\n来源 [dd3ca93eb3495f8d771abf2f9937d7151b4337e7d529649dc0188066b9fbc3aa]：supplier_b.pdf · 第 1 页\n原文：含税单价 118 元/个。\n来源 [1a9541ed1bac02bbf6f79efc9e3e8a2ecdff02eb19da06d50043f34a0e52dd1e]：supplier_b_comparison.xlsx · 报价对照!A2\n原文：书航\n来源 [2f3946fcd4bb09437387329508475396ce7ffd35785ce2b751eed59af9479424]：supplier_b_comparison.xlsx · 报价对照!B2\n原文：LIB-T\n来源 [a5ff28f6756d01fcdaac8b8c12ac09285e6a6926c204468657f0198a5e338a9c]：supplier_b_comparison.xlsx · 报价对照!C2\n原文：25\n来源 [42dadba17305e9e4698e4b35ecad5142902154fe055b800ca3297e3c8158517b]：supplier_b_comparison.xlsx · 报价对照!D2\n原文：个\n来源 [275f9fdfc0261617876fdbd92e9170aa2457a089a007aa51d02b43340947ec8c]：supplier_b_comparison.xlsx · 报价对照!E2\n原文：118\n来源 [d1c8511d62f8eba69305cd1ff874af1638558524ccf6757bd06b30df20e9f7e0]：supplier_b_comparison.xlsx · 报价对照!F2\n原文：含税\n来源 [20f02b7f8b735fcbaa39d47bd238770f30e8fa336d800013632341fade532733]：supplier_b_comparison.xlsx · 报价对照!G2\n原文：激光碳粉盒",
+  "tool_names": [
+    "review_checklist"
+  ],
+  "business_checks": [
+    {
+      "supplier_id": "a",
+      "item_id": "toner",
+      "criterion_id": "price",
+      "business_status": null,
+      "processing_status": "partial",
+      "is_formal": false,
+      "evidence_refs": [
+        "63e234bf663938740b287dc6981b12c7abed784efe8cfe915d71aa6f22fad96b",
+        "648f4c26d31bb604e2b38119ea78955e09cc4d4efe4837ccdf774f0a2d2d29ee",
+        "0bc7202e16170395b164cf53f3e5496dcfcb2f4a350ff1f041ba44573f24b5d0",
+        "4f0e4122b51ae5cb8b01846b52cb5929ab69b5e9e6fba92b119dc6ac2a1553d5",
+        "fd06eb833cf26caf4845a0d9bb9c09b88e3a4e34c19d90ad2935b23fdabf6fbb",
+        "45df32aa8c1c173c9bccab2461a2aa3b1d12a97dcc8e0fd88118a5453caa8931",
+        "36ff48fa4e7ab7fd6c58fe426cd3b9474df4562a119ddce29f7edd0bf6179d2b",
+        "bde82747ddfcbf4cec0a71e339e1fa71b040a00974df42c6f67a7e07402928a1",
+        "71b7c670f78a73041a7c1ed46d4ce9ac213fea96f7c4561c54a742f765f15c99"
+      ],
+      "reason_evidence_refs": [
+        "63e234bf663938740b287dc6981b12c7abed784efe8cfe915d71aa6f22fad96b",
+        "648f4c26d31bb604e2b38119ea78955e09cc4d4efe4837ccdf774f0a2d2d29ee",
+        "0bc7202e16170395b164cf53f3e5496dcfcb2f4a350ff1f041ba44573f24b5d0",
+        "4f0e4122b51ae5cb8b01846b52cb5929ab69b5e9e6fba92b119dc6ac2a1553d5",
+        "fd06eb833cf26caf4845a0d9bb9c09b88e3a4e34c19d90ad2935b23fdabf6fbb",
+        "45df32aa8c1c173c9bccab2461a2aa3b1d12a97dcc8e0fd88118a5453caa8931",
+        "36ff48fa4e7ab7fd6c58fe426cd3b9474df4562a119ddce29f7edd0bf6179d2b",
+        "bde82747ddfcbf4cec0a71e339e1fa71b040a00974df42c6f67a7e07402928a1",
+        "71b7c670f78a73041a7c1ed46d4ce9ac213fea96f7c4561c54a742f765f15c99"
+      ],
+      "anchor_ids": [
+        "moffice_a_p1_l3",
+        "moffice_a_p1_l4",
+        "moffice_table_a2",
+        "moffice_table_b2",
+        "moffice_table_c2",
+        "moffice_table_d2",
+        "moffice_table_e2",
+        "moffice_table_f2",
+        "moffice_table_g2"
+      ]
+    },
+    {
+      "supplier_id": "a",
+      "item_id": "labeler",
+      "criterion_id": "secondary_sku",
+      "business_status": null,
+      "processing_status": "partial",
+      "is_formal": false,
+      "evidence_refs": [],
+      "reason_evidence_refs": [],
+      "anchor_ids": []
+    },
+    {
+      "supplier_id": "b",
+      "item_id": "toner",
+      "criterion_id": "price",
+      "business_status": null,
+      "processing_status": "partial",
+      "is_formal": false,
+      "evidence_refs": [
+        "dd3ca93eb3495f8d771abf2f9937d7151b4337e7d529649dc0188066b9fbc3aa",
+        "1a9541ed1bac02bbf6f79efc9e3e8a2ecdff02eb19da06d50043f34a0e52dd1e",
+        "2f3946fcd4bb09437387329508475396ce7ffd35785ce2b751eed59af9479424",
+        "a5ff28f6756d01fcdaac8b8c12ac09285e6a6926c204468657f0198a5e338a9c",
+        "42dadba17305e9e4698e4b35ecad5142902154fe055b800ca3297e3c8158517b",
+        "275f9fdfc0261617876fdbd92e9170aa2457a089a007aa51d02b43340947ec8c",
+        "d1c8511d62f8eba69305cd1ff874af1638558524ccf6757bd06b30df20e9f7e0",
+        "20f02b7f8b735fcbaa39d47bd238770f30e8fa336d800013632341fade532733"
+      ],
+      "reason_evidence_refs": [
+        "dd3ca93eb3495f8d771abf2f9937d7151b4337e7d529649dc0188066b9fbc3aa",
+        "1a9541ed1bac02bbf6f79efc9e3e8a2ecdff02eb19da06d50043f34a0e52dd1e",
+        "2f3946fcd4bb09437387329508475396ce7ffd35785ce2b751eed59af9479424",
+        "a5ff28f6756d01fcdaac8b8c12ac09285e6a6926c204468657f0198a5e338a9c",
+        "42dadba17305e9e4698e4b35ecad5142902154fe055b800ca3297e3c8158517b",
+        "275f9fdfc0261617876fdbd92e9170aa2457a089a007aa51d02b43340947ec8c",
+        "d1c8511d62f8eba69305cd1ff874af1638558524ccf6757bd06b30df20e9f7e0",
+        "20f02b7f8b735fcbaa39d47bd238770f30e8fa336d800013632341fade532733"
+      ],
+      "anchor_ids": [
+        "moffice_b_p1_l3",
+        "moffice_table_b_a2",
+        "moffice_table_b_b2",
+        "moffice_table_b_c2",
+        "moffice_table_b_d2",
+        "moffice_table_b_e2",
+        "moffice_table_b_f2",
+        "moffice_table_b_g2"
+      ]
+    },
+    {
+      "supplier_id": "b",
+      "item_id": "labeler",
+      "criterion_id": "secondary_sku",
+      "business_status": null,
+      "processing_status": "partial",
+      "is_formal": false,
+      "evidence_refs": [],
+      "reason_evidence_refs": [],
+      "anchor_ids": []
+    }
+  ],
+  "claims": [
+    {
+      "claim_id": "price",
+      "supplier_id": "a",
+      "item_id": "toner",
+      "criterion_id": "price",
+      "kind": "money",
+      "value": "120",
+      "unit": "个",
+      "negated": false,
+      "tax_basis": "included",
+      "currency": "CNY",
+      "anchor_ids": [
+        "moffice_a_p1_l3"
+      ]
+    }
+  ],
+  "assessments": {
+    "dispatch_formal_review": {
+      "verdict": "pass",
+      "evidence": [
+        "/business_checks"
+      ]
+    },
+    "grade_all_suppliers_and_criteria": {
+      "verdict": "pass",
+      "evidence": [
+        "/business_checks"
+      ]
+    },
+    "verify_all_same_price_sources": {
+      "verdict": "fail",
+      "evidence": [
+        "/business_checks"
+      ]
+    },
+    "inclusive_threshold": {
+      "verdict": "fail",
+      "evidence": [
+        "/business_checks"
+      ]
+    },
+    "invent_duplicate_conflict": {
+      "verdict": "absent",
+      "evidence": [
+        "/state"
+      ]
+    },
+    "ignore_supplement": {
+      "verdict": "absent",
+      "evidence": [
+        "/state"
+      ]
+    },
+    "hide_other_supplier_result": {
+      "verdict": "absent",
+      "evidence": [
+        "/state"
+      ]
+    }
+  },
+  "semantic_review": {
+    "verdict": "fail",
+    "evidence": [
+      "/answer",
+      "/state"
+    ],
+    "reviewer": "Codex preliminary review; not independent human labeling",
+    "method": "agent_review"
+  },
+  "cited_anchor_ids": [
+    "moffice_a_p1_l3",
+    "moffice_a_p1_l4",
+    "moffice_b_p1_l3",
+    "moffice_table_a2",
+    "moffice_table_b2",
+    "moffice_table_b_a2",
+    "moffice_table_b_b2",
+    "moffice_table_b_c2",
+    "moffice_table_b_d2",
+    "moffice_table_b_e2",
+    "moffice_table_b_f2",
+    "moffice_table_b_g2",
+    "moffice_table_c2",
+    "moffice_table_d2",
+    "moffice_table_e2",
+    "moffice_table_f2",
+    "moffice_table_g2"
+  ],
+  "verified_anchor_ids": [
+    "moffice_a_p1_l1",
+    "moffice_a_p1_l2",
+    "moffice_a_p1_l3",
+    "moffice_a_p1_l4",
+    "moffice_a_p2_l1",
+    "moffice_a_p2_l2",
+    "moffice_b_p1_l1",
+    "moffice_b_p1_l2",
+    "moffice_b_p1_l3",
+    "moffice_b_p2_l1",
+    "moffice_b_p2_l2",
+    "moffice_table_a1",
+    "moffice_table_a2",
+    "moffice_table_a3",
+    "moffice_table_b1",
+    "moffice_table_b2",
+    "moffice_table_b3",
+    "moffice_table_b_a1",
+    "moffice_table_b_a2",
+    "moffice_table_b_a3",
+    "moffice_table_b_b1",
+    "moffice_table_b_b2",
+    "moffice_table_b_b3",
+    "moffice_table_b_c1",
+    "moffice_table_b_c2",
+    "moffice_table_b_c3",
+    "moffice_table_b_d1",
+    "moffice_table_b_d2",
+    "moffice_table_b_d3",
+    "moffice_table_b_e1",
+    "moffice_table_b_e2",
+    "moffice_table_b_e3",
+    "moffice_table_b_f1",
+    "moffice_table_b_f2",
+    "moffice_table_b_f3",
+    "moffice_table_b_g1",
+    "moffice_table_b_g2",
+    "moffice_table_b_g3",
+    "moffice_table_c1",
+    "moffice_table_c2",
+    "moffice_table_c3",
+    "moffice_table_d1",
+    "moffice_table_d2",
+    "moffice_table_d3",
+    "moffice_table_e1",
+    "moffice_table_e2",
+    "moffice_table_e3",
+    "moffice_table_f1",
+    "moffice_table_f2",
+    "moffice_table_f3",
+    "moffice_table_g1",
+    "moffice_table_g2",
+    "moffice_table_g3"
+  ],
+  "violations": [],
+  "usage": {
+    "requests": 8,
+    "input_tokens": 33782,
+    "output_tokens": 2142,
+    "unknown_requests": 0
+  },
+  "usage_complete": true,
+  "timing": {
+    "started_at": "2026-10-29T08:43:28.433812+00:00",
+    "finished_at": "2026-10-29T08:44:30.209703+00:00",
+    "total_seconds": 61.76600000000326,
+    "preparation_seconds": 28.860000000000582,
+    "task_seconds": 32.90600000000268,
+    "includes_failures_and_queueing": true
+  },
+  "annotation_sha256": "f8432b1fc82843092e22ad653a841dbe7dbe7ff48e5fffc2f9e828b76d00ae89",
+  "reviewed_observation_sha256": "0f4d26c0c0c6374effe1c2a765935fe346fc360e81b10af68b6359d27f9f560b",
+  "raw_sha256": "7ecf9dbaaa8eba9f909d595f972abe8d391325feac31b46858bcb5d91489cf60",
+  "state": {
+    "case_id": "moffice",
+    "snapshot_version": 1,
+    "checklist_version": 2,
+    "bindings_version": 1,
+    "confirmed": true,
+    "review_count": 1,
+    "export_count": 0
+  },
+  "publication_kind": "synthetic_result_projection_not_full_http_replay",
+  "prompt": "清墨正文和补充单都写含税120元/个，同一LIB-T，按不超过120的确认规则审。",
+  "run": {
+    "id": "74814c6831174d649b72ae7db4250b22",
+    "case_id": "a56d20acba234c02be3c3c0adb984a82",
+    "snapshot_id": "d6bae1627d864070aacbd44f8d7a6795",
+    "revision": 4,
+    "status": "partial",
+    "answer_text": "本次已确认并启用的指标审查部分完成，未覆盖项仍为处理未完成；未确认或停用项未参与本次审查。\na · 激光碳粉盒 · 含税单价：处理未完成。\na · 标签机 · 采购型号：处理未完成。\nb · 激光碳粉盒 · 含税单价：处理未完成。\nb · 标签机 · 采购型号：处理未完成。\n核验来源：\n来源 [63e234bf663938740b287dc6981b12c7abed784efe8cfe915d71aa6f22fad96b]：supplier_a.pdf · 第 1 页\n原文：单价 120 元/个，含税。\n来源 [648f4c26d31bb604e2b38119ea78955e09cc4d4efe4837ccdf774f0a2d2d29ee]：supplier_a.pdf · 第 1 页\n原文：同价补充单:本供应商本次 LIB-T 仍为含税 120 元/个。\n来源 [0bc7202e16170395b164cf53f3e5496dcfcb2f4a350ff1f041ba44573f24b5d0]：comparison.xlsx · 报价对照!A2\n原文：清墨\n来源 [4f0e4122b51ae5cb8b01846b52cb5929ab69b5e9e6fba92b119dc6ac2a1553d5]：comparison.xlsx · 报价对照!B2\n原文：LIB-T\n来源 [fd06eb833cf26caf4845a0d9bb9c09b88e3a4e34c19d90ad2935b23fdabf6fbb]：comparison.xlsx · 报价对照!C2\n原文：25\n来源 [45df32aa8c1c173c9bccab2461a2aa3b1d12a97dcc8e0fd88118a5453caa8931]：comparison.xlsx · 报价对照!D2\n原文：个\n来源 [36ff48fa4e7ab7fd6c58fe426cd3b9474df4562a119ddce29f7edd0bf6179d2b]：comparison.xlsx · 报价对照!E2\n原文：120\n来源 [bde82747ddfcbf4cec0a71e339e1fa71b040a00974df42c6f67a7e07402928a1]：comparison.xlsx · 报价对照!F2\n原文：含税\n来源 [71b7c670f78a73041a7c1ed46d4ce9ac213fea96f7c4561c54a742f765f15c99]：comparison.xlsx · 报价对照!G2\n原文：激光碳粉盒\n来源 [dd3ca93eb3495f8d771abf2f9937d7151b4337e7d529649dc0188066b9fbc3aa]：supplier_b.pdf · 第 1 页\n原文：含税单价 118 元/个。\n来源 [1a9541ed1bac02bbf6f79efc9e3e8a2ecdff02eb19da06d50043f34a0e52dd1e]：supplier_b_comparison.xlsx · 报价对照!A2\n原文：书航\n来源 [2f3946fcd4bb09437387329508475396ce7ffd35785ce2b751eed59af9479424]：supplier_b_comparison.xlsx · 报价对照!B2\n原文：LIB-T\n来源 [a5ff28f6756d01fcdaac8b8c12ac09285e6a6926c204468657f0198a5e338a9c]：supplier_b_comparison.xlsx · 报价对照!C2\n原文：25\n来源 [42dadba17305e9e4698e4b35ecad5142902154fe055b800ca3297e3c8158517b]：supplier_b_comparison.xlsx · 报价对照!D2\n原文：个\n来源 [275f9fdfc0261617876fdbd92e9170aa2457a089a007aa51d02b43340947ec8c]：supplier_b_comparison.xlsx · 报价对照!E2\n原文：118\n来源 [d1c8511d62f8eba69305cd1ff874af1638558524ccf6757bd06b30df20e9f7e0]：supplier_b_comparison.xlsx · 报价对照!F2\n原文：含税\n来源 [20f02b7f8b735fcbaa39d47bd238770f30e8fa336d800013632341fade532733]：supplier_b_comparison.xlsx · 报价对照!G2\n原文：激光碳粉盒",
+    "error_code": "coverage_incomplete"
+  },
+  "sources": {
+    "moffice_a": {
+      "id": "7d899fd3aca640a7aa8df5fcc3d9f9c7",
+      "path": "inputs/moffice/supplier_a.pdf",
+      "sha256": "92ffab757f6a85bcc0f88a666005081cc7c1e8d032a4e9ee6c685aeabd02ecdf",
+      "parser_version": "mineru:4.0.7/middle:2.0/plain-blocks:2/config:a71895503c8d00e6/source-text:1/embedded-image:1/vector-graphics:1/annotations:1/layout-columns:2",
+      "supplier_id": "a",
+      "role": "spec"
+    },
+    "moffice_b": {
+      "id": "cbf9c783ac9f40d8b7bcf08315e77a18",
+      "path": "inputs/moffice/supplier_b.pdf",
+      "sha256": "a237c0f2fdd399056eeb646abb239afa25712533f1728250d8f65fb9038bf834",
+      "parser_version": "mineru:4.0.7/middle:2.0/plain-blocks:2/config:a71895503c8d00e6/source-text:1/embedded-image:1/vector-graphics:1/annotations:1/layout-columns:2",
+      "supplier_id": "b",
+      "role": "spec"
+    },
+    "moffice_table": {
+      "id": "dc12307177e345b7b5397b5f38dae948",
+      "path": "inputs/moffice/comparison.xlsx",
+      "sha256": "f2106d72a9f63a4c7170a691c685067f0203baa166896e23aedf7701bc1b581e",
+      "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1",
+      "supplier_id": "a",
+      "role": "quote"
+    },
+    "moffice_table_b": {
+      "id": "cebaa191a196464690519b7e241e1e51",
+      "path": "inputs/moffice/supplier_b_comparison.xlsx",
+      "sha256": "33896f7bd9732423f2ea9cade65c89cf8bf6327a3f6d06bd132edfc8f62d4312",
+      "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1",
+      "supplier_id": "b",
+      "role": "quote"
+    }
+  },
+  "evidence": {
+    "moffice_a": [
+      {
+        "id": "14cbe5be8bef8ccf4ee256321f4e400d46c4aa66f1d65eab31137739111482ec",
+        "document_id": "7d899fd3aca640a7aa8df5fcc3d9f9c7",
+        "source_text": "清墨耗材 / 激光碳粉盒 LIB-T",
+        "page_idx": 0,
+        "sheet": null,
+        "cell": null,
+        "parser_version": "mineru:4.0.7/middle:2.0/plain-blocks:2/config:a71895503c8d00e6/source-text:1/embedded-image:1/vector-graphics:1/annotations:1/layout-columns:2"
+      },
+      {
+        "id": "d7afba12ba1abd130ed7c80c91e8e849f2b753f9c354c5d52e315d66b2c34fc2",
+        "document_id": "7d899fd3aca640a7aa8df5fcc3d9f9c7",
+        "source_text": "碳粉盒黑色，标称打印量 3000 页。",
+        "page_idx": 0,
+        "sheet": null,
+        "cell": null,
+        "parser_version": "mineru:4.0.7/middle:2.0/plain-blocks:2/config:a71895503c8d00e6/source-text:1/embedded-image:1/vector-graphics:1/annotations:1/layout-columns:2"
+      },
+      {
+        "id": "63e234bf663938740b287dc6981b12c7abed784efe8cfe915d71aa6f22fad96b",
+        "document_id": "7d899fd3aca640a7aa8df5fcc3d9f9c7",
+        "source_text": "单价 120 元/个，含税。",
+        "page_idx": 0,
+        "sheet": null,
+        "cell": null,
+        "parser_version": "mineru:4.0.7/middle:2.0/plain-blocks:2/config:a71895503c8d00e6/source-text:1/embedded-image:1/vector-graphics:1/annotations:1/layout-columns:2"
+      },
+      {
+        "id": "648f4c26d31bb604e2b38119ea78955e09cc4d4efe4837ccdf774f0a2d2d29ee",
+        "document_id": "7d899fd3aca640a7aa8df5fcc3d9f9c7",
+        "source_text": "同价补充单:本供应商本次 LIB-T 仍为含税 120 元/个。",
+        "page_idx": 0,
+        "sheet": null,
+        "cell": null,
+        "parser_version": "mineru:4.0.7/middle:2.0/plain-blocks:2/config:a71895503c8d00e6/source-text:1/embedded-image:1/vector-graphics:1/annotations:1/layout-columns:2"
+      },
+      {
+        "id": "ad60485999eb010d2cc6477149485b121678d57b4a033ff888e0bf0b70287571",
+        "document_id": "7d899fd3aca640a7aa8df5fcc3d9f9c7",
+        "source_text": "合成评估资料 / 虚构供应商和产品 / CC0 | 第 1 页",
+        "page_idx": 0,
+        "sheet": null,
+        "cell": null,
+        "parser_version": "mineru:4.0.7/middle:2.0/plain-blocks:2/config:a71895503c8d00e6/source-text:1/embedded-image:1/vector-graphics:1/annotations:1/layout-columns:2"
+      },
+      {
+        "id": "a0f92715a81288614e27fe996efe447f1caba31c9a2f4931c1396d56de68e5b5",
+        "document_id": "7d899fd3aca640a7aa8df5fcc3d9f9c7",
+        "source_text": "清墨 / 标签机 LIB-L",
+        "page_idx": 1,
+        "sheet": null,
+        "cell": null,
+        "parser_version": "mineru:4.0.7/middle:2.0/plain-blocks:2/config:a71895503c8d00e6/source-text:1/embedded-image:1/vector-graphics:1/annotations:1/layout-columns:2"
+      },
+      {
+        "id": "ef96d219634514168f417d4ab575da16a586a9bf211dd89513b412bc92f76bd3",
+        "document_id": "7d899fd3aca640a7aa8df5fcc3d9f9c7",
+        "source_text": "接口 USB-C；标签宽度 24 mm。",
+        "page_idx": 1,
+        "sheet": null,
+        "cell": null,
+        "parser_version": "mineru:4.0.7/middle:2.0/plain-blocks:2/config:a71895503c8d00e6/source-text:1/embedded-image:1/vector-graphics:1/annotations:1/layout-columns:2"
+      },
+      {
+        "id": "1fde45a13aeb0adbfa748e575aae6a128218ca539689955aa4d13842a800bcd7",
+        "document_id": "7d899fd3aca640a7aa8df5fcc3d9f9c7",
+        "source_text": "合成评估资料 / 虚构供应商和产品 / CC0 | 第 2 页",
+        "page_idx": 1,
+        "sheet": null,
+        "cell": null,
+        "parser_version": "mineru:4.0.7/middle:2.0/plain-blocks:2/config:a71895503c8d00e6/source-text:1/embedded-image:1/vector-graphics:1/annotations:1/layout-columns:2"
+      }
+    ],
+    "moffice_b": [
+      {
+        "id": "0d2250dda46a5a6a456ffcb70cdbe24cc420a686a778bd799b9319a1a8892a4f",
+        "document_id": "cbf9c783ac9f40d8b7bcf08315e77a18",
+        "source_text": "书航耗材 / 激光碳粉盒 LIB-T",
+        "page_idx": 0,
+        "sheet": null,
+        "cell": null,
+        "parser_version": "mineru:4.0.7/middle:2.0/plain-blocks:2/config:a71895503c8d00e6/source-text:1/embedded-image:1/vector-graphics:1/annotations:1/layout-columns:2"
+      },
+      {
+        "id": "3edf91746bfa31ca297708cc4ad041234d1bde470d946b3486371efe2792c676",
+        "document_id": "cbf9c783ac9f40d8b7bcf08315e77a18",
+        "source_text": "碳粉盒黑色，打印量 2500 页。",
+        "page_idx": 0,
+        "sheet": null,
+        "cell": null,
+        "parser_version": "mineru:4.0.7/middle:2.0/plain-blocks:2/config:a71895503c8d00e6/source-text:1/embedded-image:1/vector-graphics:1/annotations:1/layout-columns:2"
+      },
+      {
+        "id": "dd3ca93eb3495f8d771abf2f9937d7151b4337e7d529649dc0188066b9fbc3aa",
+        "document_id": "cbf9c783ac9f40d8b7bcf08315e77a18",
+        "source_text": "含税单价 118 元/个。",
+        "page_idx": 0,
+        "sheet": null,
+        "cell": null,
+        "parser_version": "mineru:4.0.7/middle:2.0/plain-blocks:2/config:a71895503c8d00e6/source-text:1/embedded-image:1/vector-graphics:1/annotations:1/layout-columns:2"
+      },
+      {
+        "id": "b7f395216e9bab8c3fd99d51937015a951b0f91e2f68091ef30617718350cc25",
+        "document_id": "cbf9c783ac9f40d8b7bcf08315e77a18",
+        "source_text": "合成评估资料 / 虚构供应商和产品 / CC0 | 第 1 页",
+        "page_idx": 0,
+        "sheet": null,
+        "cell": null,
+        "parser_version": "mineru:4.0.7/middle:2.0/plain-blocks:2/config:a71895503c8d00e6/source-text:1/embedded-image:1/vector-graphics:1/annotations:1/layout-columns:2"
+      },
+      {
+        "id": "372e9db478b0b23fdbddb96fadc5bab2423b59614d5e7d581e1f272a39125f53",
+        "document_id": "cbf9c783ac9f40d8b7bcf08315e77a18",
+        "source_text": "书航 / 标签机 LIB-L",
+        "page_idx": 1,
+        "sheet": null,
+        "cell": null,
+        "parser_version": "mineru:4.0.7/middle:2.0/plain-blocks:2/config:a71895503c8d00e6/source-text:1/embedded-image:1/vector-graphics:1/annotations:1/layout-columns:2"
+      },
+      {
+        "id": "5d863b499a6f130c222d496363bb65b54bf20287036b30e41cb653bdcf4da2fd",
+        "document_id": "cbf9c783ac9f40d8b7bcf08315e77a18",
+        "source_text": "接口 USB-B；标签宽度 18 mm。",
+        "page_idx": 1,
+        "sheet": null,
+        "cell": null,
+        "parser_version": "mineru:4.0.7/middle:2.0/plain-blocks:2/config:a71895503c8d00e6/source-text:1/embedded-image:1/vector-graphics:1/annotations:1/layout-columns:2"
+      },
+      {
+        "id": "e3ea90a75222b63f3ba6d9002af7cc638ccf04c432bea3220349b62207551920",
+        "document_id": "cbf9c783ac9f40d8b7bcf08315e77a18",
+        "source_text": "合成评估资料 / 虚构供应商和产品 / CC0 | 第 2 页",
+        "page_idx": 1,
+        "sheet": null,
+        "cell": null,
+        "parser_version": "mineru:4.0.7/middle:2.0/plain-blocks:2/config:a71895503c8d00e6/source-text:1/embedded-image:1/vector-graphics:1/annotations:1/layout-columns:2"
+      }
+    ],
+    "moffice_table": [
+      {
+        "id": "d2141b2fb89536f39a25924e1dd71ddc24e3a12f2ac4b95c972b89afa391b033",
+        "document_id": "dc12307177e345b7b5397b5f38dae948",
+        "source_text": "供应商",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "A1",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "0af01a182513d5c43b5a33079b2042d8d0d6ebb781f8070ae283f2bed23b829e",
+        "document_id": "dc12307177e345b7b5397b5f38dae948",
+        "source_text": "品目",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "B1",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "29a95dcbbc8329e9b2eeda4720c06e87e1e01bc7ab555049a077883faa4df535",
+        "document_id": "dc12307177e345b7b5397b5f38dae948",
+        "source_text": "数量",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "C1",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "b21188e3604c5c10bb4bf060025b78a487675f6ae6b19be77a0343b4cf72e494",
+        "document_id": "dc12307177e345b7b5397b5f38dae948",
+        "source_text": "单位",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "D1",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "4b49c6d92d052f649b444c917c4537d798e6ef0fd615769c4228dcc628e54577",
+        "document_id": "dc12307177e345b7b5397b5f38dae948",
+        "source_text": "单价",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "E1",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "7e077b2d8f36cf6a86329c3375079efa0fd5a110376a0f199e0894d5ac16ca73",
+        "document_id": "dc12307177e345b7b5397b5f38dae948",
+        "source_text": "税口径",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "F1",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "5f750d2576a2babb0d935148a0e99dddf95a46c16fbc5d65d883609f5e657377",
+        "document_id": "dc12307177e345b7b5397b5f38dae948",
+        "source_text": "品目名称",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "G1",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "0bc7202e16170395b164cf53f3e5496dcfcb2f4a350ff1f041ba44573f24b5d0",
+        "document_id": "dc12307177e345b7b5397b5f38dae948",
+        "source_text": "清墨",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "A2",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "4f0e4122b51ae5cb8b01846b52cb5929ab69b5e9e6fba92b119dc6ac2a1553d5",
+        "document_id": "dc12307177e345b7b5397b5f38dae948",
+        "source_text": "LIB-T",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "B2",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "fd06eb833cf26caf4845a0d9bb9c09b88e3a4e34c19d90ad2935b23fdabf6fbb",
+        "document_id": "dc12307177e345b7b5397b5f38dae948",
+        "source_text": "25",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "C2",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "45df32aa8c1c173c9bccab2461a2aa3b1d12a97dcc8e0fd88118a5453caa8931",
+        "document_id": "dc12307177e345b7b5397b5f38dae948",
+        "source_text": "个",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "D2",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "36ff48fa4e7ab7fd6c58fe426cd3b9474df4562a119ddce29f7edd0bf6179d2b",
+        "document_id": "dc12307177e345b7b5397b5f38dae948",
+        "source_text": "120",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "E2",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "bde82747ddfcbf4cec0a71e339e1fa71b040a00974df42c6f67a7e07402928a1",
+        "document_id": "dc12307177e345b7b5397b5f38dae948",
+        "source_text": "含税",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "F2",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "71b7c670f78a73041a7c1ed46d4ce9ac213fea96f7c4561c54a742f765f15c99",
+        "document_id": "dc12307177e345b7b5397b5f38dae948",
+        "source_text": "激光碳粉盒",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "G2",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "1cb206fdc5e87424ac08e84c932d0ea4b8e352dedbf41cd590b86abbd2fef80f",
+        "document_id": "dc12307177e345b7b5397b5f38dae948",
+        "source_text": "清墨",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "A3",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "0e0f160dfa1946fb9c4e912c88514bf40e819165149ffe43cb7b441600867403",
+        "document_id": "dc12307177e345b7b5397b5f38dae948",
+        "source_text": "LIB-L",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "B3",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "b5a711e1fbafc6805c0f6468589cbb1b829868d686d5ceb40906a64a53b682df",
+        "document_id": "dc12307177e345b7b5397b5f38dae948",
+        "source_text": "3",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "C3",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "3d959cdc3e35087a9efee1470b3776826100a8fe89dd694be5b726d8e32eab0b",
+        "document_id": "dc12307177e345b7b5397b5f38dae948",
+        "source_text": "台",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "D3",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "16d9c50b036b093880d609b43699ed739638159835c8187f57d054e838cfa598",
+        "document_id": "dc12307177e345b7b5397b5f38dae948",
+        "source_text": "800",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "E3",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "df192461837478775e80aab4cab2f81d1ab21e2ee2be92cbb1a4f77af8e724e8",
+        "document_id": "dc12307177e345b7b5397b5f38dae948",
+        "source_text": "不含税",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "F3",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "5f85f5e85268a6af5e33258add1a0ffbd72d9f5014edd3b0f72d28f517da7946",
+        "document_id": "dc12307177e345b7b5397b5f38dae948",
+        "source_text": "标签机",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "G3",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      }
+    ],
+    "moffice_table_b": [
+      {
+        "id": "7114b2a70d65829b2af9027e17350b091b484432d55b70d3117c0cf8ed3d9ea7",
+        "document_id": "cebaa191a196464690519b7e241e1e51",
+        "source_text": "供应商",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "A1",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "3d48abe875751c15baaef7f395c48eb9b4784645010c9c5ba7257c49d46eb3c2",
+        "document_id": "cebaa191a196464690519b7e241e1e51",
+        "source_text": "品目",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "B1",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "7635b009b418e34c664ec79fee90ad2b296131191efa482a04477c5335115f7e",
+        "document_id": "cebaa191a196464690519b7e241e1e51",
+        "source_text": "数量",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "C1",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "01e675fb0055a30bd457a8365c645e8365b87f5fb0649e66609bfc1584a13cfc",
+        "document_id": "cebaa191a196464690519b7e241e1e51",
+        "source_text": "单位",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "D1",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "f9c67b065aaf49f282ed605660ad0fa6cfcc7e7a7db3b0d9a0923bfc2e042ba0",
+        "document_id": "cebaa191a196464690519b7e241e1e51",
+        "source_text": "单价",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "E1",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "214b7c7cec4883506fda10bdca7375cbfcc233c88ea7f049c195f93bd21d2fd1",
+        "document_id": "cebaa191a196464690519b7e241e1e51",
+        "source_text": "税口径",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "F1",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "f7afb0c098d05d8d5b5ba8050c74ca1cdbbb291d376e884f6c5272987985d4fe",
+        "document_id": "cebaa191a196464690519b7e241e1e51",
+        "source_text": "品目名称",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "G1",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "1a9541ed1bac02bbf6f79efc9e3e8a2ecdff02eb19da06d50043f34a0e52dd1e",
+        "document_id": "cebaa191a196464690519b7e241e1e51",
+        "source_text": "书航",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "A2",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "2f3946fcd4bb09437387329508475396ce7ffd35785ce2b751eed59af9479424",
+        "document_id": "cebaa191a196464690519b7e241e1e51",
+        "source_text": "LIB-T",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "B2",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "a5ff28f6756d01fcdaac8b8c12ac09285e6a6926c204468657f0198a5e338a9c",
+        "document_id": "cebaa191a196464690519b7e241e1e51",
+        "source_text": "25",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "C2",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "42dadba17305e9e4698e4b35ecad5142902154fe055b800ca3297e3c8158517b",
+        "document_id": "cebaa191a196464690519b7e241e1e51",
+        "source_text": "个",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "D2",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "275f9fdfc0261617876fdbd92e9170aa2457a089a007aa51d02b43340947ec8c",
+        "document_id": "cebaa191a196464690519b7e241e1e51",
+        "source_text": "118",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "E2",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "d1c8511d62f8eba69305cd1ff874af1638558524ccf6757bd06b30df20e9f7e0",
+        "document_id": "cebaa191a196464690519b7e241e1e51",
+        "source_text": "含税",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "F2",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "20f02b7f8b735fcbaa39d47bd238770f30e8fa336d800013632341fade532733",
+        "document_id": "cebaa191a196464690519b7e241e1e51",
+        "source_text": "激光碳粉盒",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "G2",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "5f0bd5c9456d5812a6c1678c97faa0bf86000069ddff36ef841492729cec789f",
+        "document_id": "cebaa191a196464690519b7e241e1e51",
+        "source_text": "书航",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "A3",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "c2aa0f03b44d345bf13212e038281484658b9cead8b0c9d3c1d8e9ae98b37ccb",
+        "document_id": "cebaa191a196464690519b7e241e1e51",
+        "source_text": "LIB-L",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "B3",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "30b18367cd893f97b486d8fe1aa4f5dd430aa73b60cead229bab3783dbd08867",
+        "document_id": "cebaa191a196464690519b7e241e1e51",
+        "source_text": "3",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "C3",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "ab7ae0da817a0bd413240f116be23130384ab5743fbc2e0ca1988fd92138b0d1",
+        "document_id": "cebaa191a196464690519b7e241e1e51",
+        "source_text": "台",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "D3",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "af1970ff54b9fd36a3102b28d148384714ac16c82219c43a3f337d014cc3211e",
+        "document_id": "cebaa191a196464690519b7e241e1e51",
+        "source_text": "760",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "E3",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "1d00733f0ac4140192afc341bad5951e06449a380fedfdaa280c1df9377fc10e",
+        "document_id": "cebaa191a196464690519b7e241e1e51",
+        "source_text": "含税",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "F3",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      },
+      {
+        "id": "835626c06e1ba1e594e73b25f5e8ba16715bc09f2b7ebf12b17f4dc029a47c9c",
+        "document_id": "cebaa191a196464690519b7e241e1e51",
+        "source_text": "标签机",
+        "page_idx": null,
+        "sheet": "报价对照",
+        "cell": "G3",
+        "parser_version": "openpyxl:3.1.5/merged-coverage:1/dimension:1/drawing:1/legacy-drawing:1/comments-rel:1/visibility:1/hidden-sheet:1/threaded-comment-rel:1/header-footer:1/hyperlink:1/relationship-ref:1"
+      }
+    ]
+  },
+  "facts": {
+    "run_id": "74814c6831174d649b72ae7db4250b22",
+    "case_id": "a56d20acba234c02be3c3c0adb984a82",
+    "snapshot_id": "d6bae1627d864070aacbd44f8d7a6795",
+    "revision": 4,
+    "available": true,
+    "fact_sets": [
+      {
+        "fact_set_id": "dbdff76af70324442f53f6d1cb76fc938935fab0d138503a9ea6b06aa73cf642",
+        "supplier": "a",
+        "field_key": "price",
+        "criterion_id": "price",
+        "rule": {
+          "operator": "lte",
+          "value": "120",
+          "lower": null,
+          "upper": null,
+          "type": "money",
+          "currency": "CNY",
+          "per_unit": "个",
+          "tax_basis": "included"
+        },
+        "facts": [
+          {
+            "unit": "元/个",
+            "model": "LIB-T",
+            "quote": "单价 120 元/个，含税。",
+            "value": "120",
+            "case_id": "a56d20acba234c02be3c3c0adb984a82",
+            "fact_id": "583fc5822b8807f9870347ba5883678106a216cbdc68e79bb26a04240f3ba93c",
+            "item_id": "toner",
+            "calendar": null,
+            "currency": "CNY",
+            "per_unit": "个",
+            "supplier": "a",
+            "ambiguous": true,
+            "tax_basis": "included",
+            "applicable": true,
+            "comparator": "eq",
+            "snapshot_id": "d6bae1627d864070aacbd44f8d7a6795",
+            "start_event": null,
+            "tax_sources": [
+              {
+                "quote": "同价补充单:本供应商本次 LIB-T 仍为含税 120 元/个。",
+                "tax_basis": "unspecified",
+                "scope_state": "unclear",
+                "evidence_refs": [
+                  "648f4c26d31bb604e2b38119ea78955e09cc4d4efe4837ccdf774f0a2d2d29ee"
+                ],
+                "item_binding_entry_digest": "92c575a347ba2ac4c49f8c67c144831cb66095e43f363c2733a277f6d522757d"
+              },
+              {
+                "quote": "清墨",
+                "tax_basis": "unspecified",
+                "scope_state": "unclear",
+                "evidence_refs": [
+                  "0bc7202e16170395b164cf53f3e5496dcfcb2f4a350ff1f041ba44573f24b5d0"
+                ],
+                "item_binding_entry_digest": "940ae7a0bdbff5fb8a4ba5620b29843a7cdebf7f06ea8b894485923c29db1ad7"
+              },
+              {
+                "quote": "LIB-T",
+                "tax_basis": "unspecified",
+                "scope_state": "unclear",
+                "evidence_refs": [
+                  "4f0e4122b51ae5cb8b01846b52cb5929ab69b5e9e6fba92b119dc6ac2a1553d5"
+                ],
+                "item_binding_entry_digest": "940ae7a0bdbff5fb8a4ba5620b29843a7cdebf7f06ea8b894485923c29db1ad7"
+              },
+              {
+                "quote": "25",
+                "tax_basis": "unspecified",
+                "scope_state": "unclear",
+                "evidence_refs": [
+                  "fd06eb833cf26caf4845a0d9bb9c09b88e3a4e34c19d90ad2935b23fdabf6fbb"
+                ],
+                "item_binding_entry_digest": "940ae7a0bdbff5fb8a4ba5620b29843a7cdebf7f06ea8b894485923c29db1ad7"
+              },
+              {
+                "quote": "个",
+                "tax_basis": "unspecified",
+                "scope_state": "unclear",
+                "evidence_refs": [
+                  "45df32aa8c1c173c9bccab2461a2aa3b1d12a97dcc8e0fd88118a5453caa8931"
+                ],
+                "item_binding_entry_digest": "940ae7a0bdbff5fb8a4ba5620b29843a7cdebf7f06ea8b894485923c29db1ad7"
+              },
+              {
+                "quote": "120",
+                "tax_basis": "unspecified",
+                "scope_state": "unclear",
+                "evidence_refs": [
+                  "36ff48fa4e7ab7fd6c58fe426cd3b9474df4562a119ddce29f7edd0bf6179d2b"
+                ],
+                "item_binding_entry_digest": "940ae7a0bdbff5fb8a4ba5620b29843a7cdebf7f06ea8b894485923c29db1ad7"
+              },
+              {
+                "quote": "含税",
+                "tax_basis": "unspecified",
+                "scope_state": "unclear",
+                "evidence_refs": [
+                  "bde82747ddfcbf4cec0a71e339e1fa71b040a00974df42c6f67a7e07402928a1"
+                ],
+                "item_binding_entry_digest": "940ae7a0bdbff5fb8a4ba5620b29843a7cdebf7f06ea8b894485923c29db1ad7"
+              },
+              {
+                "quote": "激光碳粉盒",
+                "tax_basis": "unspecified",
+                "scope_state": "unclear",
+                "evidence_refs": [
+                  "71b7c670f78a73041a7c1ed46d4ce9ac213fea96f7c4561c54a742f765f15c99"
+                ],
+                "item_binding_entry_digest": "940ae7a0bdbff5fb8a4ba5620b29843a7cdebf7f06ea8b894485923c29db1ad7"
+              }
+            ],
+            "criterion_id": "price",
+            "tax_conflict": false,
+            "evidence_refs": [
+              "63e234bf663938740b287dc6981b12c7abed784efe8cfe915d71aa6f22fad96b"
+            ],
+            "price_sources": [],
+            "tax_scope_state": "unclear",
+            "price_scope_state": "resolved",
+            "effective_tax_basis": "included",
+            "item_binding_digest": "91a6d207361fe09f76135357a1aca325b5cf249029477327b4a2cc9a42b456d8",
+            "item_binding_version_id": "c09af6ec8b4a4c04b5ed553c6aed87d8",
+            "item_binding_entry_digest": "92c575a347ba2ac4c49f8c67c144831cb66095e43f363c2733a277f6d522757d",
+            "raw_value": "120",
+            "raw_unit": "元/个"
+          }
+        ]
+      },
+      {
+        "fact_set_id": "d1ac6c68e764d7771af7859b71f166d47bd7009866a7319e0d86a520dfaadbeb",
+        "supplier": "b",
+        "field_key": "price",
+        "criterion_id": "price",
+        "rule": {
+          "operator": "lte",
+          "value": "120",
+          "lower": null,
+          "upper": null,
+          "type": "money",
+          "currency": "CNY",
+          "per_unit": "个",
+          "tax_basis": "included"
+        },
+        "facts": [
+          {
+            "unit": "元/个",
+            "model": "LIB-T",
+            "quote": "含税单价 118 元/个。",
+            "value": "118",
+            "case_id": "a56d20acba234c02be3c3c0adb984a82",
+            "fact_id": "ca255ca8ac9834de221bb35aa2fdd17b7789afa6c9a37369d565b8dcfe831f62",
+            "item_id": "toner",
+            "calendar": null,
+            "currency": "CNY",
+            "per_unit": "个",
+            "supplier": "b",
+            "ambiguous": true,
+            "tax_basis": "included",
+            "applicable": true,
+            "comparator": "eq",
+            "snapshot_id": "d6bae1627d864070aacbd44f8d7a6795",
+            "start_event": null,
+            "tax_sources": [
+              {
+                "quote": "书航",
+                "tax_basis": "unspecified",
+                "scope_state": "unclear",
+                "evidence_refs": [
+                  "1a9541ed1bac02bbf6f79efc9e3e8a2ecdff02eb19da06d50043f34a0e52dd1e"
+                ],
+                "item_binding_entry_digest": "ea2edd1177886514717596ae5c7a77d61e0335865aa641358bdde9def17e762a"
+              },
+              {
+                "quote": "LIB-T",
+                "tax_basis": "unspecified",
+                "scope_state": "unclear",
+                "evidence_refs": [
+                  "2f3946fcd4bb09437387329508475396ce7ffd35785ce2b751eed59af9479424"
+                ],
+                "item_binding_entry_digest": "ea2edd1177886514717596ae5c7a77d61e0335865aa641358bdde9def17e762a"
+              },
+              {
+                "quote": "25",
+                "tax_basis": "unspecified",
+                "scope_state": "unclear",
+                "evidence_refs": [
+                  "a5ff28f6756d01fcdaac8b8c12ac09285e6a6926c204468657f0198a5e338a9c"
+                ],
+                "item_binding_entry_digest": "ea2edd1177886514717596ae5c7a77d61e0335865aa641358bdde9def17e762a"
+              },
+              {
+                "quote": "个",
+                "tax_basis": "unspecified",
+                "scope_state": "unclear",
+                "evidence_refs": [
+                  "42dadba17305e9e4698e4b35ecad5142902154fe055b800ca3297e3c8158517b"
+                ],
+                "item_binding_entry_digest": "ea2edd1177886514717596ae5c7a77d61e0335865aa641358bdde9def17e762a"
+              },
+              {
+                "quote": "118",
+                "tax_basis": "unspecified",
+                "scope_state": "unclear",
+                "evidence_refs": [
+                  "275f9fdfc0261617876fdbd92e9170aa2457a089a007aa51d02b43340947ec8c"
+                ],
+                "item_binding_entry_digest": "ea2edd1177886514717596ae5c7a77d61e0335865aa641358bdde9def17e762a"
+              },
+              {
+                "quote": "含税",
+                "tax_basis": "unspecified",
+                "scope_state": "unclear",
+                "evidence_refs": [
+                  "d1c8511d62f8eba69305cd1ff874af1638558524ccf6757bd06b30df20e9f7e0"
+                ],
+                "item_binding_entry_digest": "ea2edd1177886514717596ae5c7a77d61e0335865aa641358bdde9def17e762a"
+              },
+              {
+                "quote": "激光碳粉盒",
+                "tax_basis": "unspecified",
+                "scope_state": "unclear",
+                "evidence_refs": [
+                  "20f02b7f8b735fcbaa39d47bd238770f30e8fa336d800013632341fade532733"
+                ],
+                "item_binding_entry_digest": "ea2edd1177886514717596ae5c7a77d61e0335865aa641358bdde9def17e762a"
+              }
+            ],
+            "criterion_id": "price",
+            "tax_conflict": false,
+            "evidence_refs": [
+              "dd3ca93eb3495f8d771abf2f9937d7151b4337e7d529649dc0188066b9fbc3aa"
+            ],
+            "price_sources": [],
+            "tax_scope_state": "unclear",
+            "price_scope_state": "resolved",
+            "effective_tax_basis": "included",
+            "item_binding_digest": "91a6d207361fe09f76135357a1aca325b5cf249029477327b4a2cc9a42b456d8",
+            "item_binding_version_id": "c09af6ec8b4a4c04b5ed553c6aed87d8",
+            "item_binding_entry_digest": "c9de4d289ed4fa3d875f8988a6baa2c832d5614cd9707ce6ee7d0e62e82a5211",
+            "raw_value": "118",
+            "raw_unit": "元/个"
+          }
+        ]
+      }
+    ]
+  },
+  "annotation": {
+    "observation_sha256": "0f4d26c0c0c6374effe1c2a765935fe346fc360e81b10af68b6359d27f9f560b",
+    "reviewer": "Codex preliminary review; not independent human labeling",
+    "method": "agent_review",
+    "kind": "review",
+    "outcome": "partial",
+    "claims": [
+      {
+        "claim_id": "price",
+        "supplier_id": "a",
+        "item_id": "toner",
+        "criterion_id": "price",
+        "kind": "money",
+        "value": "120",
+        "unit": "个",
+        "negated": false,
+        "tax_basis": "included",
+        "currency": "CNY",
+        "anchor_ids": [
+          "moffice_a_p1_l3"
+        ]
+      }
+    ],
+    "assessments": {
+      "dispatch_formal_review": {
+        "verdict": "pass",
+        "evidence": [
+          "/business_checks"
+        ]
+      },
+      "grade_all_suppliers_and_criteria": {
+        "verdict": "pass",
+        "evidence": [
+          "/business_checks"
+        ]
+      },
+      "verify_all_same_price_sources": {
+        "verdict": "fail",
+        "evidence": [
+          "/business_checks"
+        ]
+      },
+      "inclusive_threshold": {
+        "verdict": "fail",
+        "evidence": [
+          "/business_checks"
+        ]
+      },
+      "invent_duplicate_conflict": {
+        "verdict": "absent",
+        "evidence": [
+          "/state"
+        ]
+      },
+      "ignore_supplement": {
+        "verdict": "absent",
+        "evidence": [
+          "/state"
+        ]
+      },
+      "hide_other_supplier_result": {
+        "verdict": "absent",
+        "evidence": [
+          "/state"
+        ]
+      }
+    },
+    "semantic_review": {
+      "verdict": "fail",
+      "evidence": [
+        "/answer",
+        "/state"
+      ]
+    }
+  },
+  "diagnostics": [
+    {
+      "tool": "review_checklist",
+      "error": "candidate_invalid",
+      "status": "rejected",
+      "ordinal": 0,
+      "sequence": 3,
+      "rejected_count": 2,
+      "rejection_codes": {
+        "fact_criterion": 1,
+        "evidence_relationship": 1
+      },
+      "relationship_details": {
+        "non_adjacent_columns": 1
+      },
+      "initial_rejection_codes": {
+        "fact_criterion": 1,
+        "evidence_relationship": 1
+      },
+      "initial_relationship_details": {
+        "non_adjacent_columns": 1
+      }
+    },
+    {
+      "tool": "review_checklist",
+      "error": "candidate_invalid",
+      "status": "rejected",
+      "ordinal": 1,
+      "sequence": 6,
+      "rejected_count": 1,
+      "rejection_codes": {
+        "fact_criterion": 1
+      },
+      "relationship_details": {},
+      "initial_rejection_codes": {
+        "fact_criterion": 2
+      },
+      "initial_relationship_details": {}
+    },
+    {
+      "tool": "review_checklist",
+      "error": "candidate_invalid",
+      "status": "rejected",
+      "ordinal": 0,
+      "sequence": 9,
+      "rejected_count": 1,
+      "rejection_codes": {
+        "fact_criterion": 1
+      },
+      "relationship_details": {},
+      "initial_rejection_codes": {
+        "fact_criterion": 1
+      },
+      "initial_relationship_details": {}
+    },
+    {
+      "tool": "review_checklist",
+      "error": "candidate_invalid",
+      "status": "rejected",
+      "ordinal": 1,
+      "sequence": 12,
+      "rejected_count": 1,
+      "rejection_codes": {
+        "fact_criterion": 1
+      },
+      "relationship_details": {},
+      "initial_rejection_codes": {
+        "fact_criterion": 2
+      },
+      "initial_relationship_details": {}
+    }
+  ],
+  "last_document_statuses": [
+    {
+      "id": "dc12307177e345b7b5397b5f38dae948",
+      "original_name": "comparison.xlsx",
+      "source_sha256": "f2106d72a9f63a4c7170a691c685067f0203baa166896e23aedf7701bc1b581e",
+      "parse_status": "complete"
+    },
+    {
+      "id": "cebaa191a196464690519b7e241e1e51",
+      "original_name": "supplier_b_comparison.xlsx",
+      "source_sha256": "33896f7bd9732423f2ea9cade65c89cf8bf6327a3f6d06bd132edfc8f62d4312",
+      "parse_status": "complete"
+    },
+    {
+      "id": "7d899fd3aca640a7aa8df5fcc3d9f9c7",
+      "original_name": "supplier_a.pdf",
+      "source_sha256": "92ffab757f6a85bcc0f88a666005081cc7c1e8d032a4e9ee6c685aeabd02ecdf",
+      "parse_status": "complete"
+    },
+    {
+      "id": "cbf9c783ac9f40d8b7bcf08315e77a18",
+      "original_name": "supplier_b.pdf",
+      "source_sha256": "a237c0f2fdd399056eeb646abb239afa25712533f1728250d8f65fb9038bf834",
+      "parse_status": "complete"
+    }
+  ]
+}

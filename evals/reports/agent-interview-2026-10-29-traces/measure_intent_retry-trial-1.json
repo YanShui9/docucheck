@@ -1,0 +1,30 @@
+{
+  "task_id": "measure_intent_retry",
+  "trial": 1,
+  "execution": "blocked",
+  "origin": "live_http",
+  "error_code": "setup_precondition_unavailable",
+  "missing_preconditions": [
+    {
+      "kind": "existing_failed_review",
+      "requirement": "必须建立或选用当前合成任务实际失败的正式审查，取得真实operation/attempt标识；禁止伪造失败记录。",
+      "on_unavailable": "setup_blocked"
+    }
+  ],
+  "usage": {
+    "requests": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "unknown_requests": 0
+  },
+  "timing": {
+    "started_at": "2026-10-29T08:36:46.688769+00:00",
+    "total_seconds": 0.0
+  },
+  "publication_kind": "synthetic_result_projection_not_full_http_replay",
+  "prompt": "上次巡检终端的正式审查失败了，按同一范围重试，不要新建另一套清单。",
+  "run": {},
+  "sources": {},
+  "evidence": {},
+  "diagnostics": []
+}

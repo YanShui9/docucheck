@@ -1,0 +1,65 @@
+{
+  "task_id": "measure_rag_terminal",
+  "trial": 2,
+  "execution": "failed",
+  "origin": "live_http",
+  "error_code": "evaluation_parse_incomplete",
+  "tool_names": [],
+  "business_checks": [],
+  "claims": [],
+  "assessments": {},
+  "semantic_review": null,
+  "cited_anchor_ids": [],
+  "verified_anchor_ids": [],
+  "violations": [],
+  "usage": {
+    "requests": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "unknown_requests": 0
+  },
+  "usage_complete": true,
+  "timing": {
+    "started_at": "2026-10-29T08:48:58.921028+00:00",
+    "finished_at": "2026-10-29T08:49:19.150445+00:00",
+    "total_seconds": 20.23400000000038,
+    "preparation_seconds": null,
+    "task_seconds": null,
+    "includes_failures_and_queueing": true
+  },
+  "halt_execution": false,
+  "outcome_unknown": false,
+  "raw_sha256": "187c7a7154178be117375d1da9f694ff31510f7238d0fcf49ed5bbf91c44ec3c",
+  "publication_kind": "synthetic_result_projection_not_full_http_replay",
+  "prompt": "衡远说巡检终端有IP67，配套测试说明能证明这批终端在低温下也达到同样防护等级吗？请区分标称与测试适用条件。",
+  "run": {},
+  "sources": {},
+  "evidence": {},
+  "diagnostics": [],
+  "last_document_statuses": [
+    {
+      "id": "1a24f365238242caa1c06ea951ce9e5a",
+      "original_name": "comparison.xlsx",
+      "source_sha256": "4842fac662b619b4ebd94347d9be0473474729d73da6659fb449d68e2f10db2f",
+      "parse_status": "complete"
+    },
+    {
+      "id": "fbfe250c26124880b619926542f92e7a",
+      "original_name": "supplier_b_comparison.xlsx",
+      "source_sha256": "fd7524d86b92fefdafce29b86a1b8fbc81da6a08d5cea1f7795a96af87a7a0b7",
+      "parse_status": "pending"
+    },
+    {
+      "id": "c76b4c6c84574492ab731bac76dc7426",
+      "original_name": "supplier_a.pdf",
+      "source_sha256": "54933bae0e3fa8804ea36662b990ad24ff517d6fcc4f91bbc0b520497d6ad92d",
+      "parse_status": "partial"
+    },
+    {
+      "id": "63427e6675f648bfaefabcfa8ed27dfe",
+      "original_name": "supplier_b.pdf",
+      "source_sha256": "9e1b6f7a360d1b21d58e4277ddc2edb792c612d75ced0a1deee3070ab6735225",
+      "parse_status": "complete"
+    }
+  ]
+}

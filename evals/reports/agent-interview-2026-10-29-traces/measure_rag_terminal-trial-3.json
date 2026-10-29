@@ -1,0 +1,65 @@
+{
+  "task_id": "measure_rag_terminal",
+  "trial": 3,
+  "execution": "failed",
+  "origin": "live_http",
+  "error_code": "evaluation_parse_incomplete",
+  "tool_names": [],
+  "business_checks": [],
+  "claims": [],
+  "assessments": {},
+  "semantic_review": null,
+  "cited_anchor_ids": [],
+  "verified_anchor_ids": [],
+  "violations": [],
+  "usage": {
+    "requests": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "unknown_requests": 0
+  },
+  "usage_complete": true,
+  "timing": {
+    "started_at": "2026-10-29T08:49:19.150445+00:00",
+    "finished_at": "2026-10-29T08:49:35.209465+00:00",
+    "total_seconds": 16.0470000000023,
+    "preparation_seconds": null,
+    "task_seconds": null,
+    "includes_failures_and_queueing": true
+  },
+  "halt_execution": false,
+  "outcome_unknown": false,
+  "raw_sha256": "d0f77217aee26c325ef4d7eb2787804a1a538714c3f9c7691259f5deca133ec3",
+  "publication_kind": "synthetic_result_projection_not_full_http_replay",
+  "prompt": "衡远说巡检终端有IP67，配套测试说明能证明这批终端在低温下也达到同样防护等级吗？请区分标称与测试适用条件。",
+  "run": {},
+  "sources": {},
+  "evidence": {},
+  "diagnostics": [],
+  "last_document_statuses": [
+    {
+      "id": "5abdf781643f4ad198f17c2af1cb38b4",
+      "original_name": "comparison.xlsx",
+      "source_sha256": "4842fac662b619b4ebd94347d9be0473474729d73da6659fb449d68e2f10db2f",
+      "parse_status": "complete"
+    },
+    {
+      "id": "5d039ece997b4633847296fdc4c4dc2c",
+      "original_name": "supplier_b_comparison.xlsx",
+      "source_sha256": "fd7524d86b92fefdafce29b86a1b8fbc81da6a08d5cea1f7795a96af87a7a0b7",
+      "parse_status": "complete"
+    },
+    {
+      "id": "7adaa7c5fbee4bf3b88a23c1790688d4",
+      "original_name": "supplier_a.pdf",
+      "source_sha256": "54933bae0e3fa8804ea36662b990ad24ff517d6fcc4f91bbc0b520497d6ad92d",
+      "parse_status": "partial"
+    },
+    {
+      "id": "9e6004b984934f0799dd67e696c7a5d1",
+      "original_name": "supplier_b.pdf",
+      "source_sha256": "9e1b6f7a360d1b21d58e4277ddc2edb792c612d75ced0a1deee3070ab6735225",
+      "parse_status": "pending"
+    }
+  ]
+}

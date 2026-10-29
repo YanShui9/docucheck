@@ -1,0 +1,65 @@
+{
+  "task_id": "measure_review_report_presence",
+  "trial": 1,
+  "execution": "failed",
+  "origin": "live_http",
+  "error_code": "evaluation_parse_incomplete",
+  "tool_names": [],
+  "business_checks": [],
+  "claims": [],
+  "assessments": {},
+  "semantic_review": null,
+  "cited_anchor_ids": [],
+  "verified_anchor_ids": [],
+  "violations": [],
+  "usage": {
+    "requests": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "unknown_requests": 0
+  },
+  "usage_complete": true,
+  "timing": {
+    "started_at": "2026-10-29T08:45:32.643919+00:00",
+    "finished_at": "2026-10-29T08:45:55.882899+00:00",
+    "total_seconds": 23.25,
+    "preparation_seconds": null,
+    "task_seconds": null,
+    "includes_failures_and_queueing": true
+  },
+  "halt_execution": false,
+  "outcome_unknown": false,
+  "raw_sha256": "a2d43ca50d0d329f47a6b0cf199163c8914991c5898288532363c49b410e3e42",
+  "publication_kind": "synthetic_result_projection_not_full_http_replay",
+  "prompt": "工作服要求有效抗静电报告，另有一条明确由安全员现场核对危险源适用性的人工规则。请完整审两家；不要把有报告就算两条都满足。",
+  "run": {},
+  "sources": {},
+  "evidence": {},
+  "diagnostics": [],
+  "last_document_statuses": [
+    {
+      "id": "84612013e16c4ab4923d5ae08343a95a",
+      "original_name": "comparison.xlsx",
+      "source_sha256": "c5288168e7498fb6379f2bd3cead79ea968641387ccc389db8dcecd5dee264d1",
+      "parse_status": "pending"
+    },
+    {
+      "id": "17b5abc1dc054b6fb98e88131b31b235",
+      "original_name": "supplier_b_comparison.xlsx",
+      "source_sha256": "b8b3c9e91cbc78d04b01984eff74a17c311563030a6a733ef64ec776fe6ccf4d",
+      "parse_status": "complete"
+    },
+    {
+      "id": "41ecd466a4bd47728f7b1ce7282a4ab5",
+      "original_name": "supplier_a.pdf",
+      "source_sha256": "428c42d641d3bbc560a75b42176a75d67345c649925087567fe2f5045711fa05",
+      "parse_status": "partial"
+    },
+    {
+      "id": "117aca4579a943858fa275fac5433de8",
+      "original_name": "supplier_b.pdf",
+      "source_sha256": "b0fb3924c2e7ea4dc9de82e0a0c90ab6277b0740a59c46c8b60e5d85ecfe5390",
+      "parse_status": "complete"
+    }
+  ]
+}
